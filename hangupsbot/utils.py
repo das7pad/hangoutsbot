@@ -42,9 +42,18 @@ def unicode_to_ascii(text):
 
 
 def class_from_name(module_name, class_name):
-    """adapted from http://stackoverflow.com/a/13808375"""
-    # load the module, will raise ImportError if module cannot be loaded
-    m = importlib.import_module(module_name)
-    # get the class, will raise AttributeError if class cannot be found
-    c = getattr(m, class_name)
-    return c
+    """adapted from http://stackoverflow.com/a/13808375
+
+    Args:
+        module_name: string, modulepath relative to the main script
+        class_name: string, class name in the module
+
+    Returns:
+        Class, requested item
+
+    Raises:
+        ImportError: module not found or error on loading
+        AttributeError: module has no class named class_name
+    """
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
