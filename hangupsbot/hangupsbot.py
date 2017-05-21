@@ -30,12 +30,15 @@ gettext.install('hangupsbot', localedir=os.path.join(os.path.dirname(__file__), 
 
 logger = logging.getLogger()
 
+DEFAULT_CONFIG = {
+    "memory-failsafe_backups": 3,
+    # in seconds
+    "memory-save_delay": 1,
+}
 
 class HangupsBot(object):
     """Hangouts bot listening on all conversations"""
-    def __init__(self, cookies_path, config_path, max_retries=5, memory_file=None):
-        self.Exceptions = HangupsBotExceptions()
-
+    def __init__(self, cookies_path, config_path, memory_path, max_retries=5):
         self.shared = {} # safe place to store references to objects
 
         self._client = None
@@ -52,36 +55,36 @@ class HangupsBot(object):
         self._locales = {}
 
         # Load config file
+        self.config = config.Config(config_path)
         try:
-            self.config = config.Config(config_path)
+            self.config.load()
         except ValueError:
-            logging.exception("failed to load config, malformed json")
-            sys.exit()
+            logger.exception("FAILED TO LOAD CONFIG FILE")
+            sys.exit(1)
+        self.config.set_defaults(DEFAULT_CONFIG)
 
-        # set localisation if anything defined in config.language or ENV[HANGOUTSBOT_LOCALE]
-        _language = self.get_config_option('language') or os.environ.get("HANGOUTSBOT_LOCALE")
+        # set localisation if any defined in
+        #  config[language] or ENV[HANGOUTSBOT_LOCALE]
+        _language = (self.config.get_option("language")
+                     or os.environ.get("HANGOUTSBOT_LOCALE"))
         if _language:
             self.set_locale(_language)
 
-        # load in previous memory, or create new one
-        self.memory = None
-        if memory_file:
-            _failsafe_backups = int(self.get_config_option('memory-failsafe_backups') or 3)
-            _save_delay = int(self.get_config_option('memory-save_delay') or 1)
+        # load memory file
+        _failsafe_backups = self.config.get_option("memory-failsafe_backups")
+        _save_delay = self.config.get_option("memory-save_delay")
 
-            logger.info("memory = {}, failsafe = {}, delay = {}".format(
-                memory_file, _failsafe_backups, _save_delay))
-
-            self.memory = config.Config(memory_file, failsafe_backups=_failsafe_backups, save_delay=_save_delay)
-            if not os.path.isfile(memory_file):
-                try:
-                    logger.info("creating memory file: {}".format(memory_file))
-                    self.memory.force_taint()
-                    self.memory.save()
-
-                except (OSError, IOError) as e:
-                    logger.exception('FAILED TO CREATE DEFAULT MEMORY FILE')
-                    sys.exit()
+        logger.info("memory = %s, failsafe = %s, delay = %s",
+                    memory_path, _failsafe_backups, _save_delay)
+        self.memory = config.Config(memory_path,
+                                    failsafe_backups=_failsafe_backups,
+                                    save_delay=_save_delay)
+        self.memory.logger = logging.getLogger('memory')
+        try:
+            self.memory.load()
+        except (OSError, IOError, ValueError):
+            logger.exception("FAILED TO LOAD/RECOVER A MEMORY FILE")
+            sys.exit(1)
 
         # Handle signals on Unix
         # (add_signal_handler is not implemented on Windows)
@@ -999,7 +1002,7 @@ def main():
     configure_logging(args)
 
     # initialise the bot
-    bot = HangupsBot(args.cookies, args.config, args.retries, args.memory)
+    bot = HangupsBot(args.cookies, args.config, args.memory, args.retries)
 
     # start the bot
     bot.run()

@@ -12,8 +12,6 @@ import os
 import shutil
 import time
 
-logger = logging.getLogger(__name__)
-
 
 class Config(collections.MutableMapping):
     """Configuration JSON storage class
@@ -33,7 +31,7 @@ class Config(collections.MutableMapping):
         self.save_delay = save_delay
         self._last_dump = None
         self._timer_save = None
-        self.load()
+        self.logger = logging.getLogger(__name__)
 
     @property
     def _changed(self):
@@ -64,7 +62,8 @@ class Config(collections.MutableMapping):
         except IOError:
             return False
         except ValueError:
-            logger.warning("%s is corrupted, aborting backup", self.filename)
+            self.logger.warning("%s is corrupted, aborting backup",
+                                self.filename)
             return False
 
         existing = sorted(glob.glob(self.filename + ".*.bak"))
@@ -73,7 +72,8 @@ class Config(collections.MutableMapping):
             try:
                 os.remove(path)
             except IOError:
-                logger.warning('Failed to remove %s, check permissions', path)
+                self.logger.warning('Failed to remove %s, check permissions',
+                                    path)
 
         backup_file = "%s.%s.bak" % (self.filename,
                                      datetime.now().strftime("%Y%m%d%H%M%S"))
@@ -96,14 +96,14 @@ class Config(collections.MutableMapping):
                     data = file.read()
                 self._loads(data)
                 self.save(delay=False)
-                logger.info("recovered %s successful from %s", self.filename,
-                            recovery_filename)
+                self.logger.info("recovered %s successful from %s",
+                                 self.filename, recovery_filename)
                 return True
             except IOError:
-                logger.warning('Failed to remove %s, check permissions',
+                self.logger.warning('Failed to remove %s, check permissions',
                                recovery_filename)
             except ValueError:
-                logger.error("corrupted recovery: %s", self.filename)
+                self.logger.error("corrupted recovery: %s", self.filename)
         return False
 
     def load(self):
@@ -120,7 +120,7 @@ class Config(collections.MutableMapping):
                 data = file.read()
             self._loads(data)
             self._last_dump = data
-            logger.info("%s read", self.filename)
+            self.logger.info("%s read", self.filename)
 
         except IOError:
             if not os.path.isfile(self.filename):
@@ -177,11 +177,11 @@ class Config(collections.MutableMapping):
             file.write(self._last_dump)
 
         interval = time.time() - start_time
-        logger.info("%s write %s", self.filename, interval)
+        self.logger.info("%s write %s", self.filename, interval)
 
     def flush(self):
         """force an immediate dump to file"""
-        logger.info("flushing %s", self.filename)
+        self.logger.info("flushing %s", self.filename)
         self.save(delay=False)
 
     def get_by_path(self, keys_list, fallback=True):
@@ -207,7 +207,7 @@ class Config(collections.MutableMapping):
                 return self._get_by_path(self.defaults, keys_list)
             except (KeyError, ValueError):
                 raise KeyError('%s has no path %s and there is no default set' %
-                               (self.filename, keys_list))
+                               (self.filename.rsplit('/', 1)[-1], keys_list))
 
     def set_by_path(self, keys_list, value, create_path=True):
         """set an item in .config by path
@@ -400,8 +400,8 @@ class Config(collections.MutableMapping):
     def __len__(self):
         return len(self.config)
 
-    @staticmethod
-    def force_taint():
+    def force_taint(self):
         """[DEPRECATED] toggle the changed state to True"""
-        logger.warning(('[DEPRECATED] .force_taint is no more needed to mark '
-                        'the config for a needed dump.'), stack_info=True)
+        self.logger.warning(('[DEPRECATED] .force_taint is no more needed to '
+                             'mark the config for a needed dump.'),
+                            stack_info=True)
