@@ -9,6 +9,7 @@ bot = None
 
 logger = logging.getLogger(__name__)
 
+SENTINEL = object()
 
 def name_from_hangups_conversation(conv):
     """get the name for supplied hangups conversation
@@ -588,25 +589,20 @@ class conversation_memory:
 
         return matched
 
-    def get_name(self, conv, truncate=False, fallback_string=False):
-        """drop-in replacement for hangups.ui.utils.get_conv_name
-        truncate added for backward-compatibility, should be always False
-        """
+    def get_name(self, conv, fallback=SENTINEL):
+        """drop-in replacement for hangups.ui.utils.get_conv_name"""
         if isinstance(conv, str):
             convid = conv
         else:
             convid = conv.id_
 
         try:
-            convdata = self.catalog[convid]
-            title = convdata["title"]
-        except (KeyError, AttributeError) as e:
+            return self.catalog[convid]["title"]
+        except KeyError:
             if not isinstance(conv, str):
-                title = name_from_hangups_conversation(conv)
-            else:
-                if fallback_string:
-                    return fallback_string
-                else:
-                    raise ValueError("could not determine conversation name")
+                return name_from_hangups_conversation(conv)
 
-        return title
+            if fallback is SENTINEL:
+                raise ValueError("could not determine conversation name")
+
+            return fallback
