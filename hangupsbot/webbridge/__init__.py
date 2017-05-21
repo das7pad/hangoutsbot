@@ -58,7 +58,7 @@ class WebFramework:
         self.start_listening(bot)
 
     def load_configuration(self, configkey):
-        self.configuration = self.bot.get_config_option(self.configkey) or []
+        self.configuration = self.bot.config.get_option(self.configkey) or []
         return self.configuration
 
     def setup_plugin(self):
@@ -137,7 +137,7 @@ class WebFramework:
         else:
             """bot is raising an event that needs to be repeated
 
-            only the first handler to run will assign all the variables 
+            only the first handler to run will assign all the variables
                 we need for the other bridges to work"""
 
             logger.info("hangouts bot raised an event, first seen by {}, {}".format(self.plugin_name, self.uid))
@@ -193,7 +193,7 @@ class WebFramework:
         if "original_request" not in passthru:
             """user has raised an event that needs to be repeated
 
-            only the first handler to run will assign all the variables 
+            only the first handler to run will assign all the variables
                 we need for the other bridges to work"""
 
             logger.info("hangouts user raised an event, first seen by {}".format(self.plugin_name))
@@ -303,7 +303,7 @@ class WebFramework:
         else:
             chat_id = user.id_.chat_id
             permauser = self.bot.get_hangups_user(chat_id)
-            nickname = self.bot.get_memory_suboption(chat_id, 'nickname') or None
+            nickname = self.bot.user_memory_get(chat_id, 'nickname')
             if isinstance(permauser, dict):
                 full_name = permauser["full_name"]
                 if "photo_url" in permauser:
