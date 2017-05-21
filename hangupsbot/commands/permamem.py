@@ -1,3 +1,4 @@
+# TODO(das7pad) refactor needed
 import logging
 
 import plugins
@@ -17,10 +18,10 @@ def dumpconv(bot, event, *args):
     all_conversations = bot.conversations.get().items()
     for convid, convdata in all_conversations:
         if text_search.lower() in convdata["title"].lower():
-            lines.append("`{}` <em>{}</em> {}<br />... `{}` history: {} <br />... <b>{}</b>".format(
+            lines.append("`{}` <em>{}</em> {}\n... `{}` history: {} \n... <b>{}</b>".format(
                 convid, convdata["source"], len(convdata["participants"]), convdata["type"], convdata["history"], convdata["title"]))
     lines.append("<b><em>Totals: {}/{}</em></b>".format(len(lines), len(all_conversations)))
-    yield from bot.coro_send_message(event.conv, "<br />".join(lines))
+    yield from bot.coro_send_message(event.conv, "\n".join(lines))
 
 
 def dumpunknownusers(bot, event, *args):
