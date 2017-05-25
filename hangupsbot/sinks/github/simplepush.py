@@ -9,32 +9,29 @@ logger = logging.getLogger(__name__)
 class webhookReceiver(AsyncRequestHandler):
     _bot = None
 
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         path = path.split("/")
         conv_or_user_id = path[1]
         if conv_or_user_id is None:
-            logger.error("conversation or user id must be provided as part of path")
+            logger.error("conv id or user id must be provided as part of path")
             return
 
         try:
             payload = json.loads(content)
-        except Exception as e:
+        except ValueError:
             logger.exception("invalid payload")
 
-        if "repository" in payload and "commits" in payload and "pusher" in payload:
-            html = '<b>{0}</b> has <a href="{2}">pushed</a> {1} commit(s)<br />'.format( payload["pusher"]["name"],
-                                                                                         len(payload["commits"]),
-                                                                                         payload["repository"]["url"] )
+        if all(key in payload for key in ('repository', 'commits', 'pusher')):
+            html = '<b>{}</b> has <a href="{}">pushed</a> {} commit{}\n'.format(
+                payload["pusher"]["name"], payload["repository"]["url"],
+                len(payload["commits"]),
+                's' if len(payload["commits"]) == 1 else '')
 
             for commit in payload["commits"]:
-                html += '* <i>{0}</i> <a href="{2}">link</a><br />'.format( commit["message"],
-                                                                            commit["author"]["name"],
-                                                                            commit["url"],
-                                                                            commit["timestamp"],
-                                                                            commit["id"] )
+                html += '* <i>{}</i> <a href="{}">link</a>\n'.format(
+                    commit["message"], commit["url"])
 
-            yield from self.send_data(conv_or_user_id, html)
+            await self.send_data(conv_or_user_id, html)
 
         elif "zen" in payload:
             logger.info("github zen received: {}".format(payload["zen"]))

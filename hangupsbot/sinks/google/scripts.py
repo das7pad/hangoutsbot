@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 class webhookReceiver(AsyncRequestHandler):
     _bot = None
 
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         path = path.split("/")
         conv_or_user_id = path[1]
         if conv_or_user_id is None:
@@ -29,13 +28,12 @@ class webhookReceiver(AsyncRequestHandler):
             logger.error("payload does not contain message")
             return
 
-        yield from self.send_actionable_message(conv_or_user_id, payload["message"])
+        await self.send_actionable_message(conv_or_user_id, payload["message"])
 
 
-    @asyncio.coroutine
-    def send_actionable_message(self, id, content):
-        if id in self._bot.conversations.catalog:
-            yield from self._bot.coro_send_message(id, content)
+    async def send_actionable_message(self, id, content):
+        if id in self._bot.conversations:
+            await self._bot.coro_send_message(id, content)
         else:
             # attempt to send to a user id
-            yield from self._bot.coro_send_to_user(id, content)
+            await self._bot.coro_send_to_user(id, content)
