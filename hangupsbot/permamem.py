@@ -608,3 +608,18 @@ class ConversationMemory(object):
                 raise ValueError("could not determine conversation name")
 
             return fallback
+
+    def __iter__(self):
+        return iter(self.catalog)
+
+    def __getitem__(self, key):
+        return self.catalog[key]
+
+    def __setitem__(self, key, value):
+        self.catalog[key] = value
+
+    def __delitem__(self, key):
+        del self.catalog[key]
+
+    def __len__(self):
+        return len(self.catalog)
