@@ -89,7 +89,7 @@ class Config(collections.MutableMapping):
         """
         existing = sorted(glob.glob(self.filename + ".*.bak"))
         recovery_filename = None
-        while len(existing) > 0:
+        while existing:
             try:
                 recovery_filename = existing.pop()
                 with open(recovery_filename, 'r') as file:
@@ -101,7 +101,7 @@ class Config(collections.MutableMapping):
                 return True
             except IOError:
                 self.logger.warning('Failed to remove %s, check permissions',
-                               recovery_filename)
+                                    recovery_filename)
             except ValueError:
                 self.logger.error("corrupted recovery: %s", self.filename)
         return False
@@ -252,7 +252,7 @@ class Config(collections.MutableMapping):
         Raises:
             KeyError, ValueError: the path does not exist
         """
-        if not len(path):
+        if not path:
             return source
         return functools.reduce(operator.getitem, path[:-1], source)[path[-1]]
 
@@ -382,7 +382,7 @@ class Config(collections.MutableMapping):
             elif not isinstance(self.get_by_path(path + [key]), type(value)):
                 self.set_by_path(path + [key], value)
 
-            elif isinstance(value, dict) and len(value):
+            elif isinstance(value, dict) and value:
                 self.validate(value, path + [key])
 
     def __getitem__(self, key):
