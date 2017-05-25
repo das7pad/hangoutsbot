@@ -5,7 +5,7 @@ import re
 import plugins
 
 from version import __version__
-from commands import command
+from . import command, get_func_help, Help
 
 
 logger = logging.getLogger(__name__)
@@ -16,11 +16,14 @@ except ImportError:
     logger.warning("resource is unavailable on your system")
 
 
-def _initialise(bot): pass # prevents commands from being automatically added
+def _initialise(bot):
+    bot.memory.ensure_path(['command_help'])
+
+    bot.register_shared("preprocess_arguments", command.preprocess_arguments)
 
 
 @command.register
-def help(bot, event, cmd=None, *args):
+async def help(bot, event, cmd=None, *args):
     """list supported commands, /bot help <command> will show additional details"""
     help_lines = []
     link_to_guide = bot.get_config_suboption(event.conv_id, 'link_to_guide')
@@ -32,20 +35,20 @@ def help(bot, event, cmd=None, *args):
     commands_admin = commands["admin"]
     commands_nonadmin = commands["user"]
 
-    if not cmd or (cmd=="impersonate" and event.user.id_.chat_id in admins_list):
-
+    if not cmd or (cmd=="impersonate" and event.user_id.chat_id in admins_list):
         if cmd == "impersonate":
             if len(args) == 1:
                 [help_chat_id] = args
             elif len(args) == 2:
                 [help_chat_id, help_conv_id] = args
             else:
-                raise ValueError("impersonation: supply chat id and optional conversation id")
+                raise Help(_("impersonation: supply chat id and optional "
+                             "conversation id"))
 
-            help_lines.append(_('<b>Impersonation:</b><br />'
-                                '<b><pre>{}</pre></b><br />'
-                                '<b><pre>{}</pre></b><br />').format( help_chat_id,
-                                                                      help_conv_id ))
+            help_lines.append(_('<b>Impersonation:</b>\n'
+                                '<b><i>{}</i></b>\n'
+                                '<b><i>{}</i></b>\n').format(help_chat_id,
+                                                             help_conv_id))
 
         if len(commands_nonadmin) > 0:
             help_lines.append(_('<b>User commands:</b>'))
@@ -72,48 +75,22 @@ def help(bot, event, cmd=None, *args):
 
     else:
         if cmd in command.commands and (cmd in commands_admin or cmd in commands_nonadmin):
-            command_fn = command.commands[cmd]
+            func = command.commands[cmd]
         elif cmd.lower() in command.commands and (cmd in commands_admin or cmd in commands_nonadmin):
-            command_fn = command.commands[cmd.lower()]
+            func = command.commands[cmd.lower()]
         else:
-            yield from command.unknown_command(bot, event)
+            await command.unknown_command(bot, event)
             return
 
-        if "__doc__" in dir(command_fn) and command_fn.__doc__:
-            _docstring = command_fn.__doc__.strip()
-        else:
-            _docstring = "_{}_".format(_("command help not available"))
+        help_lines.append("<b>{}</b>: {}".format(func.__name__,
+                                                 get_func_help(bot, cmd, func)))
 
-        """docstrings: apply (very) limited markdown-like formatting to command help"""
-
-        # simple bullet lists
-        _docstring = re.sub(r'\n +\* +', '\n* ', _docstring)
-
-        """docstrings: handle generic whitespace
-            manually parse line-breaks: single break -> space; multiple breaks -> paragraph
-            XXX: the markdown parser is iffy on line-break processing"""
-
-        # turn standalone linebreaks into space, preserves multiple linebreaks
-        _docstring = re.sub(r"(?<!\n)\n(?= *[^ \t\n\r\f\v\*])", " ", _docstring)
-        # convert multiple consecutive spaces into single space
-        _docstring = re.sub(r" +", " ", _docstring)
-        # convert consecutive linebreaks into double linebreak (pseudo-paragraph)
-        _docstring = re.sub(r" *\n\n+ *(?!\*)", "\n\n", _docstring)
-
-        help_lines.append("<b>{}</b>: {}".format(command_fn.__name__, _docstring))
-
-    # replace /bot with the first alias in the command handler
-    # XXX: [botalias] maintained backward compatibility, please avoid using it
-    help_lines = [ re.sub(r"(?<!\S)\/bot(?!\S)", bot._handlers.bot_command[0], _line)
-                   for _line in help_lines ]
-
-    yield from bot.coro_send_to_user_and_conversation(
+    await bot.coro_send_to_user_and_conversation(
         event.user.id_.chat_id,
         event.conv_id,
-        "<br />".join(help_lines), # via private message
+        "\n".join(help_lines), # via private message
         _("<i>{}, I've sent you some help ;)</i>") # public message
             .format(event.user.full_name))
-
 
 @command.register(admin=True)
 def locale(bot, event, *args):
