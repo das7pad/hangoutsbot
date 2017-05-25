@@ -7,10 +7,7 @@ class SuppressAllHandlers(Exception):
 class SuppressEventHandling(Exception):
     pass
 
-
 class HangupsBotExceptions:
-    def __init__(self):
-        self.SuppressHandler = SuppressHandler
-        self.SuppressAllHandlers = SuppressAllHandlers
-        self.SuppressEventHandling = SuppressEventHandling
-
+    SuppressHandler = SuppressHandler
+    SuppressAllHandlers = SuppressAllHandlers
+    SuppressEventHandling = SuppressEventHandling

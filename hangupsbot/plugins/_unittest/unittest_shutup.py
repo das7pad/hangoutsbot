@@ -1,11 +1,27 @@
-"""
-example plugin demonstrating various levels of sending handler suppression 
-"""
+"""example plugin demonstrating various levels of sending handler suppression"""
+from exceptions import HangupsBotExceptions
+import plugins
 
-def _initialise(Handlers, bot=None):
-    Handlers.register_handler(_shutup, type="sending", priority=49)
+def _initialise():
+    """register a handler for a given pluggable"""
+    plugins.register_handler(_shutup, "sending", priority=49)
 
 def _shutup(bot, event, command):
-    # raise bot.Exceptions.SuppressHandler() # suppresses this specific handler only
-    # raise bot.Exceptions.SuppressAllHandlers() # disables all handlers of priority > 49
-    raise bot.Exceptions.SuppressEventHandling() # disables sending entirely
+    """suppress registered handler to work entirely above the configured level
+
+    Args:
+        bot: HangupsBot instance
+        event: ConversationEvent instance
+        command: command handler from commands
+
+    Raises:
+        the uncommented handler suppressor
+    """
+    # suppresses this specific handler only
+    # raise HangupsBotExceptions.SuppressHandler
+
+    # disables all handlers of priority > 49
+    # raise HangupsBotExceptions.SuppressAllHandlers
+
+    # disables sending entirely
+    raise HangupsBotExceptions.SuppressEventHandling

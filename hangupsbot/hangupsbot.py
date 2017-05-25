@@ -4,6 +4,7 @@ import appdirs, argparse, asyncio, gettext, logging, logging.config, os, shutil,
 import hangups
 
 import hangups_shim
+from exceptions import HangupsBotExceptions
 
 import config
 import handlers
@@ -16,7 +17,6 @@ import hooks
 import sinks
 import plugins
 
-from exceptions import HangupsBotExceptions
 from event import (TypingEvent, WatermarkEvent, ConversationEvent)
 from hangups_conversation import (HangupsConversation, FakeConversation)
 
@@ -741,7 +741,7 @@ class HangupsBot(object):
 
         try:
             yield from self._handlers.run_pluggable_omnibus("sending", self, broadcast_list, context)
-        except self.Exceptions.SuppressEventHandling:
+        except HangupsBotExceptions.SuppressEventHandling:
             logger.info("message sending: SuppressEventHandling")
             return
         except:
