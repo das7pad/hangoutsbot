@@ -3,6 +3,7 @@
 the following events provide the properties that are in general needed to
 identify a user of a message, the message content and the conversation
 """
+#pylint: disable=too-few-public-methods
 
 import logging
 
@@ -12,6 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 class GenericEvent:
+    """base event that sets logging
+
+    Args:
+        bot: HangupsBot instance
+    """
     bot = None
     emit_log = logging.INFO
 
@@ -59,7 +65,7 @@ class WatermarkEvent(StatusEvent):
     def __init__(self, bot, state_update_event):
         super().__init__(bot, state_update_event)
 
-        self.conv_event =  hangups.parsers.parse_watermark_notification(
+        self.conv_event = hangups.parsers.parse_watermark_notification(
             state_update_event)
 
         self.user_id = state_update_event.sender_id
