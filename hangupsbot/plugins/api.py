@@ -55,7 +55,7 @@ def handle_as_command(bot, event, id):
 
 
 def _start_api(bot):
-    api = bot.get_config_option('api')
+    api = bot.config.get_option('api')
     itemNo = -1
 
     if isinstance(api, list):
@@ -83,13 +83,12 @@ class APIRequestHandler(AsyncRequestHandler):
         router.add_route('GET', '/{api_key}/{id}/{message:.*?}', self.adapter_do_GET)
 
 
-    @asyncio.coroutine
-    def adapter_do_OPTIONS(self, request):
+    async def adapter_do_OPTIONS(self, request):
         origin = request.headers["Origin"]
 
-        allowed_origins = self._bot.get_config_option("api_origins")
+        allowed_origins = self._bot.config.get_option("api_origins")
         if allowed_origins is None:
-            raise HTTPForbidden()
+            raise web.HTTPForbidden()
 
         if "*" == allowed_origins or "*" in allowed_origins:
             return web.Response(headers={
@@ -98,7 +97,7 @@ class APIRequestHandler(AsyncRequestHandler):
             })
 
         if not origin in allowed_origins:
-            raise HTTPForbidden()
+            raise web.HTTPForbidden()
 
         return web.Response(headers={
             "Access-Control-Allow-Origin": origin,
@@ -106,15 +105,14 @@ class APIRequestHandler(AsyncRequestHandler):
             "Vary": "Origin",
         })
 
-    @asyncio.coroutine
-    def adapter_do_GET(self, request):
+    async def adapter_do_GET(self, request):
         payload = { "sendto": request.match_info["id"],
                     "key": request.match_info["api_key"],
                     "content": unquote(request.match_info["message"]) }
 
-        results = yield from self.process_request( '', # IGNORED
-                                                   '', # IGNORED
-                                                   payload )
+        results = await self.process_request('', # IGNORED
+                                             '', # IGNORED
+                                             payload)
         if results:
             content_type="text/html"
             results = results.encode("ascii", "xmlcharrefreplace")
@@ -124,8 +122,7 @@ class APIRequestHandler(AsyncRequestHandler):
 
         return web.Response(body=results, content_type=content_type)
 
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         # XXX: bit hacky due to different routes...
         payload = content
         if isinstance(payload, str):
@@ -133,31 +130,31 @@ class APIRequestHandler(AsyncRequestHandler):
             payload = json.loads(payload)
         # XXX: else GET - everything in query string (already parsed before it got here)
 
-        api_key = self._bot.get_config_option("api_key")
+        api_key = self._bot.config.get_option("api_key")
 
         if payload["key"] != api_key:
             raise ValueError("API key does not match")
 
-        results = yield from self.send_actionable_message(payload["sendto"], payload["content"])
+        results = await self.send_actionable_message(payload["sendto"],
+                                                     payload["content"])
 
         return results
 
-    @asyncio.coroutine
-    def send_actionable_message(self, id, content):
+    async def send_actionable_message(self, id, content):
         """reprocessor: allow message to be intepreted as a command"""
         reprocessor_context = self._bot._handlers.attach_reprocessor( handle_as_command,
                                                                       return_as_dict=True )
         reprocessor_id = reprocessor_context["id"]
 
-        if id in self._bot.conversations.catalog:
-            results = yield from self._bot.coro_send_message(
+        if id in self._bot.conversations:
+            results = await self._bot.coro_send_message(
                 id,
                 content,
                 context = { "reprocessor": reprocessor_context })
 
         else:
             # attempt to send to a user id
-            results = yield from self._bot.coro_send_to_user(
+            results = await self._bot.coro_send_to_user(
                 id,
                 content,
                 context = { "reprocessor": reprocessor_context })
@@ -168,6 +165,6 @@ class APIRequestHandler(AsyncRequestHandler):
                 response = reprocessor_queue[reprocessor_id]
                 del reprocessor_queue[reprocessor_id]
                 return "[" + str(time.time() - start_time) + "] " + response
-            yield from asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
 
         return results
