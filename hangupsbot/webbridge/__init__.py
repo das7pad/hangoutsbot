@@ -5,7 +5,6 @@ import uuid
 from collections import namedtuple
 
 import plugins
-import threadmanager
 
 from parsers.markdown import html_to_hangups_markdown
 
@@ -91,8 +90,7 @@ class WebFramework:
 
         return applicable_configurations
 
-    @asyncio.coroutine
-    def _broadcast(self, bot, broadcast_list, context):
+    async def _broadcast(self, bot, broadcast_list, context):
         conv_id = broadcast_list[0][0]
         message = broadcast_list[0][1]
         image_id = broadcast_list[0][2]
@@ -157,15 +155,14 @@ class WebFramework:
 
         # for messages from other plugins, relay them
         for config in applicable_configurations:
-            yield from self._send_to_external_chat(
+            await self._send_to_external_chat(
                 config,
                 FakeEvent(
                     text = message,
                     user = user,
                     passthru = passthru ))
 
-    @asyncio.coroutine
-    def _repeat(self, bot, event, command):
+    async def _repeat(self, bot, event, command):
         conv_id = event.conv_id
 
         applicable_configurations = self.applicable_configuration(conv_id)
@@ -211,14 +208,12 @@ class WebFramework:
                                        "source_plugin": self.plugin_name }
 
         for config in applicable_configurations:
-            yield from self._send_to_external_chat(config, event)
+            await self._send_to_external_chat(config, event)
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         pass
 
-    @asyncio.coroutine
-    def _send_to_internal_chat(self, conv_id, message, external_context, image_id=None):
+    async def _send_to_internal_chat(self, conv_id, message, external_context, image_id=None):
         formatted_message = self.format_incoming_message(message, external_context)
 
         source_user = self.plugin_name
@@ -262,7 +257,7 @@ class WebFramework:
 
         logger.info("{}:receive:{}".format(self.plugin_name, passthru))
 
-        yield from self.bot.coro_send_message(
+        await self.bot.coro_send_message(
             conv_id,
             formatted_message,
             image_id = image_id,
