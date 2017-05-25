@@ -553,7 +553,7 @@ class HangupsBot(object):
             yield from hangups.build_user_conversation_list(self._client)
         )
 
-        self.conversations = yield from permamem.initialise_permanent_memory(self)
+        self.conversations = await permamem.initialise(self)
 
         plugins.load(self, "commands.plugincontrol")
         plugins.load(self, "commands.basic")

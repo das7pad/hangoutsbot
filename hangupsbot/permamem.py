@@ -1,11 +1,12 @@
-import asyncio, datetime, logging, random, re
+"""hangups conversation data cache"""
+# TODO(das7pad): refactor of ConversationMemory needed
+import datetime
+import logging
+import random
+import re
 
 import hangups
-
 import hangups_shim
-
-bot = None
-
 
 logger = logging.getLogger(__name__)
 
@@ -15,41 +16,50 @@ def name_from_hangups_conversation(conv):
     """get the name for supplied hangups conversation
     based on hangups.ui.utils.get_conv_name, except without the warnings
     """
-    if conv.name is not None:
+    if conv.name:
         return conv.name
     else:
         participants = sorted(
             (user for user in conv.users if not user.is_self),
             key=lambda user: user.id_
         )
-        names = [user.first_name for user in participants]
         if len(participants) == 0:
             return "Empty Conversation"
         if len(participants) == 1:
             return participants[0].full_name
         else:
+            names = [user.first_name for user in participants]
             return ', '.join(names)
 
 
-@asyncio.coroutine
-def initialise_permanent_memory(bot):
-    permamem = conversation_memory(bot)
+async def initialise(bot):
+    """load cache from memory and update it with new data from hangups
 
-    yield from permamem.standardise_memory()
-    yield from permamem.load_from_memory()
-    yield from permamem.load_from_hangups()
+    Args:
+        bot: HangupsBot instance
+
+    Returns:
+        ConversationMemory instance
+    """
+    permamem = ConversationMemory(bot)
+
+    await permamem.standardise_memory()
+    await permamem.load_from_memory()
+    await permamem.load_from_hangups()
 
     permamem.stats()
 
-    permamem.bot.memory.save() # only if tainted
+    bot.memory.save()
 
     return permamem
 
 
-class conversation_memory:
-    bot = None
-    catalog = {}
+class ConversationMemory(object):
+    """cache conversation data that might be missing on bot start
 
+    Args:
+        bot: HangupsBot instance
+    """
     log_info_unchanged = False
 
     def __init__(self, bot):
@@ -73,9 +83,7 @@ class conversation_memory:
             logger.info("total users: {} cached: {} definitive (at start): {}".format(
                 count_user, count_user_cached, count_user_cached_definitive))
 
-
-    @asyncio.coroutine
-    def standardise_memory(self):
+    async def standardise_memory(self):
         """construct the conversation memory keys and standardise the stored structure
         devs: migrate new keys here, also add to attribute change checks in .update()
         """
@@ -128,8 +136,7 @@ class conversation_memory:
 
         return memory_updated
 
-    @asyncio.coroutine
-    def load_from_memory(self):
+    async def load_from_memory(self):
         """load "persisted" conversations from memory.json into self.catalog
         complete internal user list by using "participants" keys
         """
@@ -186,11 +193,10 @@ class conversation_memory:
             """attempt to rebuilt the user data with hangups.client.getentitybyid()"""
 
             if len(_users_to_fetch) > 0:
-                yield from self.get_users_from_query(_users_to_fetch)
+                await self.get_users_from_query(_users_to_fetch)
 
 
-    @asyncio.coroutine
-    def load_from_hangups(self):
+    async def load_from_hangups(self):
         logger.info("loading {} users from hangups".format(
             len(self.bot._user_list._user_dict)))
 
@@ -201,11 +207,10 @@ class conversation_memory:
             len(self.bot._conv_list._conv_dict)))
 
         for Conversation in self.bot._conv_list.get_all():
-            yield from self.update(Conversation, source="init", automatic_save=False)
+            await self.update(Conversation, source="init", automatic_save=False)
 
 
-    @asyncio.coroutine
-    def get_users_from_query(self, chat_ids, batch_max=20):
+    async def get_users_from_query(self, chat_ids, batch_max=20):
         """retrieve definitive user data by requesting it from the server"""
 
         chat_ids = list(set(chat_ids))
@@ -221,10 +226,11 @@ class conversation_memory:
             try:
                 _request = hangups.hangouts_pb2.GetEntityByIdRequest(
                     request_header=self.bot._client.get_request_header(),
-                    batch_lookup_spec=[ hangups.hangouts_pb2.EntityLookupSpec( gaia_id=chat_id) 
-                                        for chat_id in chunk ])
+                    batch_lookup_spec=[
+                        hangups.hangouts_pb2.EntityLookupSpec(gaia_id=chat_id)
+                        for chat_id in chunk])
 
-                _response = yield from self.bot._client.get_entity_by_id(_request)
+                _response = await self.bot._client.get_entity_by_id(_request)
 
                 for _user in _response.entity:
                     UserID = hangups.user.UserID(chat_id=_user.id.chat_id, gaia_id=_user.id.gaia_id)
@@ -276,10 +282,7 @@ class conversation_memory:
                     logger.info("skipped user update: {} ({})".format(cached["full_name"], cached["chat_id"]))
                 return False
 
-        changed = False
-
-        if self.bot.initialise_memory(User.id_.chat_id, "user_data"):
-            changed = True
+        changed = self.bot.memory.ensure_path(["user_data", User.id_.chat_id])
 
         user_dict ={
             "chat_id": User.id_.chat_id,
@@ -340,8 +343,7 @@ class conversation_memory:
         return changed
 
 
-    @asyncio.coroutine
-    def update(self, conv, source="unknown", automatic_save=True):
+    async def update(self, conv, source="unknown", automatic_save=True):
         """update conversation memory based on supplied hangups Conversation
         conservative writing: on changed Conversation and/or User attribute changes
         return True on Conversation/User change, False on no changes
@@ -389,7 +391,7 @@ class conversation_memory:
 
         if len(_users_to_fetch) > 0:
             logger.warning("unknown users returned from {} ({}): {}".format(conv_title, conv.id_, _users_to_fetch))
-            yield from self.get_users_from_query(_users_to_fetch)
+            await self.get_users_from_query(_users_to_fetch)
 
         """store the conversation type: GROUP, ONE_TO_ONE"""
         if conv._conversation.type == hangups_shim.schemas.ConversationType.GROUP:
