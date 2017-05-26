@@ -83,7 +83,7 @@ class tags:
         if type == "conv":
             index_type = "conv"
 
-            if( id not in self.bot.conversations.catalog and
+            if( id not in self.bot.conversations and
                   id not in ( self.wildcard["group"],
                               self.wildcard["one2one"],
                               self.wildcard["conversation"]) ):
@@ -106,7 +106,7 @@ class tags:
             index_type = "user"
             [conv_id, chat_id] = id.split("|", maxsplit=1)
 
-            if( conv_id not in self.bot.conversations.catalog and
+            if( conv_id not in self.bot.conversations and
                   conv_id not in (self.wildcard["group"], self.wildcard["one2one"]) ):
 
                 raise ValueError("conversation {} is invalid".format(conv_id))
@@ -240,10 +240,10 @@ class tags:
         active_tags = []
         check_keys = []
 
-        if conv_id in self.bot.conversations.catalog:
+        if conv_id in self.bot.conversations:
             check_keys.extend([ conv_id ])
             # additional overrides based on type of conversation
-            conv_type = self.bot.conversations.catalog[conv_id]["type"]
+            conv_type = self.bot.conversations[conv_id]["type"]
             if conv_type == "GROUP":
                 check_keys.extend([ self.wildcard["group"] ])
             elif conv_type == "ONE_TO_ONE" :
@@ -262,44 +262,53 @@ class tags:
         return active_tags
 
 
-    def useractive(self, chat_id, conv_id="*"):
-        """return active tags of user for current conv_id if supplied, globally if not"""
+    def useractive(self, chat_id, conv_id=None):
+        """fetch active tags of user for given conversation or globally
 
-        active_tags = []
+        Args:
+            chat_id: string, G+ID
+            conv_id: string, a Hangout ID to fetch tags for a single conv
+
+        Returns:
+            list,
+        """
+
+        if not self.bot.memory.exists(["user_data", chat_id]):
+            logger.warning("useractive: user %s does not exist", chat_id)
+            return []
+
+        active_tags = set()
         check_keys = []
 
-        if self.bot.memory.exists(["user_data", chat_id]):
-            if conv_id != "*":
-                if conv_id in self.bot.conversations.catalog:
-                    # per_conversation_user_override_keys
-                    check_keys.extend([ conv_id + "|" + chat_id,
-                                        conv_id + "|" + self.wildcard["user"] ])
+        if conv_id is not None:
+            if conv_id in self.bot.conversations:
+                # per_conversation_user_override_keys
+                check_keys.extend([conv_id + "|" + chat_id,
+                                   conv_id + "|" + self.wildcard["user"]])
 
-                    # additional overrides based on type of conversation
-                    if self.bot.conversations.catalog[conv_id]["type"] == "GROUP":
-                        check_keys.extend([ self.wildcard["group"] + "|" + chat_id,
-                                            self.wildcard["group"] + "|" + self.wildcard["user"] ])
-                    else:
-                        check_keys.extend([ self.wildcard["one2one"] + "|" + chat_id,
-                                            self.wildcard["one2one"] + "|" + self.wildcard["user"] ])
-
+                # additional overrides based on type of conversation
+                if self.bot.conversations[conv_id]["type"] == "GROUP":
+                    check_keys.extend([
+                        self.wildcard["group"] + "|" + chat_id,
+                        self.wildcard["group"] + "|" + self.wildcard["user"]])
                 else:
-                    logger.warning("useractive: conversation {} does not exist".format(conv_id))
+                    check_keys.extend([
+                        self.wildcard["one2one"] + "|" + chat_id,
+                        self.wildcard["one2one"] + "|" + self.wildcard["user"]])
 
-            check_keys.extend([ chat_id,
-                                self.wildcard["user"] ])
+            else:
+                logger.warning("useractive: conversation %s does not exist",
+                               conv_id)
 
-        else:
-            logger.warning("useractive: user {} does not exist".format(chat_id))
+        check_keys.extend([chat_id, self.wildcard["user"]])
 
         for _key in check_keys:
             if _key in self.indices["user-tags"]:
-                active_tags.extend(self.indices["user-tags"][_key])
-                active_tags = list(set(active_tags))
+                active_tags.update(self.indices["user-tags"][_key])
                 if "tagging-merge" not in active_tags:
                     break
 
-        return active_tags
+        return list(active_tags)
 
 
     def userlist(self, conv_id, tags=False):
@@ -310,7 +319,7 @@ class tags:
 
         userlist = []
         try:
-            userlist = self.bot.conversations.catalog[conv_id]["participants"]
+            userlist = self.bot.conversations[conv_id]["participants"]
         except KeyError:
             logger.warning("userlist: conversation {} does not exist".format(conv_id))
 
