@@ -3,11 +3,13 @@
 the following events provide the properties that are in general needed to
 identify a user of a message, the message content and the conversation
 """
-#pylint: disable=too-few-public-methods
+#pylint: disable=too-few-public-methods, too-many-instance-attributes
 
 import logging
 
 import hangups
+
+import hangups_conversation
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +86,7 @@ class ConversationEvent(GenericEvent):
 
         self.conv_event = conv_event
         self.conv_id = conv_event.conversation_id
-        self.conv = self.bot._conv_list.get(self.conv_id)
+        self.conv = hangups_conversation.HangupsConversation(bot, self.conv_id)
         self.event_id = conv_event.id_
         self.user_id = conv_event.user_id
         self.user = self.conv.get_user(self.user_id)
