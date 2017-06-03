@@ -7,6 +7,8 @@ import re
 
 import hangups
 
+from hangups_conversation import HangupsConversation
+
 logger = logging.getLogger(__name__)
 
 SENTINEL = object()
@@ -30,6 +32,31 @@ def name_from_hangups_conversation(conv):
             names = [user.first_name for user in participants]
             return ', '.join(names)
 
+def load_missing_entrys(bot):
+    """load users and conversations that are missing on bot start into hangups
+
+    Args:
+        bot: HangupsBot instance
+    """
+    loaded_users = bot._user_list._user_dict
+    for chat_id, user_data in bot.memory["user_data"].items():
+        if any((len(chat_id) != 21,
+                not chat_id.isdigit(),
+                not isinstance(user_data, dict),
+                '_hangups' not in user_data)):
+            continue
+        user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
+        if user_id in loaded_users:
+            continue
+        user = hangups.user.User(user_id, user_data["_hangups"]["full_name"],
+                                 user_data["_hangups"]["first_name"],
+                                 user_data["_hangups"]["photo_url"],
+                                 user_data["_hangups"]["emails"], False)
+        loaded_users[user_id] = user
+
+    for conv_id in bot.conversations:
+        conv = HangupsConversation(bot, conv_id)
+        bot._conv_list._conv_dict[conv_id] = conv
 
 async def initialise(bot):
     """load cache from memory and update it with new data from hangups
@@ -46,10 +73,13 @@ async def initialise(bot):
     await permamem.load_from_hangups()
     await permamem.load_from_memory()
 
+    # set the attribute here as a HangupsConversation might needs to access it
+    bot.conversations = permamem
+    load_missing_entrys(bot)
+
     permamem.stats()
 
     bot.memory.save()
-
     return permamem
 
 
