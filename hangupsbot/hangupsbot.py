@@ -13,7 +13,6 @@ import version
 import permamem
 import tagging
 
-import hooks
 import sinks
 import plugins
 
@@ -49,8 +48,6 @@ class HangupsBot(object):
         self._conv_list = None # hangups.ConversationList
         self._user_list = None # hangups.UserList
         self._handlers = None # handlers.py::EventHandler
-
-        self._cache_event_id = {} # workaround for duplicate events
 
         self._locales = {}
 
@@ -152,7 +149,6 @@ class HangupsBot(object):
             loop = asyncio.get_event_loop()
 
             # initialise pluggable framework
-            hooks.load(self)
             sinks.start(self)
 
             # Connect to Hangouts
@@ -195,49 +191,6 @@ class HangupsBot(object):
         asyncio.async(
             self._client.disconnect()
         ).add_done_callback(lambda future: future.result())
-
-
-    def send_message(self, conversation, text, context=None, image_id=None):
-        # historical signature: conversation, text, context=None
-        if context is None:
-            context = {}
-        if "parser" not in context and image_id is None and isinstance(text, str):
-            # replicate old behaviour (no html/markdown parsing) if no new features are used
-            context["parser"] = False
-
-        asyncio.async(
-            self.coro_send_message( conversation,
-                                    text,
-                                    context=context,
-                                    image_id=image_id )
-        ).add_done_callback(lambda future: future.result())
-
-
-    def send_message_parsed(self, conversation, html, context=None, image_id=None):
-        logger.debug(  '[DEPRECATED]: yield from bot.coro_send_message()'
-                        ' instead of send_message_parsed()')
-
-        segments = simple_parse_to_segments(html)
-
-        asyncio.async(
-            self.coro_send_message( conversation,
-                                    segments,
-                                    context=context,
-                                    image_id=image_id )
-        ).add_done_callback(lambda future: future.result())
-
-
-    def send_message_segments(self, conversation, segments, context=None, image_id=None):
-        logger.debug(  '[DEPRECATED]: yield from bot.coro_send_message()'
-                        ' instead of send_message_segments()')
-
-        asyncio.async(
-            self.coro_send_message( conversation,
-                                    segments,
-                                    context=context,
-                                    image_id=image_id )
-        ).add_done_callback(lambda future: future.result())
-
 
     def list_conversations(self):
         """List all active conversations"""
@@ -388,39 +341,6 @@ class HangupsBot(object):
             for u in c.users:
                 print('    {} ({}) {}'.format(u.first_name, u.full_name, u.id_.chat_id))
 
-    def get_1on1_conversation(self, chat_id):
-        """find a 1-to-1 conversation with specified user
-        maintained for functionality with older plugins that do not use get_1to1()
-        """
-        logger.warning('[DEPRECATED]: yield from bot.get_1to1(chat_id), instead of bot.get_1on1_conversation(chat_id)')
-
-        if self.memory.exists(["user_data", chat_id, "optout"]):
-            if self.memory.get_by_path(["user_data", chat_id, "optout"]):
-                return False
-
-        conversation = None
-
-        if self.memory.exists(["user_data", chat_id, "1on1"]):
-            conversation_id = self.memory.get_by_path(["user_data", chat_id, "1on1"])
-            conversation = FakeConversation(self, conversation_id)
-            logger.info(_("memory: {} is 1on1 with {}").format(conversation_id, chat_id))
-        else:
-            for c in self.list_conversations():
-                if len(c.users) == 2:
-                    for u in c.users:
-                        if u.id_.chat_id == chat_id:
-                            conversation = c
-                            break
-
-            if conversation is not None:
-                # remember the conversation so we don't have to do this again
-                self.initialise_memory(chat_id, "user_data")
-                self.memory.set_by_path(["user_data", chat_id, "1on1"], conversation.id_)
-                self.memory.save()
-
-        return conversation
-
-
     @asyncio.coroutine
     def get_1to1(self, chat_id, context=None):
         """find/create a 1-to-1 conversation with specified user
@@ -517,15 +437,6 @@ class HangupsBot(object):
 
         return modified
 
-    def messagecontext(self, source, importance, tags):
-        return {
-            "source": source,
-            "importance": importance,
-            "tags": tags # NOT RELATED with bot.tags or tagging module
-        }
-
-    def _messagecontext_legacy(self):
-        return self.messagecontext("unknown", 50, ["legacy"])
 
     @asyncio.coroutine
     def _on_connect(self):
@@ -595,19 +506,6 @@ class HangupsBot(object):
     def _on_event(self, conv_event):
         """Handle conversation events"""
 
-        self._execute_hook("on_event", conv_event)
-
-        if self.get_config_option('workaround.duplicate-events'):
-            if conv_event.id_ in self._cache_event_id:
-                logger.warning("duplicate event {} ignored".format(conv_event.id_))
-                return
-
-            self._cache_event_id = {k: v for k, v in self._cache_event_id.items() if v > time.time()-3}
-            self._cache_event_id[conv_event.id_] = time.time()
-
-            logger.info("duplicate events workaround: event id = {} timestamp = {}".format(
-                conv_event.id_, conv_event.timestamp))
-
         event = ConversationEvent(self, conv_event)
 
         yield from self.conversations.update(self._conv_list.get(conv_event.conversation_id),
@@ -650,63 +548,9 @@ class HangupsBot(object):
 
             logger.warning("_on_event(): unrecognised event type: {}".format(type(conv_event)))
 
-
-    def _execute_hook(self, funcname, parameters=None):
-        for hook in self._hooks:
-            method = getattr(hook, funcname, None)
-            if method:
-                try:
-                    method(parameters)
-                    logger.warning('[DEPRECATED] upgrade hooks to plugins.register_handler()')
-                except Exception as e:
-                    logger.exception("HOOKS: {}".format(hook))
-
     def _on_disconnect(self):
         """Handle disconnecting"""
         logger.info('Connection lost!')
-
-    def external_send_message(self, conversation_id, text):
-        logger.warning('[DEPRECATED]: yield from bot.coro_send_message()'
-                        ' instead of external_send_message()')
-
-        self.send_html_to_conversation(conversation_id, text)
-
-    def external_send_message_parsed(self, conversation_id, html):
-        logger.warning('[DEPRECATED]: yield from bot.coro_send_message()'
-                        ' instead of external_send_message_parsed()')
-
-        self.send_html_to_conversation(conversation_id, html)
-
-    def send_html_to_conversation(self, conversation_id, html, context=None):
-        logger.debug(  '[DEPRECATED]: yield from bot.coro_send_message()'
-                        ' instead of send_html_to_conversation()')
-
-        logger.info("sending message to conversation {}".format(conversation_id))
-
-        self.send_message_parsed(conversation_id, html, context)
-
-    def send_html_to_user(self, user_id, html, context=None):
-        logger.warning('[DEPRECATED]: yield from bot.coro_send_to_user()'
-                        ' instead of bot.send_html_to_user()')
-
-        conversation = self.get_1on1_conversation(user_id)
-        if not conversation:
-            logger.warning("1-to-1 not found for {}".format(user_id))
-            return False
-
-        logger.info("sending message to user {}".format(user_id))
-        self.send_message_parsed(conversation, html, context)
-        return True
-
-    def send_html_to_user_or_conversation(self, user_id_or_conversation_id, html, context=None):
-        logger.warning('[DEPRECATED] yield from bot.coro_send_message() '
-                        ' or yield from bot.coro_send_to_user()'
-                        ' instead of send_html_to_user_or_conversation()')
-
-        # NOTE: Assumption that a conversation_id will never match a user_id
-        if not self.send_html_to_user(user_id_or_conversation_id, html, context):
-            self.send_html_to_conversation(user_id_or_conversation_id, html, context)
-
 
     @asyncio.coroutine
     def coro_send_message(self, conversation, message, context=None, image_id=None):
@@ -721,10 +565,6 @@ class HangupsBot(object):
 
         if "passthru" not in context:
             context['passthru'] = {}
-
-        if "base" not in context:
-            # default legacy context
-            context["base"] = self._messagecontext_legacy()
 
         # get the conversation id
 

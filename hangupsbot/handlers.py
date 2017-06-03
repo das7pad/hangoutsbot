@@ -94,35 +94,6 @@ class EventHandler:
         else:
             return context_fragment
 
-    """legacy helpers, pre-2.4"""
-
-    def register_object(self, id, objectref, forgiving=True):
-        """registers a shared object into bot.shared
-        historically, this function was more lenient than the actual bot function it calls
-        """
-        logger.debug(   "[LEGACY] plugins.register_shared()"
-                        " instead of handlers.register_object()")
-
-        self.bot.register_shared(id, objectref, forgiving=forgiving)
-
-    def register_user_command(self, command_names):
-        logger.debug(   "[LEGACY] plugins.register_user_command()"
-                        " instead of handlers.register_user_command()")
-
-        plugins.register_user_command(command_names)
-
-    def register_admin_command(self, command_names):
-        logger.debug(   "[LEGACY] plugins.register_admin_command()"
-                        " instead of handlers.register_admin_command()")
-
-        plugins.register_admin_command(command_names)
-
-    def get_admin_commands(self, conversation_id):
-        logger.debug(   "[LEGACY] command.get_admin_commands()"
-                        " instead of handlers.get_admin_commands()")
-
-        return command.get_admin_commands(self.bot, conversation_id)
-
     """handler core"""
 
     @asyncio.coroutine
