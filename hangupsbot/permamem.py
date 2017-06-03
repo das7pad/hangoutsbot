@@ -98,19 +98,17 @@ class ConversationMemory(object):
         logger.info("total conversations: %s", len(self.catalog))
 
         count_user = 0
-        count_user_cached = 0
-        count_user_cached_definitive = 0
+        count_user_definitive = 0
         for chat_id in self.bot.memory["user_data"]:
-            count_user = count_user + 1
             if "_hangups" not in self.bot.memory["user_data"][chat_id]:
                 continue
-            count_user_cached = count_user_cached + 1
+            count_user = count_user + 1
             if (self.bot.memory["user_data"][chat_id]["_hangups"]
                     ["is_definitive"]):
-                count_user_cached_definitive = count_user_cached_definitive + 1
+                count_user_definitive += 1
 
-        logger.info("total users: %s | cached: %s | definitive at start: %s",
-                    count_user, count_user_cached, count_user_cached_definitive)
+        logger.info("total users: %s | definitive at start: %s",
+                    count_user, count_user_definitive)
 
     async def standardise_memory(self):
         """ensure the latest conversation memory structure
