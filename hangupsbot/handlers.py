@@ -9,6 +9,7 @@ import hangups
 
 import plugins
 from commands import command
+from exceptions import HangupsBotExceptions
 
 
 logger = logging.getLogger(__name__)
@@ -47,23 +48,34 @@ class EventHandler:
                              {},
                              forgiving=True )
 
-    def register_handler(self, function, type="message", priority=50):
-        """registers extra event handlers"""
-        if type in ["allmessages", "call", "membership", "message", "rename", "history", "typing", "watermark"]:
-            if not asyncio.iscoroutine(function):
-                # transparently convert into coroutine
-                function = asyncio.coroutine(function)
-        elif type in ["sending"]:
-            if asyncio.iscoroutine(function):
-                raise RuntimeError("{} handler cannot be a coroutine".format(type))
-        else:
-            raise ValueError("unknown event type for handler: {}".format(type))
+    def register_handler(self, function, pluggable="message", priority=50,
+                         **kwargs):
+        """register an event handler
 
-        current_plugin = plugins.tracking.current()
-        self.pluggables[type].append((function, priority, current_plugin["metadata"]))
-        self.pluggables[type].sort(key=lambda tup: tup[1])
+        Args:
+            function: callable, the handling function/coro
+            pluggable: string, a pluggable of .pluggables
+            priority: int, lower priorities receive the event earlier
+            kwargs: dict, legacy to catch the positional argument 'type'
 
-        plugins.tracking.register_handler(function, type, priority)
+        Raises:
+            KeyError: unknown pluggable specified
+        """
+        if 'type' in kwargs:
+            pluggable = kwargs['type']
+            logger.warning('The positional argument "type" will be removed at '
+                           'any time soon.', stack_info=True)
+
+        # a handler may use not all args or kwargs, inspect now and filter later
+        expected = inspect.signature(function).parameters
+        names = list(expected)
+
+        current_plugin = plugins.tracking.current
+        self.pluggables[pluggable].append(
+            (function, priority, current_plugin["metadata"], expected, names))
+        # sort by priority
+        self.pluggables[pluggable].sort(key=lambda tup: tup[1])
+        plugins.tracking.register_handler(function, pluggable, priority)
 
     def register_passthru(self, variable):
         _id = str(uuid.uuid4())
@@ -296,53 +308,60 @@ class EventHandler:
         """handle watermark updates"""
         yield from self.run_pluggable_omnibus("watermark", self.bot, event, command)
 
-    @asyncio.coroutine
-    def run_pluggable_omnibus(self, name, *args, **kwargs):
-        if name in self.pluggables:
-            try:
-                for function, priority, plugin_metadata in self.pluggables[name]:
-                    message = ["{}: {}.{}".format(
-                                name,
-                                plugin_metadata["module.path"],
-                                function.__name__)]
+    async def run_pluggable_omnibus(self, name, *args, **kwargs):
+        """forward args to a group of handler which were registered for the name
 
-                    try:
-                        """accepted handler signatures:
-                        coroutine(bot, event, command)
-                        coroutine(bot, event)
-                        function(bot, event, context)
-                        function(bot, event)
-                        """
-                        _expected = list(inspect.signature(function).parameters)
-                        _passed = args[0:len(_expected)]
-                        if asyncio.iscoroutinefunction(function):
-                            message.append("coroutine")
-                            logger.debug(" : ".join(message))
-                            yield from function(*_passed)
-                        else:
-                            message.append("function")
-                            logger.debug(" : ".join(message))
-                            function(*_passed)
-                    except self.bot.Exceptions.SuppressHandler:
-                        # skip this pluggable, continue with next
-                        message.append("SuppressHandler")
-                        logger.debug(" : ".join(message))
-                        pass
-                    except (self.bot.Exceptions.SuppressEventHandling,
-                            self.bot.Exceptions.SuppressAllHandlers):
-                        # skip all pluggables, decide whether to handle event at next level
-                        raise
-                    except:
-                        message = " : ".join(message)
-                        logger.exception(message)
+        Args:
+            name: string, a key in .pluggables
+            args: tuple, positional arguments for each handler
+            kwargs: dict, keyword arguments for each handler
 
-            except self.bot.Exceptions.SuppressAllHandlers:
-                # skip all other pluggables, but let the event continue
-                message.append("SuppressAllHandlers")
-                logger.debug(" : ".join(message))
+        Raises:
+            KeyError: unknown pluggable specified
+            HangupsBotExceptions.SuppressEventHandling: do not handle further
+        """
+        try:
+            for function, dummy, meta, expected, names in self.pluggables[name]:
+                message = ["%s: %s.%s" % (name, meta['module.path'],
+                                          function.__name__)]
 
-            except:
-                raise
+                try:
+                    # a handler may use not all args or kwargs, filter here
+                    positional = (args[num] for num in range(len(args))
+                                  if (len(names) > num and (
+                                      expected[names[num]].default ==
+                                      inspect.Parameter.empty or
+                                      names[num] not in kwargs)))
+                    keyword = {key: value for key, value in kwargs.items()
+                               if key in names}
+
+                    logger.debug(message[0])
+                    result = function(*positional, **keyword)
+                    if asyncio.iscoroutinefunction(function):
+                        await result
+                except HangupsBotExceptions.SuppressHandler:
+                    # skip this pluggable, continue with next
+                    message.append("SuppressHandler")
+                    logger.debug(" : ".join(message))
+                except (HangupsBotExceptions.SuppressEventHandling,
+                        HangupsBotExceptions.SuppressAllHandlers):
+                    # handle requested to skip all pluggables
+                    raise
+                except:
+                    # exception is not related to the handling of this
+                    # pluggable, log and continue with the next one
+                    logger.exception(" : ".join(message))
+
+        except HangupsBotExceptions.SuppressAllHandlers:
+            # skip all other pluggables, but let the event continue
+            message.append("SuppressAllHandlers")
+            logger.debug(" : ".join(message))
+
+        except HangupsBotExceptions.SuppressEventHandling:
+            # handle requested to do not handle the event at all, skip all
+            # handler and do not continue with event handling in the parent
+            raise
+
 
 class HandlerBridge:
     """shim for xmikosbot handler decorator"""
