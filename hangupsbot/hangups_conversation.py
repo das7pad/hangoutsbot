@@ -114,6 +114,16 @@ class HangupsConversation(hangups.conversation.Conversation):
 
         super().__init__(self._client, self._user_list, conversation, [])
 
+    @property
+    def name(self):
+        """get the custom title or gernerate one from participant names
+
+        Returns:
+            string
+        """
+        live = self._conversation.name
+        return live or self.bot.conversations.get_name(self)
+
     @asyncio.coroutine
     def send_message(self, message, image_id=None, otr_status=None, context=None):
 
