@@ -15,8 +15,6 @@ import tagging
 
 import sinks
 import plugins
-
-from event import (TypingEvent, WatermarkEvent, ConversationEvent)
 from hangups_conversation import (HangupsConversation, FakeConversation)
 
 from commands import command
@@ -474,79 +472,11 @@ class HangupsBot(object):
         plugins.load(self, "commands.loggertochat")
         plugins.load_user_plugins(self)
 
-        self._conv_list.on_event.add_observer(self._on_event)
-        self._client.on_state_update.add_observer(self._on_status_changes)
+        self._conv_list.on_event.add_observer(self._handlers.handle_event)
+        self._client.on_state_update.add_observer(
+            self._handlers.handle_status_change)
 
         logger.info("bot initialised")
-
-
-    def _on_status_changes(self, state_update):
-        notification_type = state_update.WhichOneof('state_update')
-        if notification_type == 'typing_notification':
-            asyncio.async(
-                self._handlers.handle_typing_notification(
-                    TypingEvent(self, state_update.typing_notification)
-                )
-            ).add_done_callback(lambda future: future.result())
-        elif notification_type == 'watermark_notification':
-            asyncio.async(
-                self._handlers.handle_watermark_notification(
-                    WatermarkEvent(self, state_update.watermark_notification)
-                )
-            ).add_done_callback(lambda future: future.result())
-        elif notification_type == 'event_notification':
-            """
-            XXX: Unsupported State Updates (state_update):
-            re: https://github.com/tdryer/hangups/blob/9a27ecd0cbfd94acf8959e89c52ac3250c920a1f/hangups/hangouts.proto#L1034
-            """
-            pass
-
-
-    @asyncio.coroutine
-    def _on_event(self, conv_event):
-        """Handle conversation events"""
-
-        event = ConversationEvent(self, conv_event)
-
-        yield from self.conversations.update(self._conv_list.get(conv_event.conversation_id),
-                                             source="event")
-
-        if isinstance(conv_event, hangups.ChatMessageEvent):
-            self._execute_hook("on_chat_message", event)
-            asyncio.async(
-                self._handlers.handle_chat_message(event)
-            ).add_done_callback(lambda future: future.result())
-
-        elif isinstance(conv_event, hangups.MembershipChangeEvent):
-            self._execute_hook("on_membership_change", event)
-            asyncio.async(
-                self._handlers.handle_chat_membership(event)
-            ).add_done_callback(lambda future: future.result())
-
-        elif isinstance(conv_event, hangups.RenameEvent):
-            self._execute_hook("on_rename", event)
-            asyncio.async(
-                self._handlers.handle_chat_rename(event)
-            ).add_done_callback(lambda future: future.result())
-
-        elif isinstance(conv_event, hangups.OTREvent):
-            asyncio.async(
-                self._handlers.handle_chat_history(event)
-            ).add_done_callback(lambda future: future.result())
-
-        elif type(conv_event) is hangups.conversation_event.HangoutEvent:
-            asyncio.async(
-                self._handlers.handle_call(event)
-            ).add_done_callback(lambda future: future.result())
-
-        else:
-            """
-            XXX: Unsupported Events:
-            * GroupLinkSharingModificationEvent
-            re: https://github.com/tdryer/hangups/blob/master/hangups/conversation_event.py
-            """
-
-            logger.warning("_on_event(): unrecognised event type: {}".format(type(conv_event)))
 
     def _on_disconnect(self):
         """Handle disconnecting"""
