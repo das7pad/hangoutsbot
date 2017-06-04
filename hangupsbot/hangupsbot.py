@@ -228,52 +228,28 @@ class HangupsBot(object):
         return HangupsConversation(self, conv_id)
 
     def get_hangups_user(self, user_id):
-        hangups_user = False
+        """get a user from the user list
 
-        if isinstance(user_id, str):
-            chat_id = user_id
-            gaia_id = user_id
-        else:
-            chat_id = user_id.chat_id
-            gaia_id = user_id.gaia_id
+        Args:
+            user_id: string, G+ user id; or hangups.user.UserID like object
 
-        UserID = hangups.user.UserID(chat_id=chat_id, gaia_id=gaia_id)
+        Returns:
+            a hangups.user.User instance from cached data or a fallback user
+        """
+        if not isinstance(user_id, hangups.user.UserID):
+            chat_id = None
+            # ensure a G+ ID as chat_id
+            if isinstance(user_id, str) and len(user_id) == 21:
+                chat_id = user_id
+            elif hasattr(user_id, 'chat_id'):
+                return self.get_hangups_user(user_id.chat_id)
+            user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
 
-        """from hangups, if it exists"""
-        if not hangups_user:
-            try:
-                hangups_user = self._user_list._user_dict[UserID]
-                hangups_user.definitionsource = "hangups"
-            except KeyError as e:
-                pass
+        user = self._user_list.get_user(user_id)
 
-        """from permanent conversation user/memory"""
-        if not hangups_user:
-            if self.memory.exists(["user_data", chat_id, "_hangups"]):
-                _cached = self.memory.get_by_path(["user_data", chat_id, "_hangups"])
-
-                hangups_user = hangups.user.User(
-                    UserID,
-                    _cached["full_name"],
-                    _cached["first_name"],
-                    _cached["photo_url"],
-                    _cached["emails"],
-                    _cached["is_self"] )
-                hangups_user.definitionsource = "permamem"
-
-        """if all else fails, create an "unknown" user"""
-        if not hangups_user:
-            hangups_user = hangups.user.User(
-                UserID,
-                "unknown user",
-                None,
-                None,
-                [],
-                False )
-            hangups_user.definitionsource = False
-
-        return hangups_user
-
+        user.is_default = user.name_type == hangups.user.NameType.DEFAULT
+        user.definitionsource = None if user.is_default else "hangups"
+        return user
 
     def get_users_in_conversation(self, conv_ids):
         """list all unique users in supplied conv_id or list of conv_ids"""
