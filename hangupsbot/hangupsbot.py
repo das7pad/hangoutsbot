@@ -608,6 +608,23 @@ class HangupsBot(object):
 
         return myself
 
+    def __getattr__(self, attr):
+        """bridge base requests to the hangups client
+
+        Args:
+            attr: string, method name of hangups.client.Client
+
+        Returns:
+            callable, the requested method if it is not private
+
+        Raises:
+            NotImplementedError: the method is private or not implemented
+        """
+        if attr and attr[0] != "_" and hasattr(self._client, attr):
+            return getattr(self._client, attr)
+        raise NotImplementedError()
+
+
 def configure_logging(args):
     """Configure Logging
 
