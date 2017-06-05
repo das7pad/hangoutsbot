@@ -5,6 +5,7 @@ import hangups
 
 import hangups_shim
 from exceptions import HangupsBotExceptions
+from hangups_conversation import HangupsConversation
 
 import config
 import handlers
@@ -15,7 +16,6 @@ import tagging
 
 import sinks
 import plugins
-from hangups_conversation import (HangupsConversation, FakeConversation)
 
 from commands import command
 from permamem import conversation_memory
@@ -225,12 +225,6 @@ class HangupsBot(object):
 
         return convs
 
-    def get_hangups_conversation(self, conv_id):
-        if isinstance(conv_id, (FakeConversation, hangups.conversation.Conversation)):
-            conv_id = conv_id.id_
-
-        return HangupsConversation(self, conv_id)
-
     def get_hangups_user(self, user_id):
         """get a user from the user list
 
@@ -311,13 +305,6 @@ class HangupsBot(object):
         except KeyError:
             pass
         return value
-
-    def print_conversations(self):
-        print('Conversations:')
-        for c in self.list_conversations():
-            print('  {} ({}) u:{}'.format(self.conversations.get_name(c), c.id_, len(c.users)))
-            for u in c.users:
-                print('    {} ({}) {}'.format(u.first_name, u.full_name, u.id_.chat_id))
 
     async def get_1to1(self, chat_id, context=None, force=False):
         """find or create a 1-to-1 conversation with specified user
@@ -470,8 +457,7 @@ class HangupsBot(object):
             context['passthru'] = {}
 
         # get the conversation id
-
-        if isinstance(conversation, (FakeConversation, hangups.conversation.Conversation)):
+        if hasattr(conversation, "id_"):
             conversation_id = conversation.id_
         elif isinstance(conversation, str):
             conversation_id = conversation
@@ -497,9 +483,8 @@ class HangupsBot(object):
         for response in broadcast_list:
             logger.debug("message sending: {}".format(response[0]))
 
-            # send messages using FakeConversation as a workaround
-
-            _fc = FakeConversation(self, response[0])
+            # use a fake Hangups Conversation having a fallback to permamem
+            conv = HangupsConversation(self, response[0])
 
             try:
                 yield from _fc.send_message( response[1],
