@@ -7,6 +7,8 @@ import logging
 import re
 import time
 
+import hangups
+
 import plugins
 
 logger = logging.getLogger(__name__)
@@ -445,7 +447,10 @@ class CommandDispatcher(object):
             text = "<i><b>%s</b> %s</i>" % (command_name, type(err).__name__)
 
         else:
-            if isinstance(result, str):
+            if (isinstance(result, str) or
+                    (isinstance(result, list) and
+                     all([isinstance(item, hangups.ChatMessageSegment)
+                          for item in result]))):
                 text = result
             elif isinstance(result, tuple) and len(result) == 2:
                 conv_id, text = result
@@ -455,7 +460,7 @@ class CommandDispatcher(object):
             else:
                 return result
 
-        await bot.coro_send_message(conv_id, text.strip(), context=context)
+        await bot.coro_send_message(conv_id, text, context=context)
 
     def register(self, *args, admin=False, tags=None, final=False, name=None):
         """Decorator for registering command"""
