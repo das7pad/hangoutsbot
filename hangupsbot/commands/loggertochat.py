@@ -11,7 +11,7 @@ def _initialise(bot):
     rootLogger = logging.getLogger()
     for handler in rootLogger.handlers:
         if handler.__class__.__name__ == "ChatMessageLogger":
-            logger.info("ChatMessageLogger already attached") 
+            logger.info("ChatMessageLogger already attached")
             return
 
     chatHandler = ChatMessageLogger(bot)
@@ -44,7 +44,7 @@ def logconfig(bot, event, loggername, level):
         if effective_level == 0:
             if loggername in config_logging:
                 del config_logging[loggername]
-            message = "logging: {} disabled".format(loggername, effective_level)
+            message = "logging: {} disabled".format(effective_level)
 
         else:
             if loggername in config_logging:
@@ -63,7 +63,7 @@ def logconfig(bot, event, loggername, level):
     else:
         message = "logging: {} not found".format(loggername)
 
-    yield from bot.coro_send_message(event.conv_id, message)
+    return message
 
 
 def lograise(bot, event, *args):
@@ -109,6 +109,4 @@ class ChatMessageLogger(logging.Handler):
         message = self.format(record)
         convs = self.bot.conversations.get("tag:receive-logs")
         for conv_id in convs.keys():
-            asyncio.async(
-                self.bot.coro_send_message(conv_id, message)
-            ).add_done_callback(lambda future: future.result())
+            asyncio.ensure_future(self.bot.coro_send_message(conv_id, message))

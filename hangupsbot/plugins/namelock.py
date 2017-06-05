@@ -18,8 +18,7 @@ def _initialise(bot):
     plugins.register_admin_command(["topic"])
 
 
-@asyncio.coroutine
-def _watch_rename(bot, event, command):
+async def _watch_rename(bot, event, command):
 
     memory_topic_path = ["conv_data", event.conv_id, "topic"]
 
@@ -57,15 +56,14 @@ def _watch_rename(bot, event, command):
                              event.conv_event.new_name,
                              topic ))
 
-            yield from command.run(bot, event, *["convrename", "id:" + event.conv_id, topic])
+            await command.run(bot, event, *["convrename", "id:" + event.conv_id, topic])
 
 
-def topic(bot, event, *args):
+async def topic(bot, event, *args):
     """locks a conversation title. if no parameters supplied, clear and unlock the title"""
 
     topic = ' '.join(args).strip()
 
-    bot.initialise_memory(event.conv_id, "conv_data")
     bot.memory.set_by_path(["conv_data", event.conv_id, "topic"], topic)
     bot.memory.save()
 
@@ -77,7 +75,7 @@ def topic(bot, event, *args):
         message = _("Setting topic to '{}'").format(topic)
         logger.info("topic for {} set to: {}".format(event.conv_id, topic))
 
-    yield from bot.coro_send_message(event.conv, message)
-
     """Rename Hangout"""
-    yield from command.run(bot, event, *["convrename", "id:" + event.conv_id, topic])
+    await command.run(bot, event, *["convrename", "id:" + event.conv_id, topic])
+
+    return message

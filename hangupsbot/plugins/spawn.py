@@ -89,7 +89,7 @@ _MAP_MATCH = None
 
 def _initialize(bot):
     bot.spawn_lock = asyncio.Lock()
-    config = bot.get_config_option("spawn")
+    config = bot.config.get_option("spawn")
     if not config:
         return
 
@@ -117,7 +117,7 @@ def _expire_old_pins():
     _MAP_PINS = {key:_MAP_PINS[key] for key in _MAP_PINS if _MAP_PINS[key]["expires"] > now}
 
 
-def _location_handler(dummy_bot, event):
+async def _location_handler(dummy_bot, event):
     """Save any urls that look like maps for latter pin/location requests"""
     if event.user.is_self:
         return
@@ -130,7 +130,7 @@ def _location_handler(dummy_bot, event):
         _expire_old_pins()
 
 
-def _spawn(bot, event, *args):
+async def _spawn(bot, event, *args):
     """Execute a generic command"""
     config = bot.get_config_suboption(event.conv_id, "spawn")
     cmd_config = config["commands"][event.command_name.lower()]
@@ -141,7 +141,7 @@ def _spawn(bot, event, *args):
 
     executable = cmd_config.get("command")
     if not executable:
-        yield from bot.coro_send_message(event.conv_id, "Not configured")
+        await bot.coro_send_message(event.conv_id, "Not configured")
         return
 
     if cmd_config.get("allow_args"):
@@ -165,15 +165,15 @@ def _spawn(bot, event, *args):
 
     environment.update(dict(os.environ))
 
-    proc = yield from asyncio.create_subprocess_exec(*executable, stdout=PIPE, stderr=PIPE,
+    proc = await asyncio.create_subprocess_exec(*executable, stdout=PIPE, stderr=PIPE,
                                                      env=environment)
 
-    (stdout_data, stderr_data) = yield from proc.communicate()
+    (stdout_data, stderr_data) = await proc.communicate()
     stdout_str = stdout_data.decode().rstrip()
     stderr_str = stderr_data.decode().rstrip()
 
     if len(stderr_str) > 0:
-        yield from bot.coro_send_to_user_and_conversation(
+        await bot.coro_send_to_user_and_conversation(
             event.user.id_.chat_id, event.conv_id, stderr_str)
     if len(stdout_str) > 0:
-        yield from bot.coro_send_message(event.conv_id, stdout_str)
+        await bot.coro_send_message(event.conv_id, stdout_str)

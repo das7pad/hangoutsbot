@@ -1,3 +1,4 @@
+# TODO(das7pad) refactor needed
 import logging
 
 import plugins
@@ -50,7 +51,7 @@ def plugininfo(bot, event, *args):
             """handlers"""
             if len(plugin["handlers"]) > 0:
                 lines.append("<b>handlers:</b>")
-                lines.append("<br />".join([ "... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
+                lines.append("\n".join([ "... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
 
             """shared"""
             if len(plugin["shared"]) > 0:
@@ -66,8 +67,8 @@ def plugininfo(bot, event, *args):
                 from sinks import aiohttp_list
                 filtered = aiohttp_list(plugin["aiohttp.web"])
                 if len(filtered) > 0:
-                    lines.append('<br />'.join([ '... {}'.format(constructors[0].sockets[0].getsockname())
-                                                 for constructors in filtered ]))
+                    lines.append('\n'.join(['... {}'.format(constructors[0].sockets[0].getsockname())
+                                            for constructors in filtered]))
                 else:
                     lines.append('<em>no running aiohttp.web listeners</em>')
 
@@ -95,38 +96,42 @@ def plugininfo(bot, event, *args):
                               ", ".join(plugin["commands"]["argument.preprocessors"]) )
 
         if len(lines) > 0:
-            text_plugins.append("<br />".join(lines))
+            text_plugins.append("\n".join(lines))
 
     if len(text_plugins) > 0:
-        message = "<br />".join(text_plugins)
+        message = "\n".join(text_plugins)
     else:
         message = "nothing to display"
 
-    yield from bot.coro_send_message(event.conv_id, message)
+    return message
 
 
 @command.register(admin=True)
-def pluginunload(bot, event, *args):
+async def pluginunload(bot, event, *args):
     """unloads a previously unloaded plugin, requires plugins. prefix"""
 
     if args:
         module_path = args[0]
 
         try:
-            yield from plugins.unload(bot, module_path)
+            await plugins.unload(bot, module_path)
             message = "<b><pre>{}</pre>: unloaded</b>".format(module_path)
 
-        except (RuntimeError, KeyError) as e:
-            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path, str(e))
+        except KeyError:
+            message = "<b>{}: not found</b>".format(module_path)
+
+        except RuntimeError as err:
+            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path,
+                                                                   str(err))
 
     else:
         message = "<b>module path required</b>"
 
-    yield from bot.coro_send_message(event.conv_id, message)
+    await bot.coro_send_message(event.conv_id, message)
 
 
 @command.register(admin=True)
-def pluginload(bot, event, *args):
+async def pluginload(bot, event, *args):
     """loads a previously unloaded plugin, requires plugins. prefix"""
 
     if args:
@@ -138,36 +143,42 @@ def pluginload(bot, event, *args):
             else:
                 message = "<b><pre>{}</pre>: failed</b>".format(module_path)
 
-        except RuntimeError as e:
-            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path, str(e))
+        except RuntimeError as err:
+            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path,
+                                                                   str(err))
 
     else:
         message = "<b>module path required</b>"
 
-    yield from bot.coro_send_message(event.conv_id, message)
+    await bot.coro_send_message(event.conv_id, message)
 
 
 @command.register(admin=True)
-def pluginreload(bot, event, *args):
+async def pluginreload(bot, event, *args):
     """reloads a previously loaded plugin, requires plugins. prefix"""
 
     if args:
         module_path = args[0]
 
         try:
-            yield from plugins.unload(bot, module_path)
+            await plugins.unload(bot, module_path)
             if plugins.load(bot, module_path):
                 message = "<b><pre>{}</pre>: reloaded</b>".format(module_path)
             else:
-                message = "<b><pre>{}</pre>: failed reload</b>".format(module_path)
+                message = "<b><pre>{}</pre>: failed reload</b>".format(
+                    module_path)
 
-        except (RuntimeError, KeyError) as e:
-            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path, str(e))
+        except KeyError:
+            message = "<b>{}: not found</b>".format(module_path)
+
+        except RuntimeError as err:
+            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path,
+                                                                   str(err))
 
     else:
         message = "<b>module path required</b>"
 
-    yield from bot.coro_send_message(event.conv_id, message)
+    await bot.coro_send_message(event.conv_id, message)
 
 
 @command.register(admin=True)
@@ -176,10 +187,7 @@ def getplugins(bot, event, *args):
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "this command only works with manually-configured plugins key in config.json")
-        return
+        return "this command only works with manually-configured plugins key in config.json"
 
     lines = []
     all_plugins = plugins.retrieve_all_plugins(allow_underscore=True) or []
@@ -196,7 +204,7 @@ def getplugins(bot, event, *args):
         if _plugin not in loaded_plugins:
             lines.append("* {}".format(_plugin.replace("_", "\\_")))
 
-    yield from bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return "\n".join(lines)
 
 
 def _strip_plugin_path(path):
@@ -205,15 +213,12 @@ def _strip_plugin_path(path):
 
 
 @command.register(admin=True)
-def removeplugin(bot, event, plugin, *args):
+async def removeplugin(bot, event, plugin, *args):
     """unloads a plugin from the bot and removes it from the config, does not require plugins. prefix"""
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "this command only works with manually-configured plugins key in config.json")
-        return
+        return "this command only works with manually-configured plugins key in config.json"
 
     lines = []
     loaded_plugins = plugins.get_configured_plugins(bot) or []
@@ -224,22 +229,16 @@ def removeplugin(bot, event, plugin, *args):
     plugin = _strip_plugin_path(plugin)
 
     if not plugin:
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "invalid plugin name")
-        return
+        return "invalid plugin name"
 
     if plugin not in all_plugins:
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "plugin does not exist: {}".format(plugin.replace("_", "\\_")) )
-        return
+        return "plugin does not exist: {}".format(plugin.replace("_", "\\_"))
 
     if plugin in loaded_plugins:
         try:
             module_path = "plugins.{}".format(plugin)
             escaped_module_path = module_path.replace("_", "\\_")
-            yield from plugins.unload(bot, module_path)
+            await plugins.unload(bot, module_path)
             lines.append('* **unloaded: {}**'.format(escaped_module_path))
         except (RuntimeError, KeyError) as e:
             lines.append('* error unloading {}: {}'.format(escaped_module_path, str(e)))
@@ -257,19 +256,16 @@ def removeplugin(bot, event, plugin, *args):
     if len(lines) == 1:
         lines = [ "no action was taken for {}".format(plugin.replace("_", "\\_")) ]
 
-    yield from bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return "\n".join(lines)
 
 
 @command.register(admin=True)
-def addplugin(bot, event, plugin, *args):
+async def addplugin(bot, event, plugin, *args):
     """loads a plugin on the bot and adds it to the config, does not require plugins. prefix"""
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "this command only works with manually-configured plugins key in config.json" )
-        return
+        return "this command only works with manually-configured plugins key in config.json"
 
     lines = []
     loaded_plugins = plugins.get_configured_plugins(bot) or []
@@ -278,16 +274,10 @@ def addplugin(bot, event, plugin, *args):
     plugin = _strip_plugin_path(plugin)
 
     if not plugin:
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "invalid plugin name")
-        return
+        return "invalid plugin name"
 
     if plugin not in all_plugins:
-        yield from bot.coro_send_message(
-            event.conv_id,
-            "plugin does not exist: {}".format(plugin.replace("_", "\\_")) )
-        return
+        return "plugin does not exist: {}".format(plugin.replace("_", "\\_"))
 
     lines.append("**add plugin: {}**".format(plugin.replace("_", "\\_")))
 
@@ -312,4 +302,4 @@ def addplugin(bot, event, plugin, *args):
         bot.config.save()
         lines.append('* **added to config.json**')
 
-    yield from bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return "\n".join(lines)

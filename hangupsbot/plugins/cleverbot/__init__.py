@@ -46,8 +46,7 @@ def _initialise(bot):
     plugins.register_admin_command(["chatreset"])
 
 
-@asyncio.coroutine
-def _handle_incoming_message(bot, event, command):
+async def _handle_incoming_message(bot, event, command):
     """setting a global or per-conv cleverbot_percentage_replies config key
     will make this plugin intercept random messages to be sent to cleverbot"""
 
@@ -60,7 +59,7 @@ def _handle_incoming_message(bot, event, command):
     percentage = bot.get_config_suboption(event.conv_id, 'cleverbot_percentage_replies')
 
     if randrange(0, 101, 1) < float(percentage):
-        yield from chat(bot, event)
+        await chat(bot, event)
 
 
 def _get_cw_for_chat(bot, event):
@@ -100,8 +99,7 @@ def chat(bot, event, *args):
     if not cw:
         response = "API key not defined: config.cleverbot_api_key"
         logger.error(response)
-        yield from bot.coro_send_message(event.conv_id, response)
-        return
+        return response
 
     if args:
         input_text = " ".join(args)
@@ -112,7 +110,7 @@ def chat(bot, event, *args):
     # see https://github.com/edwardslabs/cleverwrap.py for more information
     response = cw.say(input_text)
 
-    yield from bot.coro_send_message(event.conv_id, response)
+    return response
 
 
 def chatreset(bot, event, *args):
@@ -121,4 +119,4 @@ def chatreset(bot, event, *args):
     cw = _get_cw_for_chat(bot, event)
     if cw:
         cw.reset()
-    yield from bot.coro_send_message(event.conv_id, "cleverbot has been reset!")
+    return "cleverbot has been reset!"

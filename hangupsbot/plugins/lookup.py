@@ -17,12 +17,10 @@ def lookup(bot, event, *args):
     """find keywords in a specified spreadsheet"""
 
     if not bot.get_config_suboption(event.conv_id, 'spreadsheet_enabled'):
-        yield from bot.coro_send_message(event.conv, _("Spreadsheet function disabled"))
-        return
+        return _("Spreadsheet function disabled")
 
     if not bot.get_config_suboption(event.conv_id, 'spreadsheet_url'):
-        yield from bot.coro_send_message(event.conv, _("Spreadsheet URL not set"))
-        return
+        return _("Spreadsheet URL not set")
 
     spreadsheet_url = bot.get_config_suboption(event.conv_id, 'spreadsheet_url')
     table_class = "waffle" # Name of table class to search. Note that 'waffle' seems to be the default for all spreadsheets
@@ -34,7 +32,7 @@ def lookup(bot, event, *args):
         counter_max = 5
         keyword = ' '.join(args)
 
-    htmlmessage = _('Results for keyword <b>{}</b>:<br />').format(keyword)
+    htmlmessage = _('Results for keyword <b>{}</b>:\n').format(keyword)
 
     logger.debug("{0} ({1}) has requested to lookup '{2}'".format(event.user.full_name, event.user.id_.chat_id, keyword))
 
@@ -68,10 +66,10 @@ def lookup(bot, event, *args):
 
             if keyword_raw in cellcontent_raw or keyword_ascii in cellcontent_ascii:
                 if counter < counter_max:
-                    htmlmessage += _('<br />Row {}: ').format(counter+1)
+                    htmlmessage += _('\nRow {}: ').format(counter+1)
                     for datapoint in row:
                         htmlmessage += '{} | '.format(datapoint)
-                    htmlmessage += '<br />'
+                    htmlmessage += '\n'
                     counter += 1
                     break # prevent multiple subsequent cell matches appending identical rows
                 else:
@@ -79,11 +77,11 @@ def lookup(bot, event, *args):
                     counter += 1
 
     if counter > counter_max:
-        htmlmessage += _('<br />{0} rows found. Only returning first {1}.').format(counter, counter_max)
+        htmlmessage += _('\n{0} rows found. Only returning first {1}.').format(counter, counter_max)
         if counter_max == 5:
-            htmlmessage += _('<br />Hint: Use <b>/bot lookup <{0} {1}</b> to view {0} rows').format(counter_max*2, keyword)
+            htmlmessage += _('\nHint: Use <b>/bot lookup <{0} {1}</b> to view {0} rows').format(counter_max*2, keyword)
 
     if counter == 0:
         htmlmessage += _('No match found')
 
-    yield from bot.coro_send_message(event.conv, htmlmessage)
+    return htmlmessage

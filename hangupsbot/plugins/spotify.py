@@ -4,14 +4,8 @@ Creates a Spotify playlist per chat and adds music automatically by listening
 for YouTube, Soundcloud, and Spotify links (or manually with a Spotify query).
 """
 
-import aiohttp
-import asyncio
-import io
-import json
 import logging
-import os
 import re
-import plugins
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError as YouTubeHTTPError
@@ -22,6 +16,7 @@ import soundcloud
 import spotipy
 import spotipy.util
 
+import plugins
 
 logger = logging.getLogger(__name__)
 
@@ -45,18 +40,16 @@ def _initialise():
     plugins.register_user_command(["spotify"])
 
 
-@asyncio.coroutine
-def _watch_for_music_link(bot, event, command):
+async def _watch_for_music_link(bot, event, command):
     if event.user.is_self:
         return
 
     # Start with Spotify off.
     enabled = bot.conversation_memory_get(event.conv_id, "spotify_enabled")
     if enabled == None:
-        bot.conversation_memory_set(event.conv_id, "spotify_enabled", False)
         return
 
-    if not enabled or "/bot" in event.text:
+    if "/bot" in event.text:
         return
 
     links = extract_music_links(event.text)
@@ -84,7 +77,7 @@ def _watch_for_music_link(bot, event, command):
             else:
                 success = _("<em>Unable to get the song title :(</em>")
 
-        yield from bot.coro_send_message(event.conv.id_, success)
+        await bot.coro_send_message(event.conv.id_, success)
 
 
 def spotify(bot, event, *args):
@@ -136,7 +129,7 @@ def spotify(bot, event, *args):
             query = " ".join(args)
             result = add_to_spotify(bot, event, query)
 
-    yield from bot.coro_send_message(event.conv_id, result)
+    return result
 
 
 def extract_music_links(text):
@@ -206,8 +199,8 @@ def _clean(query):
     # Blacklists.
     bl_exact = ["official", "audio", "audio\s+stream", "lyric", "lyrics",
                 "with\s+lyrics?", "explicit", "clean", "explicit\s+version",
-                "clean\s+version", "original\s+version", "hq", "hd", "mv", "m/v",
-                "interscope", "4ad"]
+                "clean\s+version", "original\s+version", "hq", "hd", "mv",
+                "m/v", "interscope", "4ad"]
     bl_following = ["official\s+video", "official\s+music", "official\s+audio",
                     "official\s+lyric", "official\s+lyrics", "official\s+clip",
                     "video\s+lyric", "video\s+lyrics", "video\s+clip",
@@ -326,8 +319,8 @@ def title_from_youtube(bot, url):
 
     # YouTube response is JSON.
     try:
-        response = youtube_client.videos().list(part="snippet",
-                                                id=video_id).execute()
+        response = youtube_client.videos().list(    # pylint: disable=no-member
+            part="snippet", id=video_id).execute()
         items = response.get("items", [])
         if items:
             return items[0]["snippet"]["title"]

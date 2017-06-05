@@ -1,13 +1,25 @@
-import aiohttp, asyncio, io, logging, os, re, urllib.request, json, datetime
+
+import io
+import logging
+import os
+import re
+import urllib.error
+import urllib.request
+
+import json
+import datetime
+
+import aiohttp
 from TwitterAPI import TwitterAPI
 from bs4 import BeautifulSoup
 import plugins
 
 logger = logging.getLogger(__name__)
+
 def prettydate(diff):
     s = diff.seconds
     if diff.days > 7 or diff.days < 0:
-        return d.strftime('%d %b %y')
+        return diff.strftime('%d %b %y')
     elif diff.days == 1:
         return '1 day ago'
     elif diff.days > 1:
@@ -19,11 +31,11 @@ def prettydate(diff):
     elif s < 120:
         return '1 minute ago'
     elif s < 3600:
-        return '{} minutes ago'.format(round(s/60),1)
+        return '{} minutes ago'.format(round(s/60))
     elif s < 7200:
         return '1 hour ago'
     else:
-        return '{} hours ago'.format(round(s/3600),1)
+        return '{} hours ago'.format(round(s/3600))
 
 def _initialise(bot):
   plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])
@@ -35,7 +47,7 @@ def twittersecret(bot, event, secret):
     bot.memory.set_by_path(['twitter'], {})
 
   bot.memory.set_by_path(['twitter','secret'],secret)
-  yield from bot.coro_send_message(event.conv, "Twitter API secret set to <b>{}</b>.".format(secret))
+  return "Twitter API secret set to <b>{}</b>.".format(secret)
 
 def twitterkey(bot, event, key):
   '''Set your Twitter API Key. Get one from https://apps.twitter.com/'''
@@ -43,7 +55,7 @@ def twitterkey(bot, event, key):
     bot.memory.set_by_path(['twitter'], {})
 
   bot.memory.set_by_path(['twitter','key'],key)
-  yield from bot.coro_send_message(event.conv, "Twitter API key set to <b>{}</b>.".format(key))
+  return "Twitter API key set to <b>{}</b>.".format(key)
 
 def twitterconfig(bot, event):
   '''Get your Twitter credentials. Remember that these are meant to be kept secret!'''
@@ -54,17 +66,18 @@ def twitterconfig(bot, event):
     bot.memory.set_by_path(['twitter', 'key'], "")
   if not bot.memory.exists(['twitter', 'secret']):
     bot.memory.set_by_path(['twitter', 'secret'], "")
-  
-  yield from bot.coro_send_message(event.conv, "<b>API key:</b> {}<br><b>API secret:</b> {}".format(bot.memory.get_by_path(['twitter','key']), bot.memory.get_by_path(['twitter', 'secret'])))
 
-@asyncio.coroutine
-def _watch_twitter_link(bot, event, command):
+  return ("<b>API key:</b> {}<br><b>API secret:</b> {}".format(
+    bot.memory.get_by_path(['twitter','key']),
+    bot.memory.get_by_path(['twitter', 'secret'])))
+
+async def _watch_twitter_link(bot, event, command):
   if event.user.is_self:
     return
 
   if " " in event.text:
     return
-    
+
   if not re.match("^https?://(www\.)?twitter.com/[a-zA-Z0-9_]{1,15}/status/[0-9]+$", event.text, re.IGNORECASE):
     return
 
@@ -89,23 +102,24 @@ def _watch_twitter_link(bot, event, command):
         if image['type'] == 'photo':
           imagelink = image['media_url']
           filename = os.path.basename(imagelink)
-          r = yield from aiohttp.request('get',imagelink)
-          raw = yield from r.read()
+          r = await aiohttp.request('get',imagelink)
+          raw = await r.read()
           image_data = io.BytesIO(raw)
-          image_id = yield from bot._client.upload_image(image_data, filename=filename)
-          yield from bot.coro_send_message(event.conv.id_, None, image_id=image_id)
+          image_id = await bot._client.upload_image(image_data,
+                                                    filename=filename)
+          await bot.coro_send_message(event.conv.id_, None, image_id=image_id)
 
     except KeyError:
       pass
 
-    yield from bot.coro_send_message(event.conv, message)
+    await bot.coro_send_message(event.conv, message)
   except:
     url = event.text.lower()
     try:
       response = urllib.request.urlopen(url)
-    except URLError as e:
+    except urllib.error.URLError as e:
       logger.info("Tried and failed to get the twitter status text:(")
-      logger.info(e.read())
+      logger.info(e.reason)
       return
 
     username = re.match(r".+twitter\.com/([a-zA-Z0-9_]+)/", url).group(1)
@@ -114,4 +128,4 @@ def _watch_twitter_link(bot, event, command):
     twhandle = soup.title.text.split(" on Twitter: ")[0].strip()
     tweet = re.sub(r"#([a-zA-Z0-9]*)",r"<a href='https://twitter.com/hashtag/\1'>#\1</a>", soup.title.text.split(" on Twitter: ")[1].strip())
     message = "<b><a href='{}'>@{}</a> [{}]</b>: {}".format("https://twitter.com/{}".format(username), username, twhandle, tweet)
-    yield from bot.coro_send_message(event.conv, message)
+    await bot.coro_send_message(event.conv, message)

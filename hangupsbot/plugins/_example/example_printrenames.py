@@ -13,8 +13,7 @@ def _initialise(Handlers, bot=None):
     return []
 
 
-@asyncio.coroutine
-def _watch_rename(bot, event, command):
+async def _watch_rename(bot, event, command):
     # Don't handle events caused by the bot himself
     if event.user.is_self:
         return

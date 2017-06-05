@@ -1,8 +1,6 @@
+# TODO(das7pad) further refactor needed
 import logging
 import sys
-import re
-
-import plugins
 
 from version import __version__
 from . import command, get_func_help, Help
@@ -29,18 +27,19 @@ async def help(bot, event, cmd=None, *args):
     link_to_guide = bot.get_config_suboption(event.conv_id, 'link_to_guide')
     admins_list = bot.get_config_suboption(event.conv_id, 'admins')
 
-    help_chat_id = event.user.id_.chat_id
+    help_chat_id = event.user_id.chat_id
     help_conv_id = event.conv_id
     commands = command.get_available_commands(bot, help_chat_id, help_conv_id)
     commands_admin = commands["admin"]
     commands_nonadmin = commands["user"]
 
-    if not cmd or (cmd=="impersonate" and event.user_id.chat_id in admins_list):
+    if (not cmd or
+            (cmd == "impersonate" and event.user_id.chat_id in admins_list)):
         if cmd == "impersonate":
             if len(args) == 1:
-                [help_chat_id] = args
+                help_chat_id = args[0]
             elif len(args) == 2:
-                [help_chat_id, help_conv_id] = args
+                help_chat_id, help_conv_id = args
             else:
                 raise Help(_("impersonation: supply chat id and optional "
                              "conversation id"))
@@ -56,7 +55,9 @@ async def help(bot, event, cmd=None, *args):
 
         if link_to_guide:
             help_lines.append('')
-            help_lines.append(_('<i>For more information, please see: {}</i>').format(link_to_guide))
+            help_lines.append(
+                _('<i>For more information, please see: {}</i>').format(
+                    link_to_guide))
 
         if len(commands_admin) > 0:
             help_lines.append('')
@@ -67,17 +68,19 @@ async def help(bot, event, cmd=None, *args):
         help_lines.append("<b>Command-specific help:</b>")
         help_lines.append("/bot help <command name>")
 
-        bot_aliases = [ _alias for _alias in bot._handlers.bot_command if len(_alias) < 9 ]
+        bot_aliases = [_alias
+                       for _alias in bot._handlers.bot_command
+                       if len(_alias) < 9]
         if len(bot_aliases) > 1:
             help_lines.append("")
             help_lines.append("<b>My short-hand names:</b>")
             help_lines.append(', '.join(sorted(bot_aliases)))
 
     else:
-        if cmd in command.commands and (cmd in commands_admin or cmd in commands_nonadmin):
+        cmd = cmd.lower()
+        if (cmd in command.commands and
+                (cmd in commands_admin or cmd in commands_nonadmin)):
             func = command.commands[cmd]
-        elif cmd.lower() in command.commands and (cmd in commands_admin or cmd in commands_nonadmin):
-            func = command.commands[cmd.lower()]
         else:
             await command.unknown_command(bot, event)
             return
@@ -90,28 +93,28 @@ async def help(bot, event, cmd=None, *args):
         event.conv_id,
         "\n".join(help_lines), # via private message
         _("<i>{}, I've sent you some help ;)</i>") # public message
-            .format(event.user.full_name))
+        .format(event.user.full_name))
 
 @command.register(admin=True)
-def locale(bot, event, *args):
+def locale(bot, dummy, *args):
     """set bot localisation"""
-    if len(args) > 0:
-        if bot.set_locale(args[0], reuse = (False if "reload" in args else True)):
+    if args:
+        if bot.set_locale(args[0], reuse="reload" not in args):
             message = _("locale set to: {}".format(args[0]))
         else:
             message = _("locale unchanged")
     else:
         message = _("language code required")
 
-    yield from bot.coro_send_message(event.conv, message)
+    return message
 
 
 @command.register
-def ping(bot, event, *args):
+async def ping(bot, event, *args):
     """reply to a ping"""
-    yield from bot.coro_send_message(event.conv, 'pong')
+    await bot.coro_send_message(event.conv_id, 'pong')
 
-    return { "api.response": "pong" }
+    return {"api.response": "pong"}
 
 
 @command.register
@@ -123,11 +126,8 @@ def optout(bot, event, *args):
     * /bot optout all - clears per-conversation opt-out and forces global optout"""
 
     chat_id = event.user.id_.chat_id
-    bot.initialise_memory(chat_id, "user_data")
 
-    optout = False
-    if bot.memory.exists(["user_data", chat_id, "optout"]):
-        optout = bot.memory.get_by_path(["user_data", chat_id, "optout"])
+    optout = bot.user_memory_get(chat_id, "optout") or False
 
     target_conv = False
     if args:
@@ -136,8 +136,8 @@ def optout(bot, event, *args):
             target_conv = "all"
         else:
             search_results = []
-            if( search_string in bot.conversations.catalog
-                    and bot.conversations.catalog[search_string]['type'] == "GROUP" ):
+            if (search_string in bot.conversations
+                    and bot.conversations[search_string]['type'] == "GROUP"):
                 # directly match convid of a group conv
                 target_conv = search_string
             else:
@@ -149,14 +149,10 @@ def optout(bot, event, *args):
                 if num_of_results == 1:
                     target_conv = search_results[0]
                 else:
-                    yield from bot.coro_send_message(
-                        event.conv,
-                        _("<i>{}, search did not match a single group conversation</i>").format(event.user.full_name))
-                    return
+                    return _("<i>{}, search did not match a single group "
+                             "conversation</i>").format(event.user.full_name)
 
-    type_optout = type(optout)
-
-    if type_optout is list:
+    if isinstance(optout, list):
         if not target_conv:
             if not optout:
                 # force global optout
@@ -167,27 +163,28 @@ def optout(bot, event, *args):
         elif target_conv.lower() == 'all':
             # convert list optout to bool optout
             optout = True
-        elif target_conv in optout:
+        elif target_conv in optout:         # pylint: disable=E1135
             # remove existing conversation optout
             optout.remove(target_conv)
-        elif target_conv in bot.conversations.catalog:
+        elif target_conv in bot.conversations:
             # optout from a specific conversation
             optout.append(target_conv)
             optout = list(set(optout))
-    elif type_optout is bool:
+    elif isinstance(optout, bool):
         if not target_conv:
             # toggle global optout
             optout = not optout
         elif target_conv.lower() == 'all':
             # force global optout
             optout = True
-        elif target_conv in bot.conversations.catalog:
+        elif target_conv in bot.conversations:
             # convert bool optout to list optout
             optout = [ target_conv ]
         else:
-            raise ValueError('no conversation was matched')
+            raise Help(_('no conversation was matched: %s') % target_conv)
     else:
-        raise TypeError('unrecognised {} for optout, value={}'.format(type_optout, optout))
+        raise Help(_('unrecognised {} for optout, value={}').format(
+            type(optout), optout))
 
     bot.memory.set_by_path(["user_data", chat_id, "optout"], optout)
     bot.memory.save()
@@ -202,7 +199,7 @@ def optout(bot, event, *args):
             "\n".join([ "* {}".format(bot.conversations.get_name(conv_id))
                         for conv_id in optout ]))
 
-    yield from bot.coro_send_message(event.conv, message)
+    return message
 
 
 @command.register
@@ -218,12 +215,11 @@ def version(bot, event, *args):
 
 
 @command.register(admin=True)
-def resourcememory(bot, event, *args):
+def resourcememory(*dummys):
     """print basic information about memory usage with resource library"""
 
     if "resource" not in sys.modules:
-        yield from bot.coro_send_message(event.conv,  "<i>resource module not available</i>")
-        return
+        return "<i>resource module not available</i>"
 
     # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
     rusage_denom = 1024.
@@ -232,28 +228,26 @@ def resourcememory(bot, event, *args):
         rusage_denom = rusage_denom * rusage_denom
     mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
 
-    message = "memory (resource): {} MB".format(mem)
-    logger.info(message)
-    yield from bot.coro_send_message(event.conv,  "<b>" + message + "</b>")
+    return "<b>memory (resource): {} MB</b>".format(mem)
 
 
 @command.register_unknown
-def unknown_command(bot, event, *args):
+async def unknown_command(bot, event, *args):
     """handle unknown commands"""
     config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
     tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
     if not (config_silent or tagged_silent):
 
-        yield from bot.coro_send_message( event.conv,
+        await bot.coro_send_message( event.conv,
                                       _('{}: Unknown Command').format(event.user.full_name) )
 
 
 @command.register_blocked
-def blocked_command(bot, event, *args):
+async def blocked_command(bot, event, *args):
     """handle blocked commands"""
     config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
     tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
     if not (config_silent or tagged_silent):
-        
-        yield from bot.coro_send_message(event.conv, _('{}: Can\'t do that.').format(
-        event.user.full_name))
+
+        await bot.coro_send_message(event.conv, _('{}: Can\'t do that.').format(
+            event.user.full_name))

@@ -2,6 +2,7 @@
 based on the word/image list for the image linker bot on reddit
 sauce: http://www.reddit.com/r/image_linker_bot/comments/2znbrg/image_suggestion_thread_20/
 """
+import asyncio
 import aiohttp, io, logging, os, random, re
 
 import plugins
@@ -24,10 +25,10 @@ def redditmemeword(bot, event, *args):
     Full list at http://goo.gl/ORmisN"""
     if len(args) == 1:
         image_link = _get_a_link(args[0])
-    yield from bot.coro_send_message(event.conv_id, "this one? {}".format(image_link))
+    return "this one? {}".format(image_link)
 
 
-def _scan_for_triggers(bot, event, command):
+async def _scan_for_triggers(bot, event, command):
     limit = 3
     count = 0
     lctext = event.text.lower()
@@ -45,7 +46,7 @@ def _scan_for_triggers(bot, event, command):
     if len(image_links) > 0:
         for image_link in image_links:
             try:
-                image_id = yield from bot.call_shared('image_validate_and_upload_single', image_link)
+                image_id = await bot.call_shared('image_validate_and_upload_single', image_link)
             except KeyError:
                 logger.warning('image plugin not loaded - using legacy code')
                 if re.match(r'^https?://gfycat.com', image_link):
@@ -54,12 +55,12 @@ def _scan_for_triggers(bot, event, command):
                     image_link = image_link.replace(".gifv",".gif")
                     image_link = image_link.replace(".webm",".gif")
                 filename = os.path.basename(image_link)
-                r = yield from aiohttp.request('get', image_link)
-                raw = yield from r.read()
+                r = await aiohttp.request('get', image_link)
+                raw = await r.read()
                 image_data = io.BytesIO(raw)
                 logger.debug("uploading: {}".format(filename))
-                image_id = yield from bot._client.upload_image(image_data, filename=filename)
-            yield from bot.coro_send_message(event.conv.id_, "", image_id=image_id)
+                image_id = await bot._client.upload_image(image_data, filename=filename)
+            await bot.coro_send_message(event.conv.id_, "", image_id=image_id)
 
 
 def _load_all_the_things():
@@ -78,7 +79,7 @@ def _load_all_the_things():
                     _lookup[trigger].extend(images)
                 else:
                     _lookup[trigger] = images
-    logger.info("{} trigger(s) loaded".format(len(_lookup)))
+    logger.debug("{} trigger(s) loaded".format(len(_lookup)))
 
 
 def _get_a_link(trigger):

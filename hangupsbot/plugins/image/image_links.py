@@ -13,8 +13,7 @@ def _initialise(bot):
     plugins.register_handler(_watch_image_link, type="message")
 
 
-@asyncio.coroutine
-def _watch_image_link(bot, event, command):
+async def _watch_image_link(bot, event, command):
     # Don't handle events caused by the bot himself
     if event.user.is_self:
         return
@@ -23,13 +22,13 @@ def _watch_image_link(bot, event, command):
 
     if text.startswith(('https://', 'http://', '//')):
         try:
-            image_id = yield from bot.call_shared('image_validate_and_upload_single', text)
+            image_id = await bot.call_shared('image_validate_and_upload_single', text)
         except KeyError:
             logger.warning("image plugin not loaded - using in-built fallback")
-            image_id = yield from image_validate_and_upload_single(text, bot)
+            image_id = await image_validate_and_upload_single(text, bot)
 
         if image_id:
-            yield from bot.coro_send_message(event.conv.id_, None, image_id=image_id)
+            await bot.coro_send_message(event.conv.id_, None, image_id=image_id)
 
 
 """FALLBACK CODE FOR IMAGE LINK VALIDATION AND UPLOAD
@@ -86,20 +85,18 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 
     return False
 
-@asyncio.coroutine
-def image_upload_single(image_uri, bot):
+async def image_upload_single(image_uri, bot):
     logger.info("getting {}".format(image_uri))
     filename = os.path.basename(image_uri)
-    r = yield from aiohttp.request('get', image_uri)
-    raw = yield from r.read()
+    r = await aiohttp.request('get', image_uri)
+    raw = await r.read()
     image_data = io.BytesIO(raw)
-    image_id = yield from bot._client.upload_image(image_data, filename=filename)
+    image_id = await bot._client.upload_image(image_data, filename=filename)
     return image_id
 
-@asyncio.coroutine
-def image_validate_and_upload_single(text, bot, reject_googleusercontent=True):
+async def image_validate_and_upload_single(text, bot, reject_googleusercontent=True):
     image_id = False
     image_link = image_validate_link(text, reject_googleusercontent=reject_googleusercontent)
     if image_link:
-        image_id = yield from image_upload_single(image_link, bot)
+        image_id = await image_upload_single(image_link, bot)
     return image_id

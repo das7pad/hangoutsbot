@@ -15,12 +15,12 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_handler(_watch_new_adds, type="membership")
     plugins.register_admin_command(["addmod", "delmod"])
 
 
-def _watch_new_adds(bot, event, command):
+async def _watch_new_adds(bot, event, command):
     # Check if watching for new adds is enabled
     if not bot.get_config_suboption(event.conv_id, 'watch_new_adds'):
         return
@@ -31,7 +31,7 @@ def _watch_new_adds(bot, event, command):
     names = ', '.join([user.full_name for user in event_users])
 
     # JOIN
-    if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+    if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
         # Check if the user who added people is a mod or admin
         admins_list = bot.get_config_suboption(event.conv_id, 'admins')
         if event.user_id.chat_id in admins_list:
@@ -49,14 +49,14 @@ def _watch_new_adds(bot, event, command):
             # The mods are likely not configured. Continuing...
             pass
 
-        html = _("<b>!!! WARNING !!!</b><br />"
-                 "<br />"
-                 "<b>{0}</b> invited <b>{1}</b> without authorization.<br />"
-                 "<br />"
+        html = _("<b>!!! WARNING !!!</b>\n"
+                 "\n"
+                 "<b>{0}</b> invited <b>{1}</b> without authorization.\n"
+                 "\n"
                  "<b>{1}</b>: Please leave this hangout and ask a moderator to add you. "
                  "Thank you for your understanding.").format(event.user.full_name, names)
 
-        yield from bot.coro_send_message(event.conv, html)
+        await bot.coro_send_message(event.conv, html)
 
 def addmod(bot, event, *args):
     """add user id(s) to the whitelist of who can add to a hangout"""
@@ -67,19 +67,19 @@ def addmod(bot, event, *args):
         bot.config.set_by_path(["mods"], mod_ids)
         bot.config.save()
         html_message = _("<i>Moderators updated: {} added</i>")
-        yield from bot.coro_send_message(event.conv, html_message.format(args[0]))
+        return html_message.format(args[0])
     else:
         bot.config.set_by_path(["mods"], mod_ids)
         bot.config.save()
         html_message = _("<i>Moderators updated: {} added</i>")
-        yield from bot.coro_send_message(event.conv, html_message.format(args[0]))
+        return html_message.format(args[0])
 
 def delmod(bot, event, *args):
     """remove user id(s) from the whitelist of who can add to a hangout"""
-    if not bot.get_config_option('mods'):
+    if not bot.config.get_option('mods'):
         return
 
-    mods = bot.get_config_option('mods')
+    mods = bot.config.get_option('mods')
     mods_new = []
     for mod in mods:
         if args[0] != mod:
@@ -88,4 +88,4 @@ def delmod(bot, event, *args):
     bot.config.set_by_path(["mods"], mods_new)
     bot.config.save()
     html_message = _("<i>Moderators updated: {} removed</i>")
-    yield from bot.coro_send_message(event.conv, html_message.format(args[0]))
+    return html_message.format(args[0])

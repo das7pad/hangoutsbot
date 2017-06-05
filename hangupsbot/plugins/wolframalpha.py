@@ -18,26 +18,24 @@ _internal = {}
 
 
 def _initialise(bot):
-    apikey = bot.get_config_option("wolframalpha-apikey")
+    apikey = bot.config.get_option("wolframalpha-apikey")
     if apikey:
         _internal["client"] = wolframalpha.Client(apikey)
         plugins.register_user_command(["ask"])
     else:
-        logger.error('WOLFRAMALPHA: config["wolframalpha-apikey"] required')
+        logger.info('WOLFRAMALPHA: config["wolframalpha-apikey"] required')
 
 
 def ask(bot, event, *args):
     """request data from wolfram alpha"""
 
     if not len(args):
-        yield from bot.coro_send_message(event.conv,
-                _("You need to ask WolframAlpha a question"))
-        return
+        return _("You need to ask WolframAlpha a question")
 
     keyword = ' '.join(args)
     res = _internal["client"].query(keyword)
 
-    html = '<b>"{}"</b><br /><br />'.format(keyword)
+    html = '<b>"{}"</b>\n\n'.format(keyword)
 
     has_content = False
     for pod in res.pods:
@@ -45,15 +43,15 @@ def ask(bot, event, *args):
             html += "<b>{}:</b> ".format(pod.title)
 
         if pod.text and pod.text.strip():
-            html += pod.text.strip().replace("\n", "<br />") + "<br />"
+            html += pod.text.strip() + "\n"
             has_content = True
         else:
             for node in pod.node.iter():
                 if node.tag == "img":
-                    html += '<a href="' + node.attrib["src"] + '">' + node.attrib["src"] + "</a><br />"
+                    html += '<a href="' + node.attrib["src"] + '">' + node.attrib["src"] + "</a>\n"
                     has_content = True
 
     if not has_content:
         html = _("<i>Wolfram Alpha did not return any useful data</i>")
 
-    yield from bot.coro_send_message(event.conv, html)
+    return html

@@ -71,15 +71,11 @@ def dnd(bot, event, *args):
     bot.memory.save()
 
     if bot.call_shared("dnd.user_check", initiator_chat_id):
-        yield from bot.coro_send_message(
-            event.conv,
-            "global DND toggled ON for {}, expires in {} hour(s)".format(
-                event.user.full_name,
-                str(seconds_to_expire/3600)))
+        return "global DND toggled ON for {}, expires in {} hour(s)".format(
+            event.user.full_name,
+            str(seconds_to_expire/3600))
     else:
-        yield from bot.coro_send_message(
-            event.conv,
-            "global DND toggled OFF for {}".format(event.user.full_name))
+        return "global DND toggled OFF for {}".format(event.user.full_name)
 
 
 def _expire_DNDs(bot):

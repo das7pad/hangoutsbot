@@ -15,4 +15,4 @@ def catfact(bot, event, number=1):
         html_text = "Unable to get catfacts right now"
         logger.exception(html_text)
 
-    yield from bot.coro_send_message(event.conv_id, html_text)
+    return html_text
