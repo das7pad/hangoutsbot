@@ -1,29 +1,36 @@
 #!/usr/bin/env python3
-import appdirs, argparse, asyncio, gettext, logging, logging.config, os, shutil, signal, sys, time
+"""chatbot for Google Hangouts"""
 
+import argparse
+import asyncio
+import gettext
+import logging
+import logging.config
+import os
+import shutil
+import signal
+import sys
+
+import appdirs
 import hangups
 
-import hangups_shim
+#NOTE: bring in localization handling for our own modules
+#pylint:disable=wrong-import-position,wrong-import-order
+gettext.install("hangupsbot", localedir=os.path.join(os.path.dirname(__file__),
+                                                     "locale"))
+
 from exceptions import HangupsBotExceptions
 from hangups_conversation import HangupsConversation
 
 import config
 import handlers
-import version
-
 import permamem
-import tagging
-
-import sinks
 import plugins
-
-from commands import command
-from permamem import conversation_memory
-from utils import simple_parse_to_segments, class_from_name
-
-
-gettext.install('hangupsbot', localedir=os.path.join(os.path.dirname(__file__), 'locale'))
-
+from commands import command    # import sequence is important here
+import tagging
+import sinks
+import utils
+import version
 
 logger = logging.getLogger()
 
