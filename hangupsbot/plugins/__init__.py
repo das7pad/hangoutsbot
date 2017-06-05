@@ -14,6 +14,7 @@ from inspect import getmembers, isfunction
 
 import hangups_shim
 from commands import command
+import utils
 
 
 logger = logging.getLogger(__name__)
@@ -468,6 +469,7 @@ def load(bot, module_path, module_name=None):
     if not load_module(module_path):
         return
 
+    setattr(sys.modules[module_path], 'print', utils.print_to_logger)
     if hasattr(sys.modules[module_path], "hangups"):
         logger.debug("%s has legacy hangups reference", module_name)
         setattr(sys.modules[module_path], "hangups", hangups_shim)
