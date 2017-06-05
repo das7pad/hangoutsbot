@@ -339,13 +339,13 @@ class ConversationMemory(object):
                         conv_title, conv.id_, _users_to_fetch)
             await self.get_users_from_query(_users_to_fetch)
 
-        conv_changed = False
+        conv_changed = True
         if cached:
             memory["participants"].sort()
             cached["participants"].sort()
             try:
                 for key in memory:
-                    assert memory[key] == cached[key]
+                    assert key == 'source' or memory[key] == cached[key]
             except AssertionError:
                 message = "conv %s changed for %s (%s)"
             except KeyError:
