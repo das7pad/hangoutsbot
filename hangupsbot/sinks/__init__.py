@@ -13,7 +13,8 @@ from aiohttp import web
 from plugins import tracking
 from utils import class_from_name
 
-from .base_bot_request_handler import AsyncRequestHandler
+# pylint: disable=unused-import
+from .base_bot_request_handler import AsyncRequestHandler, BaseBotRequestHandler
 
 logger = logging.getLogger(__name__)
 
