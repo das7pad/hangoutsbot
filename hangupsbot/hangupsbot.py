@@ -28,6 +28,10 @@ gettext.install('hangupsbot', localedir=os.path.join(os.path.dirname(__file__), 
 logger = logging.getLogger()
 
 DEFAULT_CONFIG = {
+    "bot_introduction": _("<i>Hi there! I'll be using this channel to send "
+                          "private messages and alerts. For help, type "
+                          "<b>{bot_cmd} help</b>.\nTo keep me quiet, reply with"
+                          " <b>{bot_cmd} optout</b>.</i>"),
     "memory-failsafe_backups": 3,
     # in seconds
     "memory-save_delay": 1,
@@ -315,86 +319,79 @@ class HangupsBot(object):
             for u in c.users:
                 print('    {} ({}) {}'.format(u.first_name, u.full_name, u.id_.chat_id))
 
-    @asyncio.coroutine
-    def get_1to1(self, chat_id, context=None):
-        """find/create a 1-to-1 conversation with specified user
-        config.autocreate-1to1 = false to revert to legacy behaviour of finding existing 1-to-1
-        config.bot_introduction = "some text or html" to show to users when a new conversation
-            is created - "{0}" will be substituted with first bot alias
+    async def get_1to1(self, chat_id, context=None, force=False):
+        """find or create a 1-to-1 conversation with specified user
+
+        Args:
+            chat_id: string, G+ id of the user
+            context: dict, additional info to the request,
+                include "initiator_convid" to catch per conv optout
+            force: boolean, toggle to get the conv even if the user has optedout
+
+        Returns:
+            the HangupsConversation instance of the 1on1, None if no conv can be
+                created or False if a 1on1 is not allowed with the user
         """
-
-        if self.memory.exists(["user_data", chat_id, "optout"]):
-            optout = self.memory.get_by_path(["user_data", chat_id, "optout"])
-            if( isinstance(optout, list)
-                    and context and 'initiator_convid' in context
-                    and context['initiator_convid'] in optout ):
-                logger.info("get_1on1: user {} has optout for {}".format(chat_id, context['initiator_convid']))
-                return False
-            elif isinstance(optout, bool) and optout:
-                logger.info("get_1on1: user {} has optout".format(chat_id))
-                return False
-
         if chat_id == self.user_self()["chat_id"]:
-            logger.warning("1to1 conversations with myself are not supported", stack_info=True)
+            logger.warning("1to1 conversations with myself are not supported",
+                           stack_info=True)
             return False
 
-        conversation = None
+        optout = False if force else self.user_memory_get(chat_id, "optout")
+        if optout and (isinstance(optout, bool) or
+                       (isinstance(optout, list) and isinstance(context, dict)
+                        and context.get("initiator_convid") in optout)):
+            logger.debug("get_1on1: user %s has optout", chat_id)
+            return False
 
-        if self.memory.exists(["user_data", chat_id, "1on1"]):
-            conversation_id = self.memory.get_by_path(["user_data", chat_id, "1on1"])
-            conversation = FakeConversation(self, conversation_id)
-            logger.info("get_1on1: remembered {} for {}".format(conversation_id, chat_id))
-        else:
-            autocreate_1to1 = True if self.get_config_option('autocreate-1to1') is not False else False
-            if autocreate_1to1:
-                """create a new 1-to-1 conversation with the designated chat id
-                send an introduction message as well to the user as part of the chat creation
-                """
-                logger.info("get_1on1: creating 1to1 with {}".format(chat_id))
-                try:
-                    introduction = self.get_config_option('bot_introduction')
-                    if not introduction:
-                        introduction =_("<i>Hi there! I'll be using this channel to send private "
-                                        "messages and alerts. "
-                                        "For help, type <b>{0} help</b>. "
-                                        "To keep me quiet, reply with <b>{0} optout</b>.</i>").format(self._handlers.bot_command[0])
+        memory_1on1 = self.user_memory_get(chat_id, "1on1")
 
-                    request = hangups.hangouts_pb2.CreateConversationRequest(
-                        request_header = self._client.get_request_header(),
-                        type = hangups.hangouts_pb2.CONVERSATION_TYPE_ONE_TO_ONE,
-                        client_generated_id = self._client.get_client_generated_id(),
-                        invitee_id = [ hangups.hangouts_pb2.InviteeID(gaia_id=chat_id) ])
+        if memory_1on1 is not None:
+            logger.debug("get_1on1: remembered %s for %s",
+                         memory_1on1, chat_id)
+            return HangupsConversation(self, memory_1on1)
 
-                    response = yield from self._client.create_conversation(request)
+        # create a new 1-to-1 conversation with the designated chat id and send
+        # an introduction message as the invitation text
+        logger.info("get_1on1: creating 1to1 with %s", chat_id)
 
-                    new_conversation_id = response.conversation.conversation_id.id
+        request = hangups.hangouts_pb2.CreateConversationRequest(
+            request_header=self.get_request_header(),
+            type=hangups.hangouts_pb2.CONVERSATION_TYPE_ONE_TO_ONE,
+            client_generated_id=self.get_client_generated_id(),
+            invitee_id=[hangups.hangouts_pb2.InviteeID(gaia_id=chat_id)])
+        try:
+            response = await self.create_conversation(request)
+        except hangups.NetworkError:
+            logger.exception("GET_1TO1: failed to create 1-to-1 for user %s",
+                             chat_id)
+            return None
 
-                    yield from self.coro_send_message(new_conversation_id, introduction)
-                    conversation = FakeConversation(self, new_conversation_id)
-                except Exception as e:
-                    logger.exception("GET_1TO1: failed to create 1-to-1 for user {}".format(chat_id))
-            else:
-                """legacy behaviour: user must say hi to the bot first
-                this creates a conversation entry in self._conv_list (even if the bot receives
-                a chat invite only - a message sent on the channel auto-accepts the invite)
-                """
-                logger.info("get_1on1: searching for existing 1to1 with {}".format(chat_id))
-                for c in self.list_conversations():
-                    if len(c.users) == 2:
-                        for u in c.users:
-                            if u.id_.chat_id == chat_id:
-                                conversation = c
-                                break
+        new_conv_id = response.conversation.conversation_id.id
+        logger.info("get_1on1: determined %s for %s", new_conv_id, chat_id)
 
-            if conversation is not None:
-                # remember the conversation so we don't have to do this again
-                logger.info("get_1on1: determined {} for {}".format(conversation.id_, chat_id))
-                self.initialise_memory(chat_id, "user_data")
-                self.memory.set_by_path(["user_data", chat_id, "1on1"], conversation.id_)
-                self.memory.save()
+        # remember the conversation so we do not have to do this again
+        self.user_memory_set(chat_id, "1on1", new_conv_id)
+        try:
+            self._conv_list.get(new_conv_id)
+            # do not send the introduction as hangups already knows the conv
 
-        return conversation
+        except KeyError:
+            conv = hangups.conversation.Conversation(
+                self._client, self._user_list, response.conversation)
 
+            # add to hangups cache
+            self._conv_list._conv_dict[new_conv_id] = conv #pylint:disable=W0212
+
+            # create the permamem entry for the conversation
+            self.conversations.update(conv, source="1to1creation")
+
+            # send introduction
+            introduction = self.config.get_option("bot_introduction").format(
+                bot_cmd=self.command_prefix)
+            await self.coro_send_message(new_conv_id, introduction)
+
+        return HangupsConversation(self, new_conv_id)
 
     def initialise_memory(self, chat_id, datatype):
         modified = False
