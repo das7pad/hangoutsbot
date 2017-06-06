@@ -79,7 +79,7 @@ class HangupsConversation(hangups.conversation.Conversation):
                   if permamem_conv["type"] == "GROUP" else
                   hangouts_pb2.CONVERSATION_TYPE_ONE_TO_ONE),
 
-            has_active_hangout=True,
+            has_active_hangout=False,
             name=permamem_conv["title"],
 
             current_participant=current_participant,
