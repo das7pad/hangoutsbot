@@ -101,6 +101,14 @@ class HangupsBot(object):
         except NotImplementedError:
             pass
 
+    @property
+    def command_prefix(self):
+        """get a prefix for bot commands issued via chat
+
+        Returns:
+            string
+        """
+        return self._handlers.bot_command[0]
 
     def set_locale(self, language_code, reuse=True):
         if not reuse or language_code not in self._locales:
