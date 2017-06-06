@@ -17,20 +17,18 @@ def name_from_hangups_conversation(conv):
     """get the name for supplied hangups conversation
     based on hangups.ui.utils.get_conv_name, except without the warnings
     """
-    if conv.name:
+    if not isinstance(conv, HangupsConversation) and conv.name:
         return conv.name
-    else:
-        participants = sorted(
-            (user for user in conv.users if not user.is_self),
-            key=lambda user: user.id_
-        )
-        if len(participants) == 0:
-            return "Empty Conversation"
-        if len(participants) == 1:
-            return participants[0].full_name
-        else:
-            names = [user.first_name for user in participants]
-            return ', '.join(names)
+
+    if not conv.users:
+        return "Empty Conversation"
+    if conv.users == 1:
+        return conv.users[0].full_name
+
+    participants = sorted(conv.users, key=lambda user: user.id_.chat_id)
+    names = [user.first_name for user in participants
+             if not user.is_self]
+    return ', '.join(names)
 
 def load_missing_entrys(bot):
     """load users and conversations that are missing on bot start into hangups
