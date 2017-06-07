@@ -52,11 +52,13 @@ class HangupsBot(object):
         self._cookies_path = cookies_path
         self._max_retries = max_retries
 
-        # These are populated by on_connect when it's called.
+        # These are populated by ._on_connect when it's called.
         self.shared = None # safe place to store references to objects
         self._conv_list = None # hangups.ConversationList
         self._user_list = None # hangups.UserList
         self._handlers = None # handlers.py::EventHandler
+        self.tags = None # tagging.tags
+        self.conversations = None # permamem.ConversationMemory
 
         self._locales = {}
 
@@ -97,7 +99,7 @@ class HangupsBot(object):
         try:
             loop = asyncio.get_event_loop()
             for signum in (signal.SIGINT, signal.SIGTERM):
-                loop.add_signal_handler(signum, lambda: self.stop())
+                loop.add_signal_handler(signum, self.stop)
         except NotImplementedError:
             pass
 
