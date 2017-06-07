@@ -39,15 +39,22 @@ DEFAULT_CONFIG = {
                           "private messages and alerts. For help, type "
                           "<b>{bot_cmd} help</b>.\nTo keep me quiet, reply with"
                           " <b>{bot_cmd} optout</b>.</i>"),
+    # count
     "memory-failsafe_backups": 3,
     # in seconds
     "memory-save_delay": 1,
 }
 
 class HangupsBot(object):
-    """Hangouts bot listening on all conversations"""
-    def __init__(self, cookies_path, config_path, memory_path, max_retries=5):
+    """Hangouts bot listening on all conversations
 
+    Args:
+        cookies_path: string, path on disk to stored auth-cookies
+        config_path: string, path on disk to the bot configuration json
+        memory_path: string, path on disk to the bot memory json
+        max_retries: integer, retry count for lowlevel errors
+    """
+    def __init__(self, cookies_path, config_path, memory_path, max_retries):
         self._client = None
         self._cookies_path = cookies_path
         self._max_retries = max_retries
@@ -87,7 +94,7 @@ class HangupsBot(object):
         self.memory = config.Config(memory_path,
                                     failsafe_backups=_failsafe_backups,
                                     save_delay=_save_delay)
-        self.memory.logger = logging.getLogger('memory')
+        self.memory.logger = logging.getLogger("memory")
         try:
             self.memory.load()
         except (OSError, IOError, ValueError):
@@ -113,21 +120,32 @@ class HangupsBot(object):
         return self._handlers.bot_command[0]
 
     def set_locale(self, language_code, reuse=True):
+        """update localization
+
+        Args:
+            language_code: string, a known translation code
+            reuse: string, toggle to True to use a cached translation
+
+        Returns:
+            boolean, True on success
+        """
         if not reuse or language_code not in self._locales:
             try:
-                self._locales[language_code] = gettext.translation('hangupsbot', localedir=os.path.join(os.path.dirname(__file__), 'locale'), languages=[language_code])
-                logger.debug("locale loaded: {}".format(language_code))
+                self._locales[language_code] = gettext.translation(
+                    "hangupsbot", languages=[language_code],
+                    localedir=os.path.join(os.path.dirname(__file__), "locale"))
+
+                logger.debug("locale loaded: %s", language_code)
             except OSError:
-                logger.exception("no translation for {}".format(language_code))
+                logger.exception("no translation for %s", language_code)
 
         if language_code in self._locales:
             self._locales[language_code].install()
-            logger.info("locale: {}".format(language_code))
+            logger.info("locale set to %s", language_code)
             return True
 
-        else:
-            logger.warning("LOCALE: {}".format(language_code))
-            return False
+        logger.warning("LOCALE %s is not available", language_code)
+        return False
 
     def register_shared(self, id_, objectref):
         """register a shared object to be called later
@@ -272,7 +290,7 @@ class HangupsBot(object):
             # ensure a G+ ID as chat_id
             if isinstance(user_id, str) and len(user_id) == 21:
                 chat_id = user_id
-            elif hasattr(user_id, 'chat_id'):
+            elif hasattr(user_id, "chat_id"):
                 return self.get_hangups_user(user_id.chat_id)
             user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
 
@@ -283,26 +301,41 @@ class HangupsBot(object):
         return user
 
     def get_users_in_conversation(self, conv_ids):
-        """list all unique users in supplied conv_id or list of conv_ids"""
+        """get hangouts user of a single or multiple conversations
 
+        Args:
+            conv_ids: string or list, a single conv or multiple conv_ids
+
+        Returns:
+            list, a list of unique hangups.User instances
+        """
         if isinstance(conv_ids, str):
             conv_ids = [conv_ids]
         conv_ids = list(set(conv_ids))
 
         all_users = {}
         for convid in conv_ids:
-            conv_data = self.conversations.catalog[convid]
+            conv_data = self.conversations[convid]
             for chat_id in conv_data["participants"]:
-                all_users[chat_id] = self.get_hangups_user(chat_id) # by key for uniqueness
+                all_users[chat_id] = self.get_hangups_user(chat_id)
 
-        all_users = list(all_users.values())
-
-        return all_users
+        return list(all_users.values())
 
     def get_config_option(self, option):
         return self.config.get_option(option)
 
     def get_config_suboption(self, conv_id, option):
+        """get an entry in the conv config with a fallback to top level
+
+        Args:
+            conv_id: string, conversation identifier
+            option: string, third level key as target and also the top level
+                key as fallback for a missing key in the path
+
+        Returns:
+            any type, the requested value, it's fallback on top level or
+                .default if the key does not exist on both level
+        """
         return self.config.get_suboption("conversations", conv_id, option)
 
     def get_memory_option(self, option):
@@ -312,11 +345,27 @@ class HangupsBot(object):
         return self.memory.get_suboption("user_data", user_id, option)
 
     def user_memory_set(self, chat_id, keyname, keyvalue):
+        """set a value in the users memory entry and save to memory to file
+
+        Args:
+            chat_id: string, G+ id of the user
+            keyname: string, new or existing entry in the users memory
+            keyvalue: any type, the new value to be set
+        """
         self.initialise_memory(chat_id, "user_data")
         self.memory.set_by_path(["user_data", chat_id, keyname], keyvalue)
         self.memory.save()
 
     def user_memory_get(self, chat_id, keyname):
+        """get a memory entry of a given user
+
+        Args:
+            chat_id: string, G+ id of the user
+            keyname: string, the entry
+
+        Returns:
+            any type, the requested value or None if the entry does not exist
+        """
         value = None
         try:
             self.initialise_memory(chat_id, "user_data")
@@ -326,11 +375,27 @@ class HangupsBot(object):
         return value
 
     def conversation_memory_set(self, conv_id, keyname, keyvalue):
+        """set a value in the conversations memory entry and dump the memory
+
+        Args:
+            conv_id: string, conversation identifier
+            keyname: string, new or existing entry in the conversations memory
+            keyvalue: any type, the new value to be set
+        """
         self.initialise_memory(conv_id, "conv_data")
         self.memory.set_by_path(["conv_data", conv_id, keyname], keyvalue)
         self.memory.save()
 
     def conversation_memory_get(self, conv_id, keyname):
+        """get a memory entry of a given conversation
+
+        Args:
+            conv_id: string, conversation identifier
+            keyname: string, the entry
+
+        Returns:
+            any type, the requested value or None if the entry does not exist
+        """
         value = None
         try:
             self.initialise_memory(conv_id, "conv_data")
@@ -414,6 +479,16 @@ class HangupsBot(object):
         return HangupsConversation(self, new_conv_id)
 
     def initialise_memory(self, chat_id, datatype):
+        """initialise the dict for a given key in the datatype in .memory
+
+        Args:
+            key: string, identifier for an entry in datatype
+            datatype: string, first-level key in memory
+
+        Returns:
+            boolean, True if an new entry for the key was created in the
+                datatype, otherwise False
+        """
         modified = False
 
         if not self.memory.exists([datatype]):
@@ -444,17 +519,13 @@ class HangupsBot(object):
         self._handlers = handlers.EventHandler(self)
         handlers.handler.set_bot(self) # shim for handler decorator
 
-        """
-        monkeypatch plugins go heere
-        # plugins.load(self, "monkeypatch.something")
-        use only in extreme circumstances e.g. adding new functionality into hangups library
-        """
-
-        #self._user_list = yield from hangups.user.build_user_list(self._client)
+        # monkeypatch plugins go heere
+        # # plugins.load(self, "monkeypatch.something")
+        # use only in extreme circumstances
+        #  e.g. adding new functionality into hangups library
 
         self._user_list, self._conv_list = (
-            yield from hangups.build_user_conversation_list(self._client)
-        )
+            yield from hangups.build_user_conversation_list(self._client))
 
         self.conversations = await permamem.initialise(self)
 
@@ -478,12 +549,22 @@ class HangupsBot(object):
 
     @asyncio.coroutine
     def coro_send_message(self, conversation, message, context=None, image_id=None):
+        """send a message to hangouts and allow handler to add more targets
+
+        Args:
+            conversation: string or hangups conversation like instance
+            message: string or a list of hangups.ChatMessageSegment
+            context: dict, optional information about the message
+            image_id: int or string, upload id of an image to be attached
+
+        Raises:
+            ValueError: invalid conversation(id) provided
+        """
         if not message and not image_id:
             # at least a message OR an image_id must be supplied
             return
 
-        # get the context
-
+        # update the context
         if not context:
             context = {}
 
@@ -496,131 +577,150 @@ class HangupsBot(object):
         elif isinstance(conversation, str):
             conversation_id = conversation
         else:
-            raise ValueError('could not identify conversation id')
+            raise ValueError('conversation id "%s" is invalid' % conversation)
 
         broadcast_list = [(conversation_id, message, image_id)]
 
         # run any sending handlers
-
         try:
-            yield from self._handlers.run_pluggable_omnibus("sending", self, broadcast_list, context)
+            yield from self._handlers.run_pluggable_omnibus(
+                "sending", self, broadcast_list, context)
         except HangupsBotExceptions.SuppressEventHandling:
             logger.info("message sending: SuppressEventHandling")
             return
-        except:
-            raise
 
-        logger.debug("message sending: global context = {}".format(context))
-
-        # begin message sending.. for REAL!
+        logger.debug("message sending: global context=%s", context)
 
         for response in broadcast_list:
-            logger.debug("message sending: {}".format(response[0]))
+            logger.debug("message sending: %s", response[0])
 
             # use a fake Hangups Conversation having a fallback to permamem
             conv = HangupsConversation(self, response[0])
 
             try:
-                yield from _fc.send_message( response[1],
-                                             image_id = response[2],
-                                             context = context )
-            except hangups.NetworkError as e:
-                logger.exception("CORO_SEND_MESSAGE: error sending {}".format(response[0]))
+                yield from conv.send_message(response[1],
+                                             image_id=response[2],
+                                             context=context)
+            except hangups.NetworkError:
+                logger.exception("CORO_SEND_MESSAGE: error sending %s",
+                                 response)
 
 
     @asyncio.coroutine
-    def coro_send_to_user(self, chat_id, html, context=None):
-        """
-        send a message to a specific user's 1-to-1
-        the user must have already been seen elsewhere by the bot (have a permanent memory entry)
+    def coro_send_to_user(self, chat_id, message, context=None):
+        """send a message to a specific user's 1-to-1
+
+        the user must have already been seen elsewhere by the bot
+
+        Args:
+            chat_id: users G+ id
+            message: string or a list of hangups.ChatMessageSegment
+            context: dict, optional information about the message
+
+        Returns:
+            boolean, True if the message was sent,
+                otherwise False - unknown user, optouted or error on .get_1to1()
         """
         if not self.memory.exists(["user_data", chat_id, "_hangups"]):
-            logger.debug("{} is not a valid user".format(chat_id))
+            logger.info("%s is not a valid user", chat_id)
             return False
 
-        conversation = yield from self.get_1to1(chat_id)
+        conv_1on1 = yield from self.get_1to1(chat_id)
 
-        if conversation is False:
-            logger.info("user {} is optout, no message sent".format(chat_id))
+        if conv_1on1 is False:
+            logger.info("user %s is optout, no message sent", chat_id)
             return True
 
-        elif conversation is None:
-            logger.info("1-to-1 for user {} is unavailable".format(chat_id))
+        elif conv_1on1 is None:
+            logger.info("1-to-1 for user %s is unavailable", chat_id)
             return False
 
-        logger.info("sending message to user {} via {}".format(chat_id, conversation.id_))
+        logger.info("sending message to user %s via %s",
+                    chat_id, conv_1on1.id_)
 
-        yield from self.coro_send_message(conversation, html, context=context)
-
+        yield from self.coro_send_message(conv_1on1, message, context=context)
         return True
 
 
     @asyncio.coroutine
-    def coro_send_to_user_and_conversation(self, chat_id, conv_id, html_private, html_public=False, context=None):
-        """
-        If the command was issued on a public channel, respond to the user
-        privately and optionally send a short public response back as well.
-        """
-        conv_1on1_initiator = yield from self.get_1to1(chat_id)
+    def coro_send_to_user_and_conversation(self, chat_id, conv_id,
+                                           message_private,
+                                           message_public=None,
+                                           context=None):
+        """send a message to a user's 1-to-1 with a hint in the public chat
 
-        full_name = _("Unidentified User")
-        if self.memory.exists(["user_data", chat_id, "_hangups"]):
-            full_name = self.memory["user_data"][chat_id]["_hangups"]["full_name"]
+        if no 1-to-1 is available, send everything to the public chat
+
+        Args:
+            chat_id: users G+ id
+            message: string or a list of hangups.ChatMessageSegment
+            context: dict, optional information about the message
+        """
+        conv_1on1 = yield from self.get_1to1(chat_id)
+
+        full_name = self.get_hangups_user(chat_id).full_name
 
         responses = {
             "standard":
-                False, # no public messages
+                None, # no public message
             "optout":
-                _("<i>{}, you are currently opted-out. Private message me or enter <b>{} optout</b> to get me to talk to you.</i>")
-                    .format(full_name, min(self._handlers.bot_command, key=len)),
+                _("<i>{}, you are currently opted-out. Private message me or "
+                  "enter <b>{} optout</b> to get me to talk to you.</i>"
+                 ).format(full_name, self.command_prefix),
             "no1to1":
-                _("<i>{}, before I can help you, you need to private message me and say hi.</i>")
-                    .format(full_name, min(self._handlers.bot_command, key=len))
+                _("<i>{}, before I can help you, you need to private message me"
+                  " and say hi.</i>").format(full_name, self.command_prefix)
         }
 
-        if isinstance(html_public, dict):
-            responses = dict
-        elif isinstance(html_public, list):
-            keys = ["standard", "optout", "no1to1"]
-            for supplied in html_public:
+        keys = ["standard", "optout", "no1to1"]
+        if (isinstance(message_public, dict)
+                and all([key in keys for key in message_public])):
+            responses = message_public
+        elif isinstance(message_public, list) and len(message_public) == 3:
+            for supplied in message_public:
                 responses[keys.pop(0)] = supplied
         else:
-            # isinstance(html_public, str)
-            responses["standard"] = html_public
+            responses["standard"] = str(message_public)
 
-        public_message = False
+        public_message = None
+        if conv_1on1:
+            yield from self.coro_send_message(conv_1on1, message_private,
+                                              context)
 
-        if conv_1on1_initiator:
-            """always send actual html as a private message"""
-            yield from self.coro_send_message(conv_1on1_initiator, html_private)
-            if conv_1on1_initiator.id_ != conv_id and responses["standard"]:
-                """send a public message, if supplied"""
+            # send a public message, if supplied
+            if conv_1on1.id_ != conv_id and responses["standard"]:
                 public_message = responses["standard"]
 
         else:
-            if type(conv_1on1_initiator) is bool and responses["optout"]:
+            if isinstance(conv_1on1, bool) and responses["optout"]:
                 public_message = responses["optout"]
 
             elif responses["no1to1"]:
-                # type(conv_1on1_initiator) is NoneType
+                # isinstance(conv_1on1, None)
                 public_message = responses["no1to1"]
 
-        if public_message:
-            yield from self.coro_send_message(conv_id, public_message, context=context)
-
+        yield from self.coro_send_message(conv_id, public_message,
+                                          context=context)
 
     def user_self(self):
+        """get information about the bot user
+
+        Returns:
+            dict, keys are "chat_id", "full_name" and "email"
+        """
         myself = {
             "chat_id": None,
             "full_name": None,
             "email": None
         }
-        User = self._user_list._self_user
+        user = self._user_list._self_user   # pylint: disable=W0212
 
-        myself["chat_id"] = User.id_.chat_id
+        myself["chat_id"] = user.id_.chat_id
 
-        if User.full_name: myself["full_name"] = User.full_name
-        if User.emails and User.emails[0]: myself["email"] = User.emails[0]
+        if user.full_name:
+            myself["full_name"] = user.full_name
+        if user.emails and user.emails[0]:
+            myself["email"] = user.emails[0]
 
         return myself
 
@@ -650,54 +750,55 @@ def configure_logging(args):
     log configuration.
     """
 
-    log_level = 'DEBUG' if args.debug else 'INFO'
+    log_level = "DEBUG" if args.debug else "INFO"
 
     default_config = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'console': {
-                'format': '%(asctime)s %(levelname)s %(name)s: %(message)s',
-                'datefmt': '%H:%M:%S'
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "console": {
+                "format": ("%(asctime)s %(levelname)s %(name)s: %(message)s"),
+                "datefmt": "%H:%M:%S"
                 },
-            'default': {
-                'format': '%(asctime)s %(levelname)s %(name)s: %(message)s',
-                'datefmt': '%Y-%m-%d %H:%M:%S'
+            "default": {
+                "format": ("%(asctime)s %(levelname)s %(name)s: %(message)s"),
+                "datefmt": "%Y-%m-%d %H:%M:%S"
                 }
             },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'stream': 'ext://sys.stdout',
-                'level': 'INFO',
-                'formatter': 'console'
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+                "level": "INFO",
+                "formatter": "console"
                 },
-            'file': {
-                'class': 'logging.FileHandler',
-                'filename': args.log,
-                'level': log_level,
-                'formatter': 'default',
+            "file": {
+                "class": "logging.FileHandler",
+                "filename": args.log,
+                "level": log_level,
+                "formatter": "default",
+                },
                 }
             },
-        'loggers': {
+        "loggers": {
             # root logger
-            '': {
-                'handlers': ['file', 'console'],
-                'level': log_level
+            "": {
+                "handlers": ["file", "console"],
+                "level": log_level
                 },
 
             # requests is freakishly noisy
-            'requests': { 'level': 'INFO'},
+            "requests": {"level": "INFO"},
 
             # XXX: suppress erroneous WARNINGs until resolution of
             #   https://github.com/tdryer/hangups/issues/142
-            'hangups': {'level': 'ERROR'},
+            "hangups": {"level": "ERROR"},
 
             # asyncio's debugging logs are VERY noisy, so adjust the log level
-            'asyncio': {'level': 'WARNING'},
+            "asyncio": {"level": "WARNING"},
 
             # hangups log is verbose too, suppress so we can debug the bot
-            'hangups.conversation': {'level': 'ERROR'}
+            "hangups.conversation": {"level": "ERROR"}
             }
         }
 
@@ -708,57 +809,59 @@ def configure_logging(args):
     # if logging() is called before configured, it outputs to stderr, and
     # we will configure it soon enough
     bootcfg = config.Config(args.config)
+    bootcfg.load()
     if bootcfg.exists(["logging.system"]):
         logging_config = bootcfg["logging.system"]
 
     if "extras.setattr" in logging_config:
         for class_attr, value in logging_config["extras.setattr"].items():
             try:
-                [modulepath, classname, attribute] = class_attr.rsplit(".", maxsplit=2)
+                [modulepath, classname, attribute] = class_attr.rsplit(".", 2)
                 try:
-                    setattr(class_from_name(modulepath, classname), attribute, value)
+                    setattr(utils.class_from_name(modulepath, classname),
+                            attribute, value)
                 except ImportError:
-                    logging.error("module {} not found".format(modulepath))
+                    logging.error("module %s not found", modulepath)
                 except AttributeError:
-                    logging.error("{} in {} not found".format(classname, modulepath))
+                    logging.error("%s in %s not found", classname, modulepath)
             except ValueError:
                 logging.error("format should be <module>.<class>.<attribute>")
 
     logging.config.dictConfig(logging_config)
 
-    logger = logging.getLogger()
     if args.debug:
-        logger.setLevel(logging.DEBUG)
-
+        logging.getLogger().setLevel(logging.DEBUG)
 
 def main():
     """Main entry point"""
     # Build default paths for files.
-    dirs = appdirs.AppDirs('hangupsbot', 'hangupsbot')
-    default_log_path = os.path.join(dirs.user_data_dir, 'hangupsbot.log')
-    default_cookies_path = os.path.join(dirs.user_data_dir, 'cookies.json')
-    default_config_path = os.path.join(dirs.user_data_dir, 'config.json')
-    default_memory_path = os.path.join(dirs.user_data_dir, 'memory.json')
+    dirs = appdirs.AppDirs("hangupsbot", "hangupsbot")
+    default_log_path = os.path.join(dirs.user_data_dir, "hangupsbot.log")
+    default_cookies_path = os.path.join(dirs.user_data_dir, "cookies.json")
+    default_config_path = os.path.join(dirs.user_data_dir, "config.json")
+    default_memory_path = os.path.join(dirs.user_data_dir, "memory.json")
 
     # Configure argument parser
-    parser = argparse.ArgumentParser(prog='hangupsbot',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-d', '--debug', action='store_true',
-                        help=_('log detailed debugging messages'))
-    parser.add_argument('--log', default=default_log_path,
-                        help=_('log file path'))
-    parser.add_argument('--cookies', default=default_cookies_path,
-                        help=_('cookie storage path'))
-    parser.add_argument('--memory', default=default_memory_path,
-                        help=_('memory storage path'))
-    parser.add_argument('--config', default=default_config_path,
-                        help=_('config storage path'))
-    parser.add_argument('--retries', default=5, type=int,
-                        help=_('Maximum disconnect / reconnect retries before quitting'))
-    parser.add_argument('--version', action='version', version='%(prog)s {}'.format(version.__version__),
-                        help=_('show program\'s version number and exit'))
+    parser = argparse.ArgumentParser(
+        prog="hangupsbot",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help=_("log detailed debugging messages"))
+    parser.add_argument("--log", default=default_log_path,
+                        help=_("log file path"))
+    parser.add_argument("--cookies", default=default_cookies_path,
+                        help=_("cookie storage path"))
+    parser.add_argument("--memory", default=default_memory_path,
+                        help=_("memory storage path"))
+    parser.add_argument("--config", default=default_config_path,
+                        help=_("config storage path"))
+    parser.add_argument("--retries", default=5, type=int,
+                        help=_("Maximum disconnect / reconnect retries before "
+                               "quitting"))
+    parser.add_argument("--version", action="version",
+                        version="%(prog)s {}".format(version.__version__),
+                        help=_("show program\"s version number and exit"))
     args = parser.parse_args()
-
 
 
     # Create all necessary directories.
@@ -767,16 +870,18 @@ def main():
         if directory and not os.path.isdir(directory):
             try:
                 os.makedirs(directory)
-            except OSError as e:
-                sys.exit(_('Failed to create directory: {}').format(e))
+            except OSError as err:
+                sys.exit(_("Failed to create directory: %s"), err)
 
     # If there is no config file in user data directory, copy default one there
     if not os.path.isfile(args.config):
         try:
-            shutil.copy(os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'config.json')),
-                        args.config)
-        except (OSError, IOError) as e:
-            sys.exit(_('Failed to copy default config file: {}').format(e))
+            shutil.copy(
+                os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),
+                                             "config.json")),
+                args.config)
+        except (OSError, IOError) as err:
+            sys.exit(_("Failed to copy default config file: %s"), err)
 
     configure_logging(args)
 
@@ -786,6 +891,5 @@ def main():
     # start the bot
     bot.run()
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
