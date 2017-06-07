@@ -70,7 +70,8 @@ async def _check_if_admin_added_me(bot, event, command):
                     event.conv,
                     _("<i>{}, you need to be authorised to add me to another conversation. I'm leaving now...</i>").format(event.user.full_name))
 
-                await _leave_the_chat_quietly(bot, event, command)
+                asyncio.ensure_future(_leave_the_chat_quietly(
+                    bot, event, command))
 
 
 async def _verify_botkeeper_presence(bot, event, command):
@@ -114,7 +115,7 @@ async def _verify_botkeeper_presence(bot, event, command):
             event.conv,
             _("<i>There is no botkeeper in here. I have to go...</i>"))
 
-        await _leave_the_chat_quietly(bot, event, command)
+        asyncio.ensure_future(_leave_the_chat_quietly(bot, event, command))
 
 
 async def _leave_the_chat_quietly(bot, event, command):
