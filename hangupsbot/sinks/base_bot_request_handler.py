@@ -1,3 +1,4 @@
+# pylint: skip-file
 import asyncio, base64, io, imghdr, json, logging, time
 
 from http.server import BaseHTTPRequestHandler

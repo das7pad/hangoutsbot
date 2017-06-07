@@ -1,3 +1,4 @@
+# pylint: skip-file
 import aiohttp
 import asyncio
 import json

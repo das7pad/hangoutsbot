@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# pylint: skip-file
 """
 hangoutsbot plugin for integration with surveillance systems that send out notifications
 by email (containing webcam snapshots).

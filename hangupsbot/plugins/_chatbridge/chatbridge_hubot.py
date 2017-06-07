@@ -1,6 +1,7 @@
 import aiohttp, asyncio, json, logging, requests
 
 import plugins
+# pylint: skip-file
 
 from webbridge import WebFramework, IncomingRequestHandler
 
