@@ -41,13 +41,11 @@ class EventHandler:
                             "typing": [],
                             "watermark": [] }
 
-        bot.register_shared( 'reprocessor.attach_reprocessor',
-                             self.attach_reprocessor,
-                             forgiving=True )
 
-        bot.register_shared( 'chatbridge.behaviours',
-                             {},
-                             forgiving=True )
+        plugins.register_shared("reprocessor.attach_reprocessor",
+                                self.attach_reprocessor)
+
+        plugins.register_shared("chatbridge.behaviours", {})
 
     def register_handler(self, function, pluggable="message", priority=50,
                          **kwargs):

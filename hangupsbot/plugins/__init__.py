@@ -172,8 +172,14 @@ class tracker:
     def register_handler(self, function, type_, priority):
         self._current["handlers"].append((function, type_, priority))
 
-    def register_shared(self, identifier, objectref, forgiving):
-        self._current["shared"].append((identifier, objectref, forgiving))
+    def register_shared(self, identifier, objectref):
+        """track a registered shared
+
+        Args:
+            identifier: string, a unique identifier for the objectref
+            objectref: any type, the shared object
+        """
+        self._current["shared"].append((identifier, objectref))
 
     def register_thread(self, thread):
         self._current["threads"].append(thread)
@@ -239,10 +245,17 @@ def register_handler(function, type="message", priority=50):
     bot_handlers = tracking.bot._handlers
     bot_handlers.register_handler(function, type, priority)
 
-def register_shared(identifier, objectref, forgiving=True):
-    """register shared object"""
-    bot = tracking.bot
-    bot.register_shared(identifier, objectref, forgiving=forgiving)
+def register_shared(identifier, objectref):
+    """register a shared object to be called later
+
+    Args:
+        identifier: string, a unique identifier for the objectref
+        objectref: any type, the object to be shared
+
+    Raises:
+        RuntimeError: the identifier is already in use
+    """
+    tracking.bot.register_shared(identifier, objectref)
 
 def start_asyncio_task(function, *args, **kwargs):
     """start an async callable and track its execution

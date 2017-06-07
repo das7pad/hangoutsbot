@@ -47,13 +47,13 @@ DEFAULT_CONFIG = {
 class HangupsBot(object):
     """Hangouts bot listening on all conversations"""
     def __init__(self, cookies_path, config_path, memory_path, max_retries=5):
-        self.shared = {} # safe place to store references to objects
 
         self._client = None
         self._cookies_path = cookies_path
         self._max_retries = max_retries
 
         # These are populated by on_connect when it's called.
+        self.shared = None # safe place to store references to objects
         self._conv_list = None # hangups.ConversationList
         self._user_list = None # hangups.UserList
         self._handlers = None # handlers.py::EventHandler
@@ -127,24 +127,40 @@ class HangupsBot(object):
             logger.warning("LOCALE: {}".format(language_code))
             return False
 
+    def register_shared(self, id_, objectref):
+        """register a shared object to be called later
 
-    def register_shared(self, id, objectref, forgiving=False):
-        if id in self.shared:
-            message = _("{} already registered in shared").format(id)
-            if forgiving:
-                logger.info(message)
-            else:
-                raise RuntimeError(message)
+        Args:
+            id_: string, a unique identifier for the objectref
+            objectref: any type, the object to be shared
 
-        self.shared[id] = objectref
-        plugins.tracking.register_shared(id, objectref, forgiving=forgiving)
+        Raises:
+            RuntimeError: the id_ is already in use
+        """
+        if id_ in self.shared:
+            raise RuntimeError(_("{} already registered in shared").format(id_))
 
-    def call_shared(self, id, *args, **kwargs):
-        object = self.shared[id]
-        if hasattr(object, '__call__'):
-            return object(*args, **kwargs)
-        else:
-            return object
+        self.shared[id_] = objectref
+        plugins.tracking.register_shared(id_, objectref)
+
+    def call_shared(self, id_, *args, **kwargs):
+        """run a registered shared function or get a registered object
+
+        Args:
+            id_: string, shared identifier
+            args/kwargs: arguments for the shared function
+
+        Returns:
+            any type, the return value of the shared function or the shared
+                object if the registered object is not callable
+
+        Raises:
+            KeyError: the object identifier is unknown
+        """
+        object_ = self.shared[id_]
+        if hasattr(object_, "__call__"):
+            return object_(*args, **kwargs)
+        return object_
 
     def login(self, cookies_path):
         """Login to Google account"""
@@ -417,6 +433,7 @@ class HangupsBot(object):
 
         logger.debug("connected")
 
+        self.shared = {}
         plugins.tracking.set_bot(self)
         command.set_tracking(plugins.tracking)
         command.set_bot(self)
