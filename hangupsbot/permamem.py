@@ -389,7 +389,7 @@ class ConversationMemory(object):
         else:
             logger.warning("cannot remove: %s, not found", conv_id)
 
-    def get(self, search="", **kwargs):
+    def get(self, search="", **kwargs):          #pylint:disable=too-many-locals
         """get conversations matching a filter of terms
 
         supports sequential boolean operations,
@@ -400,20 +400,25 @@ class ConversationMemory(object):
             kwargs: dict, legacy to catch the keyword argument 'filter'
 
         Returns:
-            dict, conv ids as keys and permamem entry of the conv as value
+            dict, conv ids as keys and permamem entry of each conv as value
         """
-        def get_terms():
-            """parse the given search request
+        def parse_request(locals_):
+            """split multiple querys to their filter functions and queryvalue
+
+            Args:
+                locals_: dict, locals of .get to access all filter functions
 
             Returns:
-                list of lists with two strings: an operator and a term
+                list, a list of tuple,
+                (operator : string, query: string, <filter func> : callable)
+                invalid filter querys result in a string as filter func
             """
             raw_filter = (kwargs.get('filter') or search).strip()
             terms = []
             operator = "start"
             while raw_filter.startswith("("):
                 tokens = re.split(r"(?<!\\)(?:\\\\)*\)", raw_filter, maxsplit=1)
-                terms.append([operator, tokens[0][1:]])
+                terms.append((operator, tokens[0][1:]))
                 if len(tokens) != 2:
                     break
                 raw_filter = tokens[1]
@@ -432,12 +437,24 @@ class ConversationMemory(object):
 
             if raw_filter or not terms:
                 # second condition is to ensure at least one term, even if blank
-                terms.append([operator, raw_filter])
+                terms.append((operator, raw_filter))
 
             logger.debug(".get() with terms: %s", terms)
-            return terms
 
-        # filter functions
+            parsed = []
+            for operator, term in terms:
+                if ":" in term:
+                    type_, query = term.split(":", 1)
+                    parsed.append((operator, query, locals_.get("_" + type_,
+                                                                type_)))
+                else:
+                    parsed.append((operator, term, _id))
+            return parsed
+
+        #### begin search function definitions ###
+        # NOTE: more filter can be added here
+        # a search for "querytype:queryvalue" requires a function with a
+        # footprint like: _querytype(convid, convdata, queryvalue)
         def _text(dummy0, convdata, query):
             """check the conv title for the given query
 
@@ -498,40 +515,37 @@ class ConversationMemory(object):
             """
             return random.random() < float(query)
 
+        def _tag(convid, dummy0, query):
+            """check if the query is a registered tag and the conv is tagged
+
+            Returns:
+                boolean, True if the query is a tag and the conv is tagged w/ it
+            """
+            return (query in self.bot.tags.indices["tag-convs"] and
+                    convid in self.bot.tags.indices["tag-convs"][query])
+
+        ### end search function definitions ###
         sourcelist = self.catalog.copy()
         matched = {}
 
-        for operator, term in get_terms():
+        for operator, query, func in parse_request(locals()):
+            if not callable(func):
+                logger.warning('ConversationMemory.get: invalid filter "%s:%s"',
+                               func, query)
+                continue
+
             if operator == "and":
                 sourcelist = matched
                 matched = {}
 
-            # extra search term types added here
-
-            if not term:
+            if not query:
                 # return everything
                 matched = sourcelist
                 continue
 
-            query_type, query = (term.split(":", 1)
-                                 if ":" in term else ("id", term))
-            if query_type == "id" and query in sourcelist:
-                matched[query] = sourcelist[query]
-
-            elif query_type == "tag":
-                # return all conversations with the tag
-                if query not in self.bot.tags.indices["tag-convs"]:
-                    continue
-                for convid in self.bot.tags.indices["tag-convs"][query]:
-                    if convid in sourcelist:
-                        matched[convid] = sourcelist[convid]
-
-            elif "_" + query_type in locals():
-                func = locals()["_" + query_type]
-                for convid, convdata in sourcelist.items():
-                    if func(convid, convdata, query):
-                        matched[convid] = convdata
-
+            for convid, convdata in sourcelist.items():
+                if func(convid, convdata, query):
+                    matched[convid] = convdata
         return matched
 
     def get_name(self, conv, fallback=SENTINEL):
