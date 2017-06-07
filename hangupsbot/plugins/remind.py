@@ -1,45 +1,99 @@
-import plugins
+"""schedule a reminder in a pubilc or private conversation"""
 import asyncio
 
-def _initialise(bot):
-    plugins.register_user_command(["remindme","remindall"])
+from commands import Help
+import plugins
 
-def remindme(bot, event, dly, *args):
+
+HELP = {
+    'remindme': _("Posts a custom message to a 1on1 after a delay\nUsage: "
+                  "{bot_cmd} remindme <b>delay (minutes)</b> <i>Message</i>"),
+    'remindall': _("Posts a custom message to the chat after a delay\nUsage: "
+                   "{bot_cmd} remindall <b>delay (minutes)</b> <i>Message</i>")
+}
+
+def _initialise():
+    """register the commands and their help entrys"""
+    plugins.register_user_command(["remindme", "remindall"])
+    plugins.register_help(HELP)
+
+def _get_delay(args):
+    """check if enough args are specified and wheather a valid delay is given
+
+    Args:
+        args: tuple of string, argument passed to the command
+
+    Returns:
+        float, the specified delay
+
+    Raises:
+        commands.Help: not enough args specified or invalid delay given
     """
-    Posts a custom message to a 1on1 after a delay
-
-    /bot remindme <b>delay (minutes)</b> <i>Message</i>
-    """
-
-    if not args:
-        yield from bot.coro_send_message(event.conv, _("Usage: /bot remindme <b>delay (minutes)</b> <i>Message</i>"))
-        return
+    if len(args) < 2:
+        raise Help(_("specify delay and message"))
 
     try:
-        delayTime = float(dly)*60.0
-        yield from bot.coro_send_message(event.conv, _("Private reminder for <b>{}</b> in {}m").format(event.user.full_name, dly))
-        conv_1on1 = yield from bot.get_1to1(event.user.id_.chat_id)
-        yield from asyncio.sleep(delayTime)
-        yield from bot.coro_send_message(conv_1on1, _("<b>Reminder:</b> " + " ".join(str(x) for x in args)))
+        return float(args[0])*60.0
     except ValueError:
-        yield from bot.coro_send_message(event.conv, _("Error creating reminder, invalid delay"))
+        raise Help(_('invalid delay "%s" given, integer or float required')
+                   % args[0])
 
+async def remindme(bot, event, *args):
+    """schedule a message for the private chat with the bot
 
-def remindall(bot, event, dly, *args):
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple of strings, delay and message content
+
+    Returns:
+        string, confirmation of the schedules message
+
+    Raises:
+        commands.Help: invalid request, either too few args or invalid delay
     """
-    Posts a custom message to the chat after a delay
+    delay = _get_delay(args)
+    full_name = event.user.full_name
+    conv_1on1 = await bot.get_1to1(event.user.id_.chat_id, force=True)
+    if not conv_1on1:
+        return _("%s, chat with me in a private chat first") % full_name
 
-    /bot remindall <b>delay (minutes)</b> <i>Message</i>
+    asyncio.ensure_future(_reminder(bot, conv_1on1, delay, args))
+
+    return _("Private reminder for <b>{}</b> in {}m").format(full_name, args[0])
+
+async def remindall(bot, event, *args):
+    """schedule a message in the current conversation
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple of strings, delay and message content
+
+    Returns:
+        string, confirmation of the schedules message
+
+    Raises:
+        commands.Help: invalid request, either too few args or invalid delay
     """
+    delay = _get_delay(args)
 
-    if not args:
-        yield from bot.coro_send_message(event.conv, _("Usage: /bot remindall <b>delay (minutes)</b> <i>Message</i>"))
-        return
+    asyncio.ensure_future(_reminder(bot, event.conv_id, delay, args))
 
+    return _("Public reminder in {}m").format(args[0])
+
+async def _reminder(bot, conv_id, delay, args):
+    """detached execution of a remind/remindall request
+
+    Args:
+        bot: HangupsBot instance
+        conv_id: string, Hangouts conversation identifier
+        delay: float, time in seconds to sleep before sending the reminder
+        args: tuple of strings, reminder text
+    """
     try:
-        delayTime = float(dly)*60.0
-        yield from bot.coro_send_message(event.conv, _("Public reminder in {}m").format(dly))
-        yield from asyncio.sleep(delayTime)
-        yield from bot.coro_send_message(event.conv, _("<b>Reminder:</b> " + " ".join(str(x) for x in args)))
-    except ValueError:
-        yield from bot.coro_send_message(event.conv, _("Error creating reminder, invalid delay"))
+        await asyncio.sleep(delay)
+    except asyncio.CancelledError:
+        return
+    await bot.coro_send_message(conv_id,
+                                _("<b>Reminder:</b> ") + " ".join(args[1:]))
