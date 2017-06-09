@@ -138,8 +138,8 @@ async def pluginload(bot, event, *args):
         module_path = args[0]
 
         try:
-            if plugins.load(bot, module_path):
-                message = "<b><pre>{}</pre>: loaded</b>".format(module_path)
+            if await plugins.load(bot, module_path):
+                message = "<b><i>{}</i>: loaded</b>".format(module_path)
             else:
                 message = "<b><pre>{}</pre>: failed</b>".format(module_path)
 
@@ -162,8 +162,8 @@ async def pluginreload(bot, event, *args):
 
         try:
             await plugins.unload(bot, module_path)
-            if plugins.load(bot, module_path):
-                message = "<b><pre>{}</pre>: reloaded</b>".format(module_path)
+            if await plugins.load(bot, module_path):
+                message = _("<b><i>{}</i>: reloaded</b>").format(module_path)
             else:
                 message = "<b><pre>{}</pre>: failed reload</b>".format(
                     module_path)
@@ -287,7 +287,7 @@ async def addplugin(bot, event, plugin, *args):
         module_path = "plugins.{}".format(plugin)
         escaped_module_path = module_path.replace("_", "\\_")
         try:
-            if plugins.load(bot, module_path):
+            if await plugins.load(bot, module_path):
                 lines.append('* **loaded: {}**'.format(escaped_module_path))
             else:
                 lines.append('* failed to load: {}'.format(escaped_module_path))

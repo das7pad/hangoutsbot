@@ -8,7 +8,6 @@ import inspect
 import logging
 import os
 import sys
-import time
 
 from inspect import getmembers, isfunction
 
@@ -61,15 +60,15 @@ class tracker:
             "aiohttp.session": [],
         }
 
-    def start(self, metadata):
+    async def start(self, metadata):
         """start gathering new plugin functionality, extend existing data
 
         Args:
             metadata: dict, required keys: 'module' and 'module.path'
         """
         waited = 0
-        while self._running and waited < 10:
-            time.sleep(0.5)
+        while self._running and waited < 100:
+            await asyncio.sleep(0.1)
         self._running = True
 
         self.end() # cleanup from recent run
@@ -435,18 +434,22 @@ def get_configured_plugins(bot):
     logger.debug("included %s: %s", len(plugin_list), plugin_list)
     return plugin_list
 
-def load_user_plugins(bot):
+async def load_user_plugins(bot):
     """loads all user plugins
 
     Args:
         bot: HangupsBot instance
     """
-
     plugin_list = get_configured_plugins(bot)
 
     for module in plugin_list:
         module_path = "plugins.{}".format(module)
-        load(bot, module_path)
+        try:
+            await load(bot, module_path)
+        except asyncio.CancelledError:
+            raise
+        except:         # capture all Exceptions   # pylint: disable=bare-except
+            logger.exception(module_path)
 
 async def unload_all(bot):
     """unload user plugins
@@ -461,7 +464,7 @@ async def unload_all(bot):
         except RuntimeError:
             logger.exception("%s could not be unloaded", module_path)
 
-def load(bot, module_path, module_name=None):
+async def load(bot, module_path, module_name=None):
     """loads a single plugin-like object as identified by module_path
 
     Args:
@@ -477,10 +480,10 @@ def load(bot, module_path, module_name=None):
     if module_path in tracking.list:
         raise RuntimeError("{} already loaded".format(module_path))
 
-    tracking.start({"module": module_name, "module.path": module_path})
+    await tracking.start({"module": module_name, "module.path": module_path})
 
     if not load_module(module_path):
-        return
+        return False
 
     setattr(sys.modules[module_path], 'print', utils.print_to_logger)
     if hasattr(sys.modules[module_path], "hangups"):
@@ -500,23 +503,24 @@ def load(bot, module_path, module_name=None):
                     candidate_commands.append((function_name, the_function))
                 continue
 
-            """accepted function signatures:
-            function()
-            function(bot) - parameter must be named "bot"
-            """
-            _expected = list(inspect.signature(the_function).parameters)
-            if len(_expected) == 0:
-                the_function()
-            elif len(_expected) == 1 and _expected[0] == "bot":
-                the_function(bot)
-            else:
+            # accepted function signatures:
+            # coro/function()
+            # coro/function(bot) - parameter must be named "bot"
+            expected = list(inspect.signature(the_function).parameters)
+            if len(expected) > 1 or (expected and expected[0] != "bot"):
                 # plugin not updated since v2.4
-                logger.info("[UNSUPPORTED] consider upgrading the plugin in %s"
-                            "to match with the current initialize standard",
-                            module_path)
-    except:
+                logger.warning("%s of %s does not comply with the current "
+                               "initialize standard!",
+                               function_name, module_path)
+                continue
+
+            result = the_function(bot) if expected else the_function()
+            if asyncio.iscoroutinefunction(the_function):
+                await result
+
+    except:             # capture all Exceptions   # pylint: disable=bare-except
         logger.exception("error on plugin init: %s", module_path)
-        return
+        return False
 
     """
     register filtered functions
@@ -651,5 +655,5 @@ async def reload_plugin(bot, module_path):
         return False
     SENTINALS[module_path] += 1
     await unload(bot, module_path)
-    load(bot, module_path)
+    await load(bot, module_path)
     return True

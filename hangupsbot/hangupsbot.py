@@ -504,8 +504,7 @@ class HangupsBot(object):
         return modified
 
 
-    @asyncio.coroutine
-    def _on_connect(self):
+    async def _on_connect(self):
         """handle connection/reconnection"""
 
         logger.debug("connected")
@@ -514,7 +513,6 @@ class HangupsBot(object):
         plugins.tracking.set_bot(self)
         command.set_tracking(plugins.tracking)
         command.set_bot(self)
-
         self.tags = tagging.tags(self)
         self._handlers = handlers.EventHandler(self)
         handlers.handler.set_bot(self) # shim for handler decorator
@@ -525,17 +523,17 @@ class HangupsBot(object):
         #  e.g. adding new functionality into hangups library
 
         self._user_list, self._conv_list = (
-            yield from hangups.build_user_conversation_list(self._client))
+            await hangups.build_user_conversation_list(self._client))
 
         self.conversations = await permamem.initialise(self)
 
-        plugins.load(self, "commands.plugincontrol")
-        plugins.load(self, "commands.basic")
-        plugins.load(self, "commands.tagging")
-        plugins.load(self, "commands.permamem")
-        plugins.load(self, "commands.convid")
-        plugins.load(self, "commands.loggertochat")
-        plugins.load_user_plugins(self)
+        await plugins.load(self, "commands.plugincontrol")
+        await plugins.load(self, "commands.basic")
+        await plugins.load(self, "commands.tagging")
+        await plugins.load(self, "commands.permamem")
+        await plugins.load(self, "commands.convid")
+        await plugins.load(self, "commands.loggertochat")
+        await plugins.load_user_plugins(self)
 
         self._conv_list.on_event.add_observer(self._handlers.handle_event)
         self._client.on_state_update.add_observer(
