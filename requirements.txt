@@ -21,6 +21,7 @@ selenium                                        # plugins: image_screenshot
 telepot >= 10.5                                 # plugins: telesync
 cleverwrap                                      # plugins: cleverbot
 TwitterAPI                                      # plugins: twitter
+lxml                                            # plugins: twitter
 google-api-python-client                        # plugins: spotify
 spotipy                                         # plugins: spotify
 soundcloud                                      # plugins: spotify
