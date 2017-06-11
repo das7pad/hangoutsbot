@@ -605,7 +605,6 @@ async def unload(bot, module_path):
         raise RuntimeError("%s has %s thread(s)" % (module_path,
                                                     len(plugin["threads"])))
 
-    loop = asyncio.get_event_loop()
     all_commands = plugin["commands"]["all"]
     for command_name in all_commands:
         if command_name in command.commands:
@@ -636,9 +635,25 @@ async def unload(bot, module_path):
 
     for task in plugin["asyncio.task"]:
         logger.debug("cancelling task: %s", task)
-        loop.call_soon_threadsafe(task.cancel)
-        # await for the execution
-        await asyncio.sleep(0)
+        task.cancel()
+
+    # wait for the completion of all task
+    try:
+        done = await asyncio.wait_for(asyncio.gather(*plugin["asyncio.task"],
+                                                     return_exceptions=True), 5)
+        failed = []
+        for task in plugin["asyncio.task"]:
+            result = done.pop(0)
+            if not isinstance(result, Exception):
+                continue
+            failed.append("%s\nexited with Exception %s" % (task, repr(result)))
+
+        if failed:
+            logger.info("not all tasks of %s were shutdown gracefully:\n%s",
+                        module_path, "\n".join(failed))
+    except TimeoutError:
+        logger.info("not all tasks of %s were shutdown gracefully after 5sec",
+                    module_path)
 
     if len(plugin["aiohttp.web"]) > 0:
         from sinks import aiohttp_terminate # XXX: needs to be late-imported
