@@ -23,7 +23,6 @@ class EventHandler:
         self.bot = bot
         self.bot_command = bot_command
 
-        self._prefix_reprocessor = "uuid://"
         self._reprocessors = {}
 
         self._passthrus = {}
@@ -86,24 +85,38 @@ class EventHandler:
         self._contexts[_id] = variable
         return _id
 
-    def register_reprocessor(self, callable):
-        _id = str(uuid.uuid4())
-        self._reprocessors[_id] = callable
-        return _id
+    def register_reprocessor(self, func):
+        """register a function that is identified by the created uuid
 
-    def attach_reprocessor(self, callable, return_as_dict=False):
-        """reprocessor: map callable to a special hidden context link that can be added anywhere 
-        in a message. when the message is sent and subsequently received by the bot, it will be 
-        passed to the callable, which can modify the event object by reference
+        Args:
+            func: a callable that takes three args: bot, event, command
+
+        Returns:
+            string, a unique identifier for the callable
         """
-        _id = self.register_reprocessor(callable)
-        context_fragment = '<a href="' + self._prefix_reprocessor + _id + '"> </a>'
-        if return_as_dict:
-            return { "id": _id,
-                     "callable": callable,
-                     "fragment": context_fragment }
-        else:
-            return context_fragment
+        reprocessor_id = None
+        while reprocessor_id is None:
+            reprocessor_id = str(uuid.uuid4())
+            unique = self._reprocessors.add(reprocessor_id, func)
+            if not unique:
+                reprocessor_id = None
+        return reprocessor_id
+
+    def attach_reprocessor(self, func, return_as_dict=None):
+        """connect a func to an identifier to reprocess the event on receive
+
+        reprocessor: map func to a hidden annotation to a message.
+        When the message is sent and subsequently received by the bot, it will
+        be passed to the func, which can modify the event object by reference
+        before it runs through the event processing
+
+        Args:
+            func: callable that takes three arguments: bot, event, command
+            return_as_dict: legacy code
+        """
+        reprocessor_id = self.register_reprocessor(func)
+        return {"id": reprocessor_id,
+                "callable": func}
 
     """handler core"""
 
@@ -160,13 +173,6 @@ class EventHandler:
                     if annotation.value in self._contexts:
                         event.context = self._contexts[annotation.value]
                         del self._contexts[annotation.value]
-
-            if len(event.conv_event.segments) > 0:
-                for segment in event.conv_event.segments:
-                    if segment.link_target:
-                        if segment.link_target.startswith(self._prefix_reprocessor):
-                            _id = segment.link_target[len(self._prefix_reprocessor):]
-                            yield from self.run_reprocessor(_id, event)
 
             """auto opt-in - opted-out users who chat with the bot will be opted-in again"""
             if not event.from_bot and self.bot.conversations.catalog[event.conv_id]["type"] == "ONE_TO_ONE":

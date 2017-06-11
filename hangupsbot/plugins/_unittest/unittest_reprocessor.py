@@ -13,9 +13,9 @@ async def testcoroutinecontext(bot, event, *args):
     await bot.coro_send_message(
         event.conv_id,
         "This message has hidden context",
-        context = { "reprocessor": bot.call_shared( "reprocessor.attach_reprocessor",
-                                                    coro_reprocess_the_event,
-                                                    return_as_dict=True )})
+        context={
+            "reprocessor": bot.call_shared("reprocessor.attach_reprocessor",
+                                           coro_reprocess_the_event)})
 
 
 async def testnoncoroutinecontext(bot, event, *args):
@@ -23,9 +23,9 @@ async def testnoncoroutinecontext(bot, event, *args):
     await bot.coro_send_message(
         event.conv_id,
         "This message has hidden context",
-        context = { "reprocessor": bot.call_shared( "reprocessor.attach_reprocessor",
-                                                    reprocess_the_event,
-                                                    return_as_dict=True )})
+        context={
+            "reprocessor": bot.call_shared("reprocessor.attach_reprocessor",
+                                           reprocess_the_event)})
 
 
 async def coro_reprocess_the_event(bot, event, id):
