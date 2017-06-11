@@ -26,7 +26,7 @@ def recursive_tag_format(array, **kwargs):
         else:
             array[index] = array[index].format(**kwargs)
 
-class tracker:
+class Tracker(object):
     """used by the plugin loader to keep track of loaded commands
     designed to accommodate the dual command registration model (via function or
     decorator)
@@ -204,7 +204,7 @@ class tracker:
         self._current["aiohttp.session"].append(session)
 
 
-tracking = tracker()
+tracking = Tracker()
 
 
 # helpers, used by loaded plugins to register commands
