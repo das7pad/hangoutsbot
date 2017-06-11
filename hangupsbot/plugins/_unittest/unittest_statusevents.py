@@ -26,15 +26,15 @@ def on_typing_notification(bot, event, command):
     conv_title = bot.conversations.get_name(event.conv_id,
                                             "? {}".format(event.conv_id))
 
-    if typing_status == hangups.schemas.TypingStatus.TYPING:
+    if typing_status == hangups.TYPING_TYPE_STARTED:
         logger.info("%s (%s) typing on %s (%s)",
                     user_full_name, user_chat_id, conv_title, event.conv_id)
 
-    elif typing_status == hangups.schemas.TypingStatus.PAUSED:
+    elif typing_status == hangups.TYPING_TYPE_PAUSED:
         logger.info("%s (%s) paused typing on %s (%s)",
                     user_full_name, user_chat_id, conv_title, event.conv_id)
 
-    elif typing_status == hangups.schemas.TypingStatus.STOPPED:
+    elif typing_status == hangups.TYPING_TYPE_STOPPED:
         logger.info("%s (%s) stopped typing on %s (%s)",
                     user_full_name, user_chat_id, conv_title, event.conv_id)
 

@@ -23,7 +23,7 @@ async def _watch_membership_change(bot, event, command):
     names = ', '.join([user.full_name for user in event_users])
 
     # JOIN
-    if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+    if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
         logger.info('{} has added {}'.format(event.user.full_name, names))
     # LEAVE
     else:
