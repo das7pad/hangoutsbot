@@ -27,8 +27,7 @@ def testcontext(bot, event, *args):
                                                         "var2" : "b" }}})
 
 
-@asyncio.coroutine
-def _handle_incoming_message(bot, event, command):
+async def _handle_incoming_message(bot, event, command):
     """BEWARE OF INFINITE MESSAGING LOOPS!
 
     all bot messages have context, and if you send a message here
