@@ -1,6 +1,7 @@
-"""
-"showme" function to retrieve snapshots from security cameras or other URL's accessible to the hangupsbot server and
-sent them to the user.
+"""the "showme" function retrieves image snapshots and sends them to the user.
+
+a source for snapshots can be either security cameras or other URL's accessible
+to the hangupsbot server
 
 Config must specify aliases and urls which should include any nessisary auth.
 """
@@ -32,48 +33,82 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 __author__ = "Daniel Casner <www.artificelab.com>"
 
+import io
+import logging
 import time
-import aiohttp, asyncio, io, logging
+import aiohttp
+import hangups
 import plugins
 
 logger = logging.getLogger(__name__)
 
-def _initalize(bot):
-    if bot.get_config_option("showme") is not None:
-        plugins.register_user_command(["showme"])
-    else:
-        logger.error('SHOWME: config["showme"] dict required')
+HELP = _('Retrieve images from showme sources by saying: '
+         '"{bot_cmd} showme SOURCE" or list sources by saying '
+         '"{bot_cmd} showme sources" or all sources by saying '
+         '"{bot_cmd} showme all"')
 
-def sendSource(bot, event, name, imgLink):
-    logger.info("Getting {}".format(imgLink))
-    r = yield from aiohttp.request("get", imgLink)
-    raw = yield from r.read()
-    contentType = r.headers['Content-Type']
-    logger.info("\tContent-type: {}".format(contentType))
-    ext = contentType.split('/')[1]
+def _initalize(bot):
+    """register the showme command if sources are configured in config
+
+    Args:
+        bot: HangupsBot instance
+    """
+    if bot.config.get_option("showme") is not None:
+        plugins.register_user_command(["showme"])
+        plugins.register_help(HELP, "showme")
+    else:
+        logger.info('SHOWME: config["showme"] dict required')
+
+async def _send_source(bot, event, name, img_link):
+    """fetch the provided source and reupload the image and send a message
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        name: string, source label
+        img_link: string, url to a shared webcam
+    """
+    logger.info("Getting %s", img_link)
+    res = await aiohttp.request("get", img_link)
+    raw = await res.read()
+    content_type = res.headers['Content-Type']
+    logger.info("\tContent-type: %s", content_type)
+    ext = content_type.split('/')[1]
     image_data = io.BytesIO(raw)
     filename = "{}_{}.{}".format(name, int(time.time()), ext)
     try:
-        image_id = yield from bot._client.upload_image(image_data, filename=filename)
-    except:
-        yield from bot.coro_send_message(event.conv, _("I'm sorry, I couldn't upload a {} image".format(ext)))
+        image_id = await bot._client.upload_image(image_data, filename=filename)
+    except hangups.NetworkError:
+        await bot.coro_send_message(
+            event.conv_id,
+            _("I'm sorry, I couldn't upload a {} image".format(ext)))
     else:
-        yield from bot.coro_send_message(event.conv.id_, None, image_id=image_id)
+        await bot.coro_send_message(event.conv.id_, None, image_id=image_id)
 
-def showme(bot, event, *args):
-    """Retrieve images from showme sources by saying: "/bot showme SOURCE" or list sources by saying "/bot showme sources" or all sources by saying "/bot showme all" """
-    sources = bot.get_config_option("showme")
+async def showme(bot, event, *args):
+    """retrieve images from web cameras
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple of strings, words passed to the command,
+            see HELP for details
+
+    Returns:
+        string, user output; or None if a valid image request was made
+    """
+    sources = bot.config.get_option("showme")
     if not len(args):
-        yield from bot.coro_send_message(event.conv, _("Show you what?"))
+        return _("Show you what?")
     elif args[0].lower() == 'sources':
-        html = """My sources are:<br />"""
+        html = """My sources are:\n"""
         for name in sources.keys():
-            html += " * {}<br />".format(name)
-        yield from bot.coro_send_message(event.conv, _(html))
+            html += " * {}\n".format(name)
+        return _(html)
     elif args[0].lower() == 'all':
         for name, source in sources.items():
-            yield from sendSource(bot, event, name, source)
+            await _send_source(bot, event, name, source)
     elif not args[0] in sources:
-        yield from bot.coro_send_message(event.conv, _("I don't know a \"{}\", try sources".format(args[0])))
+        return _("I don't know a \"{}\", try sources".format(args[0]))
     else:
-        yield from sendSource(bot, event, args[0], sources[args[0]])
+        await _send_source(bot, event, args[0], sources[args[0]])
