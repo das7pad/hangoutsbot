@@ -17,8 +17,9 @@ def name_from_hangups_conversation(conv):
     """get the name for supplied hangups conversation
     based on hangups.ui.utils.get_conv_name, except without the warnings
     """
-    if not isinstance(conv, HangupsConversation) and conv.name:
-        return conv.name
+    name = conv._conversation.name
+    if isinstance(name, str) and name:
+        return name
 
     if not conv.users:
         return "Empty Conversation"

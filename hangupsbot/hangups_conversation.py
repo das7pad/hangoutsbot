@@ -121,8 +121,7 @@ class HangupsConversation(hangups.conversation.Conversation):
         Returns:
             string
         """
-        live = self._conversation.name
-        return live or self.bot.conversations.get_name(self)
+        return self.bot.conversations.get_name(self)
 
     @asyncio.coroutine
     def send_message(self, message, image_id=None, otr_status=None, context=None):
