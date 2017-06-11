@@ -17,14 +17,13 @@ def _initialise(bot):
 
 def testcontext(bot, event, *args):
     """test annotation with some tags"""
-    tags = [ 'text', 'longer-text', 'text with symbols:!@#$%^&*(){}' ]
-    yield from bot.coro_send_message(
+    tags = ['text', 'longer-text', 'text with symbols:!@#$%^&*(){}']
+    return (
         event.conv_id,
-        "this message has context - please see your console/log".format(tags),
-        context = { "tags": tags,
-                    "passthru": { "random_variable" : "hello world!",
-                                  "some_dictionary" : { "var1" : "a",
-                                                        "var2" : "b" }}})
+        "this message has context - please see your console/log",
+        {"tags": tags,
+         "passthru": {"random_variable" : "hello world!",
+                      "some_dictionary" : {"var1" : "a", "var2" : "b"}}})
 
 
 async def _handle_incoming_message(bot, event, command):

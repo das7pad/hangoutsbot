@@ -3,8 +3,9 @@ import asyncio
 import plugins
 
 
-def _initialise(bot):
-    plugins.register_admin_command(["testcoroutinecontext", "testnoncoroutinecontext"])
+def _initialise():
+    plugins.register_admin_command(["testcoroutinecontext",
+                                    "testnoncoroutinecontext"])
 
 
 async def testcoroutinecontext(bot, event, *args):
@@ -30,7 +31,7 @@ async def testnoncoroutinecontext(bot, event, *args):
 async def coro_reprocess_the_event(bot, event, id):
     await bot.coro_send_message(
         event.conv_id,
-        """<em>coroutine responding to message with uuid: {}</em><br />"""
+        """<em>coroutine responding to message with uuid: {}</em>\n"""
         """VISIBLE CONTENT WAS: {}""".format(id, event.text))
 
 
