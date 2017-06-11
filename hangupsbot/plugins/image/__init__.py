@@ -1,4 +1,3 @@
-import aiohttp
 import asyncio
 import io
 import logging
@@ -7,6 +6,8 @@ import re
 import sys
 
 from asyncio.subprocess import PIPE
+
+import aiohttp
 
 import plugins
 
@@ -77,12 +78,11 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
     return False
 
 
-@asyncio.coroutine
-def image_upload_single(image_uri):
+async def image_upload_single(image_uri):
     filename = os.path.basename(image_uri)
     logger.info("fetching {}".format(filename))
     try:
-        r = yield from aiohttp.request('get', image_uri)
+        r = await aiohttp.request('get', image_uri)
         content_type = r.headers['Content-Type']
 
         image_handling = False # must == True if valid image, can contain additonal directives
@@ -104,10 +104,10 @@ def image_upload_single(image_uri):
                 image_handling = "image_convert_to_png"
 
         if image_handling:
-            raw = yield from r.read()
+            raw = await r.read()
             if image_handling is not "standard":
                 try:
-                    results = yield from getattr(sys.modules[__name__], image_handling)(raw)
+                    results = await getattr(sys.modules[__name__], image_handling)(raw)
                     if results:
                         # allow custom handlers to fail gracefully
                         raw = results
@@ -117,47 +117,44 @@ def image_upload_single(image_uri):
             logger.warning("not image/image-like, filename={}, headers={}".format(filename, r.headers))
             return False
 
-    except (aiohttp.errors.ClientError) as exc:
+    except (aiohttp.ClientError) as exc:
         logger.warning("failed to get {} - {}".format(filename, exc))
         return False
 
     image_data = io.BytesIO(raw)
-    image_id = yield from image_upload_raw(image_data, filename=filename)
+    image_id = await image_upload_raw(image_data, filename=filename)
     return image_id
 
 
-@asyncio.coroutine
-def image_upload_raw(image_data, filename):
+async def image_upload_raw(image_data, filename):
     image_id = False
     try:
-        image_id = yield from _externals["bot"]._client.upload_image(image_data, filename=filename)
+        image_id = await _externals["bot"]._client.upload_image(image_data, filename=filename)
     except KeyError as exc:
         logger.warning("_client.upload_image failed: {}".format(exc))
     return image_id
 
 
-@asyncio.coroutine
-def image_validate_and_upload_single(text, reject_googleusercontent=True):
+async def image_validate_and_upload_single(text, reject_googleusercontent=True):
     image_id = False
     image_link = image_validate_link(text, reject_googleusercontent=reject_googleusercontent)
     if image_link:
-        image_id = yield from image_upload_single(image_link)
+        image_id = await image_upload_single(image_link)
     return image_id
 
 
-@asyncio.coroutine
-def image_convert_to_png(image):
-    path_imagemagick = _externals["bot"].get_config_option("image.imagemagick") or "/usr/bin/convert"
+async def image_convert_to_png(image):
+    path_imagemagick = _externals["bot"].config.get_option("image.imagemagick") or "/usr/bin/convert"
     cmd = (path_imagemagick, "-", "png:-")
 
     try:
-        proc = yield from asyncio.create_subprocess_exec(
+        proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdin = PIPE,
             stdout = PIPE,
             stderr = PIPE )
 
-        (stdout_data, stderr_data) = yield from proc.communicate(input=image)
+        (stdout_data, stderr_data) = await proc.communicate(input=image)
 
         return stdout_data
 
