@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # pylint: skip-file
+#TODO(das7pad): refactor globals and split this plugin into two modules
 """
 hangoutsbot plugin for integration with surveillance systems that send out notifications
 by email (containing webcam snapshots).
@@ -64,7 +65,6 @@ config.json entries used by this plugin
 """
 
 
-import hangups
 import logging
 import plugins
 import asyncio
@@ -76,7 +76,6 @@ logger = logging.getLogger(__name__)
 
 myqueue = asyncio.Queue()
 mybot = None
-mainloop = asyncio.get_event_loop()
 
 
 def _initialise(bot):
@@ -85,23 +84,23 @@ def _initialise(bot):
     global ALARMSYSURL,ALARMSYSUSR,ALARMSYSPWD,ALARMNOTURL,ALARMSUBJECTFORMAT,ALARMSYSOFFREGEXP
     global CAMPWD,CAMUSR,CAMURLS
     try:
-        EXTSMTPUSER       = bot.get_config_option("extsmtpuser") or None
-        EXTSMTPPWD        = bot.get_config_option("extsmtppwd") or None
-        EXTSMTPSERVER     = bot.get_config_option("extsmtpserver") or "smtp.gmail.com"
-        EXTSMTPPORT       = bot.get_config_option("extsmtpport") or "587"
-        INTSMTPADDRESS    = bot.get_config_option("intsmtpaddress") or socket.gethostname()
-        INTSMTPPORT       = int(bot.get_config_option("intsmtpport") or "10025")
-        CAMMAILCID        = bot.get_config_option("cammailCID") or None
-        ALARMSYSURL       = bot.get_config_option("alarmsysurl") or None
-        ALARMSYSUSR       = bot.get_config_option("alarmsysusr") or None
-        ALARMSYSPWD       = bot.get_config_option("alarmsyspwd") or None
-        ALARMNOTURL       = bot.get_config_option("alarmnoturl") or None
-        ALARMSYSOFFREGEXP = re.compile(str(bot.get_config_option("alarmsysoffregexp"))) or None
-        s = bot.get_config_option("alarmsubjectformat") or { "regexp": r"(.*) (.*)( .*)*", "locationindex": 2 }
+        EXTSMTPUSER       = bot.config.get_option("extsmtpuser") or None
+        EXTSMTPPWD        = bot.config.get_option("extsmtppwd") or None
+        EXTSMTPSERVER     = bot.config.get_option("extsmtpserver") or "smtp.gmail.com"
+        EXTSMTPPORT       = bot.config.get_option("extsmtpport") or "587"
+        INTSMTPADDRESS    = bot.config.get_option("intsmtpaddress") or socket.gethostname()
+        INTSMTPPORT       = int(bot.config.get_option("intsmtpport") or "10025")
+        CAMMAILCID        = bot.config.get_option("cammailCID") or None
+        ALARMSYSURL       = bot.config.get_option("alarmsysurl") or None
+        ALARMSYSUSR       = bot.config.get_option("alarmsysusr") or None
+        ALARMSYSPWD       = bot.config.get_option("alarmsyspwd") or None
+        ALARMNOTURL       = bot.config.get_option("alarmnoturl") or None
+        ALARMSYSOFFREGEXP = re.compile(str(bot.config.get_option("alarmsysoffregexp"))) or None
+        s = bot.config.get_option("alarmsubjectformat") or { "regexp": r"(.*) (.*)( .*)*", "locationindex": 2 }
         ALARMSUBJECTFORMAT= { "regexp" : re.compile(s["regexp"]), "locationindex": s["locationindex"] }
-        CAMPWD            = bot.get_config_option("campwd") or None
-        CAMUSR            = bot.get_config_option("camusr") or None
-        CAMURLS           = bot.get_config_option("camurls") or {}
+        CAMPWD            = bot.config.get_option("campwd") or None
+        CAMUSR            = bot.config.get_option("camusr") or None
+        CAMURLS           = bot.config.get_option("camurls") or {}
     except:
         logger.exception("missing config file entry")
         return
@@ -124,28 +123,26 @@ def interceptCamMail(bot, event, *args):
     print(event.conv_id)
     bot.config.set_by_path(["cammailCID"], event.conv_id)
     CAMMAILCID =  event.conv_id
-    yield from bot.coro_send_message(event.conv, "<i>This conversation will receive cammail notifications</i>")
+    return _("<i>This conversation will receive cammail notifications</i>")
 
 
-@asyncio.coroutine
-def my_message(loop, item):
+async def my_message(item):
     count = 0
     for i in item["img"]:
-        image_id = yield from mybot._client.upload_image(io.BytesIO(i), filename=item["filename"][count])
-        yield from mybot.coro_send_message( CAMMAILCID, None, image_id=image_id)
+        image_id = await mybot._client.upload_image(io.BytesIO(i), filename=item["filename"][count])
+        await mybot.coro_send_message( CAMMAILCID, None, image_id=image_id)
         count +=1
-    yield from mybot.coro_send_message( CAMMAILCID, item["content"], image_id=None)
+    await mybot.coro_send_message( CAMMAILCID, item["content"], image_id=None)
 
-@asyncio.coroutine
-def _handle_incoming_message(bot, event, command):
+async def _handle_incoming_message(bot, event, command):
     txt = event.text.lower().strip()
     logger.info('message received, stiripped: ' + txt)
     camurl = CAMURLS.get(txt, None)
     if camurl:
         image_data = requests.get(camurl, auth=HTTPBasicAuth(CAMUSR, CAMPWD))
         logger.info('image data len: ' + str(len(image_data.content)))
-        image_id = yield from bot._client.upload_image(io.BytesIO(image_data.content), filename=txt+'.jpg')
-        yield from bot.coro_send_message(event.conv.id_, None, image_id=image_id)
+        image_id = await bot._client.upload_image(io.BytesIO(image_data.content), filename=txt+'.jpg')
+        await bot.coro_send_message(event.conv.id_, None, image_id=image_id)
 
 
 """
@@ -212,8 +209,10 @@ def interceptMail(maildata):
             item["img"].append(img)
             item["content"] = subject # remove body if there is an image - an image says more than 1000 words
             logger.info('feeding image data into bot - size: ' + str(len(img)) )
-    try: task = asyncio.async(my_message(mainloop, item), loop=mainloop) # will become mainloop.create_task
-    except: logger.exception('cannot post into bot')
+    try:
+        asyncio.ensure_future(my_message(item))
+    except:
+        logger.exception('cannot post into bot')
     forward = True
     return forward
 
