@@ -566,10 +566,8 @@ async def load(bot, module_path, module_name=None):
 
         registered_commands.append(text_function_name)
 
-    if registered_commands:
-        logger.debug("%s - %s", module_name, ", ".join(registered_commands))
-    else:
-        logger.debug("%s - no commands", module_name)
+    logger.debug("%s - %s", module_name,
+                 ", ".join(registered_commands) or "no commands")
 
     tracking.end()
     return True
@@ -605,8 +603,7 @@ async def unload(bot, module_path):
         raise RuntimeError("%s has %s thread(s)" % (module_path,
                                                     len(plugin["threads"])))
 
-    all_commands = plugin["commands"]["all"]
-    for command_name in all_commands:
+    for command_name in plugin["commands"]["all"]:
         if command_name in command.commands:
             logger.debug("removing function %s", command_name)
             del command.commands[command_name]
@@ -655,7 +652,7 @@ async def unload(bot, module_path):
         logger.info("not all tasks of %s were shutdown gracefully after 5sec",
                     module_path)
 
-    if len(plugin["aiohttp.web"]) > 0:
+    if plugin["aiohttp.web"]:
         from sinks import aiohttp_terminate # XXX: needs to be late-imported
         for group in plugin["aiohttp.web"]:
             await aiohttp_terminate(group)
