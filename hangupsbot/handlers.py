@@ -322,9 +322,11 @@ class EventHandler:
                         HangupsBotExceptions.SuppressAllHandlers):
                     # handle requested to skip all pluggables
                     raise
-                except:
+                except: # capture all Exceptions   # pylint: disable=bare-except
                     # exception is not related to the handling of this
-                    # pluggable, log and continue with the next one
+                    # pluggable, log and continue with the next handler
+                    message.append("args=%s" % args)
+                    message.append("kwargs=%s" % kwargs)
                     logger.exception(" : ".join(message))
 
         except HangupsBotExceptions.SuppressAllHandlers:

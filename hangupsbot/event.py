@@ -97,6 +97,11 @@ class ConversationEvent(GenericEvent):
 
         self.log()
 
+    def __str__(self):
+        return ("ConversationEvent: %s@%s [%s]: %s" %
+                (self.user_id.chat_id, self.conv_id,
+                 self.timestamp.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+                 self.text))
 
     def log(self):
         """log meta of the event"""
