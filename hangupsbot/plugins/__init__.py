@@ -474,11 +474,13 @@ async def load(bot, module_path, module_name=None):
 
     Returns:
         boolean, True if the plugin was loaded successfully
+
+    Raises:
+        AssertionError: the plugin is already loaded
     """
     module_name = module_name or module_path.split(".")[-1]
 
-    if module_path in tracking.list:
-        raise RuntimeError("{} already loaded".format(module_path))
+    assert module_path not in tracking.list
 
     await tracking.start({"module": module_name, "module.path": module_path})
 

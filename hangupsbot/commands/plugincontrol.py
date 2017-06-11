@@ -118,11 +118,7 @@ async def pluginunload(bot, event, *args):
             message = "<b><pre>{}</pre>: unloaded</b>".format(module_path)
 
         except KeyError:
-            message = "<b>{}: not found</b>".format(module_path)
-
-        except RuntimeError as err:
-            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path,
-                                                                   str(err))
+            message = _("<b>{}: not previously loaded</b>").format(module_path)
 
     else:
         message = "<b>module path required</b>"
@@ -143,9 +139,8 @@ async def pluginload(bot, event, *args):
             else:
                 message = "<b><pre>{}</pre>: failed</b>".format(module_path)
 
-        except RuntimeError as err:
-            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path,
-                                                                   str(err))
+        except AssertionError:
+            message = _("<b><i>%s</i>: <i>already loaded</i></b>") % module_path
 
     else:
         message = "<b>module path required</b>"
@@ -169,11 +164,7 @@ async def pluginreload(bot, event, *args):
                     module_path)
 
         except KeyError:
-            message = "<b>{}: not found</b>".format(module_path)
-
-        except RuntimeError as err:
-            message = "<b><pre>{}</pre>: <pre>{}</pre></b>".format(module_path,
-                                                                   str(err))
+            message = _("<b>{}: not previously loaded</b>").format(module_path)
 
     else:
         message = "<b>module path required</b>"
