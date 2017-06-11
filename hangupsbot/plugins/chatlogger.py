@@ -34,7 +34,7 @@ class file_writer():
                     logger.warning('[DEPRECATED] legacy hook configuration, update to config["chatlogger.path"]')
                     self.paths.append(legacy_config["config"]["storage_path"])
 
-        chatlogger_path = bot.get_config_option('chatlogger.path')
+        chatlogger_path = bot.config.get_option('chatlogger.path')
         if chatlogger_path:
             self.paths.append(chatlogger_path)
 
@@ -92,7 +92,7 @@ class file_writer():
                        in event.conv_event.participant_ids]
         names = ', '.join([user.full_name for user in event_users])
 
-        if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+        if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
             text = "--- {}\n{} :: {}\nADDED: {}\n".format(conversation_name, event_timestamp, user_full_name, names)
         else:
             text = "--- {}\n{}\n{} left \n".format(conversation_name, event_timestamp, names)
