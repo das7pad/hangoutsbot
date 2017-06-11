@@ -128,7 +128,7 @@ class Tracker(object):
     def register_command(self, type_, command_names, tags=None):
         """call during plugin init to register commands"""
         current_commands = self._current["commands"][type_]
-        current_commands.extend(command_names)
+        current_commands.extend([item.lower() for item in command_names])
         self._current["commands"][type_] = list(set(current_commands))
 
         user_setting = self.bot.config.get_option('plugins.tags.auto-register')
@@ -514,7 +514,8 @@ async def load(bot, module_path, module_name=None):
             if function_name not in ("_initialise", "_initialize"):
                 if not function_name.startswith("_"):
                     # skip private functions
-                    candidate_commands.append((function_name, the_function))
+                    candidate_commands.append(
+                        (function_name.lower(), the_function))
                 continue
 
             # accepted function signatures:
