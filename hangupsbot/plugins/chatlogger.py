@@ -27,13 +27,6 @@ class file_writer():
         self.paths = []
         self.initialised = False
 
-        legacy_hooks = bot.get_config_option('hooks')
-        if legacy_hooks:
-            for legacy_config in legacy_hooks:
-                if legacy_config["module"] == "hooks.chatlogger.writer.logger":
-                    logger.warning('[DEPRECATED] legacy hook configuration, update to config["chatlogger.path"]')
-                    self.paths.append(legacy_config["config"]["storage_path"])
-
         chatlogger_path = bot.config.get_option('chatlogger.path')
         if chatlogger_path:
             self.paths.append(chatlogger_path)
