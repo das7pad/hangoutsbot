@@ -1,7 +1,8 @@
-import aiohttp, asyncio, json, logging, requests
-
-import plugins
 # pylint: skip-file
+import aiohttp
+import asyncio
+import json
+import logging
 
 from webbridge import WebFramework, IncomingRequestHandler
 
@@ -16,12 +17,9 @@ class BridgeInstance(WebFramework):
             # don't send my own messages
             return
 
-        event_timestamp = event.timestamp
-
         conversation_id = event.conv_id
         conversation_text = event.text
 
-        user_full_name = event.user.full_name
         user_id = event.user_id
 
         url = config["HUBOT_URL"] + conversation_id
@@ -29,14 +27,13 @@ class BridgeInstance(WebFramework):
         headers = {'content-type': 'application/json'}
 
         connector = aiohttp.TCPConnector(verify_ssl=False)
-        asyncio.async(
-            aiohttp.request('post', url, data = json.dumps(payload), headers = headers, connector=connector)
-        ).add_done_callback(lambda future: future.result())
+        asyncio.ensure_future(
+            aiohttp.request('post', url, data=json.dumps(payload),
+                            headers=headers, connector=connector))
 
 
 class IncomingMessages(IncomingRequestHandler):
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         path = path.split("/")
         conversation_id = path[1]
         if conversation_id is None:
@@ -45,7 +42,7 @@ class IncomingMessages(IncomingRequestHandler):
 
         payload = json.loads(content)
 
-        yield from self.send_data(conversation_id, payload["message"])
+        await self.send_data(conversation_id, payload["message"])
 
 
 def _initialise(bot):
