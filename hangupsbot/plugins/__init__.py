@@ -82,6 +82,7 @@ class Tracker(object):
         # overwrite the metadata for the current run
         self._current["metadata"] = metadata
 
+    @property
     def current(self):
         self._current["commands"]["all"] = list(
             set(self._current["commands"]["admin"] +
@@ -90,7 +91,7 @@ class Tracker(object):
 
     def end(self):
         """save the current module data and register tagged commands"""
-        current_module = self.current()
+        current_module = self.current
         if not current_module['metadata']:
             # empty plugin data, last run is already finished
             return
@@ -530,7 +531,7 @@ async def load(bot, module_path, module_name=None):
      combination of decorators and register_user_command/register_admin_command
      is used since decorators execute immediately upon import
     """
-    plugin_tracking = tracking.current()
+    plugin_tracking = tracking.current
 
     explicit_admin_commands = plugin_tracking["commands"]["admin"]
     all_commands = plugin_tracking["commands"]["all"]
