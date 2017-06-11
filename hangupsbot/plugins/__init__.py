@@ -469,12 +469,17 @@ async def unload_all(bot):
     Args:
         bot: HangupsBot instance
     """
-    for module_path in tracking.list.copy():
-        try:
-            await unload(bot, module_path)
+    all_plugins = tracking.list.copy()
+    done = await asyncio.gather(*[unload(bot, module_path)
+                                  for module_path in all_plugins],
+                                return_exceptions=True)
 
-        except RuntimeError:
-            logger.exception("%s could not be unloaded", module_path)
+    for module in all_plugins:
+        result = done.pop(0)
+        if not isinstance(result, Exception):
+            continue
+        logger.info("unloading of %s failed\nunload() exited with Exception %s",
+                    module, repr(result))
 
 async def load(bot, module_path, module_name=None):
     """loads a single plugin-like object as identified by module_path
