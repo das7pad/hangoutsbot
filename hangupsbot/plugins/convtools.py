@@ -26,6 +26,9 @@ HELP = {
     "kick": _("create a new conversation without certain users\nUsage: "
               "{bot_cmd} kick\n[<conversation id, current if not specified>] "
               "[<user ids, space-separated if more than one>] [quietly]"),
+    "realkick": _("remove users from a conversation\nUsage: {bot_cmd} realkick "
+                  "[<optional conversation id, current if not specified>] "
+                  "[<user ids, space-separated if more than one>]"),
 }
 
 def _initialise():
@@ -77,6 +80,37 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
         await asyncio.sleep(0.5)
 
     return users_added
+
+async def _batch_remove_users(bot, target_conv, chat_ids):
+    """remove a list of users from a given conversation
+
+    Args:
+        bot: HangupsBot instance
+        target_conv: string, conversation identifier
+        chat_ids: iterable object
+
+    Returns:
+        set, users that could not be removed
+    """
+    chat_ids = set(chat_ids)
+    remove = set()
+    for chat_id in chat_ids:
+        if chat_id in bot.conversations[target_conv]["participants"]:
+            remove.add(chat_id)
+
+    for chat_id in remove:
+        await bot.remove_user(
+            hangups.hangouts_pb2.RemoveUserRequest(
+                request_header=bot.get_request_header(),
+                event_request_header=hangups.hangouts_pb2.EventRequestHeader(
+                    conversation_id=hangups.hangouts_pb2.ConversationId(
+                        id=target_conv),
+                    client_generated_id=bot.get_client_generated_id()),
+                participant_id=hangups.hangouts_pb2.ParticipantId(
+                    gaia_id=chat_id)))
+
+        await asyncio.sleep(0.5)
+    return chat_ids - remove
 
 async def addusers(bot, event, *args):
     """add users from a conversation
@@ -322,3 +356,26 @@ async def kick(bot, event, *args):
         arguments.append(_("quietly"))
 
     await commands.command.run(bot, event, *arguments)
+
+async def realkick(bot, event, *args):
+    """remove users from a conversation
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple, additional words passed to the command
+    """
+    chat_ids = []
+    conv_id = event.conv_id
+    for item in args:
+        if item in bot.conversations:
+            conv_id = item
+        elif item.isdigit():
+            chat_ids.append(item)
+        else:
+            return _("invalid G+ or Conversation ID {}").format(item)
+
+    failed = await _batch_remove_users(bot, conv_id, chat_ids)
+    if failed:
+        return _("These users are not in this conversation, try another one."
+                 "\n{}").format(", ".join(failed))
