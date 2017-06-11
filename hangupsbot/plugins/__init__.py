@@ -39,9 +39,15 @@ class Tracker(object):
         self.reset()
 
     def set_bot(self, bot):
+        """register the running HangupsBot
+
+        Args:
+            bot: HangupsBot instance
+        """
         self.bot = bot
 
     def reset(self):
+        """clear the entrys of the current plugin registration"""
         self._current = {
             "commands": {
                 "admin": [],
@@ -84,6 +90,11 @@ class Tracker(object):
 
     @property
     def current(self):
+        """merge admin and user plugins and return the current registration
+
+        Returns:
+            dict
+        """
         self._current["commands"]["all"] = list(
             set(self._current["commands"]["admin"] +
                 self._current["commands"]["user"]))
@@ -525,12 +536,10 @@ async def load(bot, module_path, module_name=None):
         logger.exception("error on plugin init: %s", module_path)
         return False
 
-    """
-    register filtered functions
-    tracking.current() and the CommandDispatcher might be out of sync if a
-     combination of decorators and register_user_command/register_admin_command
-     is used since decorators execute immediately upon import
-    """
+    # register filtered functions
+    # tracking.current and the CommandDispatcher might be out of sync if a
+    #  combination of decorators and register_{admin, user}_command
+    #  is used since decorators execute immediately upon import
     plugin_tracking = tracking.current
 
     explicit_admin_commands = plugin_tracking["commands"]["admin"]
@@ -579,7 +588,7 @@ def load_module(module_path):
             importlib.import_module(module_path)
 
         return True
-    except:
+    except:             # capture all Exceptions   # pylint: disable=bare-except
         logger.exception("load_module %s: %s", module_path, message)
         return False
 
