@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class tags:
-    regex_allowed = "a-z0-9._\-" # +command.deny_prefix
+    regex_allowed = r"a-z0-9._\-" # +command.deny_prefix
 
     wildcard = { "conversation": "*",
                  "user": "*",

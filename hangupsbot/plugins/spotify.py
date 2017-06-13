@@ -135,9 +135,9 @@ def spotify(bot, event, *args):
 def extract_music_links(text):
     """Returns an array of music URLs. Currently searches only for YouTube,
     Soundcloud, and Spotify links."""
-    m = re.compile(("(https?://)?([a-z0-9.]*?\.)?(youtube.com/|youtu.be/|"
-                    "soundcloud.com/|spotify.com/track/)"
-                    "([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
+    m = re.compile((r"(https?://)?([a-z0-9.]*?\.)?(youtube.com/|youtu.be/|"
+                    r"soundcloud.com/|spotify.com/track/)"
+                    r"([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
     links = m.findall(text)
     links = ["".join(link) for link in links]
 
@@ -171,7 +171,7 @@ def search_spotify(query):
     if result: return result
 
     # Discard hashtags and mentions.
-    gs[:] = [" ".join(re.sub("(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)",
+    gs[:] = [" ".join(re.sub(r"(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)",
                              " ", g).split()) for g in gs]
 
     # Discard everything in a group following certain words.
@@ -197,19 +197,19 @@ def _clean(query):
     unrelated to the song title/artist. Returns a list of groups."""
 
     # Blacklists.
-    bl_exact = ["official", "audio", "audio\s+stream", "lyric", "lyrics",
-                "with\s+lyrics?", "explicit", "clean", "explicit\s+version",
-                "clean\s+version", "original\s+version", "hq", "hd", "mv",
+    bl_exact = ["official", "audio", r"audio\s+stream", "lyric", "lyrics",
+                r"with\s+lyrics?", "explicit", "clean", r"explicit\s+version",
+                r"clean\s+version", r"original\s+version", "hq", "hd", "mv",
                 "m/v", "interscope", "4ad"]
-    bl_following = ["official\s+video", "official\s+music", "official\s+audio",
-                    "official\s+lyric", "official\s+lyrics", "official\s+clip",
-                    "video\s+lyric", "video\s+lyrics", "video\s+clip",
-                    "full\s+video"]
+    bl_following = [r"official\s+video", r"official\s+music",
+                    r"official\s+audio", r"official\s+lyric",
+                    r"official\s+lyrics", r"official\s+clip", r"video\s+lyric",
+                    r"video\s+lyrics", r"video\s+clip", r"full\s+video"]
 
     # Split into groups.
     gs = list(filter(
         None,
-        re.split(u"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚‘]+\s*",
+        re.split(r"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚‘]+\s*",
                  query)))
 
     # Discard groups that match with anything in the blacklists.
@@ -218,7 +218,7 @@ def _clean(query):
         gs[:] = [re.split(b, g, flags=re.IGNORECASE)[0] for g in gs]
 
     # Discard featured artists.
-    gs[:] = [re.split("(f(ea)?t(.|\s+))(?i)", g)[0] for g in gs]
+    gs[:] = [re.split(r"(f(ea)?t(.|\s+))(?i)", g)[0] for g in gs]
 
     return gs
 
@@ -310,7 +310,7 @@ def title_from_youtube(bot, url):
     # Regex by mantish from http://stackoverflow.com/a/9102270 to get the
     # video id from a YouTube URL.
     match = re.match(
-        "^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*", url)
+        r"^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*", url)
     if match and len(match.group(2)) == 11:
         video_id = match.group(2)
     else:

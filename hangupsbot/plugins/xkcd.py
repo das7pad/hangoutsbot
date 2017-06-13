@@ -18,9 +18,9 @@ def _initialise():
     plugins.register_handler(_watch_xkcd_link, type="message")
 
 regexps = (
-    "https?://(?:www\.)?(?:explain)?xkcd.com/([0-9]+)(?:/|\s|$)",
-    "https?://(?:www\.)?explainxkcd.com/wiki/index\.php(?:/|\?title=)([0-9]+)(?:[^0-9]|$)",
-    "(?:\s|^)xkcd\s+(?:#\s*)?([0-9]+)(?:\s|$)",
+    r"https?://(?:www\.)?(?:explain)?xkcd.com/([0-9]+)(?:/|\s|$)",
+    r"https?://(?:www\.)?explainxkcd.com/wiki/index\.php(?:/|\?title=)([0-9]+)(?:[^0-9]|$)",
+    r"(?:\s|^)xkcd\s+(?:#\s*)?([0-9]+)(?:\s|$)",
 )
 
 

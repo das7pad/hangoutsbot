@@ -78,7 +78,7 @@ async def _watch_twitter_link(bot, event, command):
   if " " in event.text:
     return
 
-  if not re.match("^https?://(www\.)?twitter.com/[a-zA-Z0-9_]{1,15}/status/[0-9]+$", event.text, re.IGNORECASE):
+  if not re.match(r"^https?://(www\.)?twitter.com/[a-zA-Z0-9_]{1,15}/status/[0-9]+$", event.text, re.IGNORECASE):
     return
 
   try:

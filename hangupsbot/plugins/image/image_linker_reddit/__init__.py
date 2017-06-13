@@ -34,7 +34,7 @@ async def _scan_for_triggers(bot, event, command):
     lctext = event.text.lower()
     image_links = set()
     for trigger in _lookup:
-        pattern = '\\b' + trigger + '\.(jpg|png|gif|bmp)\\b'
+        pattern = r'\\b' + trigger + r'\.(jpg|png|gif|bmp)\\b'
         if re.search(pattern, lctext):
             image_links.add(_get_a_link(trigger))
             count = count + 1
@@ -71,7 +71,8 @@ def _load_all_the_things():
         if len(parts) == 2:
             triggers, images = parts
             triggers = [x.strip() for x in triggers.split(',')]
-            images = [re.search('\((.*?)\)$', x).group(1) for x in images.split(' ')]
+            images = [re.search(r'\((.*?)\)$', x).group(1)
+                      for x in images.split(' ')]
             for trigger in triggers:
                 if trigger in _lookup:
                     _lookup[trigger].extend(images)

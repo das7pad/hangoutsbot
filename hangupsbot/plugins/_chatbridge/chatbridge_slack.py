@@ -72,7 +72,7 @@ class SlackAsyncListener(AsyncRequestHandler):
                             "source_title": False })
 
     def _slack_label_users(self, text):
-        for fragment in re.findall("(<@([A-Z0-9]+)(\|[^>]*?)?>)", text):
+        for fragment in re.findall(r"(<@([A-Z0-9]+)(\|[^>]*?)?>)", text):
             """detect and map <@Uididid> and <@Uididid|namename>"""
             full_token = fragment[0]
             id = full_token[2:-1].split("|", maxsplit=1)[0]

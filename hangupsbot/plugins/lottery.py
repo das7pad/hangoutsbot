@@ -90,7 +90,7 @@ def prepare(bot, event, *args):
         # comma-separated single tokens
         draw_lists[global_draw_name]["box"] = listdef.split(",")
 
-    elif re.match("\d+-\d+", listdef):
+    elif re.match(r"\d+-\d+", listdef):
         # sequential range: <integer> to <integer>
         _range = listdef.split("-")
         min = int(_range[0])
@@ -104,7 +104,7 @@ def prepare(bot, event, *args):
 
     else:
         # numberTokens: <integer><name>
-        pattern = re.compile("((\d+)([a-z\-_]+))", re.IGNORECASE)
+        pattern = re.compile(r"((\d+)([a-z\-_]+))", re.IGNORECASE)
         matches = pattern.findall(listdef)
         if len(matches) > 1:
             for tokendef in matches:
@@ -142,7 +142,7 @@ def perform_drawing(bot, event, *args):
 
     draw_lists = _load_lottery_state(bot) # load in any existing lotteries
 
-    pattern = re.compile(".+ draws?( +(a +|an +|from +)?([a-z0-9\-_]+))?$", re.IGNORECASE)
+    pattern = re.compile(r".+ draws?( +(a +|an +|from +)?([a-z0-9\-_]+))?$", re.IGNORECASE)
     if pattern.match(event.text):
         listname = "default"
 
