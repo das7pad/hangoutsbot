@@ -32,16 +32,14 @@ async def _scan_for_triggers(bot, event, command):
     limit = 3
     count = 0
     lctext = event.text.lower()
-    image_links = []
+    image_links = set()
     for trigger in _lookup:
         pattern = '\\b' + trigger + '\.(jpg|png|gif|bmp)\\b'
         if re.search(pattern, lctext):
-            image_links.append(_get_a_link(trigger))
+            image_links.add(_get_a_link(trigger))
             count = count + 1
             if count >= limit:
                 break
-
-    image_links = list(set(image_links)) # make unique
 
     if image_links:
         for image_link in image_links:
