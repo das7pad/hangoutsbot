@@ -1,6 +1,8 @@
 """extremely hacky implementation of html parsing
 execute parser test by running this file directly with the interpreter
 """
+#pylint:skip-file
+#TODO(das7pad) refactor needed or deprecate as hangups has one already
 
 import logging
 import html

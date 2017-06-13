@@ -1,3 +1,5 @@
+#pylint:skip-file
+#TODO(das7pad) refactor needed
 import logging
 
 from .kludgy_html_parser import segment_to_html
