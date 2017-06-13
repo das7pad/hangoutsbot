@@ -25,9 +25,7 @@ async def meme(bot, event, *args):
     _externals["running"] = True
 
     try:
-        parameters = list(args)
-        if len(parameters) == 0:
-            parameters.append("robot")
+        parameters = args or ("robot",)
 
         """public api: http://version1.api.memegenerator.net"""
         url_api = 'http://version1.api.memegenerator.net/Instances_Search?q=' + "+".join(parameters) + '&pageIndex=0&pageSize=25'
@@ -36,7 +34,7 @@ async def meme(bot, event, *args):
         json_results = await api_request.read()
         results = json.loads(str(json_results, 'utf-8'))
 
-        if len(results['result']) > 0:
+        if results['result']:
             instanceImageUrl = random.choice(results['result'])['instanceImageUrl']
 
             image_data = urllib.request.urlopen(instanceImageUrl)

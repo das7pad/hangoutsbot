@@ -98,7 +98,7 @@ async def showme(bot, event, *args):
         string, user output; or None if a valid image request was made
     """
     sources = bot.config.get_option("showme")
-    if not len(args):
+    if not args:
         return _("Show you what?")
     elif args[0].lower() == 'sources':
         html = """My sources are:\n"""

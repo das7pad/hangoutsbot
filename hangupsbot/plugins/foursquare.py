@@ -67,7 +67,7 @@ async def foursquare(bot, event,*args):
   '''Explore places near you with Foursquare!
 <b>/bot foursquare <location></b>: Display up to 10 of the recommended places near the specified location.
 <b>/bot foursquare [type] <location></b>: Display up to 10 places near the provided location of the type specified. <i>Valid types: food, drinks, coffee, shops, arts, outdoors, sights, trending, specials</i>'''
-  if len(args) == 0:
+  if not args:
     return
 
   try:

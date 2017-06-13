@@ -172,8 +172,8 @@ async def _spawn(bot, event, *args):
     stdout_str = stdout_data.decode().rstrip()
     stderr_str = stderr_data.decode().rstrip()
 
-    if len(stderr_str) > 0:
+    if stderr_str:
         await bot.coro_send_to_user_and_conversation(
             event.user.id_.chat_id, event.conv_id, stderr_str)
-    if len(stdout_str) > 0:
+    if stdout_str:
         await bot.coro_send_message(event.conv_id, stdout_str)

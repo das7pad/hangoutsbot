@@ -43,7 +43,7 @@ METAR source: http://aviationweather.gov"""
 
     if data is None:
         return _("There was an error retrieving the METAR information.")
-    elif not data or len(data) == 0:
+    elif not data:
         return _("The response did not contain METAR information, check the "
                  "ICAO airport code and try again.")
     else:
@@ -64,7 +64,7 @@ TAF source: http://aviationweather.gov"""
 
     if data is None:
         return _("There was an error retrieving the TAF information.")
-    elif not data or len(data) == 0:
+    elif not data:
         return _("The response did not contain TAF information, check the "
                  "ICAO airport code and try again.")
     else:

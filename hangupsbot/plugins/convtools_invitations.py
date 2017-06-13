@@ -114,7 +114,7 @@ async def _claim_invite(bot, invite_code, user_id):
 
         invitation["uses"] = invitation["uses"] - 1
 
-        if invitation["uses"] > 0:
+        if invitation["uses"]:
             bot.memory.set_by_path(memory_path, invitation)
             bot.memory.save()
         else:
@@ -206,7 +206,7 @@ async def invite(bot, event, *args):
         test = True
         parameters.remove("test")
 
-    if len(parameters) == 0:
+    if not parameters:
         return _("<em>insufficient parameters for invite</em>")
 
     elif parameters[0].isdigit():
@@ -215,7 +215,7 @@ async def invite(bot, event, *args):
           as a parameter
         """
         wildcards = int(parameters[0])
-        if wildcards > 0 and wildcards < 150:
+        if wildcards and wildcards < 150:
             del(parameters[0])
 
     elif "list" in parameters or "purge" in parameters:
@@ -240,7 +240,7 @@ async def invite(bot, event, *args):
 
         active_invites = _get_invites(bot, filter_active=_active_only)
 
-        if len(active_invites) > 0:
+        if active_invites:
             for _id, invite in active_invites.items():
                 try:
                     conversation_name = bot.conversations.get_name(invite["group_id"])
@@ -323,7 +323,7 @@ async def invite(bot, event, *args):
             sourceconv = None
             targetconv = *
         """
-        if len(list_users) == 0:
+        if not list_users:
             if targetconv == event.conv_id:
                 return _('<em>invite: specify "from" or explicit list of "users"</em>')
             else:
@@ -343,7 +343,7 @@ async def invite(bot, event, *args):
 
     invitations = []
 
-    if wildcards > 0:
+    if wildcards:
         """wildcards can be used by any user to enter a targetconv"""
         invitations.append({
             "user_id": "*",
@@ -396,7 +396,7 @@ async def invite(bot, event, *args):
 
     """beyond this point, start doing irreversible things (like create groups)"""
 
-    if len(invitations) == 0:
+    if not invitations:
         return _('<em>invite: nobody invited</em>')
 
         invitation_log.append("no invitations were created")
@@ -421,7 +421,7 @@ async def invite(bot, event, *args):
                 invitation_ids.append(
                     _issue_invite(bot, invite["user_id"], targetconv, invite["uses"]))
 
-        if len(invitation_ids) > 0:
+        if invitation_ids:
             await bot.coro_send_message(event.conv_id,
                 _("<em>invite: {} invitations created</em>").format(len(invitation_ids)))
 

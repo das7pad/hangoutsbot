@@ -38,7 +38,7 @@ def _initialise(bot):
     if not isinstance(bot_command_aliases, list):
         bot_command_aliases = []
 
-    if len(bot_command_aliases) == 0:
+    if not bot_command_aliases:
         bot.append("/bot")
 
     bot._handlers.bot_command = bot_command_aliases
@@ -59,7 +59,7 @@ def botalias(bot, event, *args):
         string
     """
     _aliases = bot._handlers.bot_command
-    if len(args) == 0:
+    if not args:
         return _("<i>bot aliases: {}</i>").format(
             ", ".join(_aliases))
 

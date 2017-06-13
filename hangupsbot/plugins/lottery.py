@@ -119,7 +119,7 @@ def prepare(bot, event, *args):
     if len(draw_lists[global_draw_name]["box"]) > max_items:
         del draw_lists[global_draw_name]
         message = _("Wow! Too many items to draw in <b>{}</b> lottery. Try {} items or less...").format(listname, max_items)
-    elif len(draw_lists[global_draw_name]["box"]) > 0:
+    elif draw_lists[global_draw_name]["box"]:
         shuffle(draw_lists[global_draw_name]["box"])
         message = _("The <b>{}</b> lottery is ready: {} items loaded and shuffled into the box.").format(listname, len(draw_lists[global_draw_name]["box"]))
     else:
@@ -168,7 +168,7 @@ def perform_drawing(bot, event, *args):
                 break
 
         if global_draw_name is not None:
-            if len(draw_lists[global_draw_name]["box"]) > 0:
+            if draw_lists[global_draw_name]["box"]:
                 if event.user.id_.chat_id in draw_lists[global_draw_name]["users"]:
                     # user already drawn something from the box
                     message = _("<b>{}</b>, you have already drawn <b>{}</b> from the <b>{}</b> box").format(
@@ -181,7 +181,7 @@ def perform_drawing(bot, event, *args):
                     _thing = str(draw_lists[global_draw_name]["box"].pop())
 
                     text_drawn = _("<b>{}</b> draws <b>{}</b> from the <b>{}</b> box. ").format(event.user.full_name, _thing, word, );
-                    if len(draw_lists[global_draw_name]["box"]) == 0:
+                    if not draw_lists[global_draw_name]["box"]:
                         text_drawn = text_drawn + _("...AAAAAND its all gone! The <b>{}</b> lottery is over folks.").format(word)
 
                     message = text_drawn

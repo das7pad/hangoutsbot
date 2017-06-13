@@ -162,11 +162,11 @@ def tagindexdump(bot, _event, *_args):
             lines.append(_("key: <i>{}</i>").format(key))
             for item in items:
                 lines.append("... <i>{}</i>".format(item))
-        if len(lines) == 0:
+        if not lines:
             continue
         chunks.append("\n".join(lines))
 
-    if len(chunks) == 0:
+    if not chunks:
         chunks = [_("<b>no entries to list</b>")]
 
     return "\n\n".join(chunks)
@@ -244,7 +244,7 @@ def tagsuserlist(bot, event, *args):
         lines.append("<b><i>{}</i></b>: <i>{}</i>".format(
             chat_id, ", ".join(active_user_tags)))
 
-    if len(lines) == 0:
+    if not lines:
         lines = [_("<b>no users found</b>")]
 
     return "\n".join(lines)

@@ -599,7 +599,7 @@ def load_module(module_path):
 async def unload(bot, module_path):
     plugin = tracking.list.pop(module_path)
 
-    if len(plugin["threads"]) != 0:
+    if plugin["threads"]:
         raise RuntimeError("%s has %s thread(s)" % (module_path,
                                                     len(plugin["threads"])))
 

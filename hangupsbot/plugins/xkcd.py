@@ -31,18 +31,19 @@ async def xkcd(bot, event, *args):
 /bot xkcd clear: clear comic cache
 /bot xkcd search <query>: search for a comic
 """
+    if len(args) == 1:
+        if args[0] == "clear":
+            _cache.clear()
+            return
 
-    if args == ("clear", ):
-        _cache.clear()
-        return
+        if args[0] == "search":
+            await _search_comic(bot, event, args[1:])
+            return
 
-    if len(args) and args[0] == "search":
-        await _search_comic(bot, event, args[1:])
-        return
+        if args[0] in ("latest", "current"):
+            # ignore
+            return
 
-    if len(args) and args != ("latest", ) and args != ("current", ):
-        # ignore
-        return
     await _print_comic(bot, event)
 
 async def _watch_xkcd_link(bot, event, command):

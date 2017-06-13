@@ -132,7 +132,7 @@ def tldr_base(bot, conv_id, parameters):
                                                              conv_tldr[timestamp],
                                                              _time_ago(float(timestamp))))
 
-        if len(html) == 0:
+        if not html:
             html.append(_("TL;DR not found."))
             display = False
         else:

@@ -35,7 +35,7 @@ async def verifyme(bot, event, *args):
     optionally, supply a user chat id to test a user other than yourself.
     """
 
-    if len(args) == 0:
+    if not args:
         chat_id = event.user.id_.chat_id
     else:
         chat_id = " ".join(args)

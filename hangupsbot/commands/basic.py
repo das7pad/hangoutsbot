@@ -49,7 +49,7 @@ async def help(bot, event, cmd=None, *args):
                                 '<b><i>{}</i></b>\n').format(help_chat_id,
                                                              help_conv_id))
 
-        if len(commands_nonadmin) > 0:
+        if commands_nonadmin:
             help_lines.append(_('<b>User commands:</b>'))
             help_lines.append(', '.join(sorted(commands_nonadmin)))
 
@@ -59,7 +59,7 @@ async def help(bot, event, cmd=None, *args):
                 _('<i>For more information, please see: {}</i>').format(
                     link_to_guide))
 
-        if len(commands_admin) > 0:
+        if commands_admin:
             help_lines.append('')
             help_lines.append(_('<b>Admin commands:</b>'))
             help_lines.append(', '.join(sorted(commands_admin)))

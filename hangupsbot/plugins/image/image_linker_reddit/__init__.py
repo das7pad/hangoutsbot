@@ -43,7 +43,7 @@ async def _scan_for_triggers(bot, event, command):
 
     image_links = list(set(image_links)) # make unique
 
-    if len(image_links) > 0:
+    if image_links:
         for image_link in image_links:
             try:
                 image_id = await bot.call_shared('image_validate_and_upload_single', image_link)

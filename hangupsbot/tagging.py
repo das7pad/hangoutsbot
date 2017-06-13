@@ -65,14 +65,14 @@ class tags:
         if tag in self.indices[tag_to_object]:
             if id in self.indices[tag_to_object][tag]:
                 self.indices[tag_to_object][tag].remove(id)
-                if len(self.indices[tag_to_object][tag]) == 0:
+                if not self.indices[tag_to_object][tag]:
                     # remove key entirely it its empty
                     del(self.indices[tag_to_object][tag])
 
         if id in self.indices[object_to_tag]:
             if tag in self.indices[object_to_tag][id]:
                 self.indices[object_to_tag][id].remove(tag)
-                if len(self.indices[object_to_tag][id]) == 0:
+                if not self.indices[object_to_tag][id]:
                     # remove key entirely it its empty
                     del(self.indices[object_to_tag][id])
 

@@ -75,7 +75,7 @@ def urbandict(bot, event, *args):
         # apparently, nothing was returned
         pass
 
-    if len(urbanDictParser.translations) > 0:
+    if urbanDictParser.translations:
         html_text = ""
         the_definition = urbanDictParser.translations[0]
         html_text += '<b>"' + the_definition["word"] + '"</b>\n\n'

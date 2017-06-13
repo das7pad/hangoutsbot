@@ -29,7 +29,7 @@ def _initialise(bot):
 def ask(bot, event, *args):
     """request data from wolfram alpha"""
 
-    if not len(args):
+    if not args:
         return _("You need to ask WolframAlpha a question")
 
     keyword = ' '.join(args)

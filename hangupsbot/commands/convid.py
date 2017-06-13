@@ -32,7 +32,7 @@ async def convfilter(bot, event, *args):
     if len(posix_args) > 1:
         raise Help(_("<em>1 parameter required, {} supplied - enclose parameter"
                      " in double-quotes</em>").format(len(posix_args)))
-    elif len(posix_args) <= 0:
+    elif not posix_args:
         raise Help(_("<em>supply 1 parameter</em>"))
     else:
         lines = []

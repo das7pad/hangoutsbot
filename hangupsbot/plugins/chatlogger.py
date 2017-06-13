@@ -45,7 +45,7 @@ class file_writer():
 
             logger.info("stored in: {}".format(path))
 
-        if len(self.paths) > 0:
+        if self.paths:
             self.initialised = True
 
 

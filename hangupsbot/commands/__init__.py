@@ -119,7 +119,7 @@ class CommandDispatcher(object):
             conv_list = self.bot.conversations.get(filter_)
             if len(conv_list) == 1:
                 subtokens[0] = next(iter(conv_list))
-            elif len(conv_list) == 0:
+            elif not conv_list:
                 raise ValueError("{} returned no conversations".format(token))
             else:
                 raise ValueError("{} returned too many conversations".format(
