@@ -25,7 +25,7 @@ def redditmemeword(bot, event, *args):
     Full list at http://goo.gl/ORmisN"""
     if len(args) == 1:
         image_link = _get_a_link(args[0])
-    return "this one? {}".format(image_link)
+        return "this one? {}".format(image_link)
 
 
 async def _scan_for_triggers(bot, event, command):
