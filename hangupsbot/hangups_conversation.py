@@ -1,5 +1,4 @@
 """enhanced hangups conversation that supports a fallback to cached data"""
-# pylint: disable=W0212
 import logging
 import time
 
@@ -16,13 +15,16 @@ class HangupsConversation(hangups.conversation.Conversation):
         bot: HangupsBot instance
         conv_id: string, Hangouts conversation identifier
     """
+    bot = None
+    _handlers = None
+    _client = None
+    _user_list = None
+    _conv_list = None
     def __init__(self, bot, conv_id):
-        self.bot = bot
-        self._client = bot._client
-        self._user_list = bot._user_list
         # retrieve the conversation record from hangups, if available
         try:
-            conversation = bot._conv_list.get(conv_id)._conversation
+            # pylint: disable=protected-access
+            conversation = self._conv_list.get(conv_id)._conversation
             super().__init__(self._client, self._user_list, conversation, [])
             return
         except KeyError:
@@ -113,6 +115,23 @@ class HangupsConversation(hangups.conversation.Conversation):
                 hangouts_pb2.GROUP_LINK_SHARING_STATUS_OFF))
 
         super().__init__(self._client, self._user_list, conversation, [])
+
+    @classmethod
+    def setup(cls, _bot, _handlers, _client, _user_list, _conv_list):
+        """set the class variables once
+
+        Args:
+            _bot: hangupsbot.HangupsBot instance
+            _handlers: handlers.EventHandler instance
+            _client: hangups.client.Client instance
+            _user_list: hangups.user.UserList instance
+            _conv_list: hangups.conversation.ConversationList instance
+        """
+        cls._bot = _bot
+        cls._handlers = _handlers
+        cls._client = _client
+        cls._user_list = _user_list
+        cls._conv_list = _conv_list
 
     @property
     def name(self):

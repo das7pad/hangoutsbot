@@ -525,6 +525,9 @@ class HangupsBot(object):
         self._user_list, self._conv_list = (
             await hangups.build_user_conversation_list(self._client))
 
+        HangupsConversation.setup(self, self._handlers, self._client,
+                                  self._user_list, self._conv_list)
+
         self.conversations = await permamem.initialise(self)
 
         await plugins.load(self, "commands.plugincontrol")
