@@ -376,9 +376,6 @@ class HangupsBot(object):
     def get_memory_option(self, option):
         return self.memory.get_option(option)
 
-    def get_memory_suboption(self, user_id, option):
-        return self.memory.get_suboption("user_data", user_id, option)
-
     def user_memory_set(self, chat_id, keyname, keyvalue):
         """set a value in the users memory entry and save to memory to file
 
@@ -387,7 +384,6 @@ class HangupsBot(object):
             keyname: string, new or existing entry in the users memory
             keyvalue: any type, the new value to be set
         """
-        self.initialise_memory(chat_id, "user_data")
         self.memory.set_by_path(["user_data", chat_id, keyname], keyvalue)
         self.memory.save()
 
@@ -401,13 +397,11 @@ class HangupsBot(object):
         Returns:
             any type, the requested value or None if the entry does not exist
         """
-        value = None
         try:
-            self.initialise_memory(chat_id, "user_data")
-            value = self.memory.get_by_path(["user_data", chat_id, keyname])
+            return self.memory.get_by_path(["user_data", chat_id, keyname],
+                                           fallback=False)
         except KeyError:
-            pass
-        return value
+            return None
 
     def conversation_memory_set(self, conv_id, keyname, keyvalue):
         """set a value in the conversations memory entry and dump the memory
@@ -417,7 +411,6 @@ class HangupsBot(object):
             keyname: string, new or existing entry in the conversations memory
             keyvalue: any type, the new value to be set
         """
-        self.initialise_memory(conv_id, "conv_data")
         self.memory.set_by_path(["conv_data", conv_id, keyname], keyvalue)
         self.memory.save()
 
@@ -431,13 +424,11 @@ class HangupsBot(object):
         Returns:
             any type, the requested value or None if the entry does not exist
         """
-        value = None
         try:
-            self.initialise_memory(conv_id, "conv_data")
-            value = self.memory.get_by_path(["conv_data", conv_id, keyname])
+            return self.memory.get_by_path(["conv_data", conv_id, keyname],
+                                           fallback=False)
         except KeyError:
-            pass
-        return value
+            return None
 
     async def get_1to1(self, chat_id, context=None, force=False):
         """find or create a 1-to-1 conversation with specified user
@@ -513,7 +504,7 @@ class HangupsBot(object):
 
         return HangupsConversation(self, new_conv_id)
 
-    def initialise_memory(self, chat_id, datatype):
+    def initialise_memory(self, key, datatype):
         """initialise the dict for a given key in the datatype in .memory
 
         Args:
@@ -524,20 +515,7 @@ class HangupsBot(object):
             boolean, True if an new entry for the key was created in the
                 datatype, otherwise False
         """
-        modified = False
-
-        if not self.memory.exists([datatype]):
-            # create the datatype grouping if it does not exist
-            self.memory.set_by_path([datatype], {})
-            modified = True
-
-        if not self.memory.exists([datatype, chat_id]):
-            # create the memory
-            self.memory.set_by_path([datatype, chat_id], {})
-            modified = True
-
-        return modified
-
+        return self.memory.ensure_path([datatype, key])
 
     async def _on_connect(self):
         """handle connection/reconnection"""
