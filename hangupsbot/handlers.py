@@ -23,11 +23,10 @@ class EventHandler(object):
 
     Args:
         bot: HangupsBot instance
-        bot_command: string, prefix for bot commands
     """
-    def __init__(self, bot, bot_command='/bot'):
+    def __init__(self, bot):
         self.bot = bot
-        self.bot_command = bot_command
+        self.bot_command = ['/bot']
 
         self._reprocessors = {}
 
@@ -289,10 +288,6 @@ class EventHandler(object):
             # admins always have commands enabled
             if event.user_id.chat_id not in admins_list:
                 return
-
-        # ensure bot alias is always a list
-        if not isinstance(self.bot_command, list):
-            self.bot_command = [self.bot_command]
 
         # check that a bot alias is used e.g. /bot
         if not event.text.split()[0].lower() in self.bot_command:
