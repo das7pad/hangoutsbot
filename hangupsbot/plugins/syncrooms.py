@@ -20,8 +20,6 @@ _registers=__registers()
 
 
 def _initialise(bot):
-    _migrate_syncroom_v1(bot)
-
     plugins.register_handler(_broadcast, type="sending")
     plugins.register_handler(_repeat, type="allmessages")
 
@@ -32,33 +30,6 @@ def _initialise(bot):
     return []
 
     plugins.register_handler(_handle_syncrooms_membership_change, type="membership")
-
-
-def _migrate_syncroom_v1(bot):
-    if bot.config.exists(["conversations"]):
-        write_config = False
-        _config2 = []
-        _newdict = {}
-        _oldlist = bot.config.get_by_path(["conversations"])
-        for conv_id in _oldlist:
-            parameters = _oldlist[conv_id]
-            if "sync_rooms" in parameters:
-                old_sync_rooms = parameters["sync_rooms"]
-                old_sync_rooms.append(conv_id)
-                old_sync_rooms = list(set(old_sync_rooms))
-                old_sync_rooms.sort()
-                ref_key = "-".join(old_sync_rooms)
-                _newdict[ref_key] = old_sync_rooms # prevent duplicates
-
-                del parameters["sync_rooms"] # remove old config
-                bot.config.set_by_path(["conversations", conv_id], parameters)
-                write_config = True
-
-        if write_config:
-            _config2 = list(_newdict.values())
-            bot.config.set_by_path(["sync_rooms"], _config2) # write new config
-            bot.config.save()
-            logger.info("_migrate_syncroom_v1(): config-v2 = {}".format(_config2))
 
 
 @asyncio.coroutine

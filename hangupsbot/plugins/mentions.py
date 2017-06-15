@@ -14,25 +14,11 @@ nicks = {}
 
 
 def _initialise(bot):
-    _migrate_mention_config_to_memory(bot)
     plugins.register_handler(_handle_mention, "message")
     plugins.register_user_command(["pushbulletapi", "setnickname", "bemorespecific"])
     plugins.register_admin_command(["mention"])
 
 
-def _migrate_mention_config_to_memory(bot):
-    # migrate pushbullet apikeys to memory.json
-    if bot.config.exists(["pushbullet"]):
-        api_settings = bot.config.get("pushbullet")
-        for user_chat_id in api_settings:
-            user_api = api_settings[user_chat_id]
-            logger.debug("migrating user {} = {} to memory.json".format(user_chat_id, user_api))
-            bot.initialise_memory(user_chat_id, "user_data")
-            bot.memory.set_by_path(["user_data", user_chat_id, "pushbullet"], user_api)
-        del bot.config["pushbullet"]
-        bot.memory.save()
-        bot.config.save()
-        logger.debug("pushbullet config migrated")
 
 
 def _handle_mention(bot, event, command):

@@ -7,37 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    _migrate_dnd_config_to_memory(bot)
     _reuseable = functools.partial(_user_has_dnd, bot)
     functools.update_wrapper(_reuseable, _user_has_dnd)
     plugins.register_shared('dnd.user_check', _reuseable)
     plugins.register_user_command(["dnd"])
-
-
-def _migrate_dnd_config_to_memory(bot):
-    # migrate DND list to memory.json
-    if bot.config.exists(["donotdisturb"]):
-        dndlist = bot.config.get("donotdisturb")
-        bot.memory.set_by_path(["donotdisturb"], dndlist)
-        del bot.config["donotdisturb"]
-        bot.memory.save()
-        bot.config.save()
-        logger.debug("list migrated to memory")
-
-    # migrate memory.json DND to structure with more metadata
-    if bot.memory.exists(["donotdisturb"]):
-        donotdisturb = bot.memory.get("donotdisturb")
-        if(isinstance(donotdisturb, list)):
-            # legacy structure, convert to dict
-            dnd_dict = {}
-            for user_id in donotdisturb:
-                dnd_dict[user_id] = {
-                    "created": time.time(),
-                    "expiry": 86400
-                }
-            bot.memory.set_by_path(["donotdisturb"], dnd_dict)
-            bot.memory.save()
-            logger.debug("list migrated to dictionary")
 
 
 def dnd(bot, event, *args):
