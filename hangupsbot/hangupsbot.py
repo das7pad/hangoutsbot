@@ -495,7 +495,7 @@ class HangupsBot(object):
             self._conv_list._conv_dict[new_conv_id] = conv #pylint:disable=W0212
 
             # create the permamem entry for the conversation
-            self.conversations.update(conv, source="1to1creation")
+            await self.conversations.update(conv, source="1to1creation")
 
             # send introduction
             introduction = self.config.get_option("bot_introduction").format(
@@ -544,6 +544,7 @@ class HangupsBot(object):
         self.conversations = await permamem.initialise(self)
 
         await plugins.load(self, "commands.plugincontrol")
+        await plugins.load(self, "commands.alias")
         await plugins.load(self, "commands.basic")
         await plugins.load(self, "commands.tagging")
         await plugins.load(self, "commands.permamem")

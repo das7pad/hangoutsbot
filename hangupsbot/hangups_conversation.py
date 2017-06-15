@@ -127,7 +127,7 @@ class HangupsConversation(hangups.conversation.Conversation):
             _user_list: hangups.user.UserList instance
             _conv_list: hangups.conversation.ConversationList instance
         """
-        cls._bot = _bot
+        cls.bot = _bot
         cls._handlers = _handlers
         cls._client = _client
         cls._user_list = _user_list

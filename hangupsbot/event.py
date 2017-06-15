@@ -64,7 +64,7 @@ class WatermarkEvent(GenericEvent):
     """
     def __init__(self, state_update_event):
         super().__init__(state_update_event, state_update_event.conv_id)
-        self.timestamp = state_update_event.latest_read_timestamp
+        self.timestamp = state_update_event.read_timestamp
         self.text = "watermark"
 
 
