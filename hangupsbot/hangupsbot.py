@@ -182,68 +182,103 @@ class HangupsBot(object):
             return object_(*args, **kwargs)
         return object_
 
-    def login(self, cookies_path):
-        """Login to Google account"""
-        # Authenticate Google user and save auth cookies
-        # (or load already saved cookies)
-        try:
-            cookies = hangups.auth.get_auth_stdin(cookies_path)
-            return cookies
-
-        except hangups.GoogleAuthError as e:
-            logger.exception("LOGIN FAILED")
-            return False
-
     def run(self):
         """Connect to Hangouts and run bot"""
-        cookies = self.login(self._cookies_path)
-        if cookies:
-            # Start asyncio event loop
-            loop = asyncio.get_event_loop()
+        def _login():
+            """Login to Google account
 
-            # initialise pluggable framework
-            sinks.start(self)
+            Authenticate with saved cookies or prompt for user credentials
 
-            # Connect to Hangouts
-            # If we are forcefully disconnected, try connecting again
-            for retry in range(self._max_retries):
-                try:
-                    # create Hangups client (recreate if its a retry)
-                    self._client = hangups.Client(cookies)
-                    self._client.on_connect.add_observer(self._on_connect)
-                    self._client.on_disconnect.add_observer(self._on_disconnect)
+            Returns:
+                dict, a dict of cookies to authenticate at Google
+            """
+            try:
+                return hangups.get_auth_stdin(self._cookies_path)
 
-                    loop.run_until_complete(self._client.connect())
+            except hangups.GoogleAuthError as err:
+                logger.error("LOGIN FAILED: %s", repr(err))
+                return False
 
-                    logger.info("bot is exiting")
+        cookies = _login()
+        if not cookies:
+            logger.error("Valid login required, exiting")
+            sys.exit(1)
 
-                    loop.run_until_complete(plugins.unload_all(self))
+        # Start asyncio event loop
+        loop = asyncio.get_event_loop()
 
-                    self.memory.flush()
-                    self.config.flush()
+        # initialise pluggable framework
+        sinks.start(self)
 
-                    sys.exit(0)
-                except Exception as e:
-                    logger.exception("CLIENT: unrecoverable low-level error")
-                    print('Client unexpectedly disconnected:\n{}'.format(e))
+        # retries for the hangups longpolling request
+        max_retries_longpolling = (self._max_retries
+                                   if self._max_retries > 5 else 5)
 
-                    loop.run_until_complete(plugins.unload_all(self))
+        # Connect to Hangouts
+        # If we are forcefully disconnected, try connecting again
+        for retry in range(self._max_retries):
+            try:
+                # (re)create Hangups client
+                self._client = hangups.Client(cookies, max_retries_longpolling)
+                self._client.on_connect.add_observer(self._on_connect)
+                self._client.on_disconnect.add_observer(
+                    lambda: logger.warning("Event polling stopped"))
+                self._client.on_reconnect.add_observer(
+                    lambda: logger.warning("Event polling continued"))
 
-                    logger.info('Waiting {} seconds...'.format(5 + retry * 5))
-                    time.sleep(5 + retry * 5)
-                    logger.info('Trying to connect again (try {} of {})...'.format(retry + 1, self._max_retries))
+                loop.run_until_complete(self._client.connect())
+            except SystemExit:
+                raise
+            except:                                 # pylint:disable=bare-except
+                logger.exception("low-level error")
+            else:
+                logger.warning("bot is exiting")
+                sys.exit(0)
 
-            logger.error('Maximum number of retries reached! Exiting...')
+            finally:
+                logger.info("bot started unloading")
+                loop.run_until_complete(self._stop())
+                loop.run_until_complete(plugins.unload_all(self))
 
-        logger.error("Valid login required, exiting")
+                self.memory.flush()
+                self.config.flush()
+                logger.info("bot unloaded")
 
+            if not self._max_retries - 1 - retry:
+                # the final retry failed, do not delay the exit
+                break
+
+            delay = 5 + retry * 5
+            logger.info("Waiting %s seconds", delay)
+            loop.run_until_complete(asyncio.sleep(delay))
+            logger.info("Trying to connect again (try %s of %s)",
+                        retry + 1, self._max_retries)
+
+        logger.error("Maximum number of retries reached! Exiting...")
         sys.exit(1)
+
+    async def _stop(self):
+        """stop the hangups client"""
+
+        #pylint:disable=protected-access,bare-except
+        try:
+            # ignore a previous Exception
+            if self._client._listen_future._exception is not None:
+                logger.info('_stop: discard %s',
+                            repr(self._client._listen_future._exception))
+            self._client._listen_future._exception = None
+
+            await self._client.disconnect()
+        except:                                         # capture any exception
+            logger.exception('gracefully stop of hangups client failed')
+        finally:
+            if not self._client._connector.closed:
+                # the connector is still running, close it forcefully
+                self._client._connector.close()
 
     def stop(self):
         """Disconnect from Hangouts"""
-        asyncio.async(
-            self._client.disconnect()
-        ).add_done_callback(lambda future: future.result())
+        asyncio.ensure_future(self._stop())
 
     def list_conversations(self):
         """List all active conversations"""
@@ -540,10 +575,6 @@ class HangupsBot(object):
 
 
         logger.info("bot initialised")
-
-    def _on_disconnect(self):
-        """Handle disconnecting"""
-        logger.info('Connection lost!')
 
     @asyncio.coroutine
     def coro_send_message(self, conversation, message, context=None, image_id=None):
