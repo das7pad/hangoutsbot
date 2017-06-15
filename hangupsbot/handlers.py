@@ -1,3 +1,5 @@
+"""Hangups conversationevent handler with custom pluggables for plugins"""
+
 import logging
 import shlex
 import asyncio
@@ -16,9 +18,13 @@ from exceptions import HangupsBotExceptions
 logger = logging.getLogger(__name__)
 
 
-class EventHandler:
-    """Handle Hangups conversation events"""
+class EventHandler(object):
+    """Handle Hangups conversation events
 
+    Args:
+        bot: HangupsBot instance
+        bot_command: string, prefix for bot commands
+    """
     def __init__(self, bot, bot_command='/bot'):
         self.bot = bot
         self.bot_command = bot_command
@@ -80,13 +86,23 @@ class EventHandler:
         self._passthrus[_id] = variable
         return _id
 
-    def register_context(self, variable):
-        _id = str(uuid.uuid4())
-        self._contexts[_id] = variable
-        return _id
+    def register_context(self, context):
+        """register a message context that can be later attached again
+
+        Args:
+            context: dict, no keys are required
+
+        Returns:
+            string, a unique identifier for the context
+        """
+        context_id = None
+        while context_id is None or context_id in self._contexts:
+            context_id = str(uuid.uuid4())
+        self._contexts[context_id] = context
+        return context_id
 
     def register_reprocessor(self, func):
-        """register a function that is identified by the created uuid
+        """register a function that can be called later
 
         Args:
             func: a callable that takes three args: bot, event, command
@@ -95,11 +111,9 @@ class EventHandler:
             string, a unique identifier for the callable
         """
         reprocessor_id = None
-        while reprocessor_id is None:
+        while reprocessor_id is None or reprocessor_id in self._reprocessors:
             reprocessor_id = str(uuid.uuid4())
-            unique = self._reprocessors.add(reprocessor_id, func)
-            if not unique:
-                reprocessor_id = None
+        self._reprocessors[reprocessor_id] = func
         return reprocessor_id
 
     def attach_reprocessor(self, func, return_as_dict=None):
@@ -114,43 +128,79 @@ class EventHandler:
             func: callable that takes three arguments: bot, event, command
             return_as_dict: legacy code
         """
+        #pylint:disable=unused-argument
         reprocessor_id = self.register_reprocessor(func)
         return {"id": reprocessor_id,
                 "callable": func}
 
-    """handler core"""
+    # handler core
 
-    @asyncio.coroutine
-    def image_uri_from(self, image_id, callback, *args, **kwargs):
-        """XXX: there isn't a direct way to resolve an image_id to the public url without
-        posting it first via the api. other plugins and functions can establish a short-lived
-        task to wait for the image id to be posted, and retrieve the url in an asyncronous way"""
+    async def image_uri_from(self, image_id, callback, *args, **kwargs):
+        """retrieve a public url for an image upload
+
+        Args:
+            image_id: int, upload id of a previous upload
+            callback: coro, awaitable callable
+            args: tuple, positional arguments for the callback
+            kwargs: dict, keyword arguments for the callback
+
+        Returns:
+            boolean, False if no url was awaitable after 60sec, otherwise True
+        """
+        #TODO(das7pad) refactor plugins to use bot._client.image_upload_raw
+
+        # there was no direct way to resolve an image_id to the public url
+        # without posting it first via the api. other plugins and functions can
+        # establish a short-lived task to wait for the image id to be posted,
+        # and retrieve the url in an asyncronous way"""
 
         ticks = 0
         while True:
             if image_id not in self._image_ids:
-                yield from asyncio.sleep(1)
+                await asyncio.sleep(1)
                 ticks = ticks + 1
                 if ticks > 60:
                     return False
             else:
-                yield from callback(self._image_ids[image_id], *args, **kwargs)
+                await callback(self._image_ids[image_id], *args, **kwargs)
                 return True
 
-    @asyncio.coroutine
-    def run_reprocessor(self, id, event, *args, **kwargs):
-        if id in self._reprocessors:
-            is_coroutine = asyncio.iscoroutinefunction(self._reprocessors[id])
-            logger.info("reprocessor uuid found: {} coroutine={}".format(id, is_coroutine))
-            if is_coroutine:
-                yield from self._reprocessors[id](self.bot, event, id, *args, **kwargs)
-            else:
-                self._reprocessors[id](self.bot, event, id, *args, **kwargs)
-            del self._reprocessors[id]
+    async def run_reprocessor(self, reprocessor_id, event, *args, **kwargs):
+        """reprocess the event with the callable that was attached on sending
+
+        Args:
+            reprocessor_id: string, a found reprocessor id
+            event: hangupsbot event instance
+        """
+        reprocessor = self._reprocessors.get(reprocessor_id, pop=True)
+        if reprocessor is None:
+            return
+
+        is_coroutine = asyncio.iscoroutinefunction(reprocessor)
+        logger.info("reprocessor uuid found: %s coroutine=%s",
+                    reprocessor_id, is_coroutine)
+        if is_coroutine:
+            await reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
+        else:
+            reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
 
     @asyncio.coroutine
     def handle_chat_message(self, event):
-        """Handle conversation event"""
+        """Handle an incoming conversation event
+
+        - auto-optin opt-outed users if the event is in a 1on1
+        - run connected event-reprocessor
+        - forward the event to handlers:
+            - allmessages, all events
+            - message, if user is not the bot user
+        - handle the text as command, if the user is not the bot user
+
+        Args:
+            event: event.ConversationEvent instance
+
+        Raises:
+            exceptions.SuppressEventHandling: do not handle the event at all
+        """
         if event.text:
             if event.user.is_self:
                 event.from_bot = True
@@ -217,17 +267,25 @@ class EventHandler:
                 yield from self.run_pluggable_omnibus("message", self.bot, event, command)
                 yield from self.handle_command(event)
 
-    @asyncio.coroutine
-    def handle_command(self, event):
-        """Handle command messages"""
+    async def handle_command(self, event):
+        """Handle command messages
+
+        Args:
+            event: event.ConversationEvent instance
+        """
+        if not event.text:
+            return
+
+        bot = self.bot
 
         # is commands_enabled?
-
-        config_commands_enabled = self.bot.get_config_suboption(event.conv_id, 'commands_enabled')
-        tagged_ignore = "ignore" in self.bot.tags.useractive(event.user_id.chat_id, event.conv_id)
+        config_commands_enabled = bot.get_config_suboption(event.conv_id,
+                                                           'commands_enabled')
+        tagged_ignore = "ignore" in bot.tags.useractive(event.user_id.chat_id,
+                                                        event.conv_id)
 
         if not config_commands_enabled or tagged_ignore:
-            admins_list = self.bot.get_config_suboption(event.conv_id, 'admins') or []
+            admins_list = bot.get_config_suboption(event.conv_id, 'admins')
             # admins always have commands enabled
             if event.user_id.chat_id not in admins_list:
                 return
@@ -238,50 +296,41 @@ class EventHandler:
 
         # check that a bot alias is used e.g. /bot
         if not event.text.split()[0].lower() in self.bot_command:
-            if self.bot.conversations.catalog[event.conv_id]["type"] == "ONE_TO_ONE" and self.bot.get_config_option('auto_alias_one_to_one'):
-                event.text = u" ".join((self.bot_command[0], event.text)) # Insert default alias if not already present
+            if (bot.conversations[event.conv_id]["type"] == "ONE_TO_ONE"
+                    and bot.config.get_option('auto_alias_one_to_one')):
+                # Insert default alias if not already present
+                event.text = u" ".join((self.bot_command[0], event.text))
             else:
                 return
 
-        # Parse message
-        event.text = event.text.replace(u'\xa0', u' ') # convert non-breaking space in Latin1 (ISO 8859-1)
+        # Parse message, convert non-breaking space in Latin1 (ISO 8859-1)
+        event.text = event.text.replace(u'\xa0', u' ')
         try:
             line_args = shlex.split(event.text, posix=False)
-        except Exception as e:
-            logger.exception(e)
-            yield from self.bot.coro_send_message(event.conv, _("{}: {}").format(
-                event.user.full_name, str(e)))
-            return
+        except ValueError:
+            logger.exception('shlex.split failed parsing "%s"', event.text)
+            line_args = event.text.split()
 
-        # Test if command length is sufficient
-        if len(line_args) < 2:
-            config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
-            tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
-            if not (config_silent or tagged_silent):
-                yield from self.bot.coro_send_message(event.conv, _('{}: Missing parameter(s)').format(
-                    event.user.full_name))
-            return
-        
-        commands = command.get_available_commands(self.bot, event.user.id_.chat_id, event.conv_id)
+        commands = command.get_available_commands(bot, event.user_id.chat_id,
+                                                  event.conv_id)
 
         supplied_command = line_args[1].lower()
-        if supplied_command in commands["user"]:
-            pass
-        elif supplied_command in commands["admin"]:
+        if (supplied_command in commands["user"] or
+                supplied_command in commands["admin"]):
             pass
         elif supplied_command in command.commands:
-            yield from command.blocked_command(self.bot, event, *line_args[1:])
+            await command.blocked_command(bot, event, *line_args[1:])
             return
         else:
-            yield from command.unknown_command(self.bot, event, *line_args[1:])
+            await command.unknown_command(bot, event, *line_args[1:])
             return
 
         # Run command
-        results = yield from command.run(self.bot, event, *line_args[1:])
+        results = await command.run(bot, event, *line_args[1:])
 
         if "acknowledge" in dir(event):
-            for id in event.acknowledge:
-                yield from self.run_reprocessor(id, event, results)
+            for id_ in event.acknowledge:
+                await self.run_reprocessor(id_, event, results)
 
     async def run_pluggable_omnibus(self, name, *args, **kwargs):
         """forward args to a group of handler which were registered for the name
