@@ -8,10 +8,11 @@ import time
 import uuid
 
 import hangups
+import hangups.parsers
 
 import plugins
 from commands import command
-from event import (TypingEvent, WatermarkEvent, ConversationEvent)
+from event import (GenericEvent, TypingEvent, WatermarkEvent, ConversationEvent)
 from exceptions import HangupsBotExceptions
 
 
@@ -25,7 +26,7 @@ class EventHandler(object):
         bot: HangupsBot instance
     """
     def __init__(self, bot):
-        self.bot = bot
+        self.bot = GenericEvent.bot = bot
         self.bot_command = ['/bot']
 
         self._reprocessors = {}
@@ -50,6 +51,12 @@ class EventHandler(object):
                                 self.attach_reprocessor)
 
         plugins.register_shared("chatbridge.behaviours", {})
+
+        _conv_list = bot._conv_list     # pylint: disable=protected-access
+        _conv_list.on_event.add_observer(self._handle_event)
+        _conv_list.on_typing.add_observer(self._handle_status_change)
+        _conv_list.on_watermark_notification.add_observer(
+            self._handle_status_change)
 
     def register_handler(self, function, pluggable="message", priority=50,
                          **kwargs):
@@ -184,7 +191,7 @@ class EventHandler(object):
             reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
 
     @asyncio.coroutine
-    def handle_chat_message(self, event):
+    def _handle_chat_message(self, event):
         """Handle an incoming conversation event
 
         - auto-optin opt-outed users if the event is in a 1on1
@@ -264,9 +271,9 @@ class EventHandler(object):
             yield from self.run_pluggable_omnibus("allmessages", self.bot, event, command)
             if not event.from_bot:
                 yield from self.run_pluggable_omnibus("message", self.bot, event, command)
-                yield from self.handle_command(event)
+                yield from self._handle_command(event)
 
-    async def handle_command(self, event):
+    async def _handle_command(self, event):
         """Handle command messages
 
         Args:
@@ -383,13 +390,13 @@ class EventHandler(object):
             # handler and do not continue with event handling in the parent
             raise
 
-    async def handle_event(self, conv_event):
+    async def _handle_event(self, conv_event):
         """Handle conversation events
 
         Args:
             conv_event: hangups.conversation_event.ConversationEvent instance
         """
-        event = ConversationEvent(self.bot, conv_event)
+        event = ConversationEvent(conv_event)
 
         if isinstance(conv_event, hangups.ChatMessageEvent):
             pluggable = None
@@ -419,32 +426,26 @@ class EventHandler(object):
             await self.bot.conversations.update(event.conv, source="event")
 
         if pluggable is None:
-            asyncio.ensure_future(self.handle_chat_message(event))
+            asyncio.ensure_future(self._handle_chat_message(event))
             return
 
         asyncio.ensure_future(self.run_pluggable_omnibus(
             pluggable, self.bot, event, command))
 
-    async def handle_status_change(self, state_update):
+    async def _handle_status_change(self, state_update):
         """run notification handler for a given state_update
 
         Args:
-            state_update: hangups.hangouts_pb2.StateUpdate instance
+            state_update: hangups.parsers.TypingStatusMessage or
+             hangups.parsers.WatermarkNotification instance
         """
-        notification_type = state_update.WhichOneof("state_update")
-
-        if notification_type == "typing_notification":
+        if isinstance(state_update, hangups.parsers.TypingStatusMessage):
             pluggable = "typing"
-            event = TypingEvent(self.bot, state_update.typing_notification)
+            event = TypingEvent(state_update)
 
-        elif notification_type == "watermark_notification":
-            pluggable = "watermark"
-            event = WatermarkEvent(self.bot,
-                                   state_update.watermark_notification)
         else:
-            # Unsupported State Updates (state_update):
-            # https://github.com/tdryer/hangups/blob/9a27ecd0cbfd94acf8959e89c52ac3250c920a1f/hangups/hangouts.proto#L1034
-            return
+            pluggable = "watermark"
+            event = WatermarkEvent(state_update)
 
         asyncio.ensure_future(self.run_pluggable_omnibus(
             pluggable, self.bot, event, command))

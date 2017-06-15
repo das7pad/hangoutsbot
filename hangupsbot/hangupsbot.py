@@ -538,9 +538,6 @@ class HangupsBot(object):
         await plugins.load(self, "commands.loggertochat")
         await plugins.load_user_plugins(self)
 
-        self._conv_list.on_event.add_observer(self._handlers.handle_event)
-        self._client.on_state_update.add_observer(
-            self._handlers.handle_status_change)
 
         logger.info("bot initialised")
 
