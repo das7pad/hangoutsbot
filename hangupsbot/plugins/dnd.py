@@ -31,7 +31,7 @@ def dnd(bot, event, *args):
         seconds_to_expire = 259200 # max: 3 days (72 hours)
 
     initiator_chat_id = event.user.id_.chat_id
-    donotdisturb = bot.memory.get("donotdisturb")
+    donotdisturb = bot.memory["donotdisturb"]
     if initiator_chat_id in donotdisturb:
         del donotdisturb[initiator_chat_id]
     else:

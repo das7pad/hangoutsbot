@@ -43,7 +43,7 @@ async def convfilter(bot, event, *args):
 
         await bot.coro_send_message(event.conv_id, message)
 
-        return { "api.response" : message }
+        return {"api.response" : message}
 
 
 async def convecho(bot, event, *args):
@@ -135,7 +135,7 @@ async def convusers(bot, event, *args):
 
     await bot.coro_send_message(event.conv_id, message)
 
-    return { "api.response" : message }
+    return {"api.response" : message}
 
 
 async def convleave(bot, event, *args):

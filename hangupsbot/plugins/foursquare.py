@@ -3,6 +3,8 @@ import urllib.request, urllib.parse
 import json
 import aiohttp, os, io
 
+from commands import Help
+
 logger = logging.getLogger(__name__)
 
 def _initialise(bot):
@@ -68,7 +70,7 @@ async def foursquare(bot, event,*args):
 <b>/bot foursquare <location></b>: Display up to 10 of the recommended places near the specified location.
 <b>/bot foursquare [type] <location></b>: Display up to 10 places near the provided location of the type specified. <i>Valid types: food, drinks, coffee, shops, arts, outdoors, sights, trending, specials</i>'''
   if not args:
-    return
+    raise Help()
 
   try:
     clid = bot.memory.get_by_path(["foursquare", "id"])

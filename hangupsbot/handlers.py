@@ -376,8 +376,8 @@ class EventHandler(object):
                 except: # capture all Exceptions   # pylint: disable=bare-except
                     # exception is not related to the handling of this
                     # pluggable, log and continue with the next handler
-                    message.append("args=%s" % args)
-                    message.append("kwargs=%s" % kwargs)
+                    message.append("args=" + str([str(arg) for arg in args]))
+                    message.append("kwargs=" + str(kwargs))
                     logger.exception(" : ".join(message))
 
         except HangupsBotExceptions.SuppressAllHandlers:

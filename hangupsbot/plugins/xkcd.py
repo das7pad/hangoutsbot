@@ -15,7 +15,7 @@ _cache = {}
 
 def _initialise():
     plugins.register_user_command(["xkcd"])
-    plugins.register_handler(_watch_xkcd_link, type="message")
+    plugins.register_handler(_watch_xkcd_link, "message")
 
 regexps = (
     r"https?://(?:www\.)?(?:explain)?xkcd.com/([0-9]+)(?:/|\s|$)",
