@@ -798,15 +798,18 @@ def configure_logging(args):
             # requests is freakishly noisy
             "requests": {"level": "INFO"},
 
-            # XXX: suppress erroneous WARNINGs until resolution of
-            #   https://github.com/tdryer/hangups/issues/142
-            "hangups": {"level": "ERROR"},
+            "hangups": {"level": "WARNING"},
+
+            # ignore the addition of fallback users
+            "hangups.user": {"level": "ERROR"},
+
+            # do not log disconnects twice, we already attach a logger to
+            # ._client.on_disconnect
+            "hangups.channel": {"level": "ERROR"},
 
             # asyncio's debugging logs are VERY noisy, so adjust the log level
             "asyncio": {"level": "WARNING"},
 
-            # hangups log is verbose too, suppress so we can debug the bot
-            "hangups.conversation": {"level": "ERROR"}
             }
         }
 
