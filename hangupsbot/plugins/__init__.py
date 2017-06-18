@@ -75,9 +75,10 @@ class Tracker(object):
         waited = 0
         while self._running and waited < 100:
             await asyncio.sleep(0.1)
-        self._running = True
+            waited += 1
 
         self.end() # cleanup from recent run
+        self._running = True
 
         module_path = metadata['module.path']
 
