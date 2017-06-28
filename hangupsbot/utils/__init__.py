@@ -1,3 +1,4 @@
+"""utils used by the HangupsBot core"""
 # coding: utf-8
 # pylint: disable=unused-import
 import importlib
@@ -7,10 +8,9 @@ import unicodedata
 import traceback
 
 from parsers import simple_parse_to_segments, segment_to_html
-
 from permamem import name_from_hangups_conversation
 
-BASE_PATH = os.path.dirname(__file__) + '/'
+BASE_PATH = os.path.dirname(os.path.dirname(__file__)) + '/'
 
 def print_to_logger(*args, **dummys):
     """redirect the input to a logger with the name of the last entry in stack
