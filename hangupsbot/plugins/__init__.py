@@ -503,6 +503,7 @@ async def load(bot, module_path, module_name=None):
     await tracking.start({"module": module_name, "module.path": module_path})
 
     if not load_module(module_path):
+        tracking.end()
         return False
 
     setattr(sys.modules[module_path], 'print', utils.print_to_logger)
