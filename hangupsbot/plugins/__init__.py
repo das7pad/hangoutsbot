@@ -11,7 +11,6 @@ import sys
 
 from inspect import getmembers, isfunction
 
-import hangups_shim
 from commands import command
 import utils
 
@@ -507,9 +506,8 @@ async def load(bot, module_path, module_name=None):
         return False
 
     setattr(sys.modules[module_path], 'print', utils.print_to_logger)
-    if hasattr(sys.modules[module_path], "hangups"):
-        logger.debug("%s has legacy hangups reference", module_name)
-        setattr(sys.modules[module_path], "hangups", hangups_shim)
+    if hasattr(sys.modules[module_path], "hangups_shim"):
+        logger.info("%s has legacy hangups reference", module_name)
 
     public_functions = list(getmembers(sys.modules[module_path], isfunction))
 
