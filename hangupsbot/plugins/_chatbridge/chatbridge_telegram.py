@@ -66,23 +66,23 @@ class BridgeInstance(WebFramework):
 
         max_offset = -1
 
+        session = aiohttp.ClientSession(connector=connector)
         while True:
             try:
                 data = { "timeout": 60 }
                 if max_offset:
                     data["offset"] = int(max_offset) + 1
-                res = await asyncio.wait_for(
-                    aiohttp.request( 'post',
-                                     url,
+                async with asyncio.wait_for(
+                        session.post(url,
                                      data=data,
                                      headers=headers,
-                                     connector=connector ), CONNECT_TIMEOUT)
-                chunk = await res.content.read(1024*1024)
+                                     connector=connector),
+                        CONNECT_TIMEOUT) as res:
+                    chunk = await res.content.read(1024*1024)
             except asyncio.TimeoutError:
                 raise
             except asyncio.CancelledError:
-                # Prevent ResourceWarning when channel is disconnected.
-                res.close()
+                session.close()
                 raise
 
             if chunk:
@@ -124,13 +124,6 @@ class BridgeInstance(WebFramework):
                                     {   "source_user": user,
                                         "source_title": False })
 
-            else:
-                pass
-
-            # Close the response to allow the connection to be reused for
-            # the next request.
-            res.close()
-
         logger.critical("long-polling terminated")
 
     async def telegram_api_request(self, configuration, method, data):
@@ -141,8 +134,9 @@ class BridgeInstance(WebFramework):
 
         url = "https://api.telegram.org/bot{}/{}".format(BOT_API_KEY, method)
 
-        response = await aiohttp.request('post', url, data=data, headers=headers, connector=connector)
-        results = await response.text()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=data, headers=headers, connector=connector) as response:
+                results = await response.text()
 
         return results
 

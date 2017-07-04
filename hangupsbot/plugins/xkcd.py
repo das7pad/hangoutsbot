@@ -71,8 +71,9 @@ async def _get_comic(bot, num=None):
     if num in _cache:
         return _cache[num]
     else:
-        request = await aiohttp.request('get', url)
-        raw = await request.read()
+        async with aiohttp.ClientSession() as session:
+            async with session.request('get', url) as request:
+                raw = await request.read()
         info = json.loads(raw.decode())
 
         if info['num'] in _cache:
@@ -80,8 +81,9 @@ async def _get_comic(bot, num=None):
             return _cache[info['num']]
 
         filename = os.path.basename(info["img"])
-        request = await aiohttp.request('get', info["img"])
-        raw = await request.read()
+        async with aiohttp.ClientSession() as session:
+            async with session.request('get', info["img"]) as request:
+                raw = await request.read()
         image_data = io.BytesIO(raw)
         info['image_id'] = await bot._client.upload_image(image_data, filename=filename)
         _cache[info['num']] = info
@@ -109,11 +111,12 @@ async def _print_comic(bot, event, num=None):
     await bot.coro_send_message(event.conv.id_, msg2, context, image_id=image_id) # image appears above text, so order is [msg1, image, msg2]
 
 async def _search_comic(bot, event, terms):
-    request = await aiohttp.request('get', "https://relevantxkcd.appspot.com/process?%s" % urllib.parse.urlencode({
-        "action": "xkcd",
-        "query": " ".join(terms),
-    }))
-    raw = await request.read()
+    url = ("https://relevantxkcd.appspot.com/process?%s"
+           % urllib.parse.urlencode({"action": "xkcd",
+                                     "query": " ".join(terms)}))
+    async with aiohttp.ClientSession() as session:
+        async with session.request('get', url) as request:
+            raw = await request.read()
     values = [row.strip().split(" ")[0] for row in raw.decode().strip().split("\n")]
 
     weight = float(values.pop(0))

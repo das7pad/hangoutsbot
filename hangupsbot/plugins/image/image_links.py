@@ -88,8 +88,9 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 async def image_upload_single(image_uri, bot):
     logger.info("getting {}".format(image_uri))
     filename = os.path.basename(image_uri)
-    r = await aiohttp.request('get', image_uri)
-    raw = await r.read()
+    async with aiohttp.ClientSession() as session:
+        async with session.request('get', image_uri) as res:
+            raw = await res.read()
     image_data = io.BytesIO(raw)
     image_id = await bot._client.upload_image(image_data, filename=filename)
     return image_id

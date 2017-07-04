@@ -53,8 +53,9 @@ async def _scan_for_triggers(bot, event, command):
                     image_link = image_link.replace(".gifv",".gif")
                     image_link = image_link.replace(".webm",".gif")
                 filename = os.path.basename(image_link)
-                r = await aiohttp.request('get', image_link)
-                raw = await r.read()
+                async with aiohttp.ClientSession() as session:
+                    async with session.request('get', image_link) as res:
+                        raw = await res.read()
                 image_data = io.BytesIO(raw)
                 logger.debug("uploading: {}".format(filename))
                 image_id = await bot._client.upload_image(image_data, filename=filename)

@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 class BridgeInstance(WebFramework):
     def _send_to_external_chat(self, bot, event, config):
         """override WebFramework._send_to_external_chat()"""
+        async def _send():
+            async with aiohttp.ClientSession() as session:
+                await session.post(url, data=json.dumps(payload),
+                                   headers=headers, connector=connector)
         if event.from_bot:
             # don't send my own messages
             return
@@ -27,9 +31,7 @@ class BridgeInstance(WebFramework):
         headers = {'content-type': 'application/json'}
 
         connector = aiohttp.TCPConnector(verify_ssl=False)
-        asyncio.ensure_future(
-            aiohttp.request('post', url, data=json.dumps(payload),
-                            headers=headers, connector=connector))
+        asyncio.ensure_future(_send())
 
 
 class IncomingMessages(IncomingRequestHandler):

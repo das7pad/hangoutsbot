@@ -1,4 +1,4 @@
-import aiohttp, logging, json, os, random, urllib.request
+import aiohttp, logging, os, random, urllib.request
 
 import hangups
 
@@ -30,9 +30,9 @@ async def meme(bot, event, *args):
         """public api: http://version1.api.memegenerator.net"""
         url_api = 'http://version1.api.memegenerator.net/Instances_Search?q=' + "+".join(parameters) + '&pageIndex=0&pageSize=25'
 
-        api_request = await aiohttp.request('get', url_api)
-        json_results = await api_request.read()
-        results = json.loads(str(json_results, 'utf-8'))
+        async with aiohttp.ClientSession() as session:
+            async with session.request('get', url_api) as api_request:
+                results = await api_request.json()
 
         if results['result']:
             instanceImageUrl = random.choice(results['result'])['instanceImageUrl']

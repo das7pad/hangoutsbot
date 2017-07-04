@@ -69,8 +69,9 @@ async def _send_source(bot, event, name, img_link):
         img_link: string, url to a shared webcam
     """
     logger.info("Getting %s", img_link)
-    res = await aiohttp.request("get", img_link)
-    raw = await res.read()
+    async with aiohttp.ClientSession() as session:
+        async with session.request("get", img_link) as res:
+            raw = await res.read()
     content_type = res.headers['Content-Type']
     logger.info("\tContent-type: %s", content_type)
     ext = content_type.split('/')[1]

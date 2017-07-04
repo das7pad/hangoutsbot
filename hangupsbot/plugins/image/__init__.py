@@ -1,3 +1,6 @@
+# TODO(das7pad): needs a refactor
+
+
 import asyncio
 import io
 import logging
@@ -82,40 +85,41 @@ async def image_upload_single(image_uri):
     filename = os.path.basename(image_uri)
     logger.info("fetching {}".format(filename))
     try:
-        r = await aiohttp.request('get', image_uri)
-        content_type = r.headers['Content-Type']
+        async with aiohttp.ClientSession() as session:
+            async with session.request('get', image_uri) as res:
+                content_type = res.headers['Content-Type']
 
-        image_handling = False # must == True if valid image, can contain additonal directives
+                image_handling = False # must == True if valid image, can contain additonal directives
 
-        """image handling logic for specific image types - if necessary, guess by extension"""
+                """image handling logic for specific image types - if necessary, guess by extension"""
 
-        if content_type.startswith('image/'):
-            if content_type == "image/webp":
-                image_handling = "image_convert_to_png"
-            else:
-                image_handling = "standard"
+                if content_type.startswith('image/'):
+                    if content_type == "image/webp":
+                        image_handling = "image_convert_to_png"
+                    else:
+                        image_handling = "standard"
 
-        elif content_type == "application/octet-stream":
-            ext = filename.split(".")[-1].lower() # guess the type from the extension
+                elif content_type == "application/octet-stream":
+                    ext = filename.split(".")[-1].lower() # guess the type from the extension
 
-            if ext in ("jpg", "jpeg", "jpe", "jif", "jfif", "gif", "png"):
-                image_handling = "standard"
-            elif ext in ("webp"):
-                image_handling = "image_convert_to_png"
+                    if ext in ("jpg", "jpeg", "jpe", "jif", "jfif", "gif", "png"):
+                        image_handling = "standard"
+                    elif ext in ("webp"):
+                        image_handling = "image_convert_to_png"
 
-        if image_handling:
-            raw = await r.read()
-            if image_handling is not "standard":
-                try:
-                    results = await getattr(sys.modules[__name__], image_handling)(raw)
-                    if results:
-                        # allow custom handlers to fail gracefully
-                        raw = results
-                except Exception as e:
-                    logger.exception("custom image handler failed: {}".format(image_handling))
-        else:
-            logger.warning("not image/image-like, filename={}, headers={}".format(filename, r.headers))
-            return False
+                if image_handling:
+                    raw = await res.read()
+                    if image_handling is not "standard":
+                        try:
+                            results = await getattr(sys.modules[__name__], image_handling)(raw)
+                            if results:
+                                # allow custom handlers to fail gracefully
+                                raw = results
+                        except Exception as e:
+                            logger.exception("custom image handler failed: {}".format(image_handling))
+                else:
+                    logger.warning("not image/image-like, filename={}, headers={}".format(filename, res.headers))
+                    return False
 
     except (aiohttp.ClientError) as exc:
         logger.warning("failed to get {} - {}".format(filename, exc))

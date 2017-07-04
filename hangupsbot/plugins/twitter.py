@@ -102,8 +102,9 @@ async def _watch_twitter_link(bot, event, command):
         if image['type'] == 'photo':
           imagelink = image['media_url']
           filename = os.path.basename(imagelink)
-          r = await aiohttp.request('get',imagelink)
-          raw = await r.read()
+          async with aiohttp.ClientSession() as session:
+            async with session.request('get',imagelink) as res:
+              raw = await res.read()
           image_data = io.BytesIO(raw)
           image_id = await bot._client.upload_image(image_data,
                                                     filename=filename)
