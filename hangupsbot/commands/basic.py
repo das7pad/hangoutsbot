@@ -3,17 +3,13 @@ import logging
 import importlib
 import sys
 
+import psutil
+
 from version import __version__
 from . import command, get_func_help, Help
 
 
 logger = logging.getLogger(__name__)
-
-try:
-    import resource
-except ImportError:
-    logger.warning("resource is unavailable on your system")
-
 
 def _initialise(bot):
     bot.memory.ensure_path(['command_help'])
@@ -230,17 +226,9 @@ def version(bot, event, *args):
 
 @command.register(admin=True)
 def resourcememory(*dummys):
-    """print basic information about memory usage with resource library"""
+    """print basic information about memory usage"""
 
-    if "resource" not in sys.modules:
-        return "<i>resource module not available</i>"
-
-    # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
-    rusage_denom = 1024.
-    if sys.platform == 'darwin':
-        # ... it seems that in OSX the output is different units ...
-        rusage_denom = rusage_denom * rusage_denom
-    mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
+    mem = psutil.Process().memory_info().rss / (1024*1024)
 
     return "<b>memory (resource): {} MB</b>".format(mem)
 

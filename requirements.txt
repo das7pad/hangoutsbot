@@ -25,3 +25,4 @@ lxml                                            # plugins: twitter
 google-api-python-client                        # plugins: spotify
 spotipy                                         # plugins: spotify
 soundcloud                                      # plugins: spotify
+psutil>4,<=5.2.2                                # plugins: host
