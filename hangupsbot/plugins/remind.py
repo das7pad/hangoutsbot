@@ -18,7 +18,7 @@ def _initialise():
     plugins.register_help(HELP)
 
 def _get_delay(args):
-    """check if enough args are specified and wheather a valid delay is given
+    """check if enough args are specified and whether a valid delay is given
 
     Args:
         args: tuple of string, argument passed to the command

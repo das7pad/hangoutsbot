@@ -282,7 +282,7 @@ class CommandDispatcher(object):
         """
         self.bot = bot
         # set the default timeout for commands to execute to 5minutes
-        bot.config.set_defaults({'command_timeout': 5*60})
+        bot.config.set_defaults({'command_timeout': (5*60)})
 
     def set_tracking(self, tracking):
         """register the plugin tracking for commands
@@ -450,7 +450,7 @@ class CommandDispatcher(object):
         except Help as err:
             help_entry = (*err.args, '', '<b>%s:</b>' % command_name,
                           get_func_help(bot, command_name, func))
-            text = "\n".join(help_entry)
+            text = "\n".join(help_entry).strip()
             conv_id = await bot.get_1to1(event.user_id.chat_id) or conv_id
 
         except Exception as err:

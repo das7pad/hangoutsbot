@@ -590,7 +590,6 @@ class HangupsBot(object):
         await plugins.load(self, "commands.loggertochat")
         await plugins.load_user_plugins(self)
 
-
         logger.info("bot initialised")
 
     @asyncio.coroutine

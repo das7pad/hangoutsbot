@@ -18,14 +18,13 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-_externals = { "bot": None,
-               "ClientSession": aiohttp.ClientSession() }
+_externals = {"bot": None}
 
 
 try:
     aiohttp_clienterror = aiohttp.ClientError
 except AttributeError:
-    aiohttp_clienterror = aiohttp.errors.ClientError
+    aiohttp_clienterror = aiohttp.errors.ClientError  # pylint:disable=no-member
     logger.warning("[DEPRECATED]: aiohttp < 2.0")
 
 

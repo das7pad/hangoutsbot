@@ -1,12 +1,13 @@
-import aiohttp
 import asyncio
 import json
 import logging
 
+import aiohttp
+
 import plugins
 
 from sinks import aiohttp_start
-from sinks.base_bot_request_handler import AsyncRequestHandler as IncomingRequestHandler
+from sinks import AsyncRequestHandler as IncomingRequestHandler
 
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,8 @@ class HubotBridge():
         plugins.register_handler(self._handle_websync)
 
     def _start_sinks(self, bot):
-        loop = asyncio.get_event_loop()
 
         itemNo = -1
-        threads = []
 
         if isinstance(self.configuration, list):
             for listener in self.configuration:
@@ -77,12 +76,9 @@ class HubotBridge():
             # don't send my own messages
             return
 
-        event_timestamp = event.timestamp
-
         conversation_id = event.conv_id
         conversation_text = event.text
 
-        user_full_name = event.user.full_name
         user_id = event.user_id
 
         url = config["HUBOT_URL"] + conversation_id
@@ -90,9 +86,10 @@ class HubotBridge():
         headers = {'content-type': 'application/json'}
 
         connector = aiohttp.TCPConnector(verify_ssl=False)
-        asyncio.async(
-            aiohttp.request('post', url, data = json.dumps(payload), headers = headers, connector=connector)
-        ).add_done_callback(lambda future: future.result())
+        asyncio.ensure_future(
+            aiohttp.request('post', url, data=json.dumps(payload),
+                            headers=headers, connector=connector)
+        )
 
 
 class IncomingMessages(IncomingRequestHandler):

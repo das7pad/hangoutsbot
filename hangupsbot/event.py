@@ -36,7 +36,7 @@ class GenericEvent:
 
     def __str__(self):
         return ("%s: %s@%s [%s]: %s" %
-                (self.__class__, self.user_id.chat_id, self.conv_id,
+                (self.__class__.__name__, self.user_id.chat_id, self.conv_id,
                  self.timestamp.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
                  self.text))
 
