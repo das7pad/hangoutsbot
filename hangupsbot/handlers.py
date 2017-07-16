@@ -15,6 +15,7 @@ from commands import command
 from event import (GenericEvent, TypingEvent, WatermarkEvent, ConversationEvent)
 from exceptions import HangupsBotExceptions
 
+from utils.cache import Cache
 
 logger = logging.getLogger(__name__)
 
@@ -29,29 +30,53 @@ class EventHandler(object):
         self.bot = GenericEvent.bot = bot
         self.bot_command = ['/bot']
 
-        self._reprocessors = {}
+        self.pluggables = {"allmessages": [],
+                           "call": [],
+                           "membership": [],
+                           "message": [],
+                           "rename": [],
+                           "history": [],
+                           "sending":[],
+                           "typing": [],
+                           "watermark": [],
+                          }
 
-        self._contexts = {}
-        self._image_ids = {}
-        self._executables = {}
+        # timeout for messages to be received for reprocessing: 6hours
+        receive_timeout = 60*60*6
 
-        self.pluggables = { "allmessages": [],
-                            "call": [],
-                            "membership": [],
-                            "message": [],
-                            "rename": [],
-                            "history": [],
-                            "sending":[],
-                            "typing": [],
-                            "watermark": [] }
+        self._reprocessors = Cache(receive_timeout,
+                                   increase_on_access=False)
 
+        self._contexts = Cache(receive_timeout,
+                               increase_on_access=False)
+
+        self._image_ids = Cache(receive_timeout,
+                                increase_on_access=False)
+
+        self._executables = Cache(receive_timeout,
+                                  increase_on_access=False)
+
+    async def setup(self, _conv_list):
+        """async init part of the handler
+
+        Args:
+            _conv_list: hangups.conversation.ConversationList instance
+        """
+        await plugins.tracking.start({"module": "handlers",
+                                      "module.path": "handlers"})
 
         plugins.register_shared("reprocessor.attach_reprocessor",
                                 self.attach_reprocessor)
 
         plugins.register_shared("chatbridge.behaviours", {})
 
-        _conv_list = bot._conv_list     # pylint: disable=protected-access
+        self._reprocessors.start()
+        self._contexts.start()
+        self._image_ids.start()
+        self._executables.start()
+
+        plugins.tracking.end()
+
         _conv_list.on_event.add_observer(self._handle_event)
         _conv_list.on_typing.add_observer(self._handle_status_change)
         _conv_list.on_watermark_notification.add_observer(

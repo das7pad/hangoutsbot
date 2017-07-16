@@ -581,6 +581,9 @@ class HangupsBot(object):
 
         self.conversations = await permamem.initialise(self)
 
+        # init the shareds, start caches for reprocessing and start listening
+        await self._handlers.setup(self._conv_list)
+
         await plugins.load(self, "commands.plugincontrol")
         await plugins.load(self, "commands.alias")
         await plugins.load(self, "commands.basic")
