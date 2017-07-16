@@ -12,6 +12,7 @@ import os
 import shutil
 import time
 
+import hangups.event
 
 class Config(collections.MutableMapping):
     """Configuration JSON storage class
@@ -31,6 +32,7 @@ class Config(collections.MutableMapping):
         self.save_delay = save_delay
         self._last_dump = None
         self._timer_save = None
+        self.on_reload = hangups.event.Event('Config reload')
         self.logger = logging.getLogger(__name__)
 
     @property
@@ -144,6 +146,7 @@ class Config(collections.MutableMapping):
             ValueError: the string is not a valid json representing of a dict
         """
         self.config = json.loads(json_str)
+        asyncio.ensure_future(self.on_reload.fire())
 
     def save(self, delay=True):
         """dump the cached data to file
