@@ -206,7 +206,7 @@ class HangupsBot(object):
 
         cookies = _login()
         if not cookies:
-            logger.error("Valid login required, exiting")
+            logger.critical("Valid login required, exiting")
             sys.exit(1)
 
         # Start asyncio event loop
@@ -242,7 +242,7 @@ class HangupsBot(object):
             except:                                 # pylint:disable=bare-except
                 logger.exception("low-level error")
             else:
-                logger.warning("bot is exiting")
+                logger.critical("bot is exiting")
                 sys.exit(0)
 
             finally:
@@ -275,7 +275,7 @@ class HangupsBot(object):
             logger.info("Trying to connect again (try %s of %s)",
                         self.__retry, self._max_retries)
 
-        logger.error("Maximum number of retries reached! Exiting...")
+        logger.critical("Maximum number of retries reached! Exiting...")
         sys.exit(1)
 
     async def __stop(self):
@@ -593,7 +593,7 @@ class HangupsBot(object):
         await plugins.load(self, "commands.loggertochat")
         await plugins.load_user_plugins(self)
 
-        logger.info("bot initialised")
+        logger.warning("bot initialised")
 
     async def coro_send_message(self, conversation, message, context=None,
                                 image_id=None):
@@ -788,38 +788,38 @@ def configure_logging(args):
 
     log_level = "DEBUG" if args.debug else "INFO"
 
-    default_config = {
+    logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
-            "console": {
-                "format": ("%(asctime)s %(levelname)s %(name)s: %(message)s"),
-                "datefmt": "%H:%M:%S"
-                },
             "default": {
-                "format": ("%(asctime)s %(levelname)s %(name)s: %(message)s"),
-                "datefmt": "%Y-%m-%d %H:%M:%S"
+                "format": "%(asctime)s %(levelname)s %(name)s: %(message)s",
                 }
             },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
                 "stream": "ext://sys.stdout",
-                "level": "INFO",
-                "formatter": "console"
+                "level": "WARNING",
+                "formatter": "default"
                 },
             "file": {
                 "class": "logging.FileHandler",
                 "filename": args.log,
-                "level": log_level,
+                "level": "DEBUG",
                 "formatter": "default",
                 },
+            "file_warnings": {
+                "class": "logging.FileHandler",
+                "filename": args.log.rsplit(".", 1)[0] + "_warnings.log",
+                "level": "WARNING",
+                "formatter": "default",
                 }
             },
         "loggers": {
             # root logger
             "": {
-                "handlers": ["file", "console"],
+                "handlers": ["file", "console", "file_warnings"],
                 "level": log_level
                 },
 
@@ -840,8 +840,6 @@ def configure_logging(args):
 
             }
         }
-
-    logging_config = default_config
 
     # Temporarily bring in the configuration file, just so we can configure
     # logging before bringing anything else up. There is no race internally,

@@ -725,7 +725,7 @@ async def reload_plugin(bot, module_path):
     """
     repeat = SENTINALS.setdefault(module_path, 0)
     if repeat >= 3:
-        logger.warning('too many reloads of %s, enter failstate', module_path)
+        logger.critical('too many reloads of %s, enter failstate', module_path)
         return False
     SENTINALS[module_path] += 1
     await unload(bot, module_path)
