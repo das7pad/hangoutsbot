@@ -595,8 +595,8 @@ class HangupsBot(object):
 
         logger.info("bot initialised")
 
-    @asyncio.coroutine
-    def coro_send_message(self, conversation, message, context=None, image_id=None):
+    async def coro_send_message(self, conversation, message, context=None,
+                                image_id=None):
         """send a message to hangouts and allow handler to add more targets
 
         Args:
@@ -614,7 +614,8 @@ class HangupsBot(object):
 
         # update the context
         if not context:
-            context = {}
+            context = {"passthru": {},
+                       "__ignore__": True}
 
         # get the conversation id
         if hasattr(conversation, "id_"):
@@ -628,7 +629,7 @@ class HangupsBot(object):
 
         # run any sending handlers
         try:
-            yield from self._handlers.run_pluggable_omnibus(
+            await self._handlers.run_pluggable_omnibus(
                 "sending", self, broadcast_list, context)
         except HangupsBotExceptions.SuppressEventHandling:
             logger.info("message sending: SuppressEventHandling")
@@ -642,17 +643,11 @@ class HangupsBot(object):
             # use a fake Hangups Conversation having a fallback to permamem
             conv = HangupsConversation(self, response[0])
 
-            try:
-                yield from conv.send_message(response[1],
-                                             image_id=response[2],
-                                             context=context)
-            except hangups.NetworkError:
-                logger.exception("CORO_SEND_MESSAGE: error sending %s",
-                                 response)
+            await conv.send_message(response[1],
+                                    image_id=response[2],
+                                    context=context)
 
-
-    @asyncio.coroutine
-    def coro_send_to_user(self, chat_id, message, context=None):
+    async def coro_send_to_user(self, chat_id, message, context=None):
         """send a message to a specific user's 1-to-1
 
         the user must have already been seen elsewhere by the bot
@@ -670,7 +665,7 @@ class HangupsBot(object):
             logger.info("%s is not a valid user", chat_id)
             return False
 
-        conv_1on1 = yield from self.get_1to1(chat_id)
+        conv_1on1 = await self.get_1to1(chat_id)
 
         if conv_1on1 is False:
             logger.info("user %s is optout, no message sent", chat_id)
@@ -683,15 +678,13 @@ class HangupsBot(object):
         logger.info("sending message to user %s via %s",
                     chat_id, conv_1on1.id_)
 
-        yield from self.coro_send_message(conv_1on1, message, context=context)
+        await self.coro_send_message(conv_1on1, message, context=context)
         return True
 
-
-    @asyncio.coroutine
-    def coro_send_to_user_and_conversation(self, chat_id, conv_id,
-                                           message_private,
-                                           message_public=None,
-                                           context=None):
+    async def coro_send_to_user_and_conversation(self, chat_id, conv_id,
+                                                 message_private,
+                                                 message_public=None,
+                                                 context=None):
         """send a message to a user's 1-to-1 with a hint in the public chat
 
         if no 1-to-1 is available, send everything to the public chat
@@ -701,7 +694,7 @@ class HangupsBot(object):
             message: string or a list of hangups.ChatMessageSegment
             context: dict, optional information about the message
         """
-        conv_1on1 = yield from self.get_1to1(chat_id)
+        conv_1on1 = await self.get_1to1(chat_id)
 
         full_name = self.get_hangups_user(chat_id).full_name
 
@@ -729,8 +722,7 @@ class HangupsBot(object):
 
         public_message = None
         if conv_1on1:
-            yield from self.coro_send_message(conv_1on1, message_private,
-                                              context)
+            await self.coro_send_message(conv_1on1, message_private, context)
 
             # send a public message, if supplied
             if conv_1on1.id_ != conv_id and responses["standard"]:
@@ -744,8 +736,7 @@ class HangupsBot(object):
                 # isinstance(conv_1on1, None)
                 public_message = responses["no1to1"]
 
-        yield from self.coro_send_message(conv_id, public_message,
-                                          context=context)
+        await self.coro_send_message(conv_id, public_message, context=context)
 
     def user_self(self):
         """get information about the bot user

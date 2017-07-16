@@ -126,91 +126,85 @@ class HangupsConversation(hangups.conversation.Conversation):
         """
         return self.bot.conversations.get_name(self)
 
-    @asyncio.coroutine
-    def send_message(self, message, image_id=None, otr_status=None, context=None):
+    async def send_message(self, message, image_id=None, context=None):
+        """send a message to Hangouts
 
-        """ChatMessageSegment: parse message"""
+        Args:
+            message: string, list of hangups.ChatMessageSegment or None,
+                the text part of the message which can be empty
+            image_id: string or integer, the upload id of an image,
+                aquire one from ._client.upload_image(...)
+            context: dict, additional infomation about the message,
+                including 'reprocessor' or chatbridge entrys
 
-        if message is None:
+        Raises:
+            TypeError: invalid message text provided
+            ValueError: no image and also no text provided
+        """
+        # pylint:disable=arguments-differ
+        context = context or {"__ignore__": True}        # replace empty context
+
+        # parse message
+        if not message or isinstance(message, str) and not message.strip():
             # nothing to do if the message is blank
             segments = []
-            raw_message = ""
-        elif "parser" in context and context["parser"] is False and isinstance(message, str):
-            # no parsing requested, escape anything in raw_message that can be construed as valid markdown
+
+        elif ("parser" in context and context["parser"] is False and
+              isinstance(message, str)):
+            # pre-formated string
             segments = [hangups.ChatMessageSegment(message)]
-            raw_message = message.replace("*", "\\*").replace("_", "\\_").replace("`", "\\`")
+
         elif isinstance(message, str):
-            # preferred method: markdown-formatted message (or less preferable but OK: html)
-            segments = simple_parse_to_segments(message)
-            raw_message = message
-        elif isinstance(message, list):
-            # who does this anymore?
-            logger.error( "[INVALID]: send messages as html or markdown, "
-                          "not as list of ChatMessageSegment, context={}".format(context) )
+            # markdown- or html-formatted message
+            segments = hangups.ChatMessageSegment.from_str(message)
+
+        elif (isinstance(message, list)
+              and all(isinstance(item, hangups.ChatMessageSegment)
+                      for item in message)):
+            # a list of hangups.ChatMessageSegment
             segments = message
-            raw_message = "".join([ segment_to_html(seg)
-                                    for seg in message ])
+
         else:
             raise TypeError("unknown message type supplied")
 
-        if segments:
-            serialised_segments = [seg.serialize() for seg in segments]
-        else:
-            serialised_segments = None
+        serialised_segments = [seg.serialize() for seg in segments] or None
 
-        if "original_request" not in context["passthru"]:
-            context["passthru"]["original_request"] = { "message": raw_message,
-                                                        "image_id": image_id,
-                                                        "segments": segments }
+        if image_id is None and serialised_segments is None:
+            # no message content
+            raise ValueError("no image or text provided")
 
-        """OffTheRecordStatus: determine history"""
-
-        if otr_status is None:
-            if "history" not in context:
-                context["history"] = True
-                try:
-                    context["history"] = self.bot.conversations.catalog[self.id_]["history"]
-
-                except KeyError:
-                    # rare scenario where a conversation was not refreshed
-                    # once the initial message goes through, convmem will be updated
-                    logger.warning("could not determine otr for {}".format(self.id_))
-
-            if context["history"]:
-                otr_status = hangups_shim.schemas.OffTheRecordStatus.ON_THE_RECORD
-            else:
-                otr_status = hangups_shim.schemas.OffTheRecordStatus.OFF_THE_RECORD
-
-        """ExistingMedia: attach previously uploaded media for display"""
-
-        media_attachment = None
-        if image_id:
-            media_attachment = hangups.hangouts_pb2.ExistingMedia(
-                photo = hangups.hangouts_pb2.Photo( photo_id = image_id ))
-
-        """EventAnnotation: combine with client-side storage to allow custom messaging context"""
-
+        # EventAnnotation:
+        # combine with client-side storage to allow custom messaging context
         annotations = []
         if "reprocessor" in context:
-            annotations.append( hangups.hangouts_pb2.EventAnnotation(
-                type = 1025,
-                value = context["reprocessor"]["id"] ))
+            annotations.append(hangouts_pb2.EventAnnotation(
+                type=1025,
+                value=context["reprocessor"]["id"]))
+            context.pop("reprocessor")
 
-        # always implicitly "send" the entire context dictionary
-        annotations.append( hangups.hangouts_pb2.EventAnnotation(
-            type = 1027,
-            value = self.bot._handlers.register_context(context) ))
+        # save entire context unless it was explicit suppressed
+        if context and "__ignore__" not in context:
+            # pylint: disable=protected-access
+            annotations.append(hangouts_pb2.EventAnnotation(
+                type=1027,
+                value=self.bot._handlers.register_context(context)))
 
-        """send the message"""
+        kwargs = dict(
+            request_header=self._client.get_request_header(),
+            message_content=hangouts_pb2.MessageContent(
+                segment=serialised_segments),
+            annotation=annotations,
+            event_request_header=self._get_event_request_header(),
+        )
+        if image_id is not None:
+            kwargs['existing_media'] = hangouts_pb2.ExistingMedia(
+                photo=hangouts_pb2.Photo(photo_id=image_id))
 
-        with (yield from asyncio.Lock()):
-            yield from self._client.send_chat_message(
-                hangups.hangouts_pb2.SendChatMessageRequest(
-                    request_header = self._client.get_request_header(),
-                    message_content = hangups.hangouts_pb2.MessageContent( segment=serialised_segments ),
-                    existing_media = media_attachment,
-                    annotation = annotations,
-                    event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                        conversation_id=hangups.hangouts_pb2.ConversationId( id=self.id_ ),
-                        client_generated_id=self._client.get_client_generated_id(),
-                        expected_otr = otr_status )))
+        request = hangouts_pb2.SendChatMessageRequest(**kwargs)
+
+        try:
+            # send the message
+            await self._client.send_chat_message(request)
+        except hangups.NetworkError as err:
+            logger.error('%s on sending to %s:\n%s\nimage=%s\n',
+                         repr(err), self.id_, serialised_segments, image_id)
