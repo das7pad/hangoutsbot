@@ -426,50 +426,78 @@ class EventHandler(object):
         Args:
             name: string, a key in .pluggables
             args: tuple, positional arguments for each handler
-            kwargs: dict, keyword arguments for each handler
+            kwargs: dict, keyword arguments for each handler,
+                may include '_run_concurrent_' to run them parallel
 
         Raises:
             KeyError: unknown pluggable specified
             HangupsBotExceptions.SuppressEventHandling: do not handle further
         """
+        async def _run_single_handler(function, meta, expected, names):
+            """execute a single handler function
+
+            Args:
+                function: callable
+                meta: dict
+                expected: ordered mapping of inspect.Parameter instances
+                names: list of strings, keys in expected
+
+            Raises:
+                HangupsBotExceptions.SuppressAllHandlers:
+                    skip handler of the current type
+                HangupsBotExceptions.SuppressEventHandling:
+                    skip all handler and do not handle this event further
+            """
+            message = ["%s: %s.%s" % (name, meta['module.path'],
+                                      function.__name__)]
+            try:
+                # a function may use not all args or kwargs, filter here
+                positional = (args[num] for num in range(len(args))
+                              if (len(names) > num and (
+                                  expected[names[num]].default ==
+                                  inspect.Parameter.empty or
+                                  names[num] not in kwargs)))
+                keyword = {key: value for key, value in kwargs.items()
+                           if key in names}
+
+                logger.debug(message[0])
+                result = function(*positional, **keyword)
+                if asyncio.iscoroutinefunction(function):
+                    await result
+
+            except HangupsBotExceptions.SuppressHandler:
+                # skip this handler, continue with next
+                message.append("SuppressHandler")
+                logger.debug(" : ".join(message))
+            except HangupsBotExceptions.SuppressAllHandlers:
+                # skip all other pluggables, but let the event continue
+                message.append("SuppressAllHandlers")
+                logger.debug(" : ".join(message))
+                raise
+            except HangupsBotExceptions.SuppressEventHandling:
+                # handle requested to skip all pluggables
+                raise
+            except: # capture all Exceptions   # pylint: disable=bare-except
+                # exception is not related to the handling of this
+                # pluggable, log and continue with the next handler
+                message.append("args=" + str([str(arg) for arg in args]))
+                message.append("kwargs=" + str(kwargs))
+                logger.exception(" : ".join(message))
+
         try:
-            for function, dummy, meta, expected, names in self.pluggables[name]:
-                message = ["%s: %s.%s" % (name, meta['module.path'],
-                                          function.__name__)]
+            if kwargs.pop('_run_concurrent_', False):
+                await asyncio.gather(
+                    *[_run_single_handler(function, meta, expected, names)
+                      for function, dummy, meta, expected, names
+                      in self.pluggables[name].copy()])
+                return
 
-                try:
-                    # a handler may use not all args or kwargs, filter here
-                    positional = (args[num] for num in range(len(args))
-                                  if (len(names) > num and (
-                                      expected[names[num]].default ==
-                                      inspect.Parameter.empty or
-                                      names[num] not in kwargs)))
-                    keyword = {key: value for key, value in kwargs.items()
-                               if key in names}
-
-                    logger.debug(message[0])
-                    result = function(*positional, **keyword)
-                    if asyncio.iscoroutinefunction(function):
-                        await result
-                except HangupsBotExceptions.SuppressHandler:
-                    # skip this pluggable, continue with next
-                    message.append("SuppressHandler")
-                    logger.debug(" : ".join(message))
-                except (HangupsBotExceptions.SuppressEventHandling,
-                        HangupsBotExceptions.SuppressAllHandlers):
-                    # handle requested to skip all pluggables
-                    raise
-                except: # capture all Exceptions   # pylint: disable=bare-except
-                    # exception is not related to the handling of this
-                    # pluggable, log and continue with the next handler
-                    message.append("args=" + str([str(arg) for arg in args]))
-                    message.append("kwargs=" + str(kwargs))
-                    logger.exception(" : ".join(message))
+            for (function, dummy, meta, expected, names
+                ) in self.pluggables[name].copy():
+                await _run_single_handler(function, meta, expected, names)
 
         except HangupsBotExceptions.SuppressAllHandlers:
-            # skip all other pluggables, but let the event continue
-            message.append("SuppressAllHandlers")
-            logger.debug(" : ".join(message))
+            pass
 
         except HangupsBotExceptions.SuppressEventHandling:
             # handle requested to do not handle the event at all, skip all
