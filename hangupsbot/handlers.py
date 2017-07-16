@@ -252,23 +252,21 @@ class EventHandler(object):
         Returns:
             boolean, False if no url was awaitable after 60sec, otherwise True
         """
-        #TODO(das7pad) refactor plugins to use bot._client.image_upload_raw
+        # TODO(das7pad) refactor plugins to use bot._client.image_upload_raw
 
         # there was no direct way to resolve an image_id to the public url
-        # without posting it first via the api. other plugins and functions can
-        # establish a short-lived task to wait for the image id to be posted,
-        # and retrieve the url in an asyncronous way"""
+        # without posting it first via the api.
+        # plugins and functions can establish a short-lived task to wait for the
+        # image id to be posted and retrieve the url in an asyncronous way
 
         ticks = 0
-        while True:
-            if image_id not in self._image_ids:
-                await asyncio.sleep(1)
-                ticks = ticks + 1
-                if ticks > 60:
-                    return False
-            else:
+        while ticks < 60:
+            if image_id in self._image_ids:
                 await callback(self._image_ids[image_id], *args, **kwargs)
                 return True
+            await asyncio.sleep(1)
+            ticks += 1
+        return False
 
     async def run_reprocessor(self, reprocessor_id, event, *args, **kwargs):
         """reprocess the event with the callable that was attached on sending
@@ -281,13 +279,10 @@ class EventHandler(object):
         if reprocessor is None:
             return
 
-        is_coroutine = asyncio.iscoroutinefunction(reprocessor)
-        logger.info("reprocessor uuid found: %s coroutine=%s",
-                    reprocessor_id, is_coroutine)
-        if is_coroutine:
-            await reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
-        else:
-            reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
+        logger.info("reprocessor uuid found: %s", reprocessor_id)
+        result = reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
+        if asyncio.iscoroutinefunction(reprocessor):
+            await result
 
     async def _handle_chat_message(self, event):
         """Handle an incoming conversation event
