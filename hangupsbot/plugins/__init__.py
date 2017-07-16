@@ -330,7 +330,7 @@ def start_asyncio_task(function, *args, **kwargs):
         task = asyncio.ensure_future(function(tracking.bot, *args, **kwargs),
                                      loop=loop)
     elif asyncio.iscoroutine(function):
-        task = asyncio.ensure_future(function(),
+        task = asyncio.ensure_future(function,
                                      loop=loop)
     else:
         raise RuntimeError("coroutine function must be supplied")
