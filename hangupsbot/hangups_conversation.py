@@ -196,12 +196,6 @@ class HangupsConversation(hangups.conversation.Conversation):
                 type = 1025,
                 value = context["reprocessor"]["id"] ))
 
-        # define explicit "passthru" in context to "send" any type of variable
-        if "passthru" in context:
-            annotations.append( hangups.hangouts_pb2.EventAnnotation(
-                type = 1026,
-                value = self.bot._handlers.register_passthru(context["passthru"]) ))
-
         # always implicitly "send" the entire context dictionary
         annotations.append( hangups.hangouts_pb2.EventAnnotation(
             type = 1027,

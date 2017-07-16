@@ -613,9 +613,6 @@ class HangupsBot(object):
         if not context:
             context = {}
 
-        if "passthru" not in context:
-            context['passthru'] = {}
-
         # get the conversation id
         if hasattr(conversation, "id_"):
             conversation_id = conversation.id_

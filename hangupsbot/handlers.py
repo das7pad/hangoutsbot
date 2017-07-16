@@ -31,7 +31,6 @@ class EventHandler(object):
 
         self._reprocessors = {}
 
-        self._passthrus = {}
         self._contexts = {}
         self._image_ids = {}
         self._executables = {}
@@ -167,11 +166,6 @@ class EventHandler(object):
         self.pluggables[pluggable].sort(key=lambda tup: tup[1])
         plugins.tracking.register_handler(function, pluggable, priority)
 
-    def register_passthru(self, variable):
-        _id = str(uuid.uuid4())
-        self._passthrus[_id] = variable
-        return _id
-
     def register_context(self, context):
         """register a message context that can be later attached again
 
@@ -270,8 +264,7 @@ class EventHandler(object):
         else:
             reprocessor(self.bot, event, reprocessor_id, *args, **kwargs)
 
-    @asyncio.coroutine
-    def _handle_chat_message(self, event):
+    async def _handle_chat_message(self, event):
         """Handle an incoming conversation event
 
         - auto-optin opt-outed users if the event is in a 1on1
@@ -287,71 +280,64 @@ class EventHandler(object):
         Raises:
             exceptions.SuppressEventHandling: do not handle the event at all
         """
-        if event.text:
-            if event.user.is_self:
-                event.from_bot = True
-            else:
-                event.from_bot = False
+        if not event.text:
+            return
+        if (not event.user.is_self and
+                self.bot.conversations[event.conv_id]["type"] == "ONE_TO_ONE"
+                and self.bot.user_memory_get(event.user_id.chat_id,
+                                             "optout") is True):
+            logger.info("auto opt-in for %s", event.user.id_.chat_id)
+            await command.run(self.bot, event, *["optout"])
+            return
 
-            """EventAnnotation - allows metadata to survive a trip to Google"""
+        event.syncroom_no_repeat = False
+        event.passthru = {}
+        event.context = {}
 
-            event.passthru = {}
-            event.context = {}
-            for annotation in event.conv_event._event.chat_message.annotation:
-                if annotation.type == 1025:
-                    # reprocessor - process event with hidden context from handler.attach_reprocessor()
-                    yield from self.run_reprocessor(annotation.value, event)
-                elif annotation.type == 1026:
-                    if annotation.value in self._passthrus:
-                        event.passthru = self._passthrus[annotation.value]
-                        del self._passthrus[annotation.value]
-                elif annotation.type == 1027:
-                    if annotation.value in self._contexts:
-                        event.context = self._contexts[annotation.value]
-                        del self._contexts[annotation.value]
+        # EventAnnotation - allows metadata to survive a trip to Google
+        # pylint: disable=protected-access
+        for annotation in event.conv_event._event.chat_message.annotation:
+            if (annotation.type == 1025 and
+                    annotation.value in self._reprocessors):
+                await self.run_reprocessor(annotation.value, event)
+            elif annotation.type == 1027 and annotation.value in self._contexts:
+                event.context = self._contexts[annotation.value]
+                if "passthru" in event.context:
+                    event.passthru = event.context["passthru"]
 
-            """auto opt-in - opted-out users who chat with the bot will be opted-in again"""
-            if not event.from_bot and self.bot.conversations.catalog[event.conv_id]["type"] == "ONE_TO_ONE":
-                if self.bot.memory.exists(["user_data", event.user.id_.chat_id, "optout"]):
-                    optout = self.bot.memory.get_by_path(["user_data", event.user.id_.chat_id, "optout"])
-                    if isinstance(optout, bool) and optout:
-                        yield from command.run(self.bot, event, *["optout"])
-                        logger.info("auto opt-in for {}".format(event.user.id_.chat_id))
-                        return
+        # map image ids to their public uris in absence of any fixed server api
+        if (event.passthru
+                and "original_request" in event.passthru
+                and "image_id" in event.passthru["original_request"]
+                and event.passthru["original_request"]["image_id"]
+                and len(event.conv_event.attachments) == 1):
 
-            """map image ids to their public uris in absence of any fixed server api
-               XXX: small memory leak over time as each id gets cached indefinitely"""
+            _image_id = event.passthru["original_request"]["image_id"]
+            _image_uri = event.conv_event.attachments[0]
 
-            if( event.passthru
-                    and "original_request" in event.passthru
-                    and "image_id" in event.passthru["original_request"]
-                    and event.passthru["original_request"]["image_id"]
-                    and len(event.conv_event.attachments) == 1 ):
+            if _image_id not in self._image_ids:
+                self._image_ids[_image_id] = _image_uri
+                logger.info("associating image_id=%s with %s",
+                            _image_id, _image_uri)
 
-                _image_id = event.passthru["original_request"]["image_id"]
-                _image_uri = event.conv_event.attachments[0]
+        # first occurence of an executable id needs to be handled as an event
+        if (event.passthru and event.passthru.get("executable") and
+                event.passthru["executable"] not in self._executables):
+            original_message = event.passthru["original_request"]["message"]
+            linked_hangups_user = event.passthru["original_request"]["user"]
+            logger.info("current event is executable: %s", original_message)
+            self._executables[event.passthru["executable"]] = time.time()
+            event.from_bot = False
+            event.text = original_message
+            event.user = linked_hangups_user
+            event.user_id = linked_hangups_user.id_
 
-                if _image_id not in self._image_ids:
-                    self._image_ids[_image_id] = _image_uri
-                    logger.info("associating image_id={} with {}".format(_image_id, _image_uri))
-
-            """first occurence of an actual executable id needs to be handled as an event
-               XXX: small memory leak over time as each id gets cached indefinitely"""
-
-            if( event.passthru and "executable" in event.passthru and event.passthru["executable"] ):
-                if event.passthru["executable"] not in self._executables:
-                    original_message = event.passthru["original_request"]["message"]
-                    linked_hangups_user = event.passthru["original_request"]["user"]
-                    logger.info("current event is executable: {}".format(original_message))
-                    self._executables[event.passthru["executable"]] = time.time()
-                    event.from_bot = False
-                    event.text = original_message
-                    event.user = linked_hangups_user
-
-            yield from self.run_pluggable_omnibus("allmessages", self.bot, event, command)
-            if not event.from_bot:
-                yield from self.run_pluggable_omnibus("message", self.bot, event, command)
-                yield from self._handle_command(event)
+        await self.run_pluggable_omnibus("allmessages", self.bot, event,
+                                         command)
+        if not event.from_bot:
+            await self.run_pluggable_omnibus("message", self.bot, event,
+                                             command)
+            await self._handle_command(event)
 
     async def _handle_command(self, event):
         """Handle command messages
