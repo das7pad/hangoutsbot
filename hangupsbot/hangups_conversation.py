@@ -15,15 +15,17 @@ class HangupsConversation(hangups.conversation.Conversation):
         bot: HangupsBot instance
         conv_id: string, Hangouts conversation identifier
     """
-    bot = None
-    _handlers = None
-    _client = None
-    _user_list = None
-    _conv_list = None
+    __slots__ = ('bot', '_client', '_user_list', '_conv_list')
+
     def __init__(self, bot, conv_id):
+        # pylint: disable=protected-access
+
+        self.bot = bot
+        self._client = bot._client
+        self._user_list = bot._user_list
+        self._conv_list = bot._conv_list
         # retrieve the conversation record from hangups, if available
         try:
-            # pylint: disable=protected-access
             conversation = self._conv_list.get(conv_id)._conversation
             super().__init__(self._client, self._user_list, conversation, [])
             return
@@ -42,7 +44,6 @@ class HangupsConversation(hangups.conversation.Conversation):
                 "status": "DEFAULT",
                 "link_sharing": False,
                 "participants": [],
-
             }
 
         # set some basic variables
@@ -115,23 +116,6 @@ class HangupsConversation(hangups.conversation.Conversation):
                 hangouts_pb2.GROUP_LINK_SHARING_STATUS_OFF))
 
         super().__init__(self._client, self._user_list, conversation, [])
-
-    @classmethod
-    def setup(cls, _bot, _handlers, _client, _user_list, _conv_list):
-        """set the class variables once
-
-        Args:
-            _bot: hangupsbot.HangupsBot instance
-            _handlers: handlers.EventHandler instance
-            _client: hangups.client.Client instance
-            _user_list: hangups.user.UserList instance
-            _conv_list: hangups.conversation.ConversationList instance
-        """
-        cls.bot = _bot
-        cls._handlers = _handlers
-        cls._client = _client
-        cls._user_list = _user_list
-        cls._conv_list = _conv_list
 
     @property
     def name(self):
