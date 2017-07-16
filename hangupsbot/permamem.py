@@ -92,6 +92,14 @@ class ConversationMemory(object):
         self.bot = bot
         self.catalog = {}
 
+        bot.memory.on_reload.add_observer(self.standardise_memory)
+        bot.memory.on_reload.add_observer(self.load_from_memory)
+
+    def __del__(self):
+        """explicit cleanup"""
+        self.bot.memory.on_reload.remove_observer(self.standardise_memory)
+        self.bot.memory.on_reload.remove_observer(self.load_from_memory)
+
     def stats(self):
         """log meta of the permamem"""
         logger.info("total conversations: %s", len(self.catalog))
