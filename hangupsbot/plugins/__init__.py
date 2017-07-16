@@ -253,6 +253,7 @@ class Tracker(object):
 
 
 tracking = Tracker()
+command.set_tracking(tracking)
 
 
 # helpers, used by loaded plugins to register commands

@@ -210,6 +210,10 @@ class HangupsBot(object):
         # initialise pluggable framework
         sinks.start(self)
 
+        # initialise plugin and command registration
+        plugins.tracking.set_bot(self)
+        command.set_bot(self)
+
         # retries for the hangups longpolling request
         max_retries_longpolling = (self._max_retries
                                    if self._max_retries > 5 else 5)
@@ -523,9 +527,6 @@ class HangupsBot(object):
         logger.debug("connected")
 
         self.shared = {}
-        plugins.tracking.set_bot(self)
-        command.set_tracking(plugins.tracking)
-        command.set_bot(self)
         self.tags = tagging.tags(self)
         self._handlers = handlers.EventHandler(self)
         handlers.handler.set_bot(self) # shim for handler decorator
