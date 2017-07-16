@@ -534,10 +534,8 @@ class EventHandler(object):
             logger.warning("unrecognised event type: %s", type(conv_event))
             return
 
-        if pluggable is not None or event.conv_id not in self.bot.conversations:
-            # rebuild permamem for a conv including conv-name, participants, otr
-            # if the event is not a message or the conv is missing in permamem
-            await self.bot.conversations.update(event.conv, source="event")
+        # rebuild permamem for a conv including conv-name, participants, otr
+        await self.bot.conversations.update(event.conv, source="event")
 
         if pluggable is None:
             asyncio.ensure_future(self._handle_chat_message(event))
