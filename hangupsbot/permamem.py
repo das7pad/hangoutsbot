@@ -68,7 +68,7 @@ async def initialise(bot):
     """
     permamem = ConversationMemory(bot)
 
-    await permamem.standardise_memory()
+    permamem.standardise_memory()
     await permamem.load_from_hangups()
     await permamem.load_from_memory()
 
@@ -109,7 +109,7 @@ class ConversationMemory(object):
         logger.info("total users: %s | definitive at start: %s",
                     count_user, count_user_definitive)
 
-    async def standardise_memory(self):
+    def standardise_memory(self):
         """ensure the latest conversation memory structure
 
         migrate new keys, also add to attribute change checks in .update()
