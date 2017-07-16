@@ -565,44 +565,61 @@ class EventHandler(object):
 
 class HandlerBridge:
     """shim for xmikosbot handler decorator"""
+    def __init__(self):
+        self.bot = None
 
     def set_bot(self, bot):
-        """shim requires a reference to the bot's actual EventHandler to register handlers"""
+        """reference to the bot's actual EventHandler to register handlers"""
         self.bot = bot
 
     def register(self, *args, priority=10, event=None):
         """Decorator for registering event handler"""
 
         # make compatible with this bot fork
-        scaled_priority = priority * 10 # scale for compatibility - xmikos range 1 - 10
+        scaled_priority = priority * 10 # scale as xmikos uses just 1 to 10
         if event is hangups.ChatMessageEvent:
             event_type = "message"
         elif event is hangups.MembershipChangeEvent:
             event_type = "membership"
         elif event is hangups.RenameEvent:
             event_type = "rename"
-        elif event is hangups.OTREvent:
-            event_type = "history"
-        elif type(event) is str:
-            event_type = str # accept all kinds of strings, just like register_handler
+        elif isinstance(event, str):
+            # accept all kinds of strings, just like register_handler
+            event_type = event
         else:
             raise ValueError("unrecognised event {}".format(event))
 
         def wrapper(func):
-            def thunk(bot, event, command):
-                # command is an extra parameter supplied in this fork
+            """change the signature of a function to match with the default one
+
+            also register the modified func to the bot event handler
+
+            Note: default signature is func(bot, event, command)
+
+            Args:
+                func: callable
+
+            Returns:
+                callable, compatible function that matches the defaults
+            """
+            def thunk(bot, event, dummy):
+                """call the original function without the command_"""
                 return func(bot, event)
 
             # Automatically wrap handler function in coroutine
             compatible_func = asyncio.coroutine(thunk)
-            self.bot._handlers.register_handler(compatible_func, event_type, scaled_priority)
+            # pylint: disable=protected-access
+            self.bot._handlers.register_handler(compatible_func,
+                                                event_type,
+                                                scaled_priority)
             return compatible_func
 
-        # If there is one (and only one) positional argument and this argument is callable,
-        # assume it is the decorator (without any optional keyword arguments)
+        # If there is only one positional argument pass and this argument is
+        # callable, assume it is the decorator (without any optional keyword
+        # arguments)
         if len(args) == 1 and callable(args[0]):
+            # make compatible and register the given function
             return wrapper(args[0])
-        else:
-            return wrapper
+        return wrapper
 
-handler = HandlerBridge()
+handler = HandlerBridge()   # pylint: disable=invalid-name
