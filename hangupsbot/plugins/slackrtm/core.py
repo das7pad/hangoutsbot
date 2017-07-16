@@ -314,7 +314,7 @@ class SlackRTM(object):
         self.hangoutids = {}
         self.hangoutnames = {}
         for c in self.bot.list_conversations():
-            name = self.bot.conversations.get_name(c, truncate=True)
+            name = self.bot.conversations.get_name(c)
             self.hangoutids[name] = c.id_
             self.hangoutnames[c.id_] = name
 
@@ -936,7 +936,7 @@ class SlackRTM(object):
                           link_names=True)
 
     def handle_ho_rename(self, event):
-        name = self.bot.conversations.get_name(event.conv, truncate=False)
+        name = self.bot.conversations.get_name(event.conv)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):
             invitee = u'<https://plus.google.com/%s/about|%s>' % (event.user_id.chat_id, event.user.full_name)

@@ -151,7 +151,7 @@ def slack_listsyncs(bot, event, *args):
             hangoutname = 'unknown'
             for c in bot.list_conversations():
                 if c.id_ == sync.hangoutid:
-                    hangoutname = bot.conversations.get_name(c, truncate=False)
+                    hangoutname = bot.conversations.get_name(c)
                     break
             lines.append("{} : {} ({})\n  {} ({})\n  {}".format(
                 slackrtm.name,

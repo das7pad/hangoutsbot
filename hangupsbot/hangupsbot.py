@@ -311,7 +311,7 @@ class HangupsBot(object):
 
         try:
             for conv_id in self.conversations.catalog:
-                convs.append(self.get_hangups_conversation(conv_id))
+                convs.append(HangupsConversation(self, conv_id))
                 check_ids.append(conv_id)
 
             hangups_conv_list = self._conv_list.get_all()
