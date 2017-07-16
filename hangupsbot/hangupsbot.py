@@ -353,9 +353,6 @@ class HangupsBot(object):
             user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
 
         user = self._user_list.get_user(user_id)
-
-        user.is_default = user.name_type == hangups.user.NameType.DEFAULT
-        user.definitionsource = None if user.is_default else "hangups"
         return user
 
     def get_users_in_conversation(self, conv_ids):

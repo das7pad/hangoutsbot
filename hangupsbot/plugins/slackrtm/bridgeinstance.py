@@ -120,7 +120,7 @@ class BridgeInstance(WebFramework):
                 return False
 
             _hangups_user = self.bot.get_hangups_user(hangouts_uid)
-            if _hangups_user.definitionsource:
+            if not _hangups_user.is_default:
                 hangups_user = _hangups_user
         except KeyError:
             logger.info("no hangups user for {} {}".format(team_name, slack_uid))

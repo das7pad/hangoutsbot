@@ -201,7 +201,7 @@ def identify(slackbot, msg, args):
 
     _hangouts_uid = parameters.pop(0)
     hangups_user = hangoutsbot.get_hangups_user(_hangouts_uid)
-    if not hangups_user.definitionsource:
+    if hangups_user.is_default:
         slackbot.api_call(
             'chat.postMessage',
             channel = msg.channel,
