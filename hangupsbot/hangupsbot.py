@@ -280,6 +280,8 @@ class HangupsBot(object):
 
     async def __stop(self):
         """stop the hangups client"""
+        if self.__retry_reset is not None:
+            self.__retry_reset.cancel()
 
         #pylint:disable=protected-access,bare-except
         try:
@@ -288,9 +290,6 @@ class HangupsBot(object):
                 logger.info('_stop: discard %s',
                             repr(self._client._listen_future._exception))
             self._client._listen_future._exception = None
-
-        if self.__retry_reset is not None:
-            self.__retry_reset.cancel()
 
             await self._client.disconnect()
         except:                                         # capture any exception
