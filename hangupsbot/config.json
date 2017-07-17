@@ -27,6 +27,8 @@
   "mentionerrors": true,
   "mentionquidproquo": false,
   "plugins": [
+    "image",
+    "botaliases",
     "default",
     "mentions",
     "subscribe",
