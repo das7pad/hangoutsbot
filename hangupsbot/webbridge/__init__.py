@@ -63,7 +63,7 @@ class WebFramework:
         await plugins.tracking.start({'module.path': self.uid})
         self._closed = False
         plugins.register_handler(self._broadcast, "sending")
-        plugins.register_handler(self._repeat, "allmessages")
+        plugins.register_handler(self._repeat, "message")
         plugins.tracking.end()
 
     def close(self):

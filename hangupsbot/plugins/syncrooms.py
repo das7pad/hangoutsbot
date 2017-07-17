@@ -21,7 +21,7 @@ _registers=__registers()
 
 def _initialise(bot):
     plugins.register_handler(_broadcast, type="sending")
-    plugins.register_handler(_repeat, type="allmessages")
+    plugins.register_handler(_repeat, type="message")
 
     #_register_chatbridge_behaviour('userlist', _syncout_users)
 
