@@ -32,6 +32,9 @@ import sinks
 import utils
 import version
 
+import sync.handler
+from sync.sending_queue import AsyncQueue
+
 logger = logging.getLogger()
 
 DEFAULT_CONFIG = {
@@ -43,6 +46,9 @@ DEFAULT_CONFIG = {
     "memory-failsafe_backups": 3,
     # in seconds
     "memory-save_delay": 1,
+
+    # timeout in second
+    "message_queque_unload_timeout": 3,
 }
 
 class HangupsBot(object):
@@ -68,6 +74,7 @@ class HangupsBot(object):
         self._handlers = None # handlers.py::EventHandler
         self.tags = None # tagging.tags
         self.conversations = None # permamem.ConversationMemory
+        self.sync = None # sync.handler.SyncHandler
 
         self._locales = {}
 
@@ -282,6 +289,9 @@ class HangupsBot(object):
 
     async def __stop(self):
         """stop the hangups client"""
+        await sync.sending_queue.AsyncQueue.global_stop(
+            self.config["message_queque_unload_timeout"])
+
         if self.__retry_reset is not None:
             self.__retry_reset.cancel()
 
@@ -459,6 +469,8 @@ class HangupsBot(object):
             the HangupsConversation instance of the 1on1, None if no conv can be
                 created or False if a 1on1 is not allowed with the user
         """
+        if chat_id == "sync":
+            return None
         if chat_id == self.user_self()["chat_id"]:
             logger.warning("1to1 conversations with myself are not supported",
                            stack_info=True)
@@ -561,6 +573,12 @@ class HangupsBot(object):
         self._handlers = handlers.EventHandler(self)
         handlers.handler.set_bot(self) # shim for handler decorator
 
+        # release the global sending block
+        AsyncQueue.release_block()
+
+        self.sync = sync.handler.SyncHandler(self, self._handlers)
+        await self.sync.setup()
+
         # monkeypatch plugins go heere
         # # plugins.load(self, "monkeypatch.something")
         # use only in extreme circumstances
@@ -576,6 +594,7 @@ class HangupsBot(object):
         # init the shareds, start caches for reprocessing and start listening
         await self._handlers.setup(self._conv_list)
 
+        await plugins.load(self, "sync")
         await plugins.load(self, "commands.plugincontrol")
         await plugins.load(self, "commands.alias")
         await plugins.load(self, "commands.basic")

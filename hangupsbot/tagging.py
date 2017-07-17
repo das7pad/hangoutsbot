@@ -272,6 +272,8 @@ class tags:
         Returns:
             list,
         """
+        if chat_id == "sync":
+            return []
 
         if not self.bot.memory.exists(["user_data", chat_id]):
             logger.warning("useractive: user %s does not exist", chat_id)

@@ -8,6 +8,8 @@ ReParser==1.4.3
 # PLUGIN DEPENDENCIES #
 
 python_dateutil                                 # sinks: gitlab
+Pillow                                          # sync: image handling
+moviepy                                         # sync: gif/video handling
 pushbullet.py                                   # plugins: mentions
 wikipedia                                       # plugins: simplewikipedia
 wolframalpha                                    # plugins: wolframalpha

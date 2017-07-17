@@ -268,6 +268,16 @@ def register_handler(function, type="message", priority=50):
     bot_handlers = tracking.bot._handlers
     bot_handlers.register_handler(function, type, priority)
 
+def register_sync_handler(function, name="message", priority=50):
+    """register external sync handler
+
+    Args:
+        function: callable, with signature: function(bot, event, command)
+        name: string, key in bot.sync.pluggables, event type
+        priority: int, change the sequence of handling the event
+    """
+    tracking.bot.sync.register_handler(function, name, priority)
+
 def register_shared(identifier, objectref):
     """register a shared object to be called later
 
@@ -645,6 +655,12 @@ async def unload(bot, module_path):
             if handler[2]["module.path"] == module_path:
                 logger.debug("removing handler %s %s", type_, handler)
                 bot._handlers.pluggables[type_].remove(handler)
+
+    for pluggable in bot.sync.pluggables:
+        for handler in bot.sync.pluggables[pluggable]:
+            if handler[2]["module.path"] == module_path:
+                logger.debug("removing handler %s %s", pluggable, handler)
+                bot.sync.pluggables[pluggable].remove(handler)
 
     shared = plugin["shared"]
     for shared_def in shared:
