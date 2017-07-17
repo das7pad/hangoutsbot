@@ -61,9 +61,9 @@ optional arguments:
 
 Configuration directives can be specified in `config.json`.
 
-Please note that the `config.json` file supplied with the repository is not 
-  supposed to be edited/changed. It is the reference file used by the bot to 
-  create the actual configuration file located elsewhere in the system. To find out 
+Please note that the `config.json` file supplied with the repository is not
+  supposed to be edited/changed. It is the reference file used by the bot to
+  create the actual configuration file located elsewhere in the system. To find out
   where the actual file is, please see the [**Additional Configuration** section](https://github.com/hangoutsbot/hangoutsbot/blob/master/INSTALL.md#additional-configuration)
   in the [installation](https://github.com/hangoutsbot/hangoutsbot/blob/master/INSTALL.md)
   instructions.
@@ -120,11 +120,11 @@ The base bot supports some basic command even without any plugins loaded.
 `/bot version`
 * Bot replies with the version number of the framework
 
-A full list of commands supported by the base framework is available at the 
+A full list of commands supported by the base framework is available at the
   [**Core Commands**](https://github.com/hangoutsbot/hangoutsbot/wiki/Core-Commands)
   wiki page.
 
-The wiki also has a 
+The wiki also has a
   [**list of plugins**](https://github.com/hangoutsbot/hangoutsbot/wiki/Plugin-List)
   detailing available plugins with commands lists and usage.
 
@@ -168,3 +168,5 @@ Hangoutsbot is derived from the [mogunsamang](https://gitlab.sabah.io/eol/moguns
 On 2015-06-20, this fork was detached and made standalone on GitHub
 
 On 2015-07-03, the fork was made into a Github Organisation
+
+On 2017-07-17, this fork was made standalone
