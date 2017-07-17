@@ -4,14 +4,8 @@ Creates a Spotify playlist per chat and adds music automatically by listening
 for YouTube, Soundcloud, and Spotify links (or manually with a Spotify query).
 """
 
-import aiohttp
-import asyncio
-import io
-import json
 import logging
-import os
 import re
-import plugins
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError as YouTubeHTTPError
@@ -22,6 +16,7 @@ import soundcloud
 import spotipy
 import spotipy.util
 
+import plugins
 
 logger = logging.getLogger(__name__)
 
@@ -45,18 +40,16 @@ def _initialise():
     plugins.register_user_command(["spotify"])
 
 
-@asyncio.coroutine
-def _watch_for_music_link(bot, event, command):
+async def _watch_for_music_link(bot, event, command):
     if event.user.is_self:
         return
 
     # Start with Spotify off.
     enabled = bot.conversation_memory_get(event.conv_id, "spotify_enabled")
     if enabled == None:
-        bot.conversation_memory_set(event.conv_id, "spotify_enabled", False)
         return
 
-    if not enabled or "/bot" in event.text:
+    if "/bot" in event.text:
         return
 
     links = extract_music_links(event.text)
@@ -84,7 +77,7 @@ def _watch_for_music_link(bot, event, command):
             else:
                 success = _("<em>Unable to get the song title :(</em>")
 
-        yield from bot.coro_send_message(event.conv.id_, success)
+        await bot.coro_send_message(event.conv.id_, success)
 
 
 def spotify(bot, event, *args):
@@ -136,15 +129,15 @@ def spotify(bot, event, *args):
             query = " ".join(args)
             result = add_to_spotify(bot, event, query)
 
-    yield from bot.coro_send_message(event.conv_id, result)
+    return result
 
 
 def extract_music_links(text):
     """Returns an array of music URLs. Currently searches only for YouTube,
     Soundcloud, and Spotify links."""
-    m = re.compile(("(https?://)?([a-z0-9.]*?\.)?(youtube.com/|youtu.be/|"
-                    "soundcloud.com/|spotify.com/track/)"
-                    "([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
+    m = re.compile((r"(https?://)?([a-z0-9.]*?\.)?(youtube.com/|youtu.be/|"
+                    r"soundcloud.com/|spotify.com/track/)"
+                    r"([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
     links = m.findall(text)
     links = ["".join(link) for link in links]
 
@@ -178,7 +171,7 @@ def search_spotify(query):
     if result: return result
 
     # Discard hashtags and mentions.
-    gs[:] = [" ".join(re.sub("(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)",
+    gs[:] = [" ".join(re.sub(r"(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)",
                              " ", g).split()) for g in gs]
 
     # Discard everything in a group following certain words.
@@ -204,19 +197,19 @@ def _clean(query):
     unrelated to the song title/artist. Returns a list of groups."""
 
     # Blacklists.
-    bl_exact = ["official", "audio", "audio\s+stream", "lyric", "lyrics",
-                "with\s+lyrics?", "explicit", "clean", "explicit\s+version",
-                "clean\s+version", "original\s+version", "hq", "hd", "mv", "m/v",
-                "interscope", "4ad"]
-    bl_following = ["official\s+video", "official\s+music", "official\s+audio",
-                    "official\s+lyric", "official\s+lyrics", "official\s+clip",
-                    "video\s+lyric", "video\s+lyrics", "video\s+clip",
-                    "full\s+video"]
+    bl_exact = ["official", "audio", r"audio\s+stream", "lyric", "lyrics",
+                r"with\s+lyrics?", "explicit", "clean", r"explicit\s+version",
+                r"clean\s+version", r"original\s+version", "hq", "hd", "mv",
+                "m/v", "interscope", "4ad"]
+    bl_following = [r"official\s+video", r"official\s+music",
+                    r"official\s+audio", r"official\s+lyric",
+                    r"official\s+lyrics", r"official\s+clip", r"video\s+lyric",
+                    r"video\s+lyrics", r"video\s+clip", r"full\s+video"]
 
     # Split into groups.
     gs = list(filter(
         None,
-        re.split(u"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚‘]+\s*",
+        re.split(r"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚‘]+\s*",
                  query)))
 
     # Discard groups that match with anything in the blacklists.
@@ -225,7 +218,7 @@ def _clean(query):
         gs[:] = [re.split(b, g, flags=re.IGNORECASE)[0] for g in gs]
 
     # Discard featured artists.
-    gs[:] = [re.split("(f(ea)?t(.|\s+))(?i)", g)[0] for g in gs]
+    gs[:] = [re.split(r"(f(ea)?t(.|\s+))(?i)", g)[0] for g in gs]
 
     return gs
 
@@ -317,7 +310,7 @@ def title_from_youtube(bot, url):
     # Regex by mantish from http://stackoverflow.com/a/9102270 to get the
     # video id from a YouTube URL.
     match = re.match(
-        "^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*", url)
+        r"^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*", url)
     if match and len(match.group(2)) == 11:
         video_id = match.group(2)
     else:
@@ -326,8 +319,8 @@ def title_from_youtube(bot, url):
 
     # YouTube response is JSON.
     try:
-        response = youtube_client.videos().list(part="snippet",
-                                                id=video_id).execute()
+        response = youtube_client.videos().list(    # pylint: disable=no-member
+            part="snippet", id=video_id).execute()
         items = response.get("items", [])
         if items:
             return items[0]["snippet"]["title"]

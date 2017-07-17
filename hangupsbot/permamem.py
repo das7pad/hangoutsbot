@@ -1,496 +1,435 @@
-import asyncio, datetime, logging, random, re
+"""hangups conversation data cache"""
+# pylint: disable=W0212
+from datetime import datetime
+import logging
+import random
+import re
 
 import hangups
 
-import hangups_shim
-
-bot = None
-
+from hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 
+SENTINEL = object()
 
 def name_from_hangups_conversation(conv):
     """get the name for supplied hangups conversation
     based on hangups.ui.utils.get_conv_name, except without the warnings
     """
-    if conv.name is not None:
-        return conv.name
-    else:
-        participants = sorted(
-            (user for user in conv.users if not user.is_self),
-            key=lambda user: user.id_
-        )
-        names = [user.first_name for user in participants]
-        if len(participants) == 0:
-            return "Empty Conversation"
-        if len(participants) == 1:
-            return participants[0].full_name
-        else:
-            return ', '.join(names)
+    name = conv._conversation.name
+    if isinstance(name, str) and name:
+        return name
 
+    if not conv.users:
+        return "Empty Conversation"
+    if conv.users == 1:
+        return conv.users[0].full_name
 
-@asyncio.coroutine
-def initialise_permanent_memory(bot):
-    permamem = conversation_memory(bot)
+    participants = sorted(conv.users, key=lambda user: user.id_.chat_id)
+    names = [user.first_name for user in participants
+             if not user.is_self]
+    return ', '.join(names)
 
-    yield from permamem.standardise_memory()
-    yield from permamem.load_from_memory()
-    yield from permamem.load_from_hangups()
+def load_missing_entrys(bot):
+    """load users and conversations that are missing on bot start into hangups
+
+    Args:
+        bot: HangupsBot instance
+    """
+    loaded_users = bot._user_list._user_dict
+    for chat_id, user_data in bot.memory["user_data"].items():
+        if any((len(chat_id) != 21,
+                not chat_id.isdigit(),
+                not isinstance(user_data, dict),
+                '_hangups' not in user_data)):
+            continue
+        user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
+        if user_id in loaded_users:
+            continue
+        user = hangups.user.User(user_id, user_data["_hangups"]["full_name"],
+                                 user_data["_hangups"]["first_name"],
+                                 user_data["_hangups"]["photo_url"],
+                                 user_data["_hangups"]["emails"], False)
+        loaded_users[user_id] = user
+
+    for conv_id in bot.conversations:
+        conv = HangupsConversation(bot, conv_id)
+        bot._conv_list._conv_dict[conv_id] = conv
+
+async def initialise(bot):
+    """load cache from memory and update it with new data from hangups
+
+    Args:
+        bot: HangupsBot instance
+
+    Returns:
+        ConversationMemory instance
+    """
+    permamem = ConversationMemory(bot)
+
+    permamem.standardise_memory()
+    await permamem.load_from_hangups()
+    await permamem.load_from_memory()
+
+    # set the attribute here as a HangupsConversation might needs to access it
+    bot.conversations = permamem
+    load_missing_entrys(bot)
 
     permamem.stats()
 
-    permamem.bot.memory.save() # only if tainted
-
+    bot.memory.save()
     return permamem
 
 
-class conversation_memory:
-    bot = None
-    catalog = {}
+class ConversationMemory(object):
+    """cache conversation data that might be missing on bot start
 
-    log_info_unchanged = False
-
+    Args:
+        bot: HangupsBot instance
+    """
     def __init__(self, bot):
         self.bot = bot
         self.catalog = {}
 
+        bot.memory.on_reload.add_observer(self.standardise_memory)
+        bot.memory.on_reload.add_observer(self.load_from_memory)
+
+    def __del__(self):
+        """explicit cleanup"""
+        self.bot.memory.on_reload.remove_observer(self.standardise_memory)
+        self.bot.memory.on_reload.remove_observer(self.load_from_memory)
+
     def stats(self):
-        logger.info("total conversations: {}".format(len(self.catalog)))
+        """log meta of the permamem"""
+        logger.info("total conversations: %s", len(self.catalog))
 
-        if self.bot.memory.exists(["user_data"]):
-            count_user = 0
-            count_user_cached = 0
-            count_user_cached_definitive = 0
-            for chat_id in self.bot.memory["user_data"]:
-                count_user = count_user + 1
-                if "_hangups" in self.bot.memory["user_data"][chat_id]:
-                    count_user_cached = count_user_cached + 1
-                    if self.bot.memory["user_data"][chat_id]["_hangups"]["is_definitive"]:
-                        count_user_cached_definitive = count_user_cached_definitive + 1
+        count_user = 0
+        count_user_definitive = 0
+        for chat_id in self.bot.memory["user_data"]:
+            if "_hangups" not in self.bot.memory["user_data"][chat_id]:
+                continue
+            count_user = count_user + 1
+            if (self.bot.memory["user_data"][chat_id]["_hangups"]
+                    ["is_definitive"]):
+                count_user_definitive += 1
 
-            logger.info("total users: {} cached: {} definitive (at start): {}".format(
-                count_user, count_user_cached, count_user_cached_definitive))
+        logger.info("total users: %s | definitive at start: %s",
+                    count_user, count_user_definitive)
 
-
-    @asyncio.coroutine
     def standardise_memory(self):
-        """construct the conversation memory keys and standardise the stored structure
-        devs: migrate new keys here, also add to attribute change checks in .update()
-        """
-        memory_updated = False
+        """ensure the latest conversation memory structure
 
+        migrate new keys, also add to attribute change checks in .update()
+        """
         if not self.bot.memory.exists(['convmem']):
             self.bot.memory.set_by_path(['convmem'], {})
-            memory_updated = True
+            return
 
         convs = self.bot.memory.get_by_path(['convmem'])
-        for conv_id in convs:
-            conv = convs[conv_id]
-            attribute_modified = False
-
+        for conv_id, conv in convs.items():
             # remove obsolete users list
             if "users" in conv:
                 del conv["users"]
-                attribute_modified = True
 
-            if "type" not in conv:
-                conv["type"] = "unknown"
-                attribute_modified = True
+            conv.setdefault("type", "unknown")
+            conv.setdefault("history", True)
+            conv.setdefault("participants", [])
+            conv.setdefault("link_sharing", False)
+            conv.setdefault("status", "DEFAULT")
 
-            if "history" not in conv:
-                conv["history"] = True
-                attribute_modified = True
+            if conv["type"] != "unknown":
+                continue
 
-            if "participants" not in conv:
-                conv["participants"] = []
-                attribute_modified = True
+            # guess the type
+            conv["type"] = "GROUP"
+            if len(conv["participants"]) != 1:
+                continue
 
-            if conv["type"] == "unknown":
-                """intelligently guess the type"""
-                if len(conv["participants"]) > 1:
-                    conv["type"] = "GROUP"
-                    attribute_modified = True
-                else:
-                    if self.bot.memory.exists(["user_data"]):
-                        """inefficient one-off search"""
-                        for chat_id in self.bot.memory["user_data"]:
-                            if self.bot.memory.exists(["user_data", chat_id, "1on1"]):
-                                if self.bot.memory["user_data"][chat_id]["1on1"] == conv_id:
-                                    conv["type"] = "ONE_TO_ONE"
-                                    attribute_modified = True
-                                    break
+            path = ["user_data", conv["participants"][0], "1on1"]
+            if (self.bot.memory.exists(path)
+                    and self.bot.get_by_path(path) == conv_id):
+                conv["type"] = "ONE_TO_ONE"
 
-            if attribute_modified:
-                self.bot.memory.set_by_path(['convmem', conv_id], conv)
-                memory_updated = True
-
-        return memory_updated
-
-    @asyncio.coroutine
-    def load_from_memory(self):
+    async def load_from_memory(self):
         """load "persisted" conversations from memory.json into self.catalog
         complete internal user list by using "participants" keys
         """
 
-        if self.bot.memory.exists(['convmem']):
-            convs = self.bot.memory.get_by_path(['convmem'])
-            logger.info("loading {} conversations from memory".format(len(convs)))
+        convs = self.bot.memory.get_by_path(['convmem'])
+        logger.debug("loading %s conversations from memory", len(convs))
 
-            _users_added = {}
-            _users_incomplete = {}
-            _users_unknown = {}
+        _users_added = {}
+        _users_incomplete = {}
+        _users_unknown = []
 
-            _users_to_fetch = []
+        _users_to_fetch = []
 
-            for convid in convs:
-                self.catalog[convid] = convs[convid]
+        for convid, conv in convs.items():
+            self.catalog[convid] = conv
+            for chat_id in conv["participants"]:
+                try:
+                    userid = hangups.user.UserID(chat_id=chat_id,
+                                                 gaia_id=chat_id)
+                    user = self.bot._user_list._user_dict[userid]
+                    results = self.store_user_memory(user)
+                    if results:
+                        _users_added[chat_id] = user.full_name
 
-                if "participants" in self.catalog[convid] and len(self.catalog[convid]["participants"]) > 0:
-                    for _chat_id in self.catalog[convid]["participants"]:
-                        try:
-                            UserID = hangups.user.UserID(chat_id=_chat_id, gaia_id=_chat_id)
-                            User = self.bot._user_list._user_dict[UserID]
-                            results = self.store_user_memory(User, is_definitive=True, automatic_save=False)
-                            if results:
-                                _users_added[_chat_id] = User.full_name
+                except KeyError:
+                    cached = self.bot.user_memory_get(chat_id, "_hangups")
+                    if cached is not None:
+                        if cached["is_definitive"]:
+                            continue
+                        _users_incomplete[chat_id] = cached["full_name"]
+                    else:
+                        _users_unknown.append(chat_id)
 
-                        except KeyError:
-                            cached = False
-                            if self.bot.memory.exists(["user_data", _chat_id, "_hangups"]):
-                                cached = self.bot.memory.get_by_path(["user_data", _chat_id, "_hangups"])
-                                if cached["is_definitive"]:
-                                    if cached["full_name"].upper() == "UNKNOWN" and cached["full_name"] == cached["first_name"]:
-                                        # XXX: crappy way to detect hangups unknown users
-                                        logger.debug("user {} needs refresh".format(_chat_id))
-                                    else:
-                                        continue
+                    _users_to_fetch.append(chat_id)
 
-                            if cached:
-                                _users_incomplete[_chat_id] = cached["full_name"]
-                            else:
-                                _users_unknown[_chat_id] = "unidentified"
+        if _users_added:
+            logger.info("added users: %s", _users_added)
 
-                            _users_to_fetch.append(_chat_id)
+        if _users_incomplete:
+            logger.info("incomplete users: %s", _users_incomplete)
 
-            if len(_users_added) > 0:
-                logger.info("added users: {}".format(_users_added))
+        if _users_unknown:
+            logger.warning("unknown users: %s", _users_unknown)
 
-            if len(_users_incomplete) > 0:
-                logger.info("incomplete users: {}".format(_users_incomplete))
+        if _users_to_fetch:
+            await self.get_users_from_query(_users_to_fetch)
 
-            if len(_users_unknown) > 0:
-                logger.warning("unknown users: {}".format(_users_unknown))
+    async def load_from_hangups(self):
+        """update the permamem from the user- and conv list of hangups"""
+        users = self.bot._user_list.get_all()
+        logger.info("loading %s users from hangups", len(users))
+        for user in users:
+            self.store_user_memory(user)
 
-            """attempt to rebuilt the user data with hangups.client.getentitybyid()"""
+        conversations = self.bot._conv_list.get_all()
+        logger.info("loading %s conversations from hangups", len(conversations))
+        for conversation in conversations:
+            await self.update(conversation, source="init", automatic_save=False)
 
-            if len(_users_to_fetch) > 0:
-                yield from self.get_users_from_query(_users_to_fetch)
+    async def get_users_from_query(self, chat_ids):
+        """retrieve definitive user data by requesting it from the server
 
+        Args:
+            chat_ids: list of string, a list of G+ ids
 
-    @asyncio.coroutine
-    def load_from_hangups(self):
-        logger.info("loading {} users from hangups".format(
-            len(self.bot._user_list._user_dict)))
-
-        for User in self.bot._user_list.get_all():
-            self.store_user_memory(User, automatic_save=False, is_definitive=True)
-
-        logger.info("loading {} conversations from hangups".format(
-            len(self.bot._conv_list._conv_dict)))
-
-        for Conversation in self.bot._conv_list.get_all():
-            yield from self.update(Conversation, source="init", automatic_save=False)
-
-
-    @asyncio.coroutine
-    def get_users_from_query(self, chat_ids, batch_max=20):
-        """retrieve definitive user data by requesting it from the server"""
+        Returns:
+            integer, number of updated users
+        """
 
         chat_ids = list(set(chat_ids))
 
-        chunks = [ chat_ids[i:i+batch_max]
-                   for i in range(0, len(chat_ids), batch_max) ]
-
         updated_users = 0
+        logger.debug("getentitybyid(): %s", chat_ids)
 
-        for chunk in chunks:
-            logger.debug("getentitybyid(): {}".format(chunk))
+        request = hangups.hangouts_pb2.GetEntityByIdRequest(
+            request_header=self.bot.get_request_header(),
+            batch_lookup_spec=[
+                hangups.hangouts_pb2.EntityLookupSpec(gaia_id=chat_id)
+                for chat_id in chat_ids])
+        try:
+            response = await self.bot.get_entity_by_id(request)
+        except hangups.exceptions.NetworkError:
+            logger.exception("getentitybyid(): FAILED for %s", chat_ids)
+            return 0
 
-            try:
-                _request = hangups.hangouts_pb2.GetEntityByIdRequest(
-                    request_header=self.bot._client.get_request_header(),
-                    batch_lookup_spec=[ hangups.hangouts_pb2.EntityLookupSpec( gaia_id=chat_id) 
-                                        for chat_id in chunk ])
+        for entity in response.entity:
+            user = hangups.user.User.from_entity(entity, False)
+            self.bot._user_list._user_dict[user.id_] = user
 
-                _response = yield from self.bot._client.get_entity_by_id(_request)
+            if self.store_user_memory(user):
+                updated_users += 1
+        self.bot.memory.save()
 
-                for _user in _response.entity:
-                    UserID = hangups.user.UserID(chat_id=_user.id.chat_id, gaia_id=_user.id.gaia_id)
-                    User = hangups.user.User(
-                        UserID,
-                        _user.properties.display_name,
-                        _user.properties.first_name,
-                        _user.properties.photo_url,
-                        list(_user.properties.email), # repeated field
-                        False)
-
-                    """this function usually called because hangups user list is incomplete, so help fill it in as well"""
-                    logger.debug("updating hangups user list {} ({})".format(User.id_.chat_id, User.full_name))
-                    self.bot._user_list._user_dict[User.id_] = User
-
-                    if self.store_user_memory(User, is_definitive=True, automatic_save=False):
-                        updated_users = updated_users + 1
-
-            except hangups.exceptions.NetworkError as e:
-                logger.exception("getentitybyid(): FAILED for chunk {}".format(chunk))
-
-        if updated_users > 0:
-            self.bot.memory.save()
-            logger.info("getentitybyid(): {} users updated".format(updated_users))
-        else:
-            if self.log_info_unchanged:
-                logger.info("getentitybyid(): no change")
-
+        if updated_users:
+            logger.info("getentitybyid(): %s users updated", updated_users)
         return updated_users
 
-
-    def store_user_memory(self, User, automatic_save=True, is_definitive=False):
+    def store_user_memory(self, user):
         """update user memory based on supplied hangups User
-        conservative writing: on User attribute changes only
-        returns True on User change, False on no changes
+
+        Args:
+            user: hangups.user.User instance
+
+        Returns:
+            boolean, True if the permamem entry for the user changed
         """
+        is_definitive = user.name_type == hangups.user.NameType.DEFAULT
 
-        """in the event hangups returned an "unknown" user, turn off the is_definitive flag"""
-        if User.full_name.upper() == "UNKNOWN" and User.first_name == User.full_name and is_definitive:
-            logger.debug("user {} ({}) not definitive".format(User.id_.chat_id, User.full_name))
-            is_definitive = False
+        # reject an update if a valid user would be overwritten by a default one
+        cached = self.bot.user_memory_get(user.id_.chat_id, "_hangups") or {}
+        if cached and cached.get("is_definitive", 0) > is_definitive:
+            return False
 
-        """load existing cached user, reject update if cache is_definitive and supplied is not"""
-        cached = False
-        if self.bot.memory.exists(["user_data", User.id_.chat_id, "_hangups"]):
-            cached = self.bot.memory.get_by_path(["user_data", User.id_.chat_id, "_hangups"])
-            if "is_definitive" in cached and cached["is_definitive"] and is_definitive == False:
-                if self.log_info_unchanged:
-                    logger.info("skipped user update: {} ({})".format(cached["full_name"], cached["chat_id"]))
-                return False
+        user_dict = {
+            "chat_id": user.id_.chat_id,
+            "full_name": user.full_name,
+            "first_name": user.first_name,
+            "photo_url": user.photo_url,
+            "emails": list(user.emails),
+            "is_self": user.is_self,
+            "is_definitive": is_definitive,
+        }
 
-        changed = False
-
-        if self.bot.initialise_memory(User.id_.chat_id, "user_data"):
-            changed = True
-
-        user_dict ={
-            "chat_id": User.id_.chat_id,
-            "gaia_id": User.id_.gaia_id,
-            "full_name": User.full_name,
-            "first_name": User.first_name,
-            "photo_url": User.photo_url,
-            "emails": list(User.emails),
-            "is_self": User.is_self,
-            "is_definitive": is_definitive }
-
+        changed = True
         if cached:
-            # XXX: no way to detect hangups fallback users reliably,
-            # XXX:   prioritise existing cached attributes
-
-            if not user_dict["photo_url"] and "photo_url" in cached and cached["photo_url"]:
-                user_dict["photo_url"] = cached["photo_url"]
-
-            if not user_dict["emails"] and "emails" in cached and cached["emails"]:
-                user_dict["emails"] = cached["emails"]
-
-            """scan for differences between supplied and cached"""
-
-            for key in list(user_dict.keys()):
-                try:
-                    if key == "emails":
-                        if set(user_dict[key]) != set(cached[key]):
-                            logger.info("user email changed {} ({})".format(User.full_name, User.id_.chat_id))
-                            changed = True
-                            break
-                    else:
-                        if user_dict[key] != cached[key]:
-                            logger.info("user {} changed {} ({})".format(key, User.full_name, User.id_.chat_id))
-                            changed = True
-                            break
-
-                except KeyError as e:
-                    logger.info("user {} missing {} ({})".format(key, User.full_name, User.id_.chat_id))
-                    changed = True
-                    break
+            try:
+                for key in user_dict:
+                    assert user_dict[key] == cached[key]
+            except AssertionError:
+                message = "user %s changed for %s (%s)"
+            except KeyError:
+                message = "user %s missing for %s (%s)"
+            else:
+                message = None
+                changed = False
         else:
-            logger.info("new user {} ({})".format(User.full_name, User.id_.chat_id))
-            changed = True
+            message = "%snew user %s (%s)"
+            key = ''
 
         if changed:
-            user_dict["updated"] = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            self.bot.memory.set_by_path(["user_data", User.id_.chat_id, "_hangups"], user_dict)
-
-            if automatic_save:
-                self.bot.memory.save()
-
-            logger.info("user {} updated {}".format(User.id_.chat_id, User.full_name))
-
-        else:
-            if self.log_info_unchanged:
-                logger.info("user {} unchanged".format(User.id_.chat_id))
-
+            logger.info(message, key, user.full_name, user.id_.chat_id)
+            user_dict["updated"] = datetime.now().strftime("%Y%m%d%H%M%S")
+            self.bot.user_memory_set(user.id_.chat_id, "_hangups", user_dict)
         return changed
 
-
-    @asyncio.coroutine
-    def update(self, conv, source="unknown", automatic_save=True):
+    async def update(self, conv, source="unknown", automatic_save=True):
         """update conversation memory based on supplied hangups Conversation
-        conservative writing: on changed Conversation and/or User attribute changes
-        return True on Conversation/User change, False on no changes
+
+        Args:
+            conv: hangups.conversation.Conversation instance
+            source: string, origin of the conv, 'event', 'init'
+            automatic_save: boolean, toggle to dump the memory on changes
+
+        Returns:
+            boolean, True on Conversation/User change, False on no changes
         """
+        _conversation = conv._conversation
         conv_title = name_from_hangups_conversation(conv)
 
-        original = {}
-        if self.bot.memory.exists(["convmem", conv.id_]):
-            original = self.bot.memory.get_by_path(["convmem", conv.id_])
+        cached = (self.bot.memory.get_by_path(["convmem", conv.id_])
+                  if self.bot.memory.exists(["convmem", conv.id_]) else {})
 
-        memory = {}
-
-        """base information"""
         memory = {
             "title": conv_title,
             "source": source,
-            "participants": [] }
+            "history": not conv.is_off_the_record,
+            "participants": [],
+            "type": ("GROUP" if _conversation.type
+                     == hangups.hangouts_pb2.CONVERSATION_TYPE_GROUP
+                     else "ONE_TO_ONE"),
+            "status": ("INVITED" if _conversation.self_conversation_state.status
+                       == hangups.hangouts_pb2.CONVERSATION_STATUS_INVITED
+                       else "DEFAULT"),
+            "link_sharing": (_conversation.group_link_sharing_status ==
+                             hangups.hangouts_pb2.GROUP_LINK_SHARING_STATUS_ON)
+        }
 
-        """user list + user records writing"""
-
-        memory["participants"] = []
-
-        _users_to_fetch = [] # track possible unknown users from hangups Conversation
+        _users_to_fetch = [] # track unknown users from hangups Conversation
         users_changed = False # track whether memory["user_data"] was changed
 
-        for User in conv.users:
-            if not User.is_self:
-                memory["participants"].append(User.id_.chat_id)
+        for user in conv.users:
+            if not user.is_self:
+                memory["participants"].append(user.id_.chat_id)
 
-            if User.full_name.upper() == "UNKNOWN" and User.first_name == User.full_name:
-                # XXX: crappy way to detect hangups users
-                _modified = self.store_user_memory(User, automatic_save=False, is_definitive=False)
-                _users_to_fetch.append(User.id_.chat_id)
+            if user.name_type == hangups.user.NameType.DEFAULT:
+                _users_to_fetch.append(user.id_.chat_id)
 
-            elif not User.photo_url and not User.emails:
-                # XXX: crappy way to detect fallback users
-                # XXX:  users with no photo_url, emails will always get here, definitive or not
-                _modified = self.store_user_memory(User, automatic_save=False, is_definitive=False)
+            users_changed = self.store_user_memory(user) or users_changed
 
+        if _users_to_fetch:
+            logger.info("unknown users returned from %s (%s): %s",
+                        conv_title, conv.id_, _users_to_fetch)
+            await self.get_users_from_query(_users_to_fetch)
+
+        conv_changed = True
+        if cached:
+            memory["participants"].sort()
+            cached["participants"].sort()
+            try:
+                for key in memory:
+                    assert key == 'source' or memory[key] == cached[key]
+            except AssertionError:
+                message = "conv %s changed for %s (%s)"
+            except KeyError:
+                message = "conv %s missing for %s (%s)"
             else:
-                _modified = self.store_user_memory(User, automatic_save=False, is_definitive=True)
-
-            if _modified:
-                users_changed = True
-
-        if len(_users_to_fetch) > 0:
-            logger.warning("unknown users returned from {} ({}): {}".format(conv_title, conv.id_, _users_to_fetch))
-            yield from self.get_users_from_query(_users_to_fetch)
-
-        """store the conversation type: GROUP, ONE_TO_ONE"""
-        if conv._conversation.type == hangups_shim.schemas.ConversationType.GROUP:
-            memory["type"] = "GROUP"
+                message = None
+                conv_changed = False
         else:
-            # conv._conversation.type_ == hangups_shim.schemas.ConversationType.STICKY_ONE_TO_ONE
-            memory["type"] = "ONE_TO_ONE"
-
-        """store the off_the_record state"""
-        if conv.is_off_the_record:
-            memory["history"] = False
-        else:
-            memory["history"] = True
-
-        """check for taint, reduce disk trashing
-            only write if its a new conversation, or there is a change in:
-                title, type (should not be possible!), history, users
-        """
-
-        conv_changed = False
-
-        if original:
-            """existing tracked conversation"""
-            for key in ["title", "type", "history", "participants"]:
-                try:
-                    if key == "participants":
-                        if set(original["participants"]) != set(memory["participants"]):
-                            logger.info("conv participants changed {} ({})".format(conv_title, conv.id_))
-                            conv_changed = True
-                            break
-
-                    else:
-                        if original[key] != memory[key]:
-                            logger.info("conv {} changed {} ({})".format(key,  conv_title, conv.id_))
-                            conv_changed = True
-                            break
-
-                except KeyError as e:
-                    logger.info("conv missing {} {} ({})".format(key,  conv_title, conv.id_))
-                    conv_changed = True
-                    break
-        else:
-            """new conversation"""
-            logger.info("new conv {} ({})".format(conv_title, conv.id_))
-            conv_changed = True
+            message = "%snew conv %s (%s)"
+            key = ''
 
         if conv_changed:
-            memory["updated"] = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            logger.info(message, key, conv_title, conv.id_)
+            memory["updated"] = datetime.now().strftime("%Y%m%d%H%M%S")
             self.bot.memory.set_by_path(["convmem", conv.id_], memory)
 
             self.catalog[conv.id_] = memory
 
-            if automatic_save:
-                # if users_changed this would write those changes as well
-                self.bot.memory.save()
-
-            logger.info("conv {} updated {}".format(conv.id_, conv_title))
-
-        else:
-            if self.log_info_unchanged:
-                logger.info("conv {} unchanged".format(conv.id_))
-
-            if users_changed:
-                logger.info("users from conv {} changed".format(conv.id_))
-                self.bot.memory.save()
-
-            elif self.log_info_unchanged:
-                logger.info("users from conv {} unchanged".format(conv.id_))
+        if automatic_save:
+            self.bot.memory.save()
 
         return conv_changed or users_changed
 
 
     def remove(self, conv_id):
+        """remove the permamem entry of a given conversation
+
+        Args:
+            conv_id: string, hangouts conversation identifier
+        """
         if self.bot.memory.exists(["convmem", conv_id]):
-            _cached = self.bot.memory.get_by_path(["convmem", conv_id])
-            if _cached["type"] == "GROUP":
-                logger.info("removing conv: {} {}".format(conv_id, _cached["title"]))
+            cached = self.bot.memory.get_by_path(["convmem", conv_id])
+            if cached["type"] == "GROUP":
+                logger.info("removing conv: %s %s", conv_id, cached["title"])
                 self.bot.memory.pop_by_path(["convmem", conv_id])
+                self.bot.memory.save()
                 del self.catalog[conv_id]
 
             else:
-                logger.warning("cannot remove conv: {} {} {}".format(
-                    _cached["type"], conv_id, _cached["title"]))
+                logger.warning("cannot remove conv: %s %s %s",
+                               cached["type"], conv_id, cached["title"])
 
         else:
-            logger.warning("cannot remove: {}, not found".format(conv_id))
+            logger.warning("cannot remove: %s, not found", conv_id)
 
-        self.bot.memory.save()
+    def get(self, search="", **kwargs):          #pylint:disable=too-many-locals
+        """get conversations matching a filter of terms
 
+        supports sequential boolean operations,
+        each term must be enclosed with brackets "( ... )"
 
-    def get(self, filter=""):
-        """get dictionary of conversations that matches filter term(s) (ALL if not supplied)
-        supports sequential boolean operations, each term must be enclosed with brackets ( ... )
+        Args:
+            search: string, filter for conv title, id, tags, type, user count
+            kwargs: dict, legacy to catch the keyword argument 'filter'
+
+        Returns:
+            dict, conv ids as keys and permamem entry of each conv as value
         """
+        def parse_request(locals_):
+            """split multiple querys to their filter functions and queryvalue
 
-        terms = []
-        raw_filter = filter.strip()
-        operator = "start"
-        while raw_filter.startswith("("):
-            tokens = re.split(r"(?<!\\)(?:\\\\)*\)", raw_filter, maxsplit=1)
-            terms.append([operator, tokens[0][1:]])
-            if len(tokens) == 2:
+            Args:
+                locals_: dict, locals of .get to access all filter functions
+
+            Returns:
+                list, a list of tuple,
+                (operator : string, query: string, <filter func> : callable)
+                invalid filter querys result in a string as filter func
+            """
+            raw_filter = (kwargs.get('filter') or search).strip()
+            terms = []
+            operator = "start"
+            while raw_filter.startswith("("):
+                tokens = re.split(r"(?<!\\)(?:\\\\)*\)", raw_filter, maxsplit=1)
+                terms.append((operator, tokens[0][1:]))
+                if len(tokens) != 2:
+                    break
                 raw_filter = tokens[1]
                 if not raw_filter:
                     # finished consuming entire string
@@ -502,95 +441,134 @@ class conversation_memory:
                     operator = "or"
                     raw_filter = tokens[1][raw_filter.index('('):].strip()
                 else:
-                    raise ValueError("invalid boolean operator near \"{}\"".format(raw_filter.strip()))
+                    raise ValueError('invalid boolean operator near "%s"' %
+                                     raw_filter.strip())
 
-        if raw_filter or len(terms)==0:
-            # second condition is to ensure at least one term, even if blank
-            terms.append([operator, raw_filter])
+            if raw_filter or not terms:
+                # second condition is to ensure at least one term, even if blank
+                terms.append((operator, raw_filter))
 
+            logger.debug(".get() with terms: %s", terms)
+
+            parsed = []
+            for operator, term in terms:
+                if ":" in term:
+                    type_, query = term.split(":", 1)
+                    parsed.append((operator, query, locals_.get("_" + type_,
+                                                                type_)))
+                else:
+                    parsed.append((operator, term, _id))
+            return parsed
+
+        #### begin search function definitions ###
+        # NOTE: more filter can be added here
+        # a search for "querytype:queryvalue" requires a function with a
+        # footprint like: _querytype(convid, convdata, queryvalue)
+        def _text(dummy0, convdata, query):
+            """check the conv title for the given query
+
+            Returns:
+                boolean, True if the query is part of the title otherwise False
+            """
+            query = query.lower()
+            return (query in convdata["title"].lower()
+                    or query in convdata["title"].replace(" ", "").lower())
+
+        def _id(convid, dummy0, query):
+            """check if the query matches with the convid
+
+            Returns:
+                boolean, True if the convid and query match otherwise False
+            """
+            return convid == query
+
+        def _chat_id(dummy0, convdata, query):
+            """check the user chat ids for a match with the query
+
+            Returns:
+                boolean, True if any chat_id matches the query, otherwise False
+            """
+            for chat_id in convdata["participants"]:
+                if query == chat_id:
+                    return True
+
+        def _type(dummy0, convdata, query):
+            """check if the conversation type matches with the query
+
+            Returns:
+                boolean, True if the type matches otherwise False
+            """
+            return convdata["type"] == query.upper()
+
+        def _minusers(dummy0, convdata, query):
+            """check if the user count of a conv is not below the query value
+
+            Returns:
+                boolean, False if fewer users are in the conv, otherwise True
+            """
+            return len(convdata["participants"]) >= int(query)
+
+        def _maxusers(dummy0, convdata, query):
+            """check if the user count of a conv is not above the query value
+
+            Returns:
+                boolean, False if more users are in the conv, otherwise True
+            """
+            return len(convdata["participants"]) <= int(query)
+
+        def _random(dummy0, dummy1, query):
+            """check the query value against a random number between 0 and 1
+
+            Returns:
+                boolean, True if the query value is greater, otherwise False
+            """
+            return random.random() < float(query)
+
+        def _tag(convid, dummy0, query):
+            """check if the query is a registered tag and the conv is tagged
+
+            Returns:
+                boolean, True if the query is a tag and the conv is tagged w/ it
+            """
+            return (query in self.bot.tags.indices["tag-convs"] and
+                    convid in self.bot.tags.indices["tag-convs"][query])
+
+        ### end search function definitions ###
         sourcelist = self.catalog.copy()
         matched = {}
 
-        logger.debug("get(): {}".format(terms))
+        for operator, query, func in parse_request(locals()):
+            if not callable(func):
+                logger.warning('ConversationMemory.get: invalid filter "%s:%s"',
+                               func, query)
+                continue
 
-        for operator, term in terms:
             if operator == "and":
                 sourcelist = matched
                 matched = {}
 
-            """extra search term types added here"""
-
-            if not term:
+            if not query:
                 # return everything
                 matched = sourcelist
+                continue
 
-            elif term.startswith("id:"):
-                # explicit request for single conv
-                convid = term[3:]
-                matched[convid] = sourcelist[convid]
-
-            elif term in sourcelist:
-                # prioritise exact convid matches
-                matched[term] = sourcelist[term]
-
-            elif term.startswith("text:"):
-                # perform case-insensitive search
-                filter_lower = term[5:].lower()
-                for convid, convdata in sourcelist.items():
-                    title_lower = convdata["title"].lower()
-                    if( filter_lower in title_lower
-                            or filter_lower in title_lower.replace(" ", "") ):
-                        matched[convid] = convdata
-
-            elif term.startswith("chat_id:"):
-                # return all conversations user is in
-                filter_chat_id = term[8:]
-                for convid, convdata in sourcelist.items():
-                    for chat_id in convdata["participants"]:
-                        if filter_chat_id == chat_id:
-                            matched[convid] = convdata
-
-            elif term.startswith("tag:"):
-                # return all conversations with the tag
-                filter_tag = term[4:]
-                if filter_tag in self.bot.tags.indices["tag-convs"]:
-                    for conv_id in self.bot.tags.indices["tag-convs"][filter_tag]:
-                        if conv_id in sourcelist:
-                            matched[conv_id] = sourcelist[conv_id]
-
-            elif term.startswith("type:"):
-                # return all conversations with matching type (case-insensitive)
-                filter_type = term[5:]
-                for convid, convdata in sourcelist.items():
-                    if convdata["type"].lower() == filter_type.lower():
-                        matched[convid] = convdata
-
-            elif term.startswith("minusers:"):
-                # return all conversations with number of users or higher
-                filter_numusers = term[9:]
-                for convid, convdata in sourcelist.items():
-                    if len(convdata["participants"]) >= int(filter_numusers):
-                        matched[convid] = convdata
-
-            elif term.startswith("maxusers:"):
-                # return all conversations with number of users or lower
-                filter_numusers = term[9:]
-                for convid, convdata in sourcelist.items():
-                    if len(convdata["participants"]) <= int(filter_numusers):
-                        matched[convid] = convdata
-
-            elif term.startswith("random:"):
-                # return random conversations based on selection threshold
-                filter_random = term[7:]
-                for convid, convdata in sourcelist.items():
-                    if random.random() <= float(filter_random):
-                        matched[convid] = convdata
-
+            for convid, convdata in sourcelist.items():
+                if func(convid, convdata, query):
+                    matched[convid] = convdata
         return matched
 
-    def get_name(self, conv, truncate=False, fallback_string=False):
-        """drop-in replacement for hangups.ui.utils.get_conv_name
-        truncate added for backward-compatibility, should be always False
+    def get_name(self, conv, fallback=SENTINEL):
+        """get the name of a conversation
+
+        Args:
+            conv: string or hangups.conversation.Conversation instance
+            fallback: any type, a fallback if no name is available
+
+        Returns:
+            string, a conversation name or the fallback if no name is available
+
+        Raises:
+            ValueError: no name is available but no fallback was specified
         """
         if isinstance(conv, str):
             convid = conv
@@ -598,15 +576,27 @@ class conversation_memory:
             convid = conv.id_
 
         try:
-            convdata = self.catalog[convid]
-            title = convdata["title"]
-        except (KeyError, AttributeError) as e:
+            return self.catalog[convid]["title"]
+        except KeyError:
             if not isinstance(conv, str):
-                title = name_from_hangups_conversation(conv)
-            else:
-                if fallback_string:
-                    return fallback_string
-                else:
-                    raise ValueError("could not determine conversation name")
+                return name_from_hangups_conversation(conv)
 
-        return title
+            if fallback is SENTINEL:
+                raise ValueError("could not determine conversation name")
+
+            return fallback
+
+    def __iter__(self):
+        return iter(self.catalog)
+
+    def __getitem__(self, key):
+        return self.catalog[key]
+
+    def __setitem__(self, key, value):
+        self.catalog[key] = value
+
+    def __delitem__(self, key):
+        del self.catalog[key]
+
+    def __len__(self):
+        return len(self.catalog)

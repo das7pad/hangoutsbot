@@ -1,3 +1,4 @@
+# pylint: skip-file
 import asyncio
 import logging
 import re
@@ -62,8 +63,7 @@ class BridgeInstance(WebFramework):
 
         return self.configuration
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         conv_id = config["trigger"]
         channel_id = config["config.json"]["slackrtm"][0]
         team_name = config["config.json"]["name"]
@@ -78,7 +78,7 @@ class BridgeInstance(WebFramework):
             try:
                 # identify the correct thread, then send the message
                 if slackrtm.name == team_name:
-                    yield from slackrtm.handle_ho_message(event, conv_id, channel_id)
+                    await slackrtm.handle_ho_message(event, conv_id, channel_id)
             except Exception as e:
                 logger.exception(e)
 
@@ -119,7 +119,7 @@ class BridgeInstance(WebFramework):
                 return False
 
             _hangups_user = self.bot.get_hangups_user(hangouts_uid)
-            if _hangups_user.definitionsource:
+            if not _hangups_user.is_default:
                 hangups_user = _hangups_user
         except KeyError:
             logger.info("no hangups user for {} {}".format(team_name, slack_uid))

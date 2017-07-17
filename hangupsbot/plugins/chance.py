@@ -1,68 +1,86 @@
-import asyncio
-
+"""bring some random actions to the conversations"""
 from random import randint
 
+from commands import Help
 import plugins
 
+HELP = {
+    "diceroll": _(
+        'Rolls dice\nsupply the number and sides of the dice as "<b>n</b>d<b>s'
+        '</b>" to roll <b>n</b> dice with <b>s</b> sides\n"d<b>s</b>"'
+        "will roll one <b>s</b> sided dice\nno parameters defaults to 1d6\n"
+        "e.x. {bot_cmd} diceroll 4d3"),
+    "coinflip": _("flip a coin")
+}
 
-def _initialise(bot):
+def _initialise():
+    """register the message handler, commands and the help entrys"""
     plugins.register_handler(_handle_me_action)
     plugins.register_user_command(["diceroll", "coinflip"])
+    plugins.register_help(HELP)
 
+async def _handle_me_action(bot, event):
+    """run the diceroll or coinflip command from context
 
-def _handle_me_action(bot, event, command):
-    if event.text.startswith('/me')  or event.text.startswith(event.user.first_name):
-        if event.text.find("roll dice") > -1 or event.text.find("rolls dice") > -1 or event.text.find("rolls a dice") > -1 or event.text.find("rolled a dice") > -1:
-            yield from asyncio.sleep(0.2)
-            yield from command.run(bot, event, *["diceroll"])
-        elif event.text.find("flips a coin") > -1 or event.text.find("flips coin") > -1 or event.text.find("flip coin") > -1 or event.text.find("flipped a coin") > -1:
-            yield from asyncio.sleep(0.2)
-            yield from command.run(bot, event, *["coinflip"])
-        else:
-            pass
-
-
-def diceroll(bot, event, dice="1d6", *args):
-    """Rolls dice
-    supply the number and sides of the dice as '<b>n</b>d<b>s</b>' to roll <b>n</b> dice with <b>s</b> sides
-    'd<b>s</b>' will roll 1 <b>s</b> sided dice
-    no parameters defaults to 1d6
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
     """
-    usage = "usage: diceroll <b>n</b>d<b>s</b>"
+    if not event.text.startswith(('/me', event.user.first_name)):
+        return
+
+    if any(item in event.text for item in ["roll dice", "rolls dice",
+                                           "rolles a dice", "rolled dice"]):
+        await diceroll(bot, event)
+
+    elif any(item in event.text for item in ["flips a coin", "flips coin",
+                                             "flip coin", "flipped a coin"]):
+        await coinflip(bot, event)
+
+def diceroll(dummy, event, dice="1d6"):
+    """get random numbers from a fake diceroll
+
+    Args:
+        dummy: HangupsBot instance
+        event: event.ConversationEvent instance
+        dice: string, the diceroll request
+    """
     try:
-        n,s = dice.split('d')
+        repeat, sides = dice.split('d')
     except ValueError:
-        yield from bot.coro_send_message(event.conv, usage)
-        return
-    if not s:
-        yield from bot.coro_send_message(event.conv, usage)
-        return
-    if not n:
-        n = 1
-    n = int(n)
-    s = int(s)
-    if not 1 <= n < 100:
-        yield from bot.coro_send_message(event.conv, "number of dice must be between 1 and 99")
-        return
-    if not 2 <= s < 10000:
-        yield from bot.coro_send_message(event.conv, "number of sides must be between 2 and 9999")
-        return
+        sides = None
+    if not sides:
+        raise Help('Check argument!')
+    if not repeat:
+        repeat = 1
+    repeat = int(repeat)
+    sides = int(sides)
+    if not 1 <= repeat < 100:
+        return _("number of dice must be between 1 and 99")
+    if not 2 <= sides < 10000:
+        return _("number of sides must be between 2 and 9999")
+
     msg = _("<i>{} rolled ").format(event.user.full_name)
-    total = 0
-    for i in range(0,n):
-        roll = randint(1,s)
-        total = total + roll
-        if i != 0:
-            msg = msg + ", "
-        msg = msg + _("<b>{}</b>").format(roll)
-    if n != 1:
-        msg = msg + _(" totalling <b>{}</b></i>").format(total)
-    yield from bot.coro_send_message(event.conv, msg)
-
-
-def coinflip(bot, event, *args):
-    """flip a coin"""
-    if randint(1,2) == 1:
-        yield from bot.coro_send_message(event.conv, _("<i>{}, coin turned up <b>heads</b></i>").format(event.user.full_name))
+    numbers = [randint(1, sides) for i in range(repeat)]
+    total = sum(numbers)
+    msg += "<b>{}</b>".format(", ".join([str(item) for item in numbers]))
+    if repeat != 1:
+        msg += _(" totalling <b>{}</b></i>").format(total)
     else:
-        yield from bot.coro_send_message(event.conv, _("<i>{}, coin turned up <b>tails</b></i>").format(event.user.full_name))
+        msg += "</i>"
+    return msg
+
+def coinflip(dummy, event, *dummys):
+    """get the result of a fake coinflip
+
+    Args:
+        dummy: HangupsBot instance
+        event: event.ConversationEvent instance
+        dummys: tuple of string, not used
+    """
+    if randint(1, 2) == 1:
+        result = _("<i>{}, coin turned up <b>heads</b></i>")
+    else:
+        result = _("<i>{}, coin turned up <b>tails</b></i>")
+
+    return result.format(event.user.full_name)

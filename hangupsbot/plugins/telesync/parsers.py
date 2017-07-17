@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: skip-file
 
 import re
 
@@ -56,7 +57,8 @@ def hangups_markdown_to_telegram(text, debug=False):
                 # italics
                 wrapper = "_"
 
-            text = text.replace("_", "\\_")
+            if "http" not in text:
+                text = text.replace("_", "\\_")
 
             segment_to_text = wrapper + text + wrapper
             single_line += segment_to_text

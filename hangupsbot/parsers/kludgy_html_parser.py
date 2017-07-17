@@ -1,6 +1,8 @@
 """extremely hacky implementation of html parsing
 execute parser test by running this file directly with the interpreter
 """
+#pylint:skip-file
+#TODO(das7pad) refactor needed or deprecate as hangups has one already
 
 import logging
 import html
@@ -8,9 +10,7 @@ import html
 from html.parser import HTMLParser
 
 import hangups
-
-import hangups_shim
-
+import hangups.hangouts_pb2
 
 def simple_parse_to_segments(html, debug=False, **kwargs):
     html = fix_urls(html)
@@ -25,18 +25,18 @@ def segment_to_html(segment):
     text = text.replace('\n', '<br>\n')
 
     message = []
-    if segment.type_ == hangups_shim.schemas.SegmentType.TEXT:
+    if segment.type_ == hangups.hangouts_pb2.SEGMENT_TYPE_TEXT:
         message.append(text)
-    elif segment.type_ == hangups_shim.schemas.SegmentType.LINK:
+    elif segment.type_ == hangups.hangouts_pb2.SEGMENT_TYPE_LINK:
         message.append(
             '<a href="{}">{}</a>'.format(segment.link_target if segment.link_target else text, text)
         )
-    elif segment.type_ == hangups_shim.schemas.SegmentType.LINE_BREAK:
+    elif segment.type_ == hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK:
         message.append('<br />\n')
     else:
         logging.warning('Ignoring unknown chat message segment type: {}'.format(segment.type_))
 
-    if not segment.type_ == hangups_shim.schemas.SegmentType.LINE_BREAK:
+    if not segment.type_ == hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK:
         for is_f, f in ((segment.is_bold, 'b'), (segment.is_italic, 'i'),
                         (segment.is_strikethrough, 's'), (segment.is_underline, 'u')):
             if is_f:
@@ -110,7 +110,7 @@ class simpleHTMLParser(HTMLParser):
             self._segments.append(
               hangups.ChatMessageSegment(
                 self._link_text,
-                hangups.SegmentType.LINK,
+                hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
                 link_target=self._flags["link_target"],
                 is_bold=self._flags["bold"],
                 is_italic=self._flags["italic"],
@@ -139,7 +139,7 @@ class simpleHTMLParser(HTMLParser):
         self._segments.append(
             hangups.ChatMessageSegment(
                 "\n",
-                hangups.SegmentType.LINE_BREAK))
+                hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK))
 
     def segments_extend(self, text, type, forceNew=False):
         if len(self._segments) == 0 or forceNew is True:

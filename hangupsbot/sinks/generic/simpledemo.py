@@ -16,8 +16,7 @@ class webhookReceiver(BaseHTTPRequestHandler):
     _bot = None # set externally by the hangupsbot sink loader
     sinkname = "sink"
 
-    @asyncio.coroutine
-    def process_payload(self, path, query_string, payload):
+    async def process_payload(self, path, query_string, payload):
         logging.warning("[DEPRECATED] simpledemo.webhookReceiver, use sinks.generic.SimpleMessagePoster")
 
         sinkname = self.sinkname
@@ -44,7 +43,7 @@ class webhookReceiver(BaseHTTPRequestHandler):
             else:
                 image_filename = str(int(time.time())) + "." + image_type
             print("{}: uploading image: {}".format(sinkname, image_filename))
-            image_id = yield from webhookReceiver._bot._client.upload_image(image_data, filename=image_filename)
+            image_id = await webhookReceiver._bot._client.upload_image(image_data, filename=image_filename)
 
         html = ""
         if "echo" in payload:
@@ -55,7 +54,7 @@ class webhookReceiver(BaseHTTPRequestHandler):
         segments = simple_parse_to_segments(html)
         print("{} sending segments: {}".format(sinkname, len(segments)))
 
-        yield from self._bot.coro_send_message(conversation_id, segments, context=None, image_id=image_id)
+        await self._bot.coro_send_message(conversation_id, segments, context=None, image_id=image_id)
 
 
     def do_POST(self):
@@ -86,4 +85,4 @@ class webhookReceiver(BaseHTTPRequestHandler):
         payload = json.loads(data_string)
 
         # process the payload
-        asyncio.async(self.process_payload(path, query_string, payload))
+        asyncio.ensure_future(self.process_payload(path, query_string, payload))

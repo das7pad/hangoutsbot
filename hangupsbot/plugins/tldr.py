@@ -2,6 +2,8 @@ import logging
 import time
 import plugins
 
+from commands import Help
+
 logger = logging.getLogger(__name__)
 
 tldr_echo_options = [
@@ -16,7 +18,7 @@ def _initialise(bot):
     bot.register_shared("plugin_tldr_shared", tldr_shared)
 
     # Set the global option
-    if not bot.get_config_option('tldr_echo'):
+    if not bot.config.get_option('tldr_echo'):
         bot.config.set_by_path(["tldr_echo"], 1) # tldr_echo_options[1] is "GROUP"
         bot.config.save()
 
@@ -44,10 +46,10 @@ def tldrecho(bot, event, *args):
     message = '<b>TLDR echo setting for this hangout has been set to {0}.</b>'.format(tldr_echo_options[new_tldr])
     logger.debug("{0} ({1}) has toggled the tldrecho in '{2}' to {3}".format(event.user.full_name, event.user.id_.chat_id, event.conv_id, tldr_echo_options[new_tldr]))
 
-    yield from bot.coro_send_message(event.conv_id, message)
+    return message
 
 
-def tldr(bot, event, *args):
+async def tldr(bot, event, *args):
     """read and manage tldr entries for a given conversation
 
     * /bot tldr <number> - retrieve a specific numbered entry
@@ -66,14 +68,17 @@ def tldr(bot, event, *args):
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):
         tldr_echo = bot.memory.get_by_path(['conversations', event.conv_id, 'tldr_echo'])
     else:
-        tldr_echo = bot.get_config_option("tldr_echo")
+        tldr_echo = bot.config.get_option("tldr_echo")
 
     message, display = tldr_base(bot, event.conv_id, list(args))
 
     if display is True and tldr_echo_options[tldr_echo] is 'PM':
-        yield from bot.coro_send_to_user_and_conversation(event.user.id_.chat_id, event.conv_id, message, ("<i>{}, I've sent you the info in a PM</i>").format(event.user.full_name))
+        await bot.coro_send_to_user_and_conversation(
+            event.user.id_.chat_id, event.conv_id, message,
+            _("<i>{}, I've sent you the info in a PM</i>").format(
+                event.user.full_name))
     else:
-        yield from bot.coro_send_message(event.conv_id, message)
+        await bot.coro_send_message(event.conv_id, message)
 
 
 def tldr_shared(bot, args):
@@ -85,13 +90,13 @@ def tldr_shared(bot, args):
     :return:
     """
     if not isinstance(args, dict):
-        raise TypeError("args must be a dictionary")
+        raise Help("args must be a dictionary")
 
     if 'params' not in args:
-        raise KeyError("'params' key missing in args")
+        raise Help("'params' key missing in args")
 
     if 'conv_id' not in args:
-        raise KeyError("'conv_id' key missing in args")
+        raise Help("'conv_id' key missing in args")
 
     params = args['params']
     conv_id = args['conv_id']
@@ -127,7 +132,7 @@ def tldr_base(bot, conv_id, parameters):
                                                              conv_tldr[timestamp],
                                                              _time_ago(float(timestamp))))
 
-        if len(html) == 0:
+        if not html:
             html.append(_("TL;DR not found."))
             display = False
         else:
@@ -140,7 +145,7 @@ def tldr_base(bot, conv_id, parameters):
     conv_id_list = [conv_id]
 
     # Check to see if sync is active
-    syncouts = bot.get_config_option('sync_rooms')
+    syncouts = bot.config.get_option('sync_rooms')
 
     # If yes, then find out if the current room is part of one.
     # If it is, then add the rest of the rooms to the list of conversations to process

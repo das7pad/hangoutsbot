@@ -30,7 +30,7 @@ def _handle_autoreply(bot, event, command):
     if isinstance(event.conv_event, hangups.ChatMessageEvent):
         event_type = "MESSAGE"
     elif isinstance(event.conv_event, hangups.MembershipChangeEvent):
-        if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+        if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
             event_type = "JOIN"
         else:
             event_type = "LEAVE"
@@ -176,7 +176,7 @@ def _words_in_text(word, text):
     else:
         word = re.escape(word)
 
-    regexword = "(?<!\w)" + word + "(?!\w)"
+    regexword = r"(?<!\w)" + word + r"(?!\w)"
 
     return True if re.search(regexword, text, re.IGNORECASE) else False
 
@@ -242,7 +242,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 
     image_uri_lower = image_uri.lower()
 
-    if re.match("^(https?://)?([a-z0-9.]*?\.)?imgur.com/", image_uri_lower, re.IGNORECASE):
+    if re.match(r"^(https?://)?([a-z0-9.]*?\.)?imgur.com/", image_uri_lower, re.IGNORECASE):
         """imgur links can be supplied with/without protocol and extension"""
         probable_image_link = True
 

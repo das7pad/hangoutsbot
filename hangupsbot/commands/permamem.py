@@ -1,3 +1,4 @@
+# TODO(das7pad) refactor needed
 import logging
 
 import plugins
@@ -17,10 +18,10 @@ def dumpconv(bot, event, *args):
     all_conversations = bot.conversations.get().items()
     for convid, convdata in all_conversations:
         if text_search.lower() in convdata["title"].lower():
-            lines.append("`{}` <em>{}</em> {}<br />... `{}` history: {} <br />... <b>{}</b>".format(
+            lines.append("`{}` <em>{}</em> {}\n... `{}` history: {} \n... <b>{}</b>".format(
                 convid, convdata["source"], len(convdata["participants"]), convdata["type"], convdata["history"], convdata["title"]))
     lines.append("<b><em>Totals: {}/{}</em></b>".format(len(lines), len(all_conversations)))
-    yield from bot.coro_send_message(event.conv, "<br />".join(lines))
+    return "\n".join(lines)
 
 
 def dumpunknownusers(bot, event, *args):
@@ -37,7 +38,7 @@ def dumpunknownusers(bot, event, *args):
 
     logger.info("dumpunknownusers finished")
 
-    yield from bot.coro_send_message(event.conv, "<b>please see log/console</b>")
+    return "<b>please see log/console</b>"
 
 
 def resetunknownusers(bot, event, *args):
@@ -56,17 +57,17 @@ def resetunknownusers(bot, event, *args):
 
     logger.info("resetunknownusers finished")
 
-    yield from bot.coro_send_message(event.conv, "<b>please see log/console</b>")
+    return "<b>please see log/console</b>"
 
 
-def refreshusermemory(bot, event, *args):
+async def refreshusermemory(bot, event, *args):
     """refresh specified user chat ids with contact/getentitybyid"""
     logger.info("refreshusermemory started")
-    updated = yield from bot.conversations.get_users_from_query(args)
+    updated = await bot.conversations.get_users_from_query(args)
     logger.info("refreshusermemory {} updated".format(updated))
     logger.info("refreshusermemory ended")
 
-    yield from bot.coro_send_message(event.conv, "<b>please see log/console</b>")
+    return "<b>please see log/console</b>"
 
 
 def removeconvrecord(bot, event, *args):
@@ -77,7 +78,7 @@ def removeconvrecord(bot, event, *args):
             bot.conversations.remove(conv_id)
     logger.info("resetunknownusers finished")
 
-    yield from bot.coro_send_message(event.conv, "<b>please see log/console</b>")
+    return "<b>please see log/console</b>"
 
 
 def makeallusersindefinite(bot, event, *args):
@@ -94,4 +95,4 @@ def makeallusersindefinite(bot, event, *args):
 
     logger.info("makeallusersindefinite finished")
 
-    yield from bot.coro_send_message(event.conv, "<b>please see log/console</b>")
+    return "<b>please see log/console</b>"

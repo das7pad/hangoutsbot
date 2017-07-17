@@ -1,3 +1,4 @@
+# pylint: skip-file
 import aiohttp
 import asyncio
 import json
@@ -30,7 +31,7 @@ _externals = { "plugin_name": "slackBasic", # same plugin name in SlackAsyncList
 class SlackAsyncListener(AsyncRequestHandler):
     _slack_cache = {"user": {}, "channel": {}}
 
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         payload  = parse_qs(content)
 
         path = path.split("/")
@@ -64,14 +65,14 @@ class SlackAsyncListener(AsyncRequestHandler):
 
                     # cheat and use an an external variable to reach BridgeInstance
 
-                    yield from _externals['BridgeInstance']._send_to_internal_chat(
+                    await _externals['BridgeInstance']._send_to_internal_chat(
                         conv_id,
                         original_message,
                         {   "source_user": user,
                             "source_title": False })
 
     def _slack_label_users(self, text):
-        for fragment in re.findall("(<@([A-Z0-9]+)(\|[^>]*?)?>)", text):
+        for fragment in re.findall(r"(<@([A-Z0-9]+)(\|[^>]*?)?>)", text):
             """detect and map <@Uididid> and <@Uididid|namename>"""
             full_token = fragment[0]
             id = full_token[2:-1].split("|", maxsplit=1)[0]
@@ -88,7 +89,7 @@ class SlackAsyncListener(AsyncRequestHandler):
 
     def _slack_get_label(self, id, type_str):
         # hacky way to get the first token:
-        slack_sink_configuration = self._bot.get_config_option('slack')
+        slack_sink_configuration = self._bot.config.get_option('slack')
         token = slack_sink_configuration[0]["key"]
 
         prefix = "?"
@@ -157,14 +158,12 @@ class BridgeInstance(WebFramework):
 
         return applicable_configurations
 
-    @asyncio.coroutine
-    def _send_deferred_photo(self, image_link, relay_channels, client, slack_api_params):
+    async def _send_deferred_photo(self, image_link, relay_channels, client, slack_api_params):
         for relay_channel in relay_channels:
             logger.info("deferred post to {}".format(relay_channel))
             client.chat_post_message(relay_channel,  image_link, **slack_api_params)
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         conv_id = config["trigger"]
         relay_channels = config["config.json"][self.configkey]
 

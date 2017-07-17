@@ -1,3 +1,4 @@
+# pylint: skip-file
 import aiohttp
 import asyncio
 import json
@@ -29,7 +30,7 @@ class BridgeInstance(WebFramework):
 
         """
 
-        if not self.bot.get_config_option('syncing_enabled'):
+        if not self.bot.config.get_option('syncing_enabled'):
             return False
 
         self.load_configuration(self.configkey)
@@ -47,8 +48,7 @@ class BridgeInstance(WebFramework):
 
         return applicable_configurations
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         """external chats are just other hangout groups in the same group
         the triggered conv_id was removed by applicable_configuration()
             so we only need to relay to the remaining conv_ids listed
@@ -73,14 +73,14 @@ class BridgeInstance(WebFramework):
             # catch actual events with media link, upload it to get a valid image id
             if attach:
                 logger.info("media link in original event: {}".format(attach))
-                image_id = yield from self.bot.call_shared("image_upload_single", attach)
+                image_id = await self.bot.call_shared("image_upload_single", attach)
 
             """standard message relay"""
 
             formatted_message = self.format_incoming_message( message,
                                                               event.passthru["chatbridge"] )
 
-            yield from self.bot.coro_send_message(
+            await self.bot.coro_send_message(
                 relay_id,
                 formatted_message,
                 image_id = image_id,

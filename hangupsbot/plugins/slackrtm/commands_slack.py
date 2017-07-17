@@ -166,7 +166,7 @@ def hangoutmembers(slackbot, msg, args):
         for c in slackbot.bot.list_conversations():
             if c.id_ == sync.hangoutid:
                 conv = c
-                hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+                hangoutname = slackbot.bot.conversations.get_name(c)
                 break
         message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync.hangoutid)
         for u in conv.users:
@@ -201,7 +201,7 @@ def identify(slackbot, msg, args):
 
     _hangouts_uid = parameters.pop(0)
     hangups_user = hangoutsbot.get_hangups_user(_hangouts_uid)
-    if not hangups_user.definitionsource:
+    if hangups_user.is_default:
         slackbot.api_call(
             'chat.postMessage',
             channel = msg.channel,
@@ -228,7 +228,7 @@ def hangouts(slackbot, msg, args):
 
     message = '@%s: list of active hangouts:\n' % msg.username
     for c in slackbot.bot.list_conversations():
-        message += '*%s:* _%s_\n' % (slackbot.bot.conversations.get_name(c, truncate=True), c.id_)
+        message += '*%s:* _%s_\n' % (slackbot.bot.conversations.get_name(c), c.id_)
     userID = slackbot.get_slackDM(msg.user)
     slackbot.api_call(
         'chat.postMessage',
@@ -245,7 +245,7 @@ def listsyncs(slackbot, msg, args):
         hangoutname = 'unknown'
         for c in slackbot.bot.list_conversations():
             if c.id_ == sync.hangoutid:
-                hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+                hangoutname = slackbot.bot.conversations.get_name(c)
                 break
         message += '*%s (%s) : %s (%s)* _%s_\n' % (
             slackbot.get_channelgroupname(sync.channelid, 'unknown'),
@@ -282,7 +282,7 @@ def syncto(slackbot, msg, args):
     hangoutname = None
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -329,7 +329,7 @@ def disconnect(slackbot, msg, args):
     hangoutname = None
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -368,7 +368,7 @@ def setsyncjoinmsgs(slackbot, msg, args):
     enable = args[1]
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -429,7 +429,7 @@ def sethotag(slackbot, msg, args):
     hotag = ' '.join(args[1:])
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -489,7 +489,7 @@ def setimageupload(slackbot, msg, args):
     upload = args[1]
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -548,7 +548,7 @@ def setslacktag(slackbot, msg, args):
     slacktag = ' '.join(args[1:])
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -607,7 +607,7 @@ def showslackrealnames(slackbot, msg, args):
     realnames = args[1]
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -629,7 +629,7 @@ def showslackrealnames(slackbot, msg, args):
     elif realnames.lower() in ['false', 'off', 'n', 'no']:
         realnames = False
     else:
-        message += u'sorry, but "%s" is not "true" or "false"' % upload
+        message += u'sorry, but "%s" is not "true" or "false"' % realnames
         slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
@@ -666,7 +666,7 @@ def showhorealnames(slackbot, msg, args):
     realnames = args[1]
     for c in slackbot.bot.list_conversations():
         if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c, truncate=False)
+            hangoutname = slackbot.bot.conversations.get_name(c)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -684,7 +684,7 @@ def showhorealnames(slackbot, msg, args):
         channelname = '#%s' % slackbot.get_channelname(msg.channel)
 
     if realnames not in ['real', 'nick', 'both']:
-        message += u'sorry, but "%s" is not one of "real", "nick" or "both"' % upload
+        message += u'sorry, but "%s" is not one of "real", "nick" or "both"' % realnames
         slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 

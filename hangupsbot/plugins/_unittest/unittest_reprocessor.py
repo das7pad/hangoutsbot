@@ -1,46 +1,43 @@
 import asyncio
 
-import hangups
-
 import plugins
 
 
-def _initialise(bot):
-    plugins.register_admin_command(["testcoroutinecontext", "testnoncoroutinecontext"])
+def _initialise():
+    plugins.register_admin_command(["testcoroutinecontext",
+                                    "testnoncoroutinecontext"])
 
 
-def testcoroutinecontext(bot, event, *args):
+async def testcoroutinecontext(bot, event, *args):
     """test hidden context"""
-    yield from bot.coro_send_message(
+    await bot.coro_send_message(
         event.conv_id,
         "This message has hidden context",
-        context = { "reprocessor": bot.call_shared( "reprocessor.attach_reprocessor",
-                                                    coro_reprocess_the_event,
-                                                    return_as_dict=True )})
+        context={
+            "reprocessor": bot.call_shared("reprocessor.attach_reprocessor",
+                                           coro_reprocess_the_event)})
 
 
-def testnoncoroutinecontext(bot, event, *args):
+async def testnoncoroutinecontext(bot, event, *args):
     """test hidden context"""
-    yield from bot.coro_send_message(
+    await bot.coro_send_message(
         event.conv_id,
         "This message has hidden context",
-        context = { "reprocessor": bot.call_shared( "reprocessor.attach_reprocessor",
-                                                    reprocess_the_event,
-                                                    return_as_dict=True )})
+        context={
+            "reprocessor": bot.call_shared("reprocessor.attach_reprocessor",
+                                           reprocess_the_event)})
 
 
-@asyncio.coroutine
-def coro_reprocess_the_event(bot, event, id):
-    yield from bot.coro_send_message(
+async def coro_reprocess_the_event(bot, event, id):
+    await bot.coro_send_message(
         event.conv_id,
-        """<em>coroutine responding to message with uuid: {}</em><br />"""
+        """<em>coroutine responding to message with uuid: {}</em>\n"""
         """VISIBLE CONTENT WAS: {}""".format(id, event.text))
 
 
-def reprocess_the_event(bot, event, id):
-    asyncio.async(
+def reprocess_the_event(bot, event, id_):
+    asyncio.ensure_future(
         bot.coro_send_message(
             event.conv_id,
-            """<em>non-coroutine responding to message with uuid: {}</em><br />"""
-            """VISIBLE CONTENT WAS: {}""".format(id, event.text))
-    ).add_done_callback(lambda future: future.result())
+            """<em>non-coroutine responding to message with uuid: {}</em>\n"""
+            """VISIBLE CONTENT WAS: {}""".format(id_, event.text)))

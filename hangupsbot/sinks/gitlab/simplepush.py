@@ -20,8 +20,7 @@ class webhookReceiver(AsyncRequestHandler):
     """Receive REST API posts from GitLab"""
     _bot = None
 
-    @asyncio.coroutine
-    def process_request(self, path, dummy_query_string, content):
+    async def process_request(self, path, dummy_query_string, content):
         """Process a received POST to a given converstation"""
         path = path.split("/")
         conv_or_user_id = path[1]
@@ -82,4 +81,4 @@ class webhookReceiver(AsyncRequestHandler):
             logger.warning("%s: unknown gitlab webhook object kind", payload["object_kind"])
 
         if message:
-            yield from self.send_data(conv_or_user_id, "\n".join(message))
+            await self.send_data(conv_or_user_id, "\n".join(message))

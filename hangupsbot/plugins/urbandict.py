@@ -1,9 +1,8 @@
-#
-# Simple interface to urbandictionary.com
-#
-# Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
+"""Simple interface to urbandictionary.com
 
-import sys
+Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
+"""
+#TODO(das7pad) move to aiohttp for the requests
 
 from urllib.request import urlopen
 from urllib.parse import quote as urlquote
@@ -12,18 +11,10 @@ from html.parser import HTMLParser
 import plugins
 
 
-class TermType(object):
-    pass
-
-
-class TermTypeRandom(TermType):
-    pass
-
-
 class UrbanDictParser(HTMLParser):
 
     def __init__(self, *args, **kwargs):
-        HTMLParser.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._section = None
         self.translations = []
 
@@ -72,8 +63,7 @@ def urbandict(bot, event, *args):
     if not term:
         url = "http://www.urbandictionary.com/random.php"
     else:
-        url = "http://www.urbandictionary.com/define.php?term=%s" % \
-              urlquote(term)
+        url = "http://www.urbandictionary.com/define.php?term=" + urlquote(term)
 
     f = urlopen(url)
     data = f.read().decode('utf-8')
@@ -85,22 +75,26 @@ def urbandict(bot, event, *args):
         # apparently, nothing was returned
         pass
 
-    if len(urbanDictParser.translations) > 0:
+    if urbanDictParser.translations:
         html_text = ""
         the_definition = urbanDictParser.translations[0]
-        html_text += '<b>"' + the_definition["word"] + '"</b><br /><br />'
+        html_text += '<b>"' + the_definition["word"] + '"</b>\n\n'
         if "def" in the_definition:
-            html_text += _("<b>definition:</b> ") + the_definition["def"].strip().replace("\n", "<br />") + '<br /><br />'
+            html_text += _("<b>definition:</b> ")
+            html_text += the_definition["def"].strip()
+            html_text += '\n\n'
         if "example" in the_definition:
-            html_text += _("<b>example:</b> ") + the_definition["example"].strip().replace("\n", "<br />")
+            html_text += _("<b>example:</b> ")
+            html_text += the_definition["example"].strip()
 
-        yield from bot.coro_send_message(event.conv, html_text)
+        return html_text
     else:
         if term:
-            yield from bot.coro_send_message(event.conv, _('<i>no urban dictionary definition for "{}"</i>').format(term))
+            return _('<i>no urban dictionary definition for "{}"</i>').format(
+                term)
         else:
-            yield from bot.coro_send_message(event.conv, _('<i>no term from urban dictionary</i>'))
+            return _('<i>no term from urban dictionary</i>')
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["urbandict"])

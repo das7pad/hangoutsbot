@@ -1,89 +1,95 @@
+"""Hangups Events to Hangupsbot event mapping
+
+the following events provide the properties that are in general needed to
+identify a user of a message, the message content and the conversation
+"""
+#pylint: disable=too-few-public-methods, too-many-instance-attributes
+
 import logging
 
-import hangups
+from hangups import TYPING_TYPE_STARTED, TYPING_TYPE_PAUSED, ChatMessageEvent
 
+from hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 
 
 class GenericEvent:
+    """base event that sets logging
+
+    Args:
+        conv_event: an event instance from hangups.conversation_event or
+         one of hangups.parsers.{TypingStatusMessage, WatermarkNotification}
+        conv_id: string, conversation indentifier
+    """
     bot = None
-    emit_log = logging.INFO
-
-    def __init__(self, bot):
-        self.bot = bot
-
-
-class StatusEvent(GenericEvent):
-    """base class for all non-ConversationEvent"""
-
-    def __init__(self, bot, state_update_event):
-        super().__init__(bot)
-
-        self.conv_event = state_update_event
-        self.conv_id = state_update_event.conversation_id.id
-        self.conv = None
+    def __init__(self, conv_event, conv_id):
+        self.conv_event = conv_event
+        self.conv_id = conv_id
+        self.conv = HangupsConversation(self.bot, self.conv_id)
         self.event_id = None
-        self.user_id = None
-        self.user = None
+        self.user_id = conv_event.user_id
+        self.user = self.bot.get_hangups_user(self.user_id)
         self.timestamp = None
         self.text = ''
-        self.from_bot = False
+        self.from_bot = self.user.is_self
+
+    def __str__(self):
+        return ("%s: %s@%s [%s]: %s" %
+                (self.__class__.__name__, self.user_id.chat_id, self.conv_id,
+                 self.timestamp.astimezone().strftime('%Y-%m-%d %H:%M:%S'),
+                 self.text))
 
 
-class TypingEvent(StatusEvent):
-    """user starts/pauses/stops typing"""
+class TypingEvent(GenericEvent):
+    """user starts/pauses/stops typing
 
-    def __init__(self, bot, state_update_event):
-        super().__init__(bot, state_update_event)
-
-        self.conv_event = hangups.parsers.parse_typing_status_message(state_update_event)
-
-        self.user_id = state_update_event.sender_id
+    Args:
+        state_update_event: hangups.parsers.TypingStatusMessage instance
+    """
+    def __init__(self, state_update_event):
+        super().__init__(state_update_event, state_update_event.conv_id)
         self.timestamp = state_update_event.timestamp
-        self.user = self.bot.get_hangups_user(state_update_event.sender_id)
-        if self.user.is_self:
-            self.from_bot = True
-        self.text = "typing"
+        status = state_update_event.status
+        self.text = ('typing started' if status == TYPING_TYPE_STARTED
+                     else 'typing paused' if status == TYPING_TYPE_PAUSED
+                     else 'typing stopped')
 
 
-class WatermarkEvent(StatusEvent):
-    """user reads up to a certain point in the conversation"""
+class WatermarkEvent(GenericEvent):
+    """user reads up to a certain point in the conversation
 
-    def __init__(self, bot, state_update_event):
-        super().__init__(bot, state_update_event)
-
-        self.conv_event =  hangups.parsers.parse_watermark_notification(state_update_event)
-
-        self.user_id = state_update_event.sender_id
-        self.timestamp = state_update_event.latest_read_timestamp
-        self.user = self.bot.get_hangups_user(state_update_event.sender_id)
-        if self.user.is_self:
-            self.from_bot = True
+    Args:
+        state_update_event: hangups.parsers.WatermarkNotification instance
+    """
+    def __init__(self, state_update_event):
+        super().__init__(state_update_event, state_update_event.conv_id)
+        self.timestamp = state_update_event.read_timestamp
         self.text = "watermark"
 
 
 class ConversationEvent(GenericEvent):
-    """user joins, leaves, renames or messages a conversation"""
+    """user joins, leaves, renames or messages a conversation
 
-    def __init__(self, bot, conv_event):
-        super().__init__(bot)
+    Args:
+        conv_event: an event instance from hangups.conversation_event
+    """
+    def __init__(self, conv_event):
+        super().__init__(conv_event, conv_event.conversation_id)
 
-        self.conv_event = conv_event
-        self.conv_id = conv_event.conversation_id
-        self.conv = self.bot._conv_list.get(self.conv_id)
         self.event_id = conv_event.id_
-        self.user_id = conv_event.user_id
-        self.user = self.conv.get_user(self.user_id)
         self.timestamp = conv_event.timestamp
-        self.text = conv_event.text.strip() if isinstance(conv_event, hangups.ChatMessageEvent) else ''
-
+        self.text = (conv_event.text.strip()
+                     if isinstance(conv_event, ChatMessageEvent)
+                     else '')
         self.log()
 
-
     def log(self):
-        if logger.isEnabledFor(self.emit_log):
-            logger.log(self.emit_log, 'eid/dt: {}/{}'.format(self.event_id, self.timestamp.astimezone(tz=None).strftime('%Y-%m-%d %H:%M:%S')))
-            logger.log(self.emit_log, 'cid/cn: {}/{}'.format(self.conv_id, self.bot.conversations.get_name(self.conv)))
-            logger.log(self.emit_log, 'c/g/un: {}/{}/{}'.format(self.user_id.chat_id, self.user_id.gaia_id, self.user.full_name))
-            logger.log(self.emit_log, 'len/tx: {}/{}'.format(len(self.text), self.text))
+        """log meta of the event"""
+        logger.info('eid/dt: %s/%s', self.event_id,
+                    self.timestamp.astimezone().strftime('%Y-%m-%d %H:%M:%S'))
+        logger.info('cid/cn: %s/%s',
+                    self.conv_id, self.bot.conversations.get_name(self.conv))
+        logger.info('  c/un: %s/%s',
+                    self.user_id.chat_id, self.user.full_name)
+        logger.info('len/tx: %s/%s', len(self.text), self.text)

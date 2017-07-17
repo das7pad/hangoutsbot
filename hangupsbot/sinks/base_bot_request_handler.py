@@ -1,3 +1,4 @@
+# pylint: skip-file
 import asyncio, base64, io, imghdr, json, logging, time
 
 from http.server import BaseHTTPRequestHandler
@@ -41,21 +42,19 @@ class BaseBotRequestHandler(BaseHTTPRequestHandler):
 
         # process the payload
         try:
-            asyncio.async(
-                self.process_request(path, query_string, content)
-            ).add_done_callback(lambda future: future.result())
+            asyncio.ensure_future(
+                self.process_request(path, query_string, content))
 
         except Exception as e:
             logger.exception(e)
 
 
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         """default handler for incoming request
         path should contain a conversation id e.g. http://localhost/XXXXXXXXXXX/
         content is a valid json string with keys:
             echo                text string
-            image 
+            image
                 base64encoded   base64-encoded image data
                 filename        optional filename (else determined automatically via imghdr)
         """
@@ -90,11 +89,10 @@ class BaseBotRequestHandler(BaseHTTPRequestHandler):
             logger.error("{}: nothing to send".format(self.sinkname))
             return
 
-        yield from self.send_data(conversation_id, text, image_data=image_data, image_filename=image_filename)
+        await self.send_data(conversation_id, text, image_data=image_data, image_filename=image_filename)
 
 
-    @asyncio.coroutine
-    def send_data(self, conversation_id, text, image_data=None, image_filename=None, context=None):
+    async def send_data(self, conversation_id, text, image_data=None, image_filename=None, context=None):
         """sends text and/or image to a conversation
         image_filename is recommended but optional, fallbacks to <timestamp>.jpg if undefined
         process_request() should determine the image extension prior to this
@@ -105,13 +103,13 @@ class BaseBotRequestHandler(BaseHTTPRequestHandler):
                 image_filename = str(int(time.time())) + ".jpg"
                 logger.warning("fallback image filename: {}".format(image_filename))
 
-            image_id = yield from self._bot._client.upload_image(image_data, filename=image_filename)
+            image_id = await self._bot._client.upload_image(image_data, filename=image_filename)
 
         if not text and not image_id:
             logger.error("{}: nothing to send".format(self.sinkname))
             return
 
-        yield from self._bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
+        await self._bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
 
 
     def log_error(self, format_string, *args):
@@ -135,11 +133,10 @@ class AsyncRequestHandler:
         router.add_route("POST", "/{convid}", self.adapter_do_POST)
         router.add_route("POST", "/{convid}/", self.adapter_do_POST)
 
-    @asyncio.coroutine
-    def adapter_do_POST(self, request):
-        raw_content = yield from request.content.read()
+    async def adapter_do_POST(self, request):
+        raw_content = await request.content.read()
 
-        results = yield from self.process_request( request.path,
+        results = await self.process_request( request.path,
                                                    parse_qs(request.query_string),
                                                    raw_content.decode("utf-8") )
 
@@ -152,8 +149,7 @@ class AsyncRequestHandler:
 
         return web.Response(body=results, content_type=content_type)
 
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         payload = json.loads(content)
 
         path = path.split("/")
@@ -182,12 +178,11 @@ class AsyncRequestHandler:
         if not text and not image_data:
             raise ValueError("nothing to send")
 
-        results = yield from self.send_data(conversation_id, text, image_data=image_data, image_filename=image_filename)
+        results = await self.send_data(conversation_id, text, image_data=image_data, image_filename=image_filename)
 
         return results
 
-    @asyncio.coroutine
-    def send_data(self, conversation_id, text, image_data=None, image_filename=None, context=None):
+    async def send_data(self, conversation_id, text, image_data=None, image_filename=None, context=None):
         """sends text and/or image to a conversation
         image_filename is recommended but optional, fallbacks to <timestamp>.jpg if undefined
         process_request() should determine the image extension prior to this
@@ -198,10 +193,10 @@ class AsyncRequestHandler:
                 image_filename = str(int(time.time())) + ".jpg"
                 logger.warning("fallback image filename: {}".format(image_filename))
 
-            image_id = yield from self.bot._client.upload_image(image_data, filename=image_filename)
+            image_id = await self.bot._client.upload_image(image_data, filename=image_filename)
 
         if not text and not image_id:
             raise ValueError("nothing to send")
 
-        results = yield from self.bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
+        results = await self.bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
         return "OK"

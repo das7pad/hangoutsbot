@@ -1,16 +1,20 @@
-import asyncio, functools, logging, os, ssl
-
-from aiohttp import web
-from threading import Thread
+#TODO(das7pad) refactor of aiohttp_start needed, it uses asyncio.async
+#TODO(das7pad) add documentation
+import asyncio
+import functools
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from utils import class_from_name
-
-from sinks.base_bot_request_handler import BaseBotRequestHandler, AsyncRequestHandler
-
+import logging
+import os
+import ssl
 import threadmanager
 
-from plugins import tracking
+from aiohttp import web
 
+from plugins import tracking
+from utils import class_from_name
+
+# pylint: disable=unused-import
+from .base_bot_request_handler import AsyncRequestHandler, BaseBotRequestHandler
 
 logger = logging.getLogger(__name__)
 
@@ -20,89 +24,96 @@ aiohttp_servers = []
 def start(bot):
     shared_loop = asyncio.get_event_loop()
 
-    jsonrpc_sinks = bot.get_config_option('jsonrpc')
-    itemNo = -1
+    jsonrpc_sinks = bot.config.get_option('jsonrpc')
+    if not isinstance(jsonrpc_sinks, list):
+        return
+
+    item_no = -1
 
     threadcount = 0
     aiohttpcount = 0
 
-    if isinstance(jsonrpc_sinks, list):
-        for sinkConfig in jsonrpc_sinks:
-            itemNo += 1
+    for sink_config in jsonrpc_sinks:
+        item_no += 1
 
-            try:
-                module = sinkConfig["module"].split(".")
-                if len(module) < 3:
-                    logger.error("config.jsonrpc[{}].module should have at least 3 packages {}".format(itemNo, module))
-                    continue
-
-                module_name = ".".join(module[0:-1])
-                class_name = ".".join(module[-1:])
-                if not module_name or not class_name:
-                    logger.error("config.jsonrpc[{}].module must be a valid package name".format(itemNo))
-                    continue
-
-                certfile = sinkConfig.get("certfile")
-                if certfile and not os.path.isfile(certfile):
-                    logger.error("config.jsonrpc[{}].certfile not available at {}".format(itemNo, certfile))
-                    continue
-
-                name = sinkConfig["name"]
-                port = sinkConfig["port"]
-            except KeyError as e:
-                logger.error("config.jsonrpc[{}] missing keyword".format(itemNo), e)
+        try:
+            module = sink_config["module"].split(".")
+            if len(module) < 3:
+                logger.error("config.jsonrpc[%s].module should have at least 3"
+                             " packages %s", item_no, module)
                 continue
 
-            try:
-                handler_class = class_from_name(module_name, class_name)
-
-            except (AttributeError, ImportError) as e:
-                logger.error("not found: {} {}".format(module_name, class_name))
+            module_name = ".".join(module[0:-1])
+            class_name = ".".join(module[-1:])
+            if not module_name or not class_name:
+                logger.error("config.jsonrpc[%s].module must be a valid package"
+                             " name", item_no)
                 continue
 
-            # start up rpc listener in a separate thread
+            certfile = sink_config.get("certfile")
+            if certfile and not os.path.isfile(certfile):
+                logger.error("config.jsonrpc[%s].certfile not available at %s",
+                             item_no, certfile)
+                continue
 
-            logger.debug("starting sink: {}".format(module))
+            name = sink_config["name"]
+            port = sink_config["port"]
+        except KeyError as err:
+            logger.error("config.jsonrpc[%s] missing keyword %s", item_no, err)
+            continue
 
-            if issubclass(handler_class, AsyncRequestHandler):
-                aiohttp_start(
-                    bot,
-                    name,
-                    port,
-                    certfile,
-                    handler_class,
-                    "json-rpc")
+        try:
+            handler_class = class_from_name(module_name, class_name)
 
-                aiohttpcount = aiohttpcount + 1
+        except (AttributeError, ImportError):
+            logger.error("not found: %s %s", module_name, class_name)
+            continue
 
-            else:
-                threadmanager.start_thread(start_listening, args=(
-                    bot,
-                    shared_loop,
-                    name,
-                    port,
-                    certfile,
-                    handler_class,
-                    module_name))
+        # start up rpc listener in a separate thread
 
-                threadcount = threadcount + 1
+        logger.debug("starting sink: %s", module)
+
+        if issubclass(handler_class, AsyncRequestHandler):
+            aiohttp_start(
+                bot,
+                name,
+                port,
+                certfile,
+                handler_class,
+                "json-rpc")
+
+            aiohttpcount = aiohttpcount + 1
+
+        else:
+            threadmanager.start_thread(start_listening, args=(
+                bot,
+                shared_loop,
+                name,
+                port,
+                certfile,
+                handler_class,
+                module_name))
+
+            threadcount = threadcount + 1
 
     if threadcount:
-        logger.info("{} threaded listener(s)".format(threadcount))
+        logger.info("%s threaded listener(s)", threadcount)
 
     if aiohttpcount:
-        logger.info("{} aiohttp web listener(s)".format(aiohttpcount))
+        logger.info("%s aiohttp web listener(s)", aiohttpcount)
 
 
-def start_listening(bot=None, loop=None, name="", port=8000, certfile=None, webhookReceiver=BaseHTTPRequestHandler, friendlyName="UNKNOWN"):
+def start_listening(bot=None, loop=None, name="", port=8000, certfile=None,
+                    webhook_receiver=BaseHTTPRequestHandler,
+                    friendly_name="UNKNOWN"):
     if loop:
         asyncio.set_event_loop(loop)
 
     if bot:
-        webhookReceiver._bot = bot
+        webhook_receiver._bot = bot
 
     try:
-        httpd = HTTPServer((name, port), webhookReceiver)
+        httpd = HTTPServer((name, port), webhook_receiver)
 
         if certfile:
             httpd.socket = ssl.wrap_socket(
@@ -110,28 +121,29 @@ def start_listening(bot=None, loop=None, name="", port=8000, certfile=None, webh
                 certfile=certfile,
                 server_side=True)
 
-        sa = httpd.socket.getsockname()
+        socket = httpd.socket.getsockname()
 
-        logger.info("{} : {}:{}...".format(friendlyName, sa[0], sa[1]))
+        logger.info("%s : %s:%s...", friendly_name, socket[0], socket[1])
 
         httpd.serve_forever()
 
-    except ssl.SSLError as e:
-        logger.exception("{} : {}:{}, pem file is invalid/corrupt".format(friendlyName, name, port))
+    except ssl.SSLError:
+        logger.exception("%s : %s:%s, pem file is invalid/corrupt",
+                         friendly_name, name, port)
 
-    except OSError as e:
-        if e.errno == 2:
+    except OSError as err:
+        if err.errno == 2:
             message = ".pem file is missing/unavailable"
-        elif e.errno == 98:
+        elif err.errno == 98:
             message = "address/port in use"
         else:
-            message = e.strerror
+            message = str(err.strerror)
 
-        logger.exception("{} : {}:{}, {}".format(friendlyName, name, port, message))
+        logger.exception("%s : %s:%s, %s", friendly_name, name, port, message)
 
         try:
             httpd.socket.close()
-        except Exception as e:
+        except:
             pass
 
     except KeyboardInterrupt:
@@ -139,11 +151,12 @@ def start_listening(bot=None, loop=None, name="", port=8000, certfile=None, webh
 
 
 
-def aiohttp_start(bot, name, port, certfile, RequestHandlerClass, group, callback=None):
-    RequestHandler = RequestHandlerClass(bot)
+def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
+                  callback=None):
+    requesthandler = requesthandlerclass(bot)
 
     app = web.Application()
-    RequestHandler.addroutes(app.router)
+    requesthandler.addroutes(app.router)
 
     handler = app.make_handler()
 
@@ -156,11 +169,9 @@ def aiohttp_start(bot, name, port, certfile, RequestHandlerClass, group, callbac
     loop = asyncio.get_event_loop()
     server = loop.create_server(handler, name, port, ssl=sslcontext)
 
-    asyncio.async(server).add_done_callback(functools.partial( aiohttp_started,
-                                                               handler=handler,
-                                                               app=app,
-                                                               group=group,
-                                                               callback=callback ))
+    asyncio.async(server).add_done_callback(
+        functools.partial(aiohttp_started, handler=handler, app=app,
+                          group=group, callback=callback))
 
     tracking.register_aiohttp_web(group)
 
@@ -170,7 +181,7 @@ def aiohttp_started(future, handler, app, group, callback=None):
 
     aiohttp_servers.append(constructors)
 
-    logger.info("aiohttp: {} on {}".format(group, server.sockets[0].getsockname()))
+    logger.info("aiohttp: %s on %s", group, server.sockets[0].getsockname())
 
     if callback:
         callback(constructors)
@@ -186,18 +197,17 @@ def aiohttp_list(groups):
 
     return filtered
 
-@asyncio.coroutine
-def aiohttp_terminate(groups):
+async def aiohttp_terminate(groups):
     removed = []
     for constructors in aiohttp_list(groups):
-        [server, handler, app, group] = constructors
+        [server, handler, app, dummy] = constructors
 
-        yield from handler.finish_connections(1.0)
+        await handler.finish_connections(1.0)
         server.close()
-        yield from server.wait_closed()
-        yield from app.cleanup()
+        await server.wait_closed()
+        await app.finish()
 
-        logger.info("aiohttp: terminating {} {}".format(constructors[3], constructors))
+        logger.info("aiohttp: terminating %s %s", constructors[3], constructors)
         removed.append(constructors)
 
     for constructors in removed:

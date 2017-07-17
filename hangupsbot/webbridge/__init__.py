@@ -1,3 +1,4 @@
+# pylint: skip-file
 import asyncio
 import logging
 import uuid
@@ -7,7 +8,6 @@ from collections import namedtuple
 from hangups import ChatMessageEvent
 
 import plugins
-import threadmanager
 
 from parsers.markdown import html_to_hangups_markdown
 
@@ -33,10 +33,11 @@ FakeUserID = namedtuple( 'userID', [ 'chat_id',
 
 class WebFramework:
     instance_number = 0
+    _closed = True
 
-    def __init__(self, bot, configkey, RequestHandler=IncomingRequestHandler, extra_metadata={}):
-        self.uid = False
-        self.plugin_name = False
+    def __init__(self, bot, configkey, RequestHandler=IncomingRequestHandler):
+        self.uid = None
+        self.plugin_name = None
 
         self.bot = self._bot = bot
         self.configkey = configkey
@@ -50,23 +51,30 @@ class WebFramework:
             logger.warning("plugin_name not defined in code, not running")
             return
 
-        if not self.uid:
-            self.uid = "{}-{}".format(self.plugin_name, WebFramework.instance_number)
+        if self.uid is None:
+            self.uid = "%s-%s" % (self.plugin_name, self.instance_number)
             WebFramework.instance_number = WebFramework.instance_number + 1
 
-        extra_metadata.update({ "bridge.uid": self.uid })
-
-        self._handler_broadcast = plugins.register_handler(self._broadcast, type="sending", extra_metadata=extra_metadata)
-        self._handler_repeat = plugins.register_handler(self._repeat, type="allmessages", extra_metadata=extra_metadata)
-
+        asyncio.ensure_future(self._register_handlers())
         self.start_listening(bot)
 
+    async def _register_handlers(self):
+        """register the handlers to send and receive messages"""
+        await plugins.tracking.start({'module.path': self.uid})
+        self._closed = False
+        plugins.register_handler(self._broadcast, "sending")
+        plugins.register_handler(self._repeat, "message")
+        plugins.tracking.end()
+
     def close(self):
-        plugins.deregister_handler(self._handler_broadcast, type="sending")
-        plugins.deregister_handler(self._handler_repeat, type="allmessages")
+        """deregister the handlers to send and receive messages"""
+        if self._closed:
+            return
+        asyncio.ensure_future(plugins.unload(self.uid))
+        self._closed = True
 
     def load_configuration(self, configkey):
-        self.configuration = self.bot.get_config_option(self.configkey) or []
+        self.configuration = self.bot.config.get_option(self.configkey) or []
         return self.configuration
 
     def setup_plugin(self):
@@ -99,8 +107,7 @@ class WebFramework:
 
         return applicable_configurations
 
-    @asyncio.coroutine
-    def _broadcast(self, bot, broadcast_list, context):
+    async def _broadcast(self, bot, broadcast_list, context):
         conv_id = broadcast_list[0][0]
         message = broadcast_list[0][1]
         image_id = broadcast_list[0][2]
@@ -145,7 +152,7 @@ class WebFramework:
         else:
             """bot is raising an event that needs to be repeated
 
-            only the first handler to run will assign all the variables 
+            only the first handler to run will assign all the variables
                 we need for the other bridges to work"""
 
             logger.info("hangouts bot raised an event, first seen by {}, {}".format(self.plugin_name, self.uid))
@@ -165,15 +172,14 @@ class WebFramework:
 
         # for messages from other plugins, relay them
         for config in applicable_configurations:
-            yield from self._send_to_external_chat(
+            await self._send_to_external_chat(
                 config,
                 FakeEvent(
                     text = message,
                     user = user,
                     passthru = passthru ))
 
-    @asyncio.coroutine
-    def _repeat(self, bot, event, command):
+    async def _repeat(self, bot, event, command):
         conv_id = event.conv_id
 
         applicable_configurations = self.applicable_configuration(conv_id)
@@ -202,7 +208,7 @@ class WebFramework:
         if "original_request" not in passthru:
             """user has raised an event that needs to be repeated
 
-            only the first handler to run will assign all the variables 
+            only the first handler to run will assign all the variables
                 we need for the other bridges to work"""
 
             logger.info("hangouts user raised an event, first seen by {}".format(self.plugin_name))
@@ -254,14 +260,12 @@ class WebFramework:
                                        "source_plugin": self.plugin_name }
 
         for config in applicable_configurations:
-            yield from self._send_to_external_chat(config, event)
+            await self._send_to_external_chat(config, event)
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         pass
 
-    @asyncio.coroutine
-    def _send_to_internal_chat(self, conv_id, message, external_context, image_id=None):
+    async def _send_to_internal_chat(self, conv_id, message, external_context, image_id=None):
         formatted_message = self.format_incoming_message(message, external_context)
 
         source_user = self.plugin_name
@@ -305,7 +309,7 @@ class WebFramework:
 
         logger.info("{}:receive:{}".format(self.plugin_name, passthru))
 
-        yield from self.bot.coro_send_message(
+        await self.bot.coro_send_message(
             conv_id,
             formatted_message,
             image_id = image_id,
@@ -346,7 +350,7 @@ class WebFramework:
         else:
             chat_id = user.id_.chat_id
             permauser = self.bot.get_hangups_user(chat_id)
-            nickname = self.bot.get_memory_suboption(chat_id, 'nickname') or None
+            nickname = self.bot.user_memory_get(chat_id, 'nickname')
             if isinstance(permauser, dict):
                 full_name = permauser["full_name"]
                 if "photo_url" in permauser:

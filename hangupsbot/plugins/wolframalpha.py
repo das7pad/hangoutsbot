@@ -1,59 +1,98 @@
-"""
-simple "ask" function for wolfram alpha data
+"""simple "ask" function for wolfram alpha data
+
 credit goes to @billius for the original plugin
 
 instructions:
 * pip3 install wolframalpha
 * get API KEY from http://products.wolframalpha.com/developers/
 * put API KEY in config.json:wolframalpha-apikey
+
+async rewrite: @das7pad
 """
 
-import wolframalpha
-import plugins
 import logging
+
+import aiohttp
+import wolframalpha
+
+import plugins
 
 logger = logging.getLogger(__name__)
 
-_internal = {}
-
+API_URL = "https://api.wolframalpha.com/v2/query"
 
 def _initialise(bot):
-    apikey = bot.get_config_option("wolframalpha-apikey")
-    if apikey:
-        _internal["client"] = wolframalpha.Client(apikey)
+    """register the user command"""
+    if _api_token(bot):
         plugins.register_user_command(["ask"])
     else:
-        logger.error('WOLFRAMALPHA: config["wolframalpha-apikey"] required')
+        logger.info('WOLFRAMALPHA: config["wolframalpha-apikey"] required')
 
+def _api_token(bot):
+    """get the configured api token
 
-def ask(bot, event, *args):
-    """request data from wolfram alpha"""
+    Args:
+        bot: HangupsBot instance
 
-    if not len(args):
-        yield from bot.coro_send_message(event.conv,
-                _("You need to ask WolframAlpha a question"))
-        return
+    Returns:
+        string, the configured app id or None if no id is available
+    """
+    return bot.config.get_option("wolframalpha-apikey")
 
-    keyword = ' '.join(args)
-    res = _internal["client"].query(keyword)
+async def ask(bot, dummy, *args):
+    """solve a question with wolfram alpha"""
+    result = await _fetch(bot, args)
+    return result
 
-    html = '<b>"{}"</b><br /><br />'.format(keyword)
+async def _fetch(bot, args):
+    """fetch data from wolframalpha and parse the response
+
+    Args:
+        bot: HangupsBot instance
+        args: tuple of string, query for wolframalpha
+
+    Returns:
+        string, the parsed result or an error message
+    """
+    if not args:
+        return _("You need to ask WolframAlpha a question")
+
+    query = ' '.join(args)
+    parameters = {'appid': _api_token(bot), 'input': query}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(API_URL, params=parameters) as resp:
+            body = await resp.read()
+
+    result = wolframalpha.Result(body)
+    if not result.get('@success'):
+        return _('Bad request!')
+
+    if not result.get('pod'):
+        return _('Bad response from WolframAlpha, retry or change your query!')
+
+    html = ['WolframAlpha solved the query <b>"{}"</b>\n'.format(query)]
 
     has_content = False
-    for pod in res.pods:
-        if pod.title:
-            html += "<b>{}:</b> ".format(pod.title)
+    try:
+        for pod in result.pods:
+            if pod.title:
+                html.append("<b>{}:</b> ".format(pod.title))
 
-        if pod.text and pod.text.strip():
-            html += pod.text.strip().replace("\n", "<br />") + "<br />"
-            has_content = True
-        else:
-            for node in pod.node.iter():
-                if node.tag == "img":
-                    html += '<a href="' + node.attrib["src"] + '">' + node.attrib["src"] + "</a><br />"
-                    has_content = True
+            if pod.text and pod.text.strip():
+                html.append(pod.text.strip())
+                has_content = True
+            elif 'subpod' in pod:
+                for subpod in pod.subpods:
+                    if 'img' in subpod:
+                        html.append(_("%s") % (subpod['img'].get('@src')
+                                               or subpod['img'].get('@alt')))
+                        has_content = True
+    except AttributeError:
+        # API Change
+        html.append("\n...")
 
-    if not has_content:
-        html = _("<i>Wolfram Alpha did not return any useful data</i>")
+    if has_content:
+        return '\n'.join(html)
 
-    yield from bot.coro_send_message(event.conv, html)
+    return _("<i>Wolfram Alpha did not return any useful data</i>")

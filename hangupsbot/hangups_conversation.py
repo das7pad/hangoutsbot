@@ -1,252 +1,210 @@
-import asyncio, logging, time
-
-from collections import namedtuple
+"""enhanced hangups conversation that supports a fallback to cached data"""
+import logging
+import time
 
 import hangups
-
-import hangups_shim
-
-from utils import ( simple_parse_to_segments,
-                    segment_to_html )
-
+from hangups import hangouts_pb2
 
 logger = logging.getLogger(__name__)
 
 
-ConversationID = namedtuple('conversation_id', ['id', 'id_'])
-
-ClientConversation = namedtuple( 'client_conversation',
-                                 [ 'conversation_id',
-                                   'current_participant',
-                                   'name',
-                                   'otr_status',
-                                   'participant_data',
-                                   'read_state',
-                                   'self_conversation_state',
-                                    'type_' ])
-
-ParticipantData = namedtuple( 'participant_data',
-                              [ 'fallback_name',
-                                'id_' ])
-
-LastRead = namedtuple( "read_state",
-                       [ 'last_read_timestamp',
-                         'participant_id' ])
-
-LatestRead = namedtuple( "self_read_state",
-                         [ "latest_read_timestamp",
-                           "participant_id" ])
-
-SelfConversationState = namedtuple( 'self_conversation_state',
-                                    [ 'active_timestamp',
-                                      'invite_timestamp',
-                                      'inviter_id',
-                                      'notification_level',
-                                      'self_read_state',
-                                      'sort_timestamp',
-                                      'status',
-                                      'view' ])
-
-
 class HangupsConversation(hangups.conversation.Conversation):
-    bot = None
+    """Conversation with fallback to permamem
+
+    Args:
+        bot: HangupsBot instance
+        conv_id: string, Hangouts conversation identifier
+    """
+    __slots__ = ('bot', '_client', '_user_list', '_conv_list')
 
     def __init__(self, bot, conv_id):
+        # pylint: disable=protected-access
+
         self.bot = bot
         self._client = bot._client
+        self._user_list = bot._user_list
+        self._conv_list = bot._conv_list
+        # retrieve the conversation record from hangups, if available
+        try:
+            conversation = self._conv_list.get(conv_id)._conversation
+            super().__init__(self._client, self._user_list, conversation, [])
+            return
+        except KeyError:
+            logger.debug("%s not found in conv list", conv_id)
 
         # retrieve the conversation record from permamem
-        permamem_conv = bot.conversations.catalog[conv_id]
-
-        # retrieve the conversation record from hangups, if available
-        hangups_conv = False
-        if conv_id in bot._conv_list._conv_dict:
-            hangups_conv = bot._conv_list._conv_dict[conv_id]._conversation
+        try:
+            permamem_conv = bot.conversations[conv_id]
+        except KeyError:
+            logger.warning("%s not found in permamem", conv_id)
+            permamem_conv = {
+                "title": "I GOT KICKED",
+                "type": "GROUP",
+                "history": False,
+                "status": "DEFAULT",
+                "link_sharing": False,
+                "participants": [],
+            }
 
         # set some basic variables
-        bot_user = bot.user_self()
-        timestamp_now = int(time.time() * 1000000)
+        bot_chat_id = bot.user_self()["chat_id"]
 
-        if permamem_conv["history"]:
-            otr_status = hangups_shim.schemas.OffTheRecordStatus.ON_THE_RECORD
-        else:
-            otr_status = hangups_shim.schemas.OffTheRecordStatus.OFF_THE_RECORD
+        otr_status = (hangouts_pb2.OFF_THE_RECORD_STATUS_ON_THE_RECORD
+                      if permamem_conv["history"] else
+                      hangouts_pb2.OFF_THE_RECORD_STATUS_OFF_THE_RECORD)
 
-        if permamem_conv["type"] == "GROUP":
-            type_ = hangups_shim.schemas.ConversationType.GROUP
-        else:
-            type_ = hangups_shim.schemas.ConversationType.STICKY_ONE_TO_ONE
+        status = (hangouts_pb2.CONVERSATION_STATUS_INVITED
+                  if permamem_conv["status"] == "INVITED" else
+                  hangouts_pb2.CONVERSATION_STATUS_ACTIVE)
 
         current_participant = []
         participant_data = []
         read_state = []
+        now = int(time.time() * 1000000)
 
-        participants = permamem_conv["participants"][:] # use a clone
-        participants.append(bot_user["chat_id"])
-        participants = set(participants)
-        for chat_id in participants:
-            hangups_user = bot.get_hangups_user(chat_id)
+        for chat_id in set(permamem_conv["participants"] + [bot_chat_id]):
+            part_id = hangouts_pb2.ParticipantId(chat_id=chat_id,
+                                                 gaia_id=chat_id)
 
-            UserID = hangups.user.UserID(chat_id=hangups_user.id_.chat_id, gaia_id=hangups_user.id_.gaia_id)
-            current_participant.append(UserID)
+            current_participant.append(part_id)
 
-            ParticipantInfo = ParticipantData( fallback_name=hangups_user.full_name,
-                                               id_=UserID )
+            participant_data.append(hangouts_pb2.ConversationParticipantData(
+                fallback_name=bot.get_hangups_user(chat_id).full_name,
+                id=part_id))
 
-            participant_data.append(ParticipantInfo)
+            read_state.append(hangouts_pb2.UserReadState(
+                latest_read_timestamp=now, participant_id=part_id))
 
-            if not hangups_conv:
-                read_state.append( LastRead( last_read_timestamp=0,
-                                             participant_id=UserID ))
+        conversation = hangouts_pb2.Conversation(
+            conversation_id=hangouts_pb2.ConversationId(id=conv_id),
 
-        active_timestamp = timestamp_now
-        invite_timestamp = timestamp_now
-        inviter_id = hangups.user.UserID( chat_id=bot_user["chat_id"],
-                                          gaia_id=bot_user["chat_id"] )
-        latest_read_timestamp = timestamp_now
-        sort_timestamp = timestamp_now
+            type=(hangouts_pb2.CONVERSATION_TYPE_GROUP
+                  if permamem_conv["type"] == "GROUP" else
+                  hangouts_pb2.CONVERSATION_TYPE_ONE_TO_ONE),
 
-        if hangups_conv:
-            read_state = hangups_conv.read_state[:]
-            active_timestamp = hangups_conv.self_conversation_state.active_timestamp
-            invite_timestamp = hangups_conv.self_conversation_state.invite_timestamp
-            inviter_id = hangups_conv.self_conversation_state.inviter_id
-            latest_read_timestamp = hangups_conv.self_conversation_state.self_read_state.latest_read_timestamp
-            sort_timestamp = hangups_conv.self_conversation_state.sort_timestamp
-            logger.debug("properties cloned from hangups conversation")
+            has_active_hangout=False,
+            name=permamem_conv["title"],
 
-        conversation_id = ConversationID( id = conv_id,
-                                          id_ = conv_id )
+            current_participant=current_participant,
+            participant_data=participant_data,
+            read_state=read_state,
 
-        self_conversation_state = SelfConversationState( active_timestamp=timestamp_now,
-                                                         invite_timestamp=timestamp_now,
-                                                         inviter_id=hangups.user.UserID( chat_id=bot_user["chat_id"],
-                                                                                         gaia_id=bot_user["chat_id"] ),
-                                                         notification_level=hangups_shim.schemas.ClientNotificationLevel.RING,
-                                                         self_read_state=LatestRead( latest_read_timestamp=latest_read_timestamp,
-                                                                                     participant_id=hangups.user.UserID( chat_id=bot_user["chat_id"],
-                                                                                                                         gaia_id=bot_user["chat_id"] )),
-                                                         sort_timestamp=sort_timestamp,
-                                                         status=hangups_shim.schemas.ClientConversationStatus.ACTIVE,
-                                                         view=hangups_shim.schemas.ClientConversationView.INBOX_VIEW )
+            self_conversation_state=hangouts_pb2.UserConversationState(
+                client_generated_id=str(self._client.get_client_generated_id()),
+                self_read_state=hangouts_pb2.UserReadState(
+                    latest_read_timestamp=now,
+                    participant_id=hangouts_pb2.ParticipantId(
+                        chat_id=bot_chat_id, gaia_id=bot_chat_id)),
+                status=status,
+                notification_level=hangouts_pb2.NOTIFICATION_LEVEL_RING,
+                view=[hangouts_pb2.CONVERSATION_VIEW_INBOX],
+                delivery_medium_option=[hangouts_pb2.DeliveryMediumOption(
+                    delivery_medium=hangouts_pb2.DeliveryMedium(
+                        medium_type=hangouts_pb2.DELIVERY_MEDIUM_BABEL))]),
 
-        self._conversation = ClientConversation( conversation_id=conversation_id,
-                                                 current_participant=current_participant,
-                                                 name=permamem_conv["title"],
-                                                 otr_status=otr_status,
-                                                 participant_data=participant_data,
-                                                 read_state=read_state,
-                                                 self_conversation_state=self_conversation_state,
-                                                 type_=type_ )
+            conversation_history_supported=True,
+            otr_status=otr_status,
+            otr_toggle=(hangouts_pb2.OFF_THE_RECORD_TOGGLE_ENABLED
+                        if status == hangouts_pb2.CONVERSATION_STATUS_ACTIVE
+                        else hangouts_pb2.OFF_THE_RECORD_TOGGLE_DISABLED),
 
-        # initialise blank
-        self._user_list = []
-        self._events = []
-        self._events_dict = {}
-        self._send_message_lock = asyncio.Lock()
+            network_type=[hangouts_pb2.NETWORK_TYPE_BABEL],
+            force_history_state=hangouts_pb2.FORCE_HISTORY_NO,
+            group_link_sharing_status=(
+                hangouts_pb2.GROUP_LINK_SHARING_STATUS_ON
+                if permamem_conv['link_sharing'] else
+                hangouts_pb2.GROUP_LINK_SHARING_STATUS_OFF))
+
+        super().__init__(self._client, self._user_list, conversation, [])
 
     @property
-    def users(self):
-        return [ self.bot.get_hangups_user(part.id_.chat_id) for part in self._conversation.participant_data ]
+    def name(self):
+        """get the custom title or gernerate one from participant names
 
+        Returns:
+            string
+        """
+        return self.bot.conversations.get_name(self)
 
-class FakeConversation(object):
-    def __init__(self, bot, id_):
-        self.bot = bot
-        self._client = self.bot._client
-        self.id_ = id_
+    async def send_message(self, message, image_id=None, context=None):
+        """send a message to Hangouts
 
-    @asyncio.coroutine
-    def send_message(self, message, image_id=None, otr_status=None, context=None):
+        Args:
+            message: string, list of hangups.ChatMessageSegment or None,
+                the text part of the message which can be empty
+            image_id: string or integer, the upload id of an image,
+                aquire one from ._client.upload_image(...)
+            context: dict, additional infomation about the message,
+                including 'reprocessor' or chatbridge entrys
 
-        """ChatMessageSegment: parse message"""
+        Raises:
+            TypeError: invalid message text provided
+            ValueError: no image and also no text provided
+        """
+        # pylint:disable=arguments-differ
+        context = context or {"__ignore__": True}        # replace empty context
 
-        if message is None:
+        # parse message
+        if not message or isinstance(message, str) and not message.strip():
             # nothing to do if the message is blank
             segments = []
-            raw_message = ""
-        elif "parser" in context and context["parser"] is False and isinstance(message, str):
-            # no parsing requested, escape anything in raw_message that can be construed as valid markdown
+
+        elif ("parser" in context and context["parser"] is False and
+              isinstance(message, str)):
+            # pre-formated string
             segments = [hangups.ChatMessageSegment(message)]
-            raw_message = message.replace("*", "\\*").replace("_", "\\_").replace("`", "\\`")
+
         elif isinstance(message, str):
-            # preferred method: markdown-formatted message (or less preferable but OK: html)
-            segments = simple_parse_to_segments(message)
-            raw_message = message
-        elif isinstance(message, list):
-            # who does this anymore?
-            logger.error( "[INVALID]: send messages as html or markdown, "
-                          "not as list of ChatMessageSegment, context={}".format(context) )
+            # markdown- or html-formatted message
+            segments = hangups.ChatMessageSegment.from_str(message)
+
+        elif (isinstance(message, list)
+              and all(isinstance(item, hangups.ChatMessageSegment)
+                      for item in message)):
+            # a list of hangups.ChatMessageSegment
             segments = message
-            raw_message = "".join([ segment_to_html(seg)
-                                    for seg in message ])
+
         else:
             raise TypeError("unknown message type supplied")
 
-        if segments:
-            serialised_segments = [seg.serialize() for seg in segments]
-        else:
-            serialised_segments = None
+        serialised_segments = [seg.serialize() for seg in segments] or None
 
-        if "original_request" not in context["passthru"]:
-            context["passthru"]["original_request"] = { "message": raw_message,
-                                                        "image_id": image_id,
-                                                        "segments": segments }
+        if image_id is None and serialised_segments is None:
+            # no message content
+            raise ValueError("no image or text provided")
 
-        """OffTheRecordStatus: determine history"""
-
-        if otr_status is None:
-            if "history" not in context:
-                context["history"] = True
-                try:
-                    context["history"] = self.bot.conversations.catalog[self.id_]["history"]
-
-                except KeyError:
-                    # rare scenario where a conversation was not refreshed
-                    # once the initial message goes through, convmem will be updated
-                    logger.warning("could not determine otr for {}".format(self.id_))
-
-            if context["history"]:
-                otr_status = hangups_shim.schemas.OffTheRecordStatus.ON_THE_RECORD
-            else:
-                otr_status = hangups_shim.schemas.OffTheRecordStatus.OFF_THE_RECORD
-
-        """ExistingMedia: attach previously uploaded media for display"""
-
-        media_attachment = None
-        if image_id:
-            media_attachment = hangups.hangouts_pb2.ExistingMedia(
-                photo = hangups.hangouts_pb2.Photo( photo_id = image_id ))
-
-        """EventAnnotation: combine with client-side storage to allow custom messaging context"""
-
+        # EventAnnotation:
+        # combine with client-side storage to allow custom messaging context
         annotations = []
         if "reprocessor" in context:
-            annotations.append( hangups.hangouts_pb2.EventAnnotation(
-                type = 1025,
-                value = context["reprocessor"]["id"] ))
+            annotations.append(hangouts_pb2.EventAnnotation(
+                type=1025,
+                value=context["reprocessor"]["id"]))
+            context.pop("reprocessor")
 
-        # define explicit "passthru" in context to "send" any type of variable
-        if "passthru" in context:
-            annotations.append( hangups.hangouts_pb2.EventAnnotation(
-                type = 1026,
-                value = self.bot._handlers.register_passthru(context["passthru"]) ))
+        # save entire context unless it was explicit suppressed
+        if context and "__ignore__" not in context:
+            # pylint: disable=protected-access
+            annotations.append(hangouts_pb2.EventAnnotation(
+                type=1027,
+                value=self.bot._handlers.register_context(context)))
 
-        # always implicitly "send" the entire context dictionary
-        annotations.append( hangups.hangouts_pb2.EventAnnotation(
-            type = 1027,
-            value = self.bot._handlers.register_context(context) ))
+        kwargs = dict(
+            request_header=self._client.get_request_header(),
+            message_content=hangouts_pb2.MessageContent(
+                segment=serialised_segments),
+            annotation=annotations,
+            event_request_header=self._get_event_request_header(),
+        )
+        if image_id is not None:
+            kwargs['existing_media'] = hangouts_pb2.ExistingMedia(
+                photo=hangouts_pb2.Photo(photo_id=image_id))
 
-        """send the message"""
+        request = hangouts_pb2.SendChatMessageRequest(**kwargs)
 
-        with (yield from asyncio.Lock()):
-            yield from self._client.send_chat_message(
-                hangups.hangouts_pb2.SendChatMessageRequest(
-                    request_header = self._client.get_request_header(),
-                    message_content = hangups.hangouts_pb2.MessageContent( segment=serialised_segments ),
-                    existing_media = media_attachment,
-                    annotation = annotations,
-                    event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                        conversation_id=hangups.hangouts_pb2.ConversationId( id=self.id_ ),
-                        client_generated_id=self._client.get_client_generated_id(),
-                        expected_otr = otr_status )))
+        try:
+            # send the message
+            await self._client.send_chat_message(request)
+        except hangups.NetworkError as err:
+            logger.error('%s on sending to %s:\n%s\nimage=%s\n',
+                         repr(err), self.id_, serialised_segments, image_id)

@@ -5,30 +5,33 @@ Add a "botaddnotif_enable": true  parameter in the config.json file.
 Author: @cd334
 """
 
-import asyncio
 import hangups
 import plugins
 
-def _initialise(bot):
-    plugins.register_handler(_handle_join_notify, type="membership")
+def _initialise():
+    plugins.register_handler(_handle_join_notify, "membership")
 
-@asyncio.coroutine
-def _handle_join_notify(bot, event, command):
-    if not event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+async def _handle_join_notify(bot, event):
+    if not event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
+        return
+
+    admins = bot.config.get_option('admins')
+
+    if event.user_id.chat_id in admins:
         return
 
     # has bot been added to a new hangout?
-    bot_id = bot._user_list._self_user.id_
+    bot_id = bot.user_self()['chat_id']
     if bot_id not in event.conv_event.participant_ids:
         return
 
-    if not bot.get_config_option("botaddnotif_enable"):
+    if not bot.config.get_option("botaddnotif_enable"):
         return
 
     # send message to admins
-    for admin_id in bot.get_config_option('admins'):
+    for admin_id in admins:
         if admin_id != bot_id:
-            yield from bot.coro_send_to_user(
+            await bot.coro_send_to_user(
                 admin_id,
-                '<b>{}</b> has added me to hangout <b>{}</b>'.format(
+                _('<b>{}</b> has added me to hangout <b>{}</b>').format(
                     event.user.full_name, event.conv.name))

@@ -311,7 +311,7 @@ class TelegramBot(telepot.aio.Bot):
                 logger.info("chosen_inline_result {}".format(msg))
 
             else:
-                raise telepot.BadFlavor(msg)
+                raise telepot.exception.BadFlavor(msg)
 
 
 def tg_util_get_group_name(msg):
@@ -1129,7 +1129,7 @@ class BridgeInstance(WebFramework):
 
             if hangouts_uid:
                 _hangups_user = self.bot.get_hangups_user(hangouts_uid)
-                if _hangups_user.definitionsource:
+                if not _hangups_user.is_default:
                     hangups_user = _hangups_user
         except KeyError:
             logger.info("no hangups user for {}".format(source_uid))
@@ -1140,6 +1140,7 @@ class BridgeInstance(WebFramework):
 """hangoutsbot plugin initialisation"""
 
 def _initialise(bot):
+    plugins.register_aiohttp_session(ClientSession)
     if not _telesync_config(bot):
         return
 
@@ -1315,7 +1316,7 @@ def _on_membership_change(bot, event, command=""):
     text = '_{}: {} {} {}_'.format(
         event.user.full_name,
         ', '.join([user.full_name for user in event_users]),
-        "added to" if event.conv_event.type_ == hangups.MembershipChangeType.JOIN else "left",
+        "added to" if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN else "left",
         event.conv.name )
 
     ho2tg_dict = bot.memory.get_by_path(['telesync'])['ho2tg']

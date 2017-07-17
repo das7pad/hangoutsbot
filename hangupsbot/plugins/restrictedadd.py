@@ -17,8 +17,8 @@ _internal = __internal_vars()
 
 
 def _initialise(bot):
-    plugins.register_handler(_check_if_admin_added_me, type="membership")
-    plugins.register_handler(_verify_botkeeper_presence, type="message")
+    plugins.register_handler(_check_if_admin_added_me, "membership")
+    plugins.register_handler(_verify_botkeeper_presence, "message")
     plugins.register_admin_command(["allowbotadd", "removebotadd"])
 
 
@@ -46,10 +46,9 @@ def _botkeeper_list(bot, conv_id):
     return botkeepers
 
 
-@asyncio.coroutine
-def _check_if_admin_added_me(bot, event, command):
+async def _check_if_admin_added_me(bot, event, command):
     bot_id = bot._user_list._self_user.id_
-    if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+    if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
         if bot_id in event.conv_event.participant_ids:
             # bot was part of the event
             initiator_user_id = event.user_id.chat_id
@@ -67,15 +66,15 @@ def _check_if_admin_added_me(bot, event, command):
                 logger.warning("{} ({}) tried to add me to {}".format(
                     initiator_user_id, event.user.full_name, event.conv_id))
 
-                yield from bot.coro_send_message(
+                await bot.coro_send_message(
                     event.conv,
                     _("<i>{}, you need to be authorised to add me to another conversation. I'm leaving now...</i>").format(event.user.full_name))
 
-                yield from _leave_the_chat_quietly(bot, event, command)
+                asyncio.ensure_future(_leave_the_chat_quietly(
+                    bot, event, command))
 
 
-@asyncio.coroutine
-def _verify_botkeeper_presence(bot, event, command):
+async def _verify_botkeeper_presence(bot, event, command):
     if not bot.get_config_suboption(event.conv_id, 'strict_botkeeper_check'):
         return
 
@@ -83,7 +82,7 @@ def _verify_botkeeper_presence(bot, event, command):
         return
 
     try:
-        if bot.conversations.catalog[event.conv_id]["type"] != "GROUP":
+        if bot.conversations[event.conv_id]["type"] != "GROUP":
             return
     except KeyError:
         logger.warning("{} not found in permanent memory, skipping temporarily")
@@ -112,17 +111,16 @@ def _verify_botkeeper_presence(bot, event, command):
     if not botkeeper:
         logger.warning("no botkeeper in {}".format(event.conv_id))
 
-        yield from bot.coro_send_message(
+        await bot.coro_send_message(
             event.conv,
             _("<i>There is no botkeeper in here. I have to go...</i>"))
 
-        yield from _leave_the_chat_quietly(bot, event, command)
+        asyncio.ensure_future(_leave_the_chat_quietly(bot, event, command))
 
 
-@asyncio.coroutine
-def _leave_the_chat_quietly(bot, event, command):
-    yield from asyncio.sleep(10.0)
-    yield from command.run(bot, event, *["leave", "quietly"])
+async def _leave_the_chat_quietly(bot, event, command):
+    await asyncio.sleep(10.0)
+    await command.run(bot, event, *["leave", "quietly"])
 
 
 def allowbotadd(bot, event, user_id, *args):
@@ -136,13 +134,11 @@ def allowbotadd(bot, event, user_id, *args):
 
     allowbotadd = bot.memory.get("allowbotadd")
     allowbotadd.append(user_id)
-    yield from bot.coro_send_message(
-        event.conv,
-        _("user id {} added as botkeeper").format(user_id))
     bot.memory["allowbotadd"] = allowbotadd
     bot.memory.save()
 
     _internal.last_verified = {} # force checks everywhere
+    return _("user id {} added as botkeeper").format(user_id)
 
 
 def removebotadd(bot, event, user_id, *args):
@@ -158,15 +154,11 @@ def removebotadd(bot, event, user_id, *args):
     allowbotadd = bot.memory.get("allowbotadd")
     if user_id in allowbotadd:
         allowbotadd.remove(user_id)
-        yield from bot.coro_send_message(
-            event.conv,
-            _("user id {} removed as botkeeper").format(user_id))
-
         bot.memory["allowbotadd"] = allowbotadd
         bot.memory.save()
 
         _internal.last_verified = {} # force checks everywhere
+
+        return _("user id {} removed as botkeeper").format(user_id)
     else:
-        yield from bot.coro_send_message(
-            event.conv,
-            _("user id {} is not authorised").format(user_id))
+        return _("user id {} is not authorised").format(user_id)

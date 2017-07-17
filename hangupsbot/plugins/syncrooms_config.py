@@ -37,10 +37,10 @@ def attachsyncout(bot, event, *args):
         # need at least 2 ids, one has to be another room
         return
 
-    if not bot.get_config_option('syncing_enabled'):
+    if not bot.config.get_option('syncing_enabled'):
         return
 
-    syncouts = bot.get_config_option('sync_rooms')
+    syncouts = bot.config.get_option('sync_rooms')
 
     if type(syncouts) is not list:
         syncouts = []
@@ -74,8 +74,7 @@ def attachsyncout(bot, event, *args):
         html_message = _("<i>syncouts unchanged</i>")
 
     if not quietly:
-        yield from bot.coro_send_message(event.conv, html_message.format(
-            len(affected_conversations)))
+        return html_message.format(len(affected_conversations))
 
 
 def detachsyncout(bot, event, target_conversation_id=None, *args):
@@ -83,10 +82,10 @@ def detachsyncout(bot, event, target_conversation_id=None, *args):
     is supplied, the bot will attempt to detach that conversation from an existing syncout
     """
 
-    if not bot.get_config_option('syncing_enabled'):
+    if not bot.config.get_option('syncing_enabled'):
         return
 
-    syncouts = bot.get_config_option('sync_rooms')
+    syncouts = bot.config.get_option('sync_rooms')
 
     if not syncouts:
         return
@@ -112,4 +111,4 @@ def detachsyncout(bot, event, target_conversation_id=None, *args):
     if _detached:
         bot.config.set_by_path(["sync_rooms"], syncouts)
         bot.config.save()
-        yield from bot.coro_send_message(event.conv, _("<i>`{}` was detached</i>").format(target_conversation_id))
+        return _("<i>`{}` was detached</i>").format(target_conversation_id)

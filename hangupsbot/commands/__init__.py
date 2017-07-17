@@ -1,13 +1,24 @@
+"""command dispatch for the HangupsBot"""
+#TODO(das7pad) move args parser to own module
+#TODO(das7pad) refactor .get_available_commands()
+#TODO(das7pad) extract config entrys to defaults
 import asyncio
 import logging
 import re
 import time
 
-import plugins
+import hangups
 
+import plugins
 
 logger = logging.getLogger(__name__)
 
+class Help(Exception):
+    """raise to request the help entry of the current command
+
+    opt: supplied text as string in the arguments will be prepended to the help
+    """
+    pass
 
 class CommandDispatcher(object):
     """Register commands and run them"""
@@ -41,9 +52,9 @@ class CommandDispatcher(object):
           * @user@wxyz
         """
 
-        self.preprocessors = { "inbuilt": {
+        self.preprocessors = {"inbuilt": {
             r"^(#?[\w|]+[^#]\|)?@[\w]+[^@]$": self.one_chat_id,
-            r"^#[\w|]+[^#]$": self.one_conv_id }}
+            r"^#[\w|]+[^#]$": self.one_conv_id}}
 
         """
         disable implicit argument preprocessors on some commands
@@ -67,40 +78,37 @@ class CommandDispatcher(object):
             # current user chat_id
             subtokens[-1] = internal_context.user.id_.chat_id
         else:
-            user_memory = self.bot.get_memory_option("user_data")
-            if all_users:
-                chat_ids = list(self.bot.conversations.catalog[internal_context.conv_id]["participants"])
-            else:
-                chat_ids = list(user_memory.keys())
+            user_memory = self.bot.memory["user_data"]
+            chat_ids = (list(self.bot.conversations[internal_context.conv_id]
+                             ["participants"])
+                        if all_users else list(user_memory.keys()))
 
             matched_users = {}
             for chat_id in chat_ids:
                 user_data = user_memory[chat_id]
-                if "_hangups" in user_data:
-                    if "nickname" in user_data:
-                        nickname_lower =  user_data["nickname"].lower()
-                    else:
-                        nickname_lower = ""
-                    fullname_lower = user_data["_hangups"]["full_name"].lower()
+                nickname_lower = (user_data["nickname"].lower()
+                                  if "nickname" in user_data else "")
+                fullname_lower = user_data["_hangups"]["full_name"].lower()
 
-                    if text == nickname_lower:
-                        matched_users[chat_id] = chat_id
-                        break
+                if text == nickname_lower:
+                    matched_users[chat_id] = chat_id
+                    break
 
-                    elif( text in fullname_lower or
-                            text in fullname_lower.replace(" ", "") ):
-                        matched_users[chat_id] = chat_id
+                elif (text in fullname_lower or
+                      text in fullname_lower.replace(" ", "")):
+                    matched_users[chat_id] = chat_id
 
             if len(matched_users) == 1:
                 subtokens[-1] = list(matched_users)[0]
-            elif len(matched_users) == 0:
+            elif not matched_users:
                 if not all_users:
                     # redo the user search, expanded to all users
-                    # since this is calling itself again, completely overwrite subtokens
+                    # since this is calling itself again,
+                    # completely overwrite subtokens
                     subtokens = self.one_chat_id(
                         token,
                         internal_context,
-                        all_users=True ).split("|", 1)
+                        all_users=True).split("|", 1)
                 else:
                     raise ValueError("{} returned no users".format(token))
             else:
@@ -116,33 +124,37 @@ class CommandDispatcher(object):
             # current conversation id
             subtokens[0] = internal_context.conv_id
         else:
-            filter = "(type:GROUP)and(text:{})".format(text)
-            conv_list = self.bot.conversations.get(filter)
+            filter_ = "(type:GROUP)and(text:{})".format(text)
+            conv_list = self.bot.conversations.get(filter_)
             if len(conv_list) == 1:
                 subtokens[0] = next(iter(conv_list))
-            elif len(conv_list) == 0:
+            elif not conv_list:
                 raise ValueError("{} returned no conversations".format(token))
             else:
-                raise ValueError("{} returned too many conversations".format(token))
+                raise ValueError("{} returned too many conversations".format(
+                    token))
 
         return "|".join(subtokens)
 
-    def preprocess_arguments(self, args, internal_context, force_trigger="", force_groups=[]):
+    def preprocess_arguments(self, args, internal_context, force_trigger="",
+                             force_groups=[]):
         """custom preprocessing for use by other plugins, specify:
         * force_trigger word to override config, default
           prevents confusion if botmin has overridden this for their own usage
         * force_groups to a list of resolver group names
-          at least 1 must exist, otherwise all resolvers will be used (as usual)"""
-
+          at least 1 must exist, otherwise all resolvers will be used (as usual)
+        """
         all_groups = list(self.preprocessors.keys())
-        force_groups = [ g for g in force_groups if g in all_groups ]
+        force_groups = [g for g in force_groups if g in all_groups]
         all_groups = force_groups or all_groups
 
-        _implicit = ( bool(force_groups)
-                        or not self.bot.get_config_option("commands.preprocessor.explicit") )
-        _trigger = ( force_trigger
-                        or self.bot.get_config_option("commands.preprocessor.trigger")
-                        or "resolve" ).lower()
+        _implicit = (bool(force_groups)
+                     or not self.bot.config.get_option(
+                         "commands.preprocessor.explicit"))
+        _trigger = (force_trigger
+                    or self.bot.config.get_option(
+                        "commands.preprocessor.trigger")
+                    or "resolve").lower()
 
         _trigger_on = "+" + _trigger
         _trigger_off = "-" + _trigger
@@ -234,7 +246,7 @@ class CommandDispatcher(object):
                 skip_arg = True
             elif arg_lower.startswith(_trigger_off + _separator):
                 _right = arg_lower.split(_separator, 1)[-1]
-                if not _right or _right in ("*"):
+                if not _right or _right in "*":
                     # turn off all resolver groups
                     #   -resolve:*
                     #   -resolve:
@@ -249,46 +261,36 @@ class CommandDispatcher(object):
             if skip_arg:
                 # never consume the trigger term
                 continue
-            for rname in [ rname
+            for rname in [rname
                           for rname in apply_resolvers
-                          if rname in all_groups ]:
+                          if rname in all_groups]:
                 for pattern, callee in self.preprocessors[rname].items():
                     if re.match(pattern, arg, flags=re.IGNORECASE):
-                        try:
-                            _arg = callee(arg, internal_context)
-                            if _arg:
-                                arg = _arg
-                                continue
-                        except Exception as e:
-                            raise
+                        _arg = callee(arg, internal_context)
+                        if _arg:
+                            arg = _arg
+                            continue
             new_args.append(arg)
 
         return new_args
 
     def set_bot(self, bot):
+        """extended init
+
+        Args:
+            bot: HangupsBot instance
+        """
         self.bot = bot
+        # set the default timeout for commands to execute to 5minutes
+        bot.config.set_defaults({'command_timeout': (5*60)})
 
     def set_tracking(self, tracking):
-        self.tracking = tracking
+        """register the plugin tracking for commands
 
-    def get_admin_commands(self, bot, conv_id):
-        logger.warning("[DEPRECATED] command.get_admin_commands(), use command.get_available_commands() instead")
-        """Get list of admin-only commands (set by plugins or in config.json)
-        list of commands is determined via one of two methods:
-            default mode allows individual plugins to make the determination for admin and user
-              commands, user commands can be "promoted" to admin commands via config.json:commands_admin
-            override this behaviour by defining config.json:commands_user, which will only allow
-              commands which are explicitly defined in this config key to be executed by users.
-              note: overriding default behaviour makes all commands admin-only by default
+        Args:
+            tracking: plugins.Tracker instance
         """
-        whitelisted_commands = bot.get_config_suboption(conv_id, 'commands_user') or []
-        if whitelisted_commands:
-            admin_command_list = self.commands.keys() - whitelisted_commands
-        else:
-            commands_admin = bot.get_config_suboption(conv_id, 'commands_admin') or []
-            admin_command_list = commands_admin + self.admin_commands
-        return list(set(admin_command_list))
-
+        self.tracking = tracking
 
     def register_tags(self, command, tagsets):
         if command not in self.command_tagsets:
@@ -299,15 +301,16 @@ class CommandDispatcher(object):
 
         self.command_tagsets[command] = self.command_tagsets[command] | tagsets
 
-
     @property
     def deny_prefix(self):
-        config_tags_deny_prefix = self.bot.get_config_option('commands.tags.deny-prefix') or "!"
+        config_tags_deny_prefix = self.bot.config.get_option(
+            'commands.tags.deny-prefix') or "!"
         return config_tags_deny_prefix
 
     @property
     def escalate_tagged(self):
-        config_tags_escalate = self.bot.get_config_option('commands.tags.escalate') or False
+        config_tags_escalate = self.bot.config.get_option(
+            'commands.tags.escalate') or False
         return config_tags_escalate
 
     def get_available_commands(self, bot, chat_id, conv_id):
@@ -404,53 +407,80 @@ class CommandDispatcher(object):
         interval = time.time() - start_time
         logger.debug("get_available_commands() - {}".format(interval))
 
-        return { "admin": list(admin_commands), "user": list(user_commands) }
+        return {"admin": list(admin_commands), "user": list(user_commands)}
 
-    @asyncio.coroutine
-    def run(self, bot, event, *args, **kwds):
-        """Run command"""
-        command_name = args[0]
-        if command_name in self.commands:
-            func = self.commands[command_name]
-        elif command_name.lower() in self.commands:
-            func = self.commands[command_name.lower()]
-        elif self.unknown_command:
-            func = self.unknown_command
-        else:
+    async def run(self, bot, event, *args, **kwds):
+        """Run a command
+
+        Args:
+            bot: HangupsBot instance
+            event: event.ConversationEvent like instance
+            args: tuple of string, including the command name in fist place
+            kwds: dict, additional info to the execution including the key
+                'raise_exceptions' to raise them instead of sending a message
+        """
+        command_name = args[0].lower()
+        func = self.commands.get(command_name, self.unknown_command)
+        if func is None:
             raise KeyError("command {} not found".format(command_name))
 
         """default: if exceptions occur in a command, output as message
         supply keyword argument raise_exceptions=True to override behaviour"""
-        raise_exceptions = False
-        if "raise_exceptions" in kwds:
-            raise_exceptions = kwds["raise_exceptions"]
-            del kwds["raise_exceptions"]
+        raise_exceptions = kwds.pop("raise_exceptions", False)
 
         setattr(event, 'command_name', command_name)
         setattr(event, 'command_module', func.__module__ )
         setattr(event, 'command_path', func.__module__ + '.' + command_name)
 
+        conv_id = event.conv_id
+        context = None
         try:
-            args = list(args[1:])
-            args = self.preprocess_arguments(args, internal_context=event)
-            results = yield from func(bot, event, *args, **kwds)
-            return results
+            coro = (func if asyncio.iscoroutinefunction(func)
+                    else asyncio.coroutine(func))
+            result = await asyncio.wait_for(coro(bot, event, *args[1:], **kwds),
+                                            bot.config['command_timeout'])
 
-        except Exception as e:
+        except asyncio.CancelledError:
+            # shutdown in progress
+            raise
+
+        except asyncio.TimeoutError:
+            text = _('command execution of "{}" timed out').format(command_name)
+
+        except Help as err:
+            help_entry = (*err.args, '', '<b>%s:</b>' % command_name,
+                          get_func_help(bot, command_name, func))
+            text = "\n".join(help_entry).strip()
+            conv_id = await bot.get_1to1(event.user_id.chat_id) or conv_id
+
+        except Exception as err:
             if raise_exceptions:
                 raise
 
-            logger.exception("RUN: {}".format(func.__name__))
-            yield from self.bot.coro_send_message(
-                event.conv,
-                "<b><pre>{0}</pre></b> <pre>{1}</pre>: <em><pre>{2}</pre></em>".format(
-                    func.__name__, type(e).__name__, str(e)) )
+            logger.exception("RUN: %s", command_name)
+            text = "<i><b>%s</b> %s</i>" % (command_name, type(err).__name__)
+
+        else:
+            if (isinstance(result, str) or
+                    (isinstance(result, list) and
+                     all([isinstance(item, hangups.ChatMessageSegment)
+                          for item in result]))):
+                text = result
+            elif isinstance(result, tuple) and len(result) == 2:
+                conv_id, text = result
+            elif (isinstance(result, tuple) and len(result) == 3 and
+                  isinstance(result[2], dict)):
+                conv_id, text, context = result
+            else:
+                return result
+
+        await bot.coro_send_message(conv_id, text, context=context)
 
     def register(self, *args, admin=False, tags=None, final=False, name=None):
         """Decorator for registering command"""
 
         def wrapper(func):
-            func_name = name or func.__name__
+            func_name = (name or func.__name__).lower()
 
             if final:
                 # wrap command function in coroutine
@@ -461,9 +491,9 @@ class CommandDispatcher(object):
 
             else:
                 # just register and return the same function
-                plugins.tracking.register_command( "admin" if admin else "user",
-                                                   [func_name],
-                                                   tags=tags )
+                plugins.tracking.register_command("admin" if admin else "user",
+                                                  [func_name],
+                                                  tags=tags)
 
             return func
 
@@ -487,7 +517,54 @@ class CommandDispatcher(object):
     def register_argument_preprocessor_group(self, name, preprocessors):
         name_lower = name.lower()
         self.preprocessors[name_lower] = preprocessors
-        plugins.tracking.register_command_argument_preprocessors_group(name_lower)
+        plugins.tracking.register_command_argument_preprocessors_group(
+            name_lower)
 
 # CommandDispatcher singleton
 command = CommandDispatcher()
+
+def get_func_help(bot, cmd, func):
+    """get a custom help message from memory or parse the doc string of the func
+
+    Args:
+        bot: HangupsBot instance
+        cmd: string, an existing bot-command
+        func: callable, the command function
+
+    Returns:
+        string, the custom message or the parsed doc string
+    """
+    try:
+        text = bot.memory.get_by_path(['command_help', cmd]).format(
+            bot_cmd=bot.command_prefix)
+        return text
+
+    except KeyError:
+        pass
+
+    if "__doc__" in dir(func) and func.__doc__:
+        _docstring = func.__doc__.strip()
+    else:
+        return "_{}_".format(_("command help not available"))
+
+    # docstrings: apply (very) limited markdown-like formatting to command help
+
+    # simple bullet lists
+    _docstring = re.sub(r'\n +\* +', '\n* ', _docstring)
+
+    # docstrings: handle generic whitespace
+    # parse line-breaks: single break -> space; multiple breaks -> paragraph"""
+    # XXX: the markdown parser is iffy on line-break processing
+
+    # turn standalone linebreaks into space, preserves multiple linebreaks
+    _docstring = re.sub(r"(?<!\n)\n(?= *[^ \t\n\r\f\v\*])", " ", _docstring)
+    # convert multiple consecutive spaces into single space
+    _docstring = re.sub(r" +", " ", _docstring)
+    # convert consecutive linebreaks into double linebreak (pseudo-paragraph)
+    _docstring = re.sub(r" *\n\n+ *(?!\*)", "\n\n", _docstring)
+
+    # replace /bot with the first alias in the command handler
+    # XXX: [botalias] maintained backward compatibility, please avoid using it
+    _docstring = re.sub(r"(?<!\S)\/bot(?!\S)", bot.command_prefix, _docstring)
+
+    return _docstring

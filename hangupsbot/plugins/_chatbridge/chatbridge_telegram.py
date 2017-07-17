@@ -1,3 +1,4 @@
+# pylint: skip-file
 import aiohttp
 import asyncio
 import json
@@ -19,8 +20,7 @@ class BridgeInstance(WebFramework):
     def setup_plugin(self):
         self.plugin_name = "telegramBasic"
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         conv_id = config["trigger"]
         external_ids = config["config.json"][self.configkey]
 
@@ -43,7 +43,7 @@ class BridgeInstance(WebFramework):
         message = re.sub(r"(?<!b|a|\")>", "&gt;", message)
 
         for eid in external_ids:
-            yield from self.telegram_api_request(
+            await self.telegram_api_request(
                 config["config.json"],
                 "sendMessage",
                     { "chat_id" : eid,
@@ -54,8 +54,7 @@ class BridgeInstance(WebFramework):
         for configuration in self.configuration:
             plugins.start_asyncio_task(self.telegram_longpoll, configuration)
 
-    @asyncio.coroutine
-    def telegram_longpoll(self, bot, configuration, CONNECT_TIMEOUT=90):
+    async def telegram_longpoll(self, bot, configuration, CONNECT_TIMEOUT=90):
         BOT_API_KEY = configuration["bot_api_key"]
 
         connector = aiohttp.TCPConnector(verify_ssl=True)
@@ -67,23 +66,23 @@ class BridgeInstance(WebFramework):
 
         max_offset = -1
 
+        session = aiohttp.ClientSession(connector=connector)
         while True:
             try:
                 data = { "timeout": 60 }
                 if max_offset:
                     data["offset"] = int(max_offset) + 1
-                res = yield from asyncio.wait_for(
-                    aiohttp.request( 'post',
-                                     url,
+                async with asyncio.wait_for(
+                        session.post(url,
                                      data=data,
                                      headers=headers,
-                                     connector=connector ), CONNECT_TIMEOUT)
-                chunk = yield from res.content.read(1024*1024)
+                                     connector=connector),
+                        CONNECT_TIMEOUT) as res:
+                    chunk = await res.content.read(1024*1024)
             except asyncio.TimeoutError:
                 raise
             except asyncio.CancelledError:
-                # Prevent ResourceWarning when channel is disconnected.
-                res.close()
+                session.close()
                 raise
 
             if chunk:
@@ -103,39 +102,31 @@ class BridgeInstance(WebFramework):
                                     message = raw_message["text"]
 
                                 elif "photo" in raw_message:
-                                    photo_path = yield from self.telegram_api_getfilepath( configuration,
+                                    photo_path = await self.telegram_api_getfilepath( configuration,
                                                                                            raw_message["photo"][2]['file_id'] )
 
-                                    image_id = yield from bot.call_shared("image_upload_single", photo_path)
+                                    image_id = await bot.call_shared("image_upload_single", photo_path)
                                     message = "sent a photo"
 
                                 elif "sticker" in raw_message:
-                                    photo_path = yield from self.telegram_api_getfilepath( configuration,
+                                    photo_path = await self.telegram_api_getfilepath( configuration,
                                                                                            raw_message["sticker"]['file_id'] )
 
-                                    image_id = yield from bot.call_shared("image_upload_single", photo_path)
+                                    image_id = await bot.call_shared("image_upload_single", photo_path)
                                     message = "sent {} sticker".format(raw_message["sticker"]['emoji'])
 
                                 else:
                                     message = "unrecognised telegram update: {}".format(raw_message)
 
-                                yield from self._send_to_internal_chat(
+                                await self._send_to_internal_chat(
                                     conv_id,
                                     message,
                                     {   "source_user": user,
                                         "source_title": False })
 
-            else:
-                pass
-
-            # Close the response to allow the connection to be reused for
-            # the next request.
-            res.close()
-
         logger.critical("long-polling terminated")
 
-    @asyncio.coroutine
-    def telegram_api_request(self, configuration, method, data):
+    async def telegram_api_request(self, configuration, method, data):
         connector = aiohttp.TCPConnector(verify_ssl=True)
         headers = {'content-type': 'application/x-www-form-urlencoded'}
 
@@ -143,14 +134,14 @@ class BridgeInstance(WebFramework):
 
         url = "https://api.telegram.org/bot{}/{}".format(BOT_API_KEY, method)
 
-        response = yield from aiohttp.request('post', url, data=data, headers=headers, connector=connector)
-        results = yield from response.text()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=data, headers=headers, connector=connector) as response:
+                results = await response.text()
 
         return results
 
-    @asyncio.coroutine
-    def telegram_api_getfilepath(self, configuration, file_id):
-        results = yield from self.telegram_api_request(
+    async def telegram_api_getfilepath(self, configuration, file_id):
+        results = await self.telegram_api_request(
             configuration,
             "getFile", {
                 "file_id": file_id })

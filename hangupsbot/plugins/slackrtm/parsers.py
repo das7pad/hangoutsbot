@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: skip-file
 
 import re
 import uuid
@@ -100,8 +101,9 @@ def slack_markdown_to_hangups(text, debug=False):
                 text = text[:-1]
 
             # manually escape to prevent hangups markdown processing
-            text = text.replace("*", "\\*")
-            text = text.replace("_", "\\_")
+            if "http" not in text:
+                text = text.replace("*", "\\*")
+                text = text.replace("_", "\\_")
             text = convert_slack_links(text)
 
             markdown = []
