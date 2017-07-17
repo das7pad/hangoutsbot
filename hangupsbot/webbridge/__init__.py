@@ -33,10 +33,11 @@ FakeUserID = namedtuple( 'userID', [ 'chat_id',
 
 class WebFramework:
     instance_number = 0
+    _closed = True
 
-    def __init__(self, bot, configkey, RequestHandler=IncomingRequestHandler, extra_metadata={}):
-        self.uid = False
-        self.plugin_name = False
+    def __init__(self, bot, configkey, RequestHandler=IncomingRequestHandler):
+        self.uid = None
+        self.plugin_name = None
 
         self.bot = self._bot = bot
         self.configkey = configkey
@@ -50,20 +51,27 @@ class WebFramework:
             logger.warning("plugin_name not defined in code, not running")
             return
 
-        if not self.uid:
-            self.uid = "{}-{}".format(self.plugin_name, WebFramework.instance_number)
+        if self.uid is None:
+            self.uid = "%s-%s" % (self.plugin_name, self.instance_number)
             WebFramework.instance_number = WebFramework.instance_number + 1
 
-        extra_metadata.update({ "bridge.uid": self.uid })
-
-        self._handler_broadcast = plugins.register_handler(self._broadcast, type="sending", extra_metadata=extra_metadata)
-        self._handler_repeat = plugins.register_handler(self._repeat, type="allmessages", extra_metadata=extra_metadata)
-
+        asyncio.ensure_future(self._register_handlers())
         self.start_listening(bot)
 
+    async def _register_handlers(self):
+        """register the handlers to send and receive messages"""
+        await plugins.tracking.start({'module.path': self.uid})
+        self._closed = False
+        plugins.register_handler(self._broadcast, "sending")
+        plugins.register_handler(self._repeat, "allmessages")
+        plugins.tracking.end()
+
     def close(self):
-        plugins.deregister_handler(self._handler_broadcast, type="sending")
-        plugins.deregister_handler(self._handler_repeat, type="allmessages")
+        """deregister the handlers to send and receive messages"""
+        if self._closed:
+            return
+        asyncio.ensure_future(plugins.unload(self.uid))
+        self._closed = True
 
     def load_configuration(self, configkey):
         self.configuration = self.bot.config.get_option(self.configkey) or []

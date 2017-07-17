@@ -181,37 +181,7 @@ class Tracker(object):
         logger.debug("%s - [%s] tags: %s", command_name, type_, tags)
 
     def register_handler(self, function, type, priority, module_path=None):
-        _tuple = (function, type, priority)
-
-        if self._current["metadata"] is None:
-            if module_path is None:
-                raise RuntimeError("module_path must be supplied for late-binded handlers")
-            else:
-                self.list[module_path]["handlers"].append(_tuple)
-
-        self._current["handlers"].append(_tuple)
-
-    def deregister_handler(self, function, module_path=None, strict=True):
-        if module_path is None:
-            module_path = list(tracking.list.keys())
-        elif isinstance(module_path, str):
-            module_path = [ module_path ]
-        elif isinstance(module_path, list):
-            pass
-        else:
-            raise TypeError("invalid module_path {}".format(repr(module_path)))
-
-        for m in module_path:
-            if m not in tracking.list and strict is True:
-                raise ValueError("module_path {} does not exist".format(m))
-            for h in tracking.list[m]["handlers"]:
-                if h[0] == function:
-                    logger.debug("untrack handler added by {} {}".format(m, h))
-                    tracking.list[m]["handlers"].remove(h)
-                    return
-
-        if strict:
-            raise ValueError("{} tracker not found: {}".format(module_path, function))
+        self._current["handlers"].append((function, type, priority))
 
     def register_shared(self, identifier, objectref):
         """track a registered shared
@@ -231,13 +201,7 @@ class Tracker(object):
             self._current["aiohttp.web"].append(group)
 
     def register_asyncio_task(self, task, module_path=None):
-        if self._current["metadata"] is None:
-            if module_path is None:
-                raise RuntimeError("module_path must be supplied for late-binded tasks")
-            else:
-                self.list[module_path]["asyncio.task"].append(task)
-        else:
-            self._current["asyncio.task"].append(task)
+        self._current["asyncio.task"].append(task)
 
     def register_command_argument_preprocessors_group(self, name):
         if name not in self._current["commands"]["argument.preprocessors"]:
@@ -288,16 +252,16 @@ def register_help(source, name=None):
         raise ValueError('check args')
     tracking.bot.memory.set_defaults(source, ['command_help'])
 
-def register_handler(function, type="message", priority=50, extra_metadata=None):
-    """register external handler"""
-    extra_metadata = extra_metadata or {}
-    bot_handlers = tracking.bot._handlers
-    return bot_handlers.register_handler(function, type, priority, extra_metadata=extra_metadata)
+def register_handler(function, type="message", priority=50):
+    """register external message handler
 
-def deregister_handler(function, type="message"):
-    """deregister external handler"""
+    Args:
+        function: callable, with signature: function(bot, event, command)
+        name: string, key in handler.EventHandler.pluggables, event type
+        priority: int, change the sequence of handling the event
+    """
     bot_handlers = tracking.bot._handlers
-    bot_handlers.deregister_handler(function, type)
+    bot_handlers.register_handler(function, type, priority)
 
 def register_shared(identifier, objectref):
     """register a shared object to be called later
@@ -665,7 +629,6 @@ async def unload(bot, module_path):
             if handler[2]["module.path"] == module_path:
                 logger.debug("removing handler %s %s", type_, handler)
                 bot._handlers.pluggables[type_].remove(handler)
-                tracking.deregister_handler(handler[0], handler[2]["module.path"])
 
     shared = plugin["shared"]
     for shared_def in shared:
