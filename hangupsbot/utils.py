@@ -1,6 +1,7 @@
+# coding: utf-8
 import importlib, logging, unicodedata
 
-import hangups
+import hangups_shim as hangups
 
 from parsers import simple_parse_to_segments, segment_to_html
 

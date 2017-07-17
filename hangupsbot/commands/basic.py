@@ -1,4 +1,7 @@
-import logging, sys, re, resource
+import logging
+import importlib
+import sys
+import re
 
 import plugins
 
@@ -7,6 +10,11 @@ from commands import command
 
 
 logger = logging.getLogger(__name__)
+
+try:
+    import resource
+except ImportError:
+    logger.warning("resource is unavailable on your system")
 
 
 def _initialise(bot): pass # prevents commands from being automatically added
@@ -40,7 +48,6 @@ def help(bot, event, cmd=None, *args):
                                 '<b><pre>{}</pre></b><br />').format( help_chat_id,
                                                                       help_conv_id ))
 
-        help_lines.append('[botalias] <i><b>help</b> <command></i><br/>Show more info about a command.<br />')
         if len(commands_nonadmin) > 0:
             help_lines.append(_('<b>User commands:</b>'))
             help_lines.append(', '.join(sorted(commands_nonadmin)))
@@ -53,6 +60,17 @@ def help(bot, event, cmd=None, *args):
             help_lines.append('')
             help_lines.append(_('<b>Admin commands:</b>'))
             help_lines.append(', '.join(sorted(commands_admin)))
+
+        help_lines.append("")
+        help_lines.append("<b>Command-specific help:</b>")
+        help_lines.append("/bot help <command name>")
+
+        bot_aliases = [ _alias for _alias in bot._handlers.bot_command if len(_alias) < 9 ]
+        if len(bot_aliases) > 1:
+            help_lines.append("")
+            help_lines.append("<b>My short-hand names:</b>")
+            help_lines.append(', '.join(sorted(bot_aliases)))
+
     else:
         if cmd in command.commands and (cmd in commands_admin or cmd in commands_nonadmin):
             command_fn = command.commands[cmd]
@@ -62,25 +80,33 @@ def help(bot, event, cmd=None, *args):
             yield from command.unknown_command(bot, event)
             return
 
-        _docstring = command_fn.__doc__.strip()
+        if "__doc__" in dir(command_fn) and command_fn.__doc__:
+            _docstring = command_fn.__doc__.strip()
+        else:
+            _docstring = "_{}_".format(_("command help not available"))
 
-        """apply limited markdown-like formatting to command help"""
+        """docstrings: apply (very) limited markdown-like formatting to command help"""
 
         # simple bullet lists
         _docstring = re.sub(r'\n +\* +', '\n* ', _docstring)
 
-        # handle generic whitespace
-        # manually parse line-breaks: single break -> space; multiple breaks -> paragraph
-        # XXX: the markdown parser is iffy on line-break processing
-        _docstring = re.sub(r"(?<!\n)\n(?= *[^ \t\n\r\f\v\*])", " ", _docstring) # turn standalone linebreaks into space, preserves multiple linebreaks
-        _docstring = re.sub(r" +", " ", _docstring) # convert multiple consecutive spaces into single space
-        _docstring = re.sub(r" *\n\n+ *(?!\*)", "\n\n", _docstring) # convert consecutive linebreaks into double linebreak (pseudo-paragraph)
+        """docstrings: handle generic whitespace
+            manually parse line-breaks: single break -> space; multiple breaks -> paragraph
+            XXX: the markdown parser is iffy on line-break processing"""
 
-        # replace /bot with the first alias in the command handler
-        # XXX: [botalias] is left a replacement token for backward compatibility, please avoid using it
-        _docstring = re.sub("(\/bot|\[botalias\])", bot._handlers.bot_command[0], _docstring)
+        # turn standalone linebreaks into space, preserves multiple linebreaks
+        _docstring = re.sub(r"(?<!\n)\n(?= *[^ \t\n\r\f\v\*])", " ", _docstring)
+        # convert multiple consecutive spaces into single space
+        _docstring = re.sub(r" +", " ", _docstring)
+        # convert consecutive linebreaks into double linebreak (pseudo-paragraph)
+        _docstring = re.sub(r" *\n\n+ *(?!\*)", "\n\n", _docstring)
 
         help_lines.append("<b>{}</b>: {}".format(command_fn.__name__, _docstring))
+
+    # replace /bot with the first alias in the command handler
+    # XXX: [botalias] maintained backward compatibility, please avoid using it
+    help_lines = [ re.sub(r"(?<!\S)\/bot(?!\S)", bot._handlers.bot_command[0], _line)
+                   for _line in help_lines ]
 
     yield from bot.coro_send_to_user_and_conversation(
         event.user.id_.chat_id,
@@ -205,13 +231,37 @@ def optout(bot, event, *args):
 
 @command.register
 def version(bot, event, *args):
-    """get the version of the bot"""
-    yield from bot.coro_send_message(event.conv, _("Bot Version: <b>{}</b>").format(__version__))
+    """get the version of the bot and dependencies (admin-only)"""
+
+    version_info = []
+
+    version_info.append(_("Bot Version: **{}**").format(__version__)) # hangoutsbot
+    version_info.append(_("Python Version: **{}**").format(sys.version.split()[0])) # python
+
+    # display extra version information only if user is an admin
+
+    admins_list = bot.get_config_suboption(event.conv_id, 'admins')
+    if event.user.id_.chat_id in admins_list:
+        # depedencies
+        modules = args or [ "aiohttp", "appdirs", "emoji", "hangups", "telepot" ]
+        for module_name in modules:
+            try:
+                _module = importlib.import_module(module_name)
+                version_info.append(_("* {} **{}**").format(module_name, _module.__version__))
+            except(ImportError, AttributeError):
+                pass
+
+    yield from bot.coro_send_message(event.conv, "\n".join(version_info))
 
 
 @command.register(admin=True)
 def resourcememory(bot, event, *args):
     """print basic information about memory usage with resource library"""
+
+    if "resource" not in sys.modules:
+        yield from bot.coro_send_message(event.conv,  "<i>resource module not available</i>")
+        return
+
     # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/
     rusage_denom = 1024.
     if sys.platform == 'darwin':
