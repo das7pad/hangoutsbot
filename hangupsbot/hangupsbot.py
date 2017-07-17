@@ -79,6 +79,7 @@ class HangupsBot(object):
             logger.exception("FAILED TO LOAD CONFIG FILE")
             sys.exit(1)
         self.config.set_defaults(DEFAULT_CONFIG)
+        self.get_config_option = self.config.get_option
 
         # set localisation if any defined in
         #  config[language] or ENV[HANGOUTSBOT_LOCALE]
@@ -102,6 +103,7 @@ class HangupsBot(object):
         except (OSError, IOError, ValueError):
             logger.exception("FAILED TO LOAD/RECOVER A MEMORY FILE")
             sys.exit(1)
+        self.get_memory_option = self.memory.get_option
 
         self.stop = self._stop
         # Handle signals on Unix
@@ -376,9 +378,6 @@ class HangupsBot(object):
 
         return list(all_users.values())
 
-    def get_config_option(self, option):
-        return self.config.get_option(option)
-
     def get_config_suboption(self, conv_id, option):
         """get an entry in the conv config with a fallback to top level
 
@@ -392,9 +391,6 @@ class HangupsBot(object):
                 .default if the key does not exist on both level
         """
         return self.config.get_suboption("conversations", conv_id, option)
-
-    def get_memory_option(self, option):
-        return self.memory.get_option(option)
 
     def user_memory_set(self, chat_id, keyname, keyvalue):
         """set a value in the users memory entry and save to memory to file
