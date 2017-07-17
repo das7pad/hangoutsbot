@@ -769,6 +769,12 @@ class HangupsBot(object):
         raise NotImplementedError()
 
 
+    def __del__(self):
+        """help the gc with cleanup"""
+        for attr in dir(self):
+            setattr(self, attr, None)
+
+
 def configure_logging(args):
     """Configure Logging
 
