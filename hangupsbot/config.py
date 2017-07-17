@@ -364,6 +364,8 @@ class Config(collections.MutableMapping):
 
             elif isinstance(value, list):
                 defaults[key].extend(value)
+            else:
+                defaults[key] = value
 
     def validate(self, source, path=None):
         """ensure that the entrys in source are all available in the config
