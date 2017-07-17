@@ -82,24 +82,17 @@ class EventHandler(object):
         _conv_list.on_watermark_notification.add_observer(
             self._handle_status_change)
 
-    def register_handler(self, function, pluggable="message", priority=50,
-                         **kwargs):
+    def register_handler(self, function, pluggable="message", priority=50):
         """register an event handler
 
         Args:
             function: callable, the handling function/coro
             pluggable: string, a pluggable of .pluggables
             priority: int, lower priorities receive the event earlier
-            kwargs: dict, legacy to catch the positional argument 'type'
 
         Raises:
             KeyError: unknown pluggable specified
         """
-        if 'type' in kwargs:
-            pluggable = kwargs['type']
-            logger.warning('The positional argument "type" will be removed at '
-                           'any time soon.', stack_info=True)
-
         # a handler may use not all args or kwargs, inspect now and filter later
         expected = inspect.signature(function).parameters
         names = list(expected)
