@@ -160,13 +160,7 @@ def _format_source(bot, user_id):
     user = bot.get_hangups_user(user_id)
 
     link = 'https://plus.google.com/u/0/{}/about'.format(user.id_.chat_id)
-    try:
-        fullname = '{0}'.format(user.full_name.split(' ', 1)[0])
-        nickname = bot.get_memory_suboption(user.id_.chat_id, 'nickname')
-        if nickname:
-            fullname += " (" + nickname + ")"
-    except TypeError:
-        fullname = event.user.full_name
+    fullname = bot.user_memory_get(user.id_.chat_id, 'label') or user.full_name
 
     html_identity = '**{}**'.format(fullname)
 
@@ -175,9 +169,9 @@ def _format_source(bot, user_id):
 
 def _register_chatbridge_behaviour(behaviour, object):
     try:
-        chatbridge_behaviours = plugins.call_shared("chatbridge.behaviours")
+        chatbridge_behaviours = plugins.tracking.bot.call_shared("chatbridge.behaviours")
     except KeyError:
-        raise RuntimeException("handler does not seem to support chatbridge.behaviours")
+        raise RuntimeError("handler does not seem to support chatbridge.behaviours")
 
     if __name__ not in chatbridge_behaviours:
         chatbridge_behaviours[__name__] = {}
@@ -239,7 +233,7 @@ def _handle_syncrooms_membership_change(bot, event, command):
 
     syncroom_name = '<b>' + bot.conversations.get_name(event.conv) + '</b>'
 
-    if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+    if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
         # JOIN a specific room
 
         logger.info("{} user(s) added to {}".format(len(event_users), event.conv_id))
@@ -300,7 +294,7 @@ def syncusers(bot, event, *args):
             # list room-by-room, skip wildcard
             continue
 
-        if filter_convs and room_id not in filter_conv and room_id != target_conv:
+        if filter_convs and room_id not in filter_convs and room_id != target_conv:
             # if >1 conv id provided, filter by only supplied conv ids
             continue
 

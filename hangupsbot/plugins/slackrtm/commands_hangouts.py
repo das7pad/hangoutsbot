@@ -270,7 +270,7 @@ def slack_setsyncjoinmsgs(bot, event, *args):
     flag = args[2]
     if flag.lower() in ['true', 'on', 'y', 'yes']:
         flag = True
-    elif enable.lower() in ['false', 'off', 'n', 'no']:
+    elif flag.lower() in ['false', 'off', 'n', 'no']:
         flag = False
     else:
         yield from bot.coro_send_message(event.conv_id, "cannot interpret {} as either \"true\" or \"false\"".format(flag))
@@ -381,7 +381,7 @@ def slack_sethotag(bot, event, *args):
         return
 
     if hotag is True:
-        yield from bot.coro_send_message(event.conv_id, "messages synced from this hangout will be tagged with chatbridge-compatible channel title".format(slackname, channelname))
+        yield from bot.coro_send_message(event.conv_id, "messages synced from this hangout will be tagged with chatbridge-compatible channel title")
     elif hotag:
         yield from bot.coro_send_message(event.conv_id, "messages synced from this hangout will be tagged \"{}\" in {} : {}".format(hotag, slackname, channelname))
     else:

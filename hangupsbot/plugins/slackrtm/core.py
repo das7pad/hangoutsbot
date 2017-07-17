@@ -163,12 +163,12 @@ class SlackMessage(object):
             username = slackrtm.get_username(user, user)
             realname = slackrtm.get_realname(user,username)
 
-            username4ho = u'{2}'.format(domain, username, username)
-            realname4ho = u'{2}'.format(domain, username, realname)
+            username4ho = u'{}'.format(username)
+            realname4ho = u'{}'.format(realname)
             tag_from_slack = True
         elif sender_id != '':
-            username4ho = u'{1}'.format(sender_id, username)
-            realname4ho = u'{1}'.format(sender_id, username)
+            username4ho = u'{}'.format(username)
+            realname4ho = u'{}'.format(username)
             tag_from_slack = False
 
         if 'channel' in reply:
@@ -763,7 +763,7 @@ class SlackRTM(object):
                     if sync.image_upload:
 
                         self.loop.call_soon_threadsafe(
-                            asyncio.async,
+                            asyncio.ensure_future,
                             self.upload_image(
                                 msg.file_attachment,
                                 sync,
@@ -774,10 +774,10 @@ class SlackRTM(object):
                         self.lastimg = os.path.basename(msg.file_attachment)
                     else:
                         # we should not upload the images, so we have to send the url instead
-                        response += msg.file_attachment
+                        message += msg.file_attachment
 
                 self.loop.call_soon_threadsafe(
-                    asyncio.async,
+                    asyncio.ensure_future,
                     sync._bridgeinstance._send_to_internal_chat(
                         sync.hangoutid,
                         message,

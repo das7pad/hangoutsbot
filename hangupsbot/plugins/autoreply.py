@@ -30,7 +30,7 @@ def _handle_autoreply(bot, event, command):
     if isinstance(event.conv_event, hangups.ChatMessageEvent):
         event_type = "MESSAGE"
     elif isinstance(event.conv_event, hangups.MembershipChangeEvent):
-        if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
+        if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
             event_type = "JOIN"
         else:
             event_type = "LEAVE"

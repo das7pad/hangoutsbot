@@ -629,7 +629,7 @@ def showslackrealnames(slackbot, msg, args):
     elif realnames.lower() in ['false', 'off', 'n', 'no']:
         realnames = False
     else:
-        message += u'sorry, but "%s" is not "true" or "false"' % upload
+        message += u'sorry, but "%s" is not "true" or "false"' % realnames
         slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
@@ -684,7 +684,7 @@ def showhorealnames(slackbot, msg, args):
         channelname = '#%s' % slackbot.get_channelname(msg.channel)
 
     if realnames not in ['real', 'nick', 'both']:
-        message += u'sorry, but "%s" is not one of "real", "nick" or "both"' % upload
+        message += u'sorry, but "%s" is not one of "real", "nick" or "both"' % realnames
         slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
