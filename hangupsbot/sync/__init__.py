@@ -153,6 +153,10 @@ HELP = {
     # needs to be updated as more profilesyncs are registered during plugin load
     'sync_profile': '',
 
+    'sync1to1': _('Change the sync-setting for the private Hangout with the bot'
+                  ' and the private-chat on another platform:\n'
+                  '{bot_cmd} sync1to1 <platform> [off]'),
+
 }
 
 SYNCPROFILE_HELP = _(
@@ -175,7 +179,7 @@ def _initialise(bot):
         bot: HangupsBot instance
     """
     bot.memory.validate(DEFAULT_MEMORY)
-    plugins.register_user_command(['syncprofile'])
+    plugins.register_user_command(['syncprofile', 'sync1to1'])
     plugins.register_admin_command(['chattitle'])
     plugins.register_help(HELP)
 
@@ -279,3 +283,51 @@ async def syncprofile(bot, event, *args):
 
     await bot.sync.run_pluggable_omnibus('profilesync', bot, platform, user_id,
                                          conv_1on1, split)
+
+async def sync1to1(bot, event, *args):
+    """change the setting for 1on1 syncing to a platform
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent
+        args: tuple of strings, additional words passed to the command
+
+    Returns:
+        string
+    """
+    if not args:
+        raise Help(_('specify a platform'))
+
+    user_platform = args[0].lower()
+    platforms = {}
+    matching = []
+    for platform, value in bot.sync.profilesync_cmds.copy().items():
+        if (user_platform in platform.lower()
+                or user_platform in str(value).lower()):
+            matching.append(platform)
+        platforms[platform.lower()] = platform
+        platforms[value[0].lower()] = platform
+
+    if not platforms:
+        return _('There are no platform-syncs available!')
+
+    platform = (platforms.get(user_platform)
+                or matching[0] if len(matching) == 1 else None)
+
+    if platform is None:
+        raise Help(_('"%s" is not a valid sync platform, choose one of:\n%s')
+                   % (args[0], '"%s"' % '", "'.join(platforms)))
+
+    chat_id = event.user_id.chat_id
+    path = ['profilesync', platform, 'ho2', chat_id]
+    if not bot.memory.exists(path):
+        label, cmd = bot.sync.profilesync_cmds[platform]
+        return _('You do not have a profilesync set for <b>%s</b>!\n'
+                 'Start one there with <b>%s</b>') % (label, cmd)
+    platform_id = bot.memory.get_by_path(path)
+
+    conv_1to1 = (await bot.get_1to1(chat_id, force=True)).id_
+
+    split = args[-1].lower() == _('off')
+    await bot.sync.run_pluggable_omnibus('profilesync', bot, platform,
+                                         platform_id, conv_1to1, split)
