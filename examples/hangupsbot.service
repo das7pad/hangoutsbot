@@ -6,17 +6,27 @@
 # This file may be copied to /etc/systemd/system/ and modified with your own
 # local changes, such as the user to run the daemon as, and where the daemon
 # is located
+#
+# the default assums that the installation was made by the user hangoutsbot into
+# its home directory:
+# $ cd ~
+# $ git clone https://github.com/das7pad/hangoutsbot.git hangoutsbot
+# $ cd hangoutsbot
+# $ python3 -m venv venv
+# $ ./venv/bin/pip3 install -r requirements.txt
 
 [Unit]
-Description=Hangouts Helper Bot
+Description=HangoutsBot
 After=network-online.target
 
 [Service]
-ExecStart=/usr/local/hangoutsbot/hangupsbot/hangupsbot.py
+ExecStart=/home/hangoutsbot/hangoutsbot/venv/bin/python3 /home/hangoutsbot/hangoutsbot/hangupsbot/hangupsbot.py
 User=hangupsbot
 Group=hangupsbot
 
 Restart=on-failure
+RestartSec=5
+TimeoutStopSec=5
 SyslogIdentifier=hangupsbot
 
 [Install]
