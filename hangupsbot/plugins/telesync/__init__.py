@@ -1140,6 +1140,7 @@ class BridgeInstance(WebFramework):
 """hangoutsbot plugin initialisation"""
 
 def _initialise(bot):
+    plugins.register_aiohttp_session(ClientSession)
     if not _telesync_config(bot):
         return
 
