@@ -34,7 +34,7 @@ TOKEN_CHAR = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 CLASSES_TO_INIT = (FakeEvent, SyncEvent, SyncEventMembership,
                    SyncImage, SyncReply)
 
-SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'profilesync',
+SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'user_kick', 'profilesync',
                    'allmessages_once', 'message_once')
 
 DEFAULT_MEMORY = {
@@ -272,6 +272,28 @@ class SyncHandler(handlers.EventHandler):
                 self._bot_handlers.run_pluggable_omnibus(
                     "membership", self.bot, sync_event, command,
                     _run_concurrent_=True))
+
+    async def kick(self, *, user, conv_id):
+        """kick a platform user out of the synced chats
+
+        Args:
+            user: SyncUser instance
+            conv_id: string, conversation identifier
+
+        Returns:
+            set, results from all platforms, expect the items None: ignored,
+                False: kick failed, True: kicked, 'whitelisted'
+        """
+        conv_ids = self.get_synced_conversations(conv_id=conv_id,
+                                                 include_source_id=True)
+
+        raw_results = await asyncio.gather(
+            *[self._gen_handler_results('user_kick', conv_id_, user)
+              for conv_id_ in conv_ids])
+        results = set()
+        for result in raw_results:
+            results.update(result.values())
+        return results
 
     async def get_image_upload_info(self, image_data, image_filename,
                                     image_cache=None):
