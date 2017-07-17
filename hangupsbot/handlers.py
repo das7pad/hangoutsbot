@@ -1,9 +1,9 @@
 """Hangups conversationevent handler with custom pluggables for plugins"""
-
-import logging
-import shlex
+# pylint:disable=wrong-import-order
 import asyncio
 import inspect
+import logging
+import shlex
 import time
 import uuid
 

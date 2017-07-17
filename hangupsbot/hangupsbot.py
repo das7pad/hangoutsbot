@@ -586,6 +586,8 @@ class HangupsBot(object):
         await plugins.load_user_plugins(self)
 
         logger.warning("bot initialised")
+        sys.stdout.write("\x1b]2;HangupsBot: %s\x07"
+                         % self.user_self()["full_name"])
 
     async def coro_send_message(self, conversation, message, context=None,
                                 image_id=None):
@@ -798,7 +800,7 @@ def configure_logging(args):
             "console": {
                 "class": "logging.StreamHandler",
                 "stream": "ext://sys.stdout",
-                "level": "WARNING",
+                "level": "DEBUG" if args.debug else "WARNING",
                 "formatter": "default"
                 },
             "file": {

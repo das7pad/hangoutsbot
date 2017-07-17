@@ -63,8 +63,7 @@ class BridgeInstance(WebFramework):
 
         return self.configuration
 
-    @asyncio.coroutine
-    def _send_to_external_chat(self, config, event):
+    async def _send_to_external_chat(self, config, event):
         conv_id = config["trigger"]
         channel_id = config["config.json"]["slackrtm"][0]
         team_name = config["config.json"]["name"]
@@ -79,7 +78,7 @@ class BridgeInstance(WebFramework):
             try:
                 # identify the correct thread, then send the message
                 if slackrtm.name == team_name:
-                    yield from slackrtm.handle_ho_message(event, conv_id, channel_id)
+                    await slackrtm.handle_ho_message(event, conv_id, channel_id)
             except Exception as e:
                 logger.exception(e)
 

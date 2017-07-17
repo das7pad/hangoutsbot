@@ -227,12 +227,12 @@ class ConversationMemory(object):
         logger.debug("getentitybyid(): %s", chat_ids)
 
         request = hangups.hangouts_pb2.GetEntityByIdRequest(
-            request_header=self.bot._client.get_request_header(),
+            request_header=self.bot.get_request_header(),
             batch_lookup_spec=[
                 hangups.hangouts_pb2.EntityLookupSpec(gaia_id=chat_id)
                 for chat_id in chat_ids])
         try:
-            response = await self.bot._client.get_entity_by_id(request)
+            response = await self.bot.get_entity_by_id(request)
         except hangups.exceptions.NetworkError:
             logger.exception("getentitybyid(): FAILED for %s", chat_ids)
             return 0

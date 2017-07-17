@@ -166,6 +166,7 @@ class Tracker(object):
             self.register_tags(type_, command_name, command_tags)
 
     def register_tags(self, type_, command_name, tags):
+        """add a tagged command to the plugin tracking"""
         commands_tagged = self._current["commands"]["tagged"]
         commands_tagged.setdefault(command_name, {})
         commands_tagged[command_name].setdefault(type_, set())
@@ -180,8 +181,9 @@ class Tracker(object):
 
         logger.debug("%s - [%s] tags: %s", command_name, type_, tags)
 
-    def register_handler(self, function, type, priority, module_path=None):
-        self._current["handlers"].append((function, type, priority))
+    def register_handler(self, function, pluggable, priority):
+        """see module method"""
+        self._current["handlers"].append((function, pluggable, priority))
 
     def register_shared(self, identifier, objectref):
         """track a registered shared
@@ -193,6 +195,7 @@ class Tracker(object):
         self._current["shared"].append((identifier, objectref))
 
     def register_thread(self, thread):
+        """add a single Thread to the plugin tracking"""
         self._current["threads"].append(thread)
 
     def register_aiohttp_web(self, group):
@@ -200,10 +203,12 @@ class Tracker(object):
         if group not in self._current["aiohttp.web"]:
             self._current["aiohttp.web"].append(group)
 
-    def register_asyncio_task(self, task, module_path=None):
+    def register_asyncio_task(self, task):
+        """add a single asnycio.Task to the plugin tracking"""
         self._current["asyncio.task"].append(task)
 
     def register_command_argument_preprocessors_group(self, name):
+        """add a argument preprocessor to the plugin tracking"""
         if name not in self._current["commands"]["argument.preprocessors"]:
             self._current["commands"]["argument.preprocessors"].append(name)
 
@@ -604,6 +609,17 @@ def load_module(module_path):
         return False
 
 async def unload(bot, module_path):
+    """unload a plugin including all external registered resources
+
+    Args:
+        module_path: string, plugin path on disk relative to the main script
+
+    Returns:
+        boolean, True if the plugin was fully unloaded, otherwise None
+
+    Raises:
+        RuntimeError: the plugin has registered threads
+    """
     plugin = tracking.list.pop(module_path)
 
     if plugin["threads"]:
