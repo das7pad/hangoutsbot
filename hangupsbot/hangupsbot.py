@@ -50,6 +50,9 @@ DEFAULT_CONFIG = {
 
     # timeout in second
     "message_queque_unload_timeout": 3,
+
+    # number of threads for parallel execution
+    "max_threads": 10,
 }
 
 class HangupsBot(object):
@@ -222,9 +225,10 @@ class HangupsBot(object):
         # Start asyncio event loop
         loop = asyncio.get_event_loop()
 
-        threads = self.get_config_option("max_threads") or 5
+        # limit the number of threads for parallel execution
         loop.set_default_executor(
-            concurrent.futures.ThreadPoolExecutor(max_workers=threads))
+            concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.config.get_option("max_threads")))
 
         # initialise pluggable framework
         sinks.start(self)
