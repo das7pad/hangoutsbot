@@ -150,6 +150,14 @@ HELP = {
                    'Bob (touri) @mentioned you in "Berlin Tourists":\n'
                    '@alice where do I find X?'),
 
+    'syncusers': _('<b>Usage:</b>\n{bot_cmd} syncusers [<conv_id>] [flat] '
+                   '[unique] [profilesync]\nAll arguments are optional, use\n '
+                   '<i>flat</i>  to get all users in one list\n <i>unique</i> '
+                   'to remove duplicates, use it with flat\n <i>profilesync</i>'
+                   '  to include only users with a synced G+ profile\n\n'
+                   '{bot_cmd} syncusers flat unique\n{bot_cmd} syncusers '
+                   'profilesync'),
+
     # needs to be updated as more profilesyncs are registered during plugin load
     'sync_profile': '',
 
@@ -179,9 +187,11 @@ def _initialise(bot):
         bot: HangupsBot instance
     """
     bot.memory.validate(DEFAULT_MEMORY)
-    plugins.register_user_command(['syncprofile', 'sync1to1'])
+    plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
     plugins.register_admin_command(['chattitle'])
     plugins.register_help(HELP)
+
+    bot.register_shared('syncusers', functools.partial(_syncusers, bot))
 
     bot.register_shared('setchattitle', functools.partial(_chattitle, bot))
 
@@ -237,6 +247,98 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
     return _('Chattitle changed for {} from "{}" to "{}".').format(
         conv_id, current_title, new_title)
 
+async def syncusers(bot, event, *args):
+    """get users that attend current or given conversation
+
+    Args:
+        bot: HangupsBot instance
+        event: hangups event instance
+        args: additional text as tupel
+    """
+    return await _syncusers(bot, args, event.conv_id, event.user_id)
+
+async def _syncusers(bot, args, conv_id=None, user_id=None):
+    """get users that attend current or given conversation
+
+    non-admins can only get the members of attending conversations
+
+    Args:
+        bot: HangupsBot instance
+        args: tuple of string, additional words passed to the command
+        conv_id: string, fallback if no conversation is specified in the args
+        user_id: hangups.user.UserID instance, the user who sent the request
+    """
+    if 'help' in args:
+        raise Help()
+
+    parsed = {key: key in args
+              for key in ('flat', 'unique', 'profilesync', 'nolinks', 'ids')}
+
+    conv_id = _convid_from_args(bot, args, conv_id)[0]
+
+    if parsed['ids']:
+        parsed['profilesync'] = True
+        parsed['unique'] = True
+        parsed['nolinks'] = True
+
+    users = await bot.sync.get_users_in_conversation(
+        conv_id, return_flat=parsed['flat'], unique_users=parsed['unique'],
+        profilesync_only=parsed['profilesync'])
+
+    lines = []
+    if parsed['flat']:
+        header_template = _('    <b>All platforms merged</b>:')
+        conversations = {conv_id: {'all': users}}
+    else:
+        header_template = '    <b>{identifier}</b>: {count}'
+        lines.append(_('Users are listed per platform.'))
+        lines.append('')
+        conversations = users
+
+    user_count = 0
+    for conv_id_, platforms in conversations.items():
+        lines.append(_('~ in <i>{title}</i> :').format(
+            title=bot.conversations.get_name(conv_id_, conv_id_)))
+        for platform, users in platforms.items():
+            lines.append(header_template.format(identifier=platform,
+                                                count=len(users)))
+
+            for user in users:
+                user_id = None if user.id_ == user_id else user_id
+                user_count += 1
+                if parsed['ids']:
+                    label = user.id_.chat_id
+                else:
+                    label = '<b>%s</b>' % user.get_displayname(conv_id,
+                                                               text_only=True)
+
+
+                lines.append('{spacer} {gplustag}{label}'.format(
+                    spacer=' '*6,
+                    # do not show a G+ tag if the (G+)userlink is shown anyways
+                    gplustag='' if (user.id_.chat_id == 'sync' or parsed['ids']
+                                    or not parsed['nolinks']) else '<b>G+ </b>',
+                    label=label))
+
+                if parsed['nolinks'] or user.user_link is None:
+                    continue
+
+                # (first) userlink
+                lines.append('{}{}'.format(' '*9, user.user_link))
+
+                if (user.id_.chat_id != 'sync' and
+                        user.id_.chat_id not in user.user_link):
+                    # G+ user has got a platform specific link, append a G+ link
+                    lines.append('{}https://plus.google.com/{}'.format(
+                        ' '*9, user.id_.chat_id))
+
+    if user_id is not None and user_id.chat_id not in bot.config['admins']:
+        return _('You are not member of the chat "%s"') % conv_id
+
+    lines.append('')
+    lines.append(_('{} users in total.').format(user_count))
+
+    return '\n'.join(lines)
 
 async def syncprofile(bot, event, *args):
     """syncs ho-user with platform-user-profile and syncs pHO <-> platform 1on1
