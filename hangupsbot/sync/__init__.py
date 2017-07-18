@@ -6,6 +6,9 @@ import functools
 from commands import Help # pylint: disable=wrong-import-order
 import plugins
 
+from .utils import get_sync_config_entry
+
+
 DEFAULT_CONFIG = {
 
     # used separate the meta info from the actual text of a message
@@ -165,6 +168,15 @@ HELP = {
                   ' and the private-chat on another platform:\n'
                   '{bot_cmd} sync1to1 <platform> [off]'),
 
+    'sync_config': _('Change a per conversation config entry for the current '
+                     'conversation, another Hangouts conversation or a platform'
+                     ' chat that has initialised by the other platform:\n'
+                     '{bot_cmd} sync_config [<conv identifer>] key <new value>'
+                     '\nTo get list of available conv identifier, use\n'
+                     '{bot_cmd} sync_config list\nThis list does not include '
+                     'regular Hangouts conv ids as these can be received via\n'
+                     '{bot_cmd} hangouts [<search term>]'),
+
 }
 
 SYNCPROFILE_HELP = _(
@@ -188,12 +200,103 @@ def _initialise(bot):
     """
     bot.memory.validate(DEFAULT_MEMORY)
     plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
-    plugins.register_admin_command(['chattitle'])
+    plugins.register_admin_command(['chattitle', 'sync_config'])
     plugins.register_help(HELP)
 
     bot.register_shared('syncusers', functools.partial(_syncusers, bot))
 
     bot.register_shared('setchattitle', functools.partial(_chattitle, bot))
+    bot.register_shared('sync_config', functools.partial(_sync_config, bot))
+
+async def sync_config(bot, event, *args):
+    """update a config entry for a conversation
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple, a tuple of strings that were passed to the command
+
+    Returns:
+        string, the reply of the command or None if the help entry was called
+    """
+    if not args or (len(args) == 1 and args[0].lower() != 'list'):
+        raise Help()
+
+    if args[0].lower() == 'list':
+        lines = []
+        lines.append(_('Platform specific conversations for sync_config:'))
+        lines.extend(sorted([conv for conv in bot.config['conversations']
+                             if ':' in conv]))
+        return '\n'.join(lines)
+
+    if args[0] in bot.conversations or args[0] in bot.config['conversations']:
+        conv_id = args[0]
+        key = args[1]
+        value = ' '.join(args[2:])
+    else:
+        conv_id = event.conv_id
+        key = args[0]
+        value = ' '.join(args[1:])
+
+    try:
+        last_value, new_value = _sync_config(bot, conv_id, key, value)
+    except (KeyError, TypeError) as err:
+        return err.args[0]
+    else:
+        return _('%s updated for conversation "%s" from "%s" to "%s"') % (
+            key, conv_id, last_value, new_value)
+
+def _sync_config(bot, conversation, key, value):
+    """update a config entry for a conversation
+
+    Args:
+        bot: HangupsBot instance
+        conversation: string, conversation identifer to update the config for
+        key: string, config key to set a different value on conversation level
+        value: any type, the new value
+
+    Returns:
+        tuple: the recent value of the config entry and the parsed new value
+
+    Raises:
+        KeyError: the config entry is unknown/not allowed per conversation
+        TypeError: the new values type does not match with the existing
+    """
+    if key[:5] != 'sync_':
+        key = 'sync_' + key
+
+    if key not in SYNC_CONFIG_KEYS:
+        raise KeyError(_('%s is not a valid per conversation config key') % key)
+    last_value = get_sync_config_entry(bot, conversation, key)
+
+    if value[0] == value[-1] and value[0] in ('"', "'"):
+        value = value[1:-1]
+
+    new_value = (None if value.lower() == _('none') else
+                 True if value.lower() == _('true') else
+                 False if value.lower() == _('false') else
+                 int(value) if value.isdigit() else value)
+
+    path = ['conversations', conversation, key]
+
+    if new_value is None:
+        # reset to default
+        bot.config.ensure_path(path)
+        bot.config.get_by_path(path[:-1]).pop(key, None)
+        new_value = get_sync_config_entry(bot, conversation, key)
+
+    else:
+        # verify type and set the new value
+        expected_type = type(DEFAULT_CONFIG[key])
+        if not isinstance(new_value, expected_type):
+            raise TypeError(
+                _('%s is not a valid value for %s: expected %s but got %s' % (
+                    new_value, key, expected_type, type(new_value))))
+
+        bot.config.set_by_path(path, new_value)
+
+    bot.config.save()
+    return last_value, new_value
 
 async def chattitle(bot, event, *args):
     """set the title that will be synced for the current conversation
