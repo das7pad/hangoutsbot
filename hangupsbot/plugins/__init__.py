@@ -718,11 +718,13 @@ async def reload_plugin(bot, module_path):
     Returns:
         boolean, False if the plugin may not be reloaded again, otherwise True
     """
+    if module_path in tracking.list:
+        await unload(bot, module_path)
+
     repeat = SENTINALS.setdefault(module_path, 0)
     if repeat >= 3:
         logger.critical('too many reloads of %s, enter failstate', module_path)
         return False
     SENTINALS[module_path] += 1
-    await unload(bot, module_path)
     await load(bot, module_path)
     return True
