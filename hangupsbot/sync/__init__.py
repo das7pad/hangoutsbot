@@ -3,9 +3,12 @@ __author__ = 'das7pad@outlook.com'
 
 import functools
 
+from hangups import hangouts_pb2
+
 from commands import Help # pylint: disable=wrong-import-order
 import plugins
 
+from .user import SyncUser
 from .utils import get_sync_config_entry
 
 
@@ -130,6 +133,7 @@ DEFAULT_CONFIG = {
 
 DEFAULT_MEMORY = {
     'chattitle': {},
+    'check_users': {}
 }
 
 # exclude those from beeing changed without effect by sync_config()
@@ -168,6 +172,27 @@ HELP = {
                   ' and the private-chat on another platform:\n'
                   '{bot_cmd} sync1to1 <platform> [off]'),
 
+    'check_users': _('Perform a platform wide member check on the current or '
+                     'given conversation. Users will be automatcally kicked or'
+                     ' added, profilesyncs are used to identify users on other '
+                     'platforms. Usage:\n{bot_cmd} check_users [<conv id>] '
+                     '[<G+ user ids, 21 digits each>] [kick_only] '
+                     '[<add | remove>]\n"kick_only" does not add missing users'
+                     'to the Hangout, edit an existing user list by adding '
+                     '"add" or "remove" to the command\n'
+                     'Note: The Bot needs kick-permissions: in Hangouts: not '
+                     'joined via invite-url; Telegram: chat setting may not be '
+                     '"all users are admins"\nAdmins on each platform and the '
+                     'bot user are whitelisted on each platform.\nExamples ~ '
+                     'explaination:\n{bot_cmd} check_users\n~ check current '
+                     'conv with the last userlist or kick everyone\n{bot_cmd} '
+                     'check_users UgyiJIGTDLfz6d5cLVp4AaABAQ '
+                     '012345678910111213141 123456789101112131415 kick_only\n'
+                     '~ reset the user list of "UgyiJIGTDLfz6d5cLVp4AaABAQ" to '
+                     'the two specified G+IDs and check all relays of the given'
+                     ' conv_id weather users not matching these two user IDs '
+                     'are attending and kick those'),
+
     'sync_config': _('Change a per conversation config entry for the current '
                      'conversation, another Hangouts conversation or a platform'
                      ' chat that has initialised by the other platform:\n'
@@ -200,13 +225,37 @@ def _initialise(bot):
     """
     bot.memory.validate(DEFAULT_MEMORY)
     plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
-    plugins.register_admin_command(['chattitle', 'sync_config'])
+    plugins.register_admin_command(['chattitle', 'sync_config', 'check_users'])
     plugins.register_help(HELP)
 
     bot.register_shared('syncusers', functools.partial(_syncusers, bot))
 
+    bot.register_shared('check_users',
+                        functools.partial(_config_check_users, bot))
+
     bot.register_shared('setchattitle', functools.partial(_chattitle, bot))
     bot.register_shared('sync_config', functools.partial(_sync_config, bot))
+
+def _convid_from_args(bot, args, conv_id=None):
+    """get the conv_id and cleaned params from raw args
+
+    Args:
+        bot: HangupsBot instance
+        args: iterable, having strings as items
+        conv_id: string, fallback if no other conv_id is in the args specified
+
+    Returns:
+        tuple: conv_id or None and the params without conv_id(s)/aliases
+    """
+    params = []
+    for item in args:
+        if item in bot.conversations:
+            conv_id = item
+        elif item in bot.memory['hoalias']:
+            conv_id = bot.memory['hoalias'][item]
+        else:
+            params.append(item)
+    return conv_id, params
 
 async def sync_config(bot, event, *args):
     """update a config entry for a conversation
@@ -536,3 +585,143 @@ async def sync1to1(bot, event, *args):
     split = args[-1].lower() == _('off')
     await bot.sync.run_pluggable_omnibus('profilesync', bot, platform,
                                          platform_id, conv_1to1, split)
+
+async def check_users(bot, event, *args):
+    """add or kick all users that are missing or not on the list, include syncs
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple, additional words passed with the command
+    """
+    return await _config_check_users(bot, *args, conv_id=event.conv_id)
+
+async def _config_check_users(bot, *args, conv_id=None, targets=None):
+    """add or kick all users that are missing or not on the list, include syncs
+
+    Args:
+        bot: HangupsBot instance
+        args: tuple, additional words passed with the command
+        conv_id: string, default conversation if none specified in the args
+        targets: list of strings, conversation identifier of relay targets
+
+    Returns:
+        string, the command output
+    """
+    conv_id_, params = _convid_from_args(bot, args)
+    if conv_id_ is not None:
+        conv_id = conv_id_
+        targets = None
+
+    edit = any(key in args for key in ('add', 'remove', 'show'))
+    load = edit or not params or (len(params) == 1 and
+                                  params[0] in ('kick_only', 'verbose'))
+
+    allowed_users = (set(bot.memory['check_users'][conv_id])
+                     if load and conv_id in bot.memory['check_users']
+                     else set())
+
+    for item in args:
+        if item.isdigit() and len(item) == 21:
+            if 'remove' in args:
+                allowed_users.discard(item)
+            else:
+                allowed_users.add(item)
+
+    if allowed_users or edit:
+        # sort the ids to get the 'same' list if no changes were made
+        bot.memory['check_users'][conv_id] = list(sorted(allowed_users))
+        bot.memory.save()
+    elif not load:
+        return _('specify at least one G+ID to perform a user check')
+
+    if edit:
+        lines = [_('allowed users in %s:') % conv_id]
+        lines.extend(['%s (%s)' % (chat_id,
+                                   SyncUser(bot, user_id=chat_id)
+                                   .get_displayname(conv_id, text_only=True))
+                      for chat_id in allowed_users])
+        lines.append(_('%s users in total' % len(allowed_users)))
+
+        return '\n'.join(lines)
+
+    return await _check_users(bot, conv_id, kick_only='kick_only' in args,
+                              verbose='verbose' in args, targets=targets)
+
+async def _check_users(bot, conv_id, kick_only=False, verbose=True,
+                       targets=None):
+    """add or kick all users that are missing or not on the list, include syncs
+
+    Args:
+        bot: HangupsBot instance
+        conv_id: string, conversation identifier
+        kick_only: boolean, toggle to ignore missing/left users
+        verbose: boolean, toggle to get whitelisted users in the output
+        targets: list of strings, conversation identifier of relay targets
+
+    Returns:
+        string, the command output
+    """
+    if not targets:
+        targets = bot.sync.get_synced_conversations(conv_id=conv_id,
+                                                    include_source_id=True)
+
+    allowed_users = set()
+    for item in targets:
+        if item not in bot.memory['check_users']:
+            continue
+        allowed_users.update(bot.memory['check_users'][item])
+
+    users = await bot.sync.get_users_in_conversation(conv_id,
+                                                     unique_users=False)
+
+    kicked = []
+    # kick sequentially to lower the possibility of getting ratelimited
+    for user in users:
+        if user.id_.chat_id in allowed_users:
+            continue
+        kicked.append((user, await bot.sync.kick(user=user, conv_id=conv_id)))
+
+    summery = []
+    for user, results in kicked:
+        results.discard(None)
+        status = _('failed')
+        if len(results) == 1:
+            result = results.pop()
+
+            if result == 'whitelisted' and not verbose:
+                continue
+
+            status = (status if result is False else
+                      _('success') if result is True else
+                      _('whitelisted') if result == 'whitelisted' else
+                      str(result))
+
+        summery.append(' '*2 + status)
+        summery.append(' '*4 + user.get_displayname(conv_id, True))
+        summery.append(' '*4 + user.user_link)
+    if summery:
+        summery.insert(0, _('Kick requests:'))
+
+    new_user = allowed_users - set([user.id_.chat_id for user in users])
+
+    if new_user and not kick_only:
+        await bot.add_user(
+            hangouts_pb2.AddUserRequest(
+                request_header=bot.get_request_header(),
+                invitee_id=[hangouts_pb2.InviteeID(gaia_id=chat_id)
+                            for chat_id in new_user],
+                event_request_header=hangouts_pb2.EventRequestHeader(
+                    conversation_id=hangouts_pb2.ConversationId(id=conv_id),
+                    client_generated_id=bot.get_client_generated_id())))
+
+        summery.append(_('Users added:'))
+        for item in new_user:
+            user = SyncUser(bot, user_id=item)
+            summery.append(' '*3 + user.get_displayname(conv_id, True))
+            summery.append(' '*3 + user.user_link)
+
+    if not summery:
+        summery = [_('No changes')]
+
+    return '\n'.join(summery)
