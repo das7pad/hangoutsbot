@@ -13,6 +13,8 @@ from .utils import get_sync_config_entry
 
 
 DEFAULT_CONFIG = {
+    # store conv_ids for conversations that have auto kick enabled
+    'autokick': [],
 
     # used separate the meta info from the actual text of a message
     'sync_separator': ' : ',
@@ -140,11 +142,20 @@ DEFAULT_MEMORY = {
 GLOBAL_KEYS = ('sync_cache_dump_image', 'sync_cache_timeout_conv_user',
                'sync_cache_timeout_gif', 'sync_cache_timeout_photo',
                'sync_cache_timeout_sending_queue', 'sync_cache_timeout_sticker',
-               'sync_cache_timeout_video', 'sync_separator')
+               'sync_cache_timeout_video', 'sync_separator', 'autokick')
 
 SYNC_CONFIG_KEYS = tuple(sorted(set(DEFAULT_CONFIG.keys()) - set(GLOBAL_KEYS)))
 
 HELP = {
+    'autokick': _('Enable or disable auto kick for the current or given '
+                  'conversation. This requires a configured user list, see '
+                  '<b>{bot_cmd} help check_users</b>. New users joining the '
+                  'specified conversation - or a sync-target of it - are kicked'
+                  ' automatically if they were not added to the '
+                  '<i>check_users</i> -userlist before.\n'
+                  'Usage:\n{bot_cmd} autokick <conv_id | alias>\n'
+                  'inverts the current setting'),
+
     'chattitle': _('Update the synced title for a conversation, specify a '
                    'conversation identifer to update the tag of another '
                    'conversation.\n{bot_cmd} chattitle [<conv id>] <new title>'
@@ -225,7 +236,9 @@ def _initialise(bot):
     """
     bot.memory.validate(DEFAULT_MEMORY)
     plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
-    plugins.register_admin_command(['chattitle', 'sync_config', 'check_users'])
+    plugins.register_admin_command(['chattitle', 'sync_config', 'check_users',
+                                    'autokick'])
+    plugins.register_sync_handler(_autokick, 'membership')
     plugins.register_help(HELP)
 
     bot.register_shared('syncusers', functools.partial(_syncusers, bot))
@@ -725,3 +738,56 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
         summery = [_('No changes')]
 
     return '\n'.join(summery)
+
+async def _autokick(bot, event):
+    """kick users that are not previously whitelisted for the conversation
+
+    Args:
+        bot: HangupsBot instance
+        event: sync.event.SyncEventMembership instance
+    """
+    if event.type_ != 1:
+        # a user left the conversation
+        return
+
+    if (event.conv_id not in bot.config['autokick'] or
+            event.conv_id not in bot.memory['check_users']):
+        return
+
+    text = await _check_users(bot, event.conv_id, kick_only=True, verbose=False,
+                              targets=event.targets)
+
+    if '\n' not in text:
+        # no changes
+        return
+
+    await bot.coro_send_message(event.conv_id, text)
+
+def autokick(bot, event, *args):
+    """change the setting for autokick for a given or the current conversation
+
+    Args:
+        bot: HangupsBot instance
+        event: hangups event instance
+        args: additional text as tupel
+
+    Returns:
+        string
+    """
+    conv_id = _convid_from_args(bot, args, conv_id=event.conv_id)[0]
+
+    was_enabled = conv_id in bot.config['autokick']
+
+    if was_enabled:
+        bot.config['autokick'].remove(conv_id)
+    else:
+        bot.config['autokick'].append(conv_id)
+
+    # the first run of autokick will fetch the list from config.defaults and
+    # this list then needs to be copied to the 'real' config
+    bot.config['autokick'] = bot.config['autokick']
+
+    bot.config.save()
+
+    return _('autokick is %s for %s') % (_('OFF') if was_enabled else _('ON'),
+                                         conv_id)
