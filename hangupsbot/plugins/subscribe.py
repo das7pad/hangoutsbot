@@ -4,6 +4,7 @@ import asyncio
 import logging
 import re
 
+import commands
 import plugins
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,9 @@ USER_NOTE_START_1ON1 = _(
     )
 
 # Cache to keep track of what keywords are being watched.
+# _keywords is indexed with a users chat_id, _global_keywords by keyword
 _keywords = {}
+_global_keywords = {}
 
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
@@ -26,9 +29,12 @@ def _initialise(bot):
         bot: HangupsBot instance
     """
     plugins.register_sync_handler(_handle_keyword, 'message')
+    plugins.register_sync_handler(_handle_once, 'message_once')
     plugins.register_user_command(["subscribe", "unsubscribe"])
+    plugins.register_admin_command(["global_subscribe", "global_unsubscribe"])
     plugins.register_admin_command(["testsubscribe"])
     bot.config.set_defaults({"subscribe.enabled": True})
+    bot.memory.set_defaults({"hosubscribe": {}})
     bot.memory.ensure_path(["user_data"])
     bot.memory.save()
     _populate_keywords(bot)
@@ -43,6 +49,7 @@ def _populate_keywords(bot):
         userkeywords = bot.user_memory_get(userchatid, "keywords")
         if userkeywords is not None:
             _keywords[userchatid] = userkeywords
+    _global_keywords.update(bot.memory['hosubscribe'])
 
 def _handle_keyword(bot, event, dummy, include_event_user=False):
     """handle keyword"""
@@ -63,6 +70,41 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
             if phrase in event_text:
                 asyncio.ensure_future(
                     _send_notification(bot, event, phrase, user))
+
+def _handle_once(bot, event):
+    """scan the text of an event for subscribed keywords and notify the targets
+
+    Args:
+        bot: HangupsBot instance
+        event: sync.event.SyncEvent instance
+    """
+    matches = {}
+    event_text = event.text.lower()
+
+    for keyword, conversations in _global_keywords.copy().items():
+        if keyword not in event_text:
+            continue
+        for alias in conversations:
+            conv_id = bot.call_shared('alias2convid', alias) or alias
+
+            if conv_id in event.targets:
+                # receives the message anyways
+                continue
+            matches[conv_id] = keyword
+
+    user = bot.sync.get_sync_user(user_id=bot.user_self()['chat_id'])
+    previous_targets = event.targets + list(event.previous_targets)
+    for conv_id, keyword in matches.items():
+        user_name = event.user.get_displayname(conv_id, text_only=True)
+        title = event.title(conv_id)
+        if title:
+            title = ' in <i>%s</i> ' % title
+        text = _('<b>{}</b> mentioned "{}"{}:\n{}').format(
+            user_name, keyword, title, event.text)
+        asyncio.ensure_future(
+            bot.sync.message(identifier='hangouts:%s' % event.conv_id,
+                             conv_id=conv_id, user=user, text=text, title='',
+                             previous_targets=previous_targets))
 
 async def _send_notification(bot, event, phrase, user):
     """Alert a user that a keyword that they subscribed to has been used
@@ -183,3 +225,94 @@ def testsubscribe(bot, event, *dummys):
         *args: list of strings, additional words as the test mention
     """
     _handle_keyword(bot, event, False, include_event_user=True)
+
+def global_subscribe(bot, event, *args):
+    """subscribe keywords globally with a custom conversation as target
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple, additional strings passed to the command
+
+    Returns:
+        string
+    """
+    if not args:
+        raise commands.Help('Missing keyword and/or conversation!')
+
+    if len(args) == 2 and (bot.call_shared('alias2convid', args[0]) or
+                           args[0] in bot.conversations):
+        conv_id = bot.call_shared('alias2convid', args[0]) or args[0]
+    else:
+        conv_id = event.conv_id
+
+    alias = bot.call_shared('convid2alias', conv_id) or conv_id
+    keyword = args[-1].lower()
+
+    if keyword in _global_keywords:
+        if alias in _global_keywords[keyword]:
+            return _('The conversation "%s" already receives messages '
+                     'containing "%s".') % (alias, keyword)
+
+        _global_keywords[keyword].append(alias)
+        text = _('These conversation will receive messages containing "%s":'
+                 '\n%s') % (keyword, ', '.join(_global_keywords[keyword]))
+
+    elif keyword != 'show':
+        _global_keywords[keyword] = [alias]
+        text = _('The conversation "%s" is the only one with a subscribe to '
+                 '"%s"') % (alias, keyword)
+
+    else:
+        subscribes = []
+        for keyword_, conversations in _global_keywords.copy().items():
+            if alias in conversations:
+                subscribes.append(keyword_)
+        return _('The conversation "%s" has subscribed to %s') % (
+            alias, (', '.join(['"%s"' % item for item in subscribes])
+                    or _('None')))
+
+    bot.memory['hosubscribe'] = _global_keywords
+    bot.memory.save()
+    return text
+
+def global_unsubscribe(bot, event, *args):
+    """unsubscribe from keywords globally
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple, additional strings passed to the command
+
+    Returns:
+        string
+    """
+    if not args:
+        raise commands.Help('Missing keyword and/or conversation!')
+
+    if len(args) == 2 and (bot.call_shared('alias2convid', args[0]) or
+                           args[0] in bot.conversations):
+        conv_id = bot.call_shared('alias2convid', args[0]) or args[0]
+    else:
+        conv_id = event.conv_id
+
+    alias = bot.call_shared('convid2alias', conv_id) or conv_id
+    keyword = args[-1].lower()
+
+    if keyword not in _global_keywords:
+        return _('No conversation has subscribed to %s') % keyword
+
+    if alias not in _global_keywords[keyword]:
+        return _('The conversation "%s" has not subscribed to "%s"') % (alias,
+                                                                        keyword)
+
+    _global_keywords[keyword].remove(alias)
+
+    if not _global_keywords[keyword]:
+        # cleanup
+        _global_keywords.pop(keyword)
+
+    bot.memory['hosubscribe'] = _global_keywords
+    bot.memory.save()
+    return _('The conversation "%s" will not longer receive messages '
+             'containing "%s"') % (alias, keyword)
