@@ -205,23 +205,26 @@ def version(bot, event, *args):
 
     version_info = []
 
-    version_info.append(_("Bot Version: **{}**").format(__version__)) # hangoutsbot
-    version_info.append(_("Python Version: **{}**").format(sys.version.split()[0])) # python
+    version_info.append(_("Bot Version: <b>{}</b>").format(__version__)) # hangoutsbot
+    version_info.append(_("Python Version: <b>{}</b>").format(sys.version.split()[0])) # python
 
     # display extra version information only if user is an admin
 
     admins_list = bot.get_config_suboption(event.conv_id, 'admins')
     if event.user.id_.chat_id in admins_list:
         # depedencies
-        modules = args or [ "aiohttp", "appdirs", "emoji", "hangups", "telepot" ]
+        modules = args or ["aiohttp", "appdirs", "emoji", "hangups", "telepot"]
         for module_name in modules:
             try:
                 _module = importlib.import_module(module_name)
-                version_info.append(_("* {} **{}**").format(module_name, _module.__version__))
-            except(ImportError, AttributeError):
-                pass
+                result = _module.__version__
+            except ImportError:
+                result = _('module unknown')
+            except AttributeError:
+                result = _('version unknown')
+            version_info.append('- {} <b>{}</b>'.format(module_name, result))
 
-    yield from bot.coro_send_message(event.conv, "\n".join(version_info))
+    return "\n".join(version_info)
 
 
 @command.register(admin=True)
