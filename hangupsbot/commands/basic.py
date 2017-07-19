@@ -212,6 +212,13 @@ def version(bot, event, *args):
         version_info.append(
             _("Python Version: <b>{}</b>").format(sys.version.split()[0]))
 
+        in_venv = (hasattr(sys, 'real_prefix')
+                   or (hasattr(sys, 'base_prefix')
+                       and sys.base_prefix != sys.prefix))
+
+        version_info.append(_('running in a virtual environment') if in_venv
+                            else _('running outside a virtual environment'))
+
         # depedencies
         modules = args or ["aiohttp", "appdirs", "emoji", "hangups", "telepot"]
         for module_name in modules:
