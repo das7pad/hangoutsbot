@@ -204,14 +204,14 @@ def version(bot, event, *args):
     """get the version of the bot and dependencies (admin-only)"""
 
     version_info = []
+    version_info.append(_("Bot Version: <b>{}</b>").format(__version__))
 
-    version_info.append(_("Bot Version: <b>{}</b>").format(__version__)) # hangoutsbot
-    version_info.append(_("Python Version: <b>{}</b>").format(sys.version.split()[0])) # python
-
-    # display extra version information only if user is an admin
-
-    admins_list = bot.get_config_suboption(event.conv_id, 'admins')
+    # display extra version information only if the user is a global admin
+    admins_list = bot.config['admins']
     if event.user.id_.chat_id in admins_list:
+        version_info.append(
+            _("Python Version: <b>{}</b>").format(sys.version.split()[0]))
+
         # depedencies
         modules = args or ["aiohttp", "appdirs", "emoji", "hangups", "telepot"]
         for module_name in modules:
