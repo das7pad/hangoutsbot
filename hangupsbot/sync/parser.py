@@ -127,13 +127,38 @@ MARKDOWN_ESCAPE = re.compile(r'([%s])' % MARKDOWN_START_CHAR)
 MARKDOWN_UNESCAPE = re.compile(r'\\([%s])' % MARKDOWN_START_CHAR)
 
 
-class MessageParser(ChatMessageParser):
-    """parser for markdown and html environments"""
-    def preprocess(self, text):
-        return super().preprocess(self.replace_bad_markdown(text))
+class MessageParserInternal(ChatMessageParser):
+    """message parser for internal messages
 
-    def postprocess(self, text):
-        return self.unescape_markdown(text)
+    does not escape or replace markdown
+    unescapes markdown in parsed segments with .unescape_markdown
+
+    Args:
+        tokens: list of reparser.Token instances
+    """
+    @staticmethod
+    def postprocess(text):
+        # single tokens such as links are not covered by this method,
+        # unescape in .parse all segments instead
+        return text
+
+    def parse(self, text):
+        def _unescape_segment(segment):
+            """unescape markdown in the parsed segment
+
+            Args:
+                segment: reparser.Segment instance
+
+            Returns:
+                the segment instance having text and link target unescaped
+            """
+            segment.text = self.unescape_markdown(segment.text)
+            link_target = (self.unescape_markdown(segment.params['link_target'])
+                           if 'link_target' in segment.params else None)
+            segment.params['link_target'] = link_target
+            return segment
+
+        return (_unescape_segment(segment) for segment in super().parse(text))
 
     @staticmethod
     def unescape_markdown(text):
@@ -146,6 +171,18 @@ class MessageParser(ChatMessageParser):
             string, unescaped markdown
         """
         return MARKDOWN_UNESCAPE.sub(r'\1', text)
+
+
+class MessageParser(MessageParserInternal):
+    """parser for markdown and html environments
+
+    url-escapes invalid markdown formatting with .replace_bad_markdown
+
+    Args:
+        tokens: list of reparser.Token instances
+    """
+    def preprocess(self, text):
+        return super().preprocess(self.replace_bad_markdown(text))
 
     @classmethod
     def replace_bad_markdown(cls, text):
@@ -190,61 +227,54 @@ class MessageParser(ChatMessageParser):
         Returns:
             string, escaped markdown text
         """
-        def _single_replace(part):
+        def _single_replace(part, replace_char):
             """url encode markdown char
 
             Args:
                 part: string, text part to escape
+                replace_char: char to replace in part
 
             Returns:
                 string, escaped text
             """
-            if '_' in char:
+            if not replace_char:
+                # performace
+                return part
+            if '_' in replace_char:
                 part = part.replace('_', '%5F').replace('\\_', '%5F')
-            if '*' in char:
+            if '*' in replace_char:
                 part = part.replace('*', '%2A').replace('\\*', '%2A')
-            if '~' in char:
+            if '~' in replace_char:
                 part = part.replace('~', '%7E').replace('\\~', '%7E')
-            if '=' in char:
+            if '=' in replace_char:
                 part = part.replace('=', '%3D').replace('\\=', '%3D')
-            if '[' in char:
+            if '[' in replace_char:
                 part = part.replace('[', '%5B').replace('\\[', '%5B')
-            if '`' in char:
+            if '`' in replace_char:
                 part = part.replace('`', '%60').replace('\\`', '%60')
-            if '\\' in char:
+            if '\\' in replace_char:
                 part = part.replace('\\', '%5C')
             return part
 
-        if not char:
-            # performace
-            return text
-
         if 'http' not in text:
             # performace
-            return _single_replace(text)
+            return _single_replace(text, char)
 
-        return ' '.join(cls.escape_markdown(word)
-                        if 'http' in word else _single_replace(word)
+        # replace all markdown char in a url
+        return ' '.join(_single_replace(word, MARKDOWN_CHAR)
+                        if 'http' in word else _single_replace(word, char)
                         for word in text.split(' '))
-
-
-# pylint:disable=invalid-name
-message_parser = MessageParser()                             # markdown and html
-message_parser_html = MessageParser(Tokens.basic + Tokens.html)      # html only
-# pylint:enable=invalid-name
-
-# do not escape or unescape markdown
-message_parser_html.preprocess = lambda text: text
-message_parser_html.postprocess = lambda text: text
 
 
 class MessageSegmentInternal(hangups.ChatMessageSegment):
     """message segment that stores text and formatting from internal formatting
 
+    parses html only
+
     Args:
         see hangups.ChatMessageSegment
     """
-    _parser = message_parser_html
+    _parser = MessageParserInternal(Tokens.basic + Tokens.html)
 
     @classmethod
     def from_str(cls, text):
@@ -259,14 +289,30 @@ class MessageSegmentInternal(hangups.ChatMessageSegment):
         return [cls(segment.text, **segment.params)
                 for segment in cls._parser.parse(text)]
 
-class MessageSegment(MessageSegmentInternal):
+
+class MessageSegmentHangups(MessageSegmentInternal):
     """message segment that stores raw text and formatting
+
+    parses html and markdown
 
     Args:
         text: string, message part without formatting
         kwargs: see MessageSegmentInternal
     """
-    _parser = message_parser
+    _parser = MessageParserInternal()
+
+
+class MessageSegment(MessageSegmentInternal):
+    """message segment that stores raw text and formatting
+
+    parses html and markdown
+    url-escapes markdown formatting found in the segment text
+
+    Args:
+        text: string, message part without formatting
+        kwargs: see MessageSegmentInternal
+    """
+    _parser = MessageParser()
 
     def __init__(self, text, **kwargs):
         super().__init__(self._parser.replace_markdown(text),

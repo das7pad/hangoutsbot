@@ -5,6 +5,8 @@ import time
 import hangups
 from hangups import hangouts_pb2
 
+import sync.parser
+
 logger = logging.getLogger(__name__)
 
 
@@ -156,7 +158,7 @@ class HangupsConversation(hangups.conversation.Conversation):
 
         elif isinstance(message, str):
             # markdown- or html-formatted message
-            segments = hangups.ChatMessageSegment.from_str(message)
+            segments = sync.parser.MessageSegmentHangups.from_str(message)
 
         elif (isinstance(message, list)
               and all(isinstance(item, hangups.ChatMessageSegment)
