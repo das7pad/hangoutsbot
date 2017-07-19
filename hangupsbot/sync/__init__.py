@@ -366,7 +366,7 @@ async def chattitle(bot, event, *args):
     Args:
         bot: HangupsBot instance
         event: hangups event instance
-        args: additional text as tupel
+        args: additional text as tuple
     """
     return _chattitle(bot, args, 'hangouts', bot.conversations, event.conv_id)
 
@@ -377,7 +377,7 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
 
     Args:
         bot: HangupsBot instance
-        args: additional text as tupel
+        args: additional text as tuple
         platform: string, platform identifier
         source: iterable, used to check if the first arg is set to a valid
             conversation identifer on the given platform
@@ -418,7 +418,7 @@ async def syncusers(bot, event, *args):
     Args:
         bot: HangupsBot instance
         event: hangups event instance
-        args: additional text as tupel
+        args: additional text as tuple
     """
     return await _syncusers(bot, args, event.conv_id, event.user_id)
 
@@ -515,7 +515,7 @@ async def syncprofile(bot, event, *args):
     Args:
         bot: HangupsBot instance
         event: hangups event instance
-        args: additional text as tupel
+        args: additional text as tuple
     """
     if not args or (len(args) > 1 and args[1].lower() != 'split'):
         raise Help()
@@ -769,7 +769,7 @@ def autokick(bot, event, *args):
     Args:
         bot: HangupsBot instance
         event: hangups event instance
-        args: additional text as tupel
+        args: additional text as tuple
 
     Returns:
         string

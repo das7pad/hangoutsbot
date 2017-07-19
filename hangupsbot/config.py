@@ -332,7 +332,7 @@ class Config(collections.MutableMapping):
                 last_key = level
             except AttributeError:
                 raise AttributeError('%s has no dict at "%s" in the path %s' %
-                                     (self.filename, last_key, path))
+                                     (self.logger.name, last_key, path))
         return created
 
     def set_defaults(self, source, path=None):
