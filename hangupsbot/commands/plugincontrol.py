@@ -106,6 +106,18 @@ def plugininfo(bot, event, *args):
     return message
 
 
+def _compose_load_message(module_path, result):
+    """get a formatted message
+
+    Args:
+        module_path: string, plugin path
+        result: string, result of the load function
+
+    Returns:
+        string, the formatted message
+    """
+    return "<b><i>%s</i></b> : <b>%s</b>" % (module_path, result)
+
 @command.register(admin=True)
 async def pluginunload(bot, event, *args):
     """unloads a previously unloaded plugin, requires plugins. prefix"""
@@ -115,13 +127,17 @@ async def pluginunload(bot, event, *args):
 
         try:
             await plugins.unload(bot, module_path)
-            message = "<b><pre>{}</pre>: unloaded</b>".format(module_path)
 
         except KeyError:
-            message = _("<b>{}: not previously loaded</b>").format(module_path)
+            result = _("not previously loaded")
+
+        else:
+            result = _("unloaded")
+
+        message = _compose_load_message(module_path, result)
 
     else:
-        message = "<b>module path required</b>"
+        message = _("<b>module path required</b>")
 
     await bot.coro_send_message(event.conv_id, message)
 
@@ -135,15 +151,17 @@ async def pluginload(bot, event, *args):
 
         try:
             if await plugins.load(bot, module_path):
-                message = "<b><i>{}</i>: loaded</b>".format(module_path)
+                result = _("loaded")
             else:
-                message = "<b><pre>{}</pre>: failed</b>".format(module_path)
+                result = _("failed")
 
         except AssertionError:
-            message = _("<b><i>%s</i>: <i>already loaded</i></b>") % module_path
+            result = _("already loaded")
+
+        message = _compose_load_message(module_path, result)
 
     else:
-        message = "<b>module path required</b>"
+        message = _("<b>module path required</b>")
 
     await bot.coro_send_message(event.conv_id, message)
 
@@ -157,17 +175,18 @@ async def pluginreload(bot, event, *args):
 
         try:
             await plugins.unload(bot, module_path)
-            if await plugins.load(bot, module_path):
-                message = _("<b><i>{}</i>: reloaded</b>").format(module_path)
-            else:
-                message = "<b><pre>{}</pre>: failed reload</b>".format(
-                    module_path)
-
         except KeyError:
-            message = _("<b>{}: not previously loaded</b>").format(module_path)
+            result = _("not previously loaded")
+        else:
+            if await plugins.load(bot, module_path):
+                result = _("reloaded")
+            else:
+                result = _("failed reload")
+
+        message = _compose_load_message(module_path, result)
 
     else:
-        message = "<b>module path required</b>"
+        message = _("<b>module path required</b>")
 
     await bot.coro_send_message(event.conv_id, message)
 
