@@ -525,6 +525,7 @@ async def load(bot, module_path, module_name=None):
 
     if not load_module(module_path):
         tracking.end()
+        await unload(bot, module_path)
         return False
 
     setattr(sys.modules[module_path], 'print', utils.print_to_logger)
@@ -562,6 +563,8 @@ async def load(bot, module_path, module_name=None):
 
     except:             # capture all Exceptions   # pylint: disable=bare-except
         logger.exception("error on plugin init: %s", module_path)
+        tracking.end()
+        await unload(bot, module_path)
         return False
 
     # register filtered functions
