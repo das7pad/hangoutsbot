@@ -526,7 +526,7 @@ class SyncEventMembership(SyncEvent):
         text = template.format(name=name, participants=participants,
                                text=get_formatted(text, 'internal'),
                                title=title)
-        return get_formatted(text, style)
+        return get_formatted(text, style, internal_source=True)
 
 
 class SyncReply(object):

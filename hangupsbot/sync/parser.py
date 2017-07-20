@@ -2,12 +2,15 @@
 __author__ = 'das7pad@outlook.com'
 
 import html as html_module
+import logging
 import urllib.parse
 import re
 
 import hangups
 import hangups.hangouts_pb2
 from hangups.message_parser import ChatMessageParser, Tokens
+
+logger = logging.getLogger(__name__)
 
 # dict keys: (bold, italic, is_link)
 STYLE_MAPPING = {
@@ -157,6 +160,8 @@ class MessageParserInternal(ChatMessageParser):
                            if 'link_target' in segment.params else None)
             segment.params['link_target'] = link_target
             return segment
+
+        logger.debug('%s.parse: %s', self.__class__.__name__, repr(text))
 
         return (_unescape_segment(segment) for segment in super().parse(text))
 
