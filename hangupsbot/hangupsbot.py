@@ -245,15 +245,15 @@ class HangupsBot(object):
         # If we are forcefully disconnected, try connecting again
         while self.__retry < self._max_retries:
             self.__retry += 1
-            try:
-                # (re)create Hangups client
-                self._client = hangups.Client(cookies, max_retries_longpolling)
-                self._client.on_connect.add_observer(self._on_connect)
-                self._client.on_disconnect.add_observer(
-                    lambda: logger.warning("Event polling stopped"))
-                self._client.on_reconnect.add_observer(
-                    lambda: logger.warning("Event polling continued"))
+            # (re)create the Hangups client
+            self._client = hangups.Client(cookies, max_retries_longpolling)
+            self._client.on_connect.add_observer(self._on_connect)
+            self._client.on_disconnect.add_observer(
+                lambda: logger.warning("Event polling stopped"))
+            self._client.on_reconnect.add_observer(
+                lambda: logger.warning("Event polling continued"))
 
+            try:
                 loop.run_until_complete(self._client.connect())
             except SystemExit:
                 logger.critical("bot is exiting")
