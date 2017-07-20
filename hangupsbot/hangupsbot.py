@@ -64,12 +64,14 @@ class HangupsBot(object):
         memory_path: string, path on disk to the bot memory json
         max_retries: integer, retry count for lowlevel errors
     """
+
     def __init__(self, cookies_path, config_path, memory_path, max_retries):
         self._client = None
         self._cookies_path = cookies_path
         self._max_retries = max_retries
         self.__retry = 0
-        self.__retry_reset = None
+        self.__retry_resetter = None
+        self._unloaded = True
 
         # These are populated by ._on_connect when it's called.
         self.shared = None # safe place to store references to objects
@@ -116,7 +118,7 @@ class HangupsBot(object):
             sys.exit(1)
         self.get_memory_option = self.memory.get_option
 
-        self.stop = self._stop
+        self.stop = self._schedule_stop
         # Handle signals on Unix
         # (add_signal_handler is not implemented on Windows)
         try:
@@ -253,6 +255,7 @@ class HangupsBot(object):
             self._client.on_reconnect.add_observer(
                 lambda: logger.warning("Event polling continued"))
 
+            self._unloaded = False
             try:
                 loop.run_until_complete(self._client.connect())
             except SystemExit:
@@ -262,13 +265,7 @@ class HangupsBot(object):
                 logger.exception("low-level error")
 
             finally:
-                logger.info("bot started unloading")
-                loop.run_until_complete(self.__stop())
-                loop.run_until_complete(plugins.unload_all(self))
-
-                self.memory.flush()
-                self.config.flush()
-                logger.info("bot unloaded")
+                loop.run_until_complete(self._unload())
 
             if self.__retry == self._max_retries:
                 # the final retry failed, do not delay the exit
@@ -287,20 +284,31 @@ class HangupsBot(object):
                 return
 
             # restore the functionality to stop the bot on KeyboardInterrupt
-            self.stop = self._stop
-            logger.info("Trying to connect again (try %s of %s)",
-                        self.__retry, self._max_retries)
+            self.stop = self._schedule_stop
+
+            logger.warning("Trying to connect again (try %s of %s)",
+                           self.__retry, self._max_retries)
 
         logger.critical("Maximum number of retries reached! Exiting...")
         sys.exit(1)
 
-    async def __stop(self):
-        """stop the hangups client"""
+    async def _unload(self):
+        """unload the bot"""
+        if self._unloaded:
+            return
+        self._unloaded = True
+        logger.info("started unloading")
+
+        if self.__retry_resetter is not None:
+            self.__retry_resetter.cancel()
+
         await sync.sending_queue.AsyncQueue.global_stop(
             self.config["message_queque_unload_timeout"])
 
-        if self.__retry_reset is not None:
-            self.__retry_reset.cancel()
+        await plugins.unload_all(self)
+
+        self.memory.flush()
+        self.config.flush()
 
         #pylint:disable=protected-access,bare-except
         try:
@@ -318,9 +326,11 @@ class HangupsBot(object):
                 # the connector is still running, close it forcefully
                 self._client._connector.close()
 
-    def _stop(self):
-        """Disconnect from Hangouts"""
-        asyncio.ensure_future(self.__stop()).add_done_callback(
+        logger.info("unloaded")
+
+    def _schedule_stop(self):
+        """schedule a shutdown"""
+        asyncio.ensure_future(self._unload()).add_done_callback(
             lambda x: sys.exit(0))
 
     def list_conversations(self):
@@ -571,8 +581,9 @@ class HangupsBot(object):
                 self.__retry = 1
 
             if (self.__retry > 1 and
-                    (self.__retry_reset is None or self.__retry_reset.done())):
-                self.__retry_reset = asyncio.ensure_future(_delayed_reset())
+                    (self.__retry_resetter is None
+                     or self.__retry_resetter.done())):
+                self.__retry_resetter = asyncio.ensure_future(_delayed_reset())
 
         logger.debug("connected")
 
