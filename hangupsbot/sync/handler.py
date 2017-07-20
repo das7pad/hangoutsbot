@@ -106,8 +106,6 @@ class SyncHandler(handlers.EventHandler):
                       previous_targets=None, notified_users=None):
         """Handle a synced message from any platform
 
-        provide either a full user object, a user_id or the user in parts
-
         for all connected conversations:
             - send the message to hangouts
             - run the message through the sync handler 'allmessages'/'message'
@@ -115,6 +113,8 @@ class SyncHandler(handlers.EventHandler):
                 - 'allmessages'
                 - 'message', if the user is not the bot user
                 handle the message as command
+            - run the message through the sync handler 'message_once' and
+              'allmessages_once'
 
         Args:
             identifier: string, platform identifier to skip the event on receive
@@ -215,6 +215,7 @@ class SyncHandler(handlers.EventHandler):
             - run the message through the sync handler 'membership'
             - if a valid G+ user is given, also pass to the bot handler
                 - 'membership'
+            - run the message through the sync handler 'membership_once'
 
         Args:
             identifier: string, platform identifier to skip the event on receive
@@ -228,6 +229,9 @@ class SyncHandler(handlers.EventHandler):
                 like object or a string, representing a username or chat_id
             previous_targets: set of strings, conversation identifiers
             notified_users: set of strings, user chat ids
+
+        Raises:
+            AssertionError: the given membership change type is not 1 or 2
         """
         logger.info('received a membership change in %s', identifier)
 
@@ -236,10 +240,11 @@ class SyncHandler(handlers.EventHandler):
             identifier=identifier, user=user, conv_id=conv_id,
             previous_targets=previous_targets, notified_users=notified_users)
 
+        assert type_ in (1, 2), 'the given membership change type is not 1 or 2'
 
         # force an update of the conv user list
         for conv_id_ in targets:
-            del self._cache_conv_user[conv_id_]
+            self._cache_conv_user.pop(conv_id_, None)
 
         target_event = None
 
