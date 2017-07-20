@@ -129,16 +129,12 @@ class SyncHandler(handlers.EventHandler):
             notified_users: set of strings, user chat ids
         """
         logger.info('received a message from %s for %s', identifier, conv_id)
-        image = self.get_sync_image(image=image)
-        user = self.get_sync_user(identifier=identifier, user=user)
 
-        targets = self.get_synced_conversations(conv_id=conv_id,
-                                                include_source_id=True)
-        previous_targets = (previous_targets
-                            if isinstance(previous_targets, set)
-                            else set((identifier,)))
-        notified_users = (notified_users if isinstance(notified_users, set)
-                          else set((user.id_.chat_id,)))
+        # ensure types and set targets
+        image = self.get_sync_image(image=image)
+        user, targets, previous_targets, notified_users = self._update_defaults(
+            identifier=identifier, user=user, conv_id=conv_id,
+            previous_targets=previous_targets, notified_users=notified_users)
 
         target_event = None
 
@@ -234,15 +230,12 @@ class SyncHandler(handlers.EventHandler):
             notified_users: set of strings, user chat ids
         """
         logger.info('received a membership change in %s', identifier)
-        user = self.get_sync_user(identifier=identifier, user=user)
 
-        targets = self.get_synced_conversations(conv_id=conv_id,
-                                                include_source_id=True)
+        # ensure types and set targets
+        user, targets, previous_targets, notified_users = self._update_defaults(
+            identifier=identifier, user=user, conv_id=conv_id,
+            previous_targets=previous_targets, notified_users=notified_users)
 
-        notified_users = (notified_users if isinstance(notified_users, set)
-                          else set([user.id_.chat_id]))
-        previous_targets = (previous_targets
-                            if isinstance(previous_targets, set) else set())
 
         # force an update of the conv user list
         for conv_id_ in targets:
@@ -787,6 +780,34 @@ class SyncHandler(handlers.EventHandler):
         image_id = await event.get_image_id()
         queue.schedule(conv_id, text, image_id=image_id,
                        context={'syncroom_no_repeat': True, '__ignore__': True})
+
+    def _update_defaults(self, *, identifier, user, conv_id, previous_targets,
+                         notified_users):
+        """set defaults and ensure types
+
+        Args:
+            identifier: string, platform identifier to skip the event on receive
+            conv_id: string, target Conversation ID for the message
+            user: SyncUser instance of the sender
+            previous_targets: set of strings, conversation identifiers
+            notified_users: set of strings, user chat ids
+
+        Returns:
+            tuple: user, targets, previous_targets, notified_users
+        """
+        user = self.get_sync_user(identifier=identifier, user=user)
+
+        targets = self.get_synced_conversations(conv_id=conv_id,
+                                                include_source_id=True)
+
+        previous_targets = (previous_targets
+                            if isinstance(previous_targets, set)
+                            else set((identifier,)))
+
+        notified_users = (notified_users if isinstance(notified_users, set)
+                          else set((user.id_.chat_id,)))
+
+        return user, targets, previous_targets, notified_users
 
     async def _gen_handler_results(self, pluggable, *args, return_flat=False):
         """async get the results of each handler of the given pluggable
