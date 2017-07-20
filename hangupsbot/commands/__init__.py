@@ -424,7 +424,7 @@ class CommandDispatcher(object):
              raised
         """
         command_name = args[0].lower()
-        coro = self.commands.get(command_name, self.unknown_command)
+        coro = self.commands.get(command_name)
         if coro is None:
             raise KeyError("command {} not found".format(command_name))
 
