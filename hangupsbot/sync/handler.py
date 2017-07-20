@@ -35,7 +35,7 @@ CLASSES_TO_INIT = (FakeEvent, SyncEvent, SyncEventMembership,
                    SyncImage, SyncReply)
 
 SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'user_kick', 'profilesync',
-                   'allmessages_once', 'message_once')
+                   'allmessages_once', 'message_once', 'membership_once')
 
 DEFAULT_MEMORY = {
     'cache': {
@@ -140,7 +140,7 @@ class SyncHandler(handlers.EventHandler):
         notified_users = (notified_users if isinstance(notified_users, set)
                           else set((user.id_.chat_id,)))
 
-        cmd_event = None
+        target_event = None
 
         for conv_id_ in targets:
             logger.debug('handle msg for conv %s', conv_id_)
@@ -158,16 +158,7 @@ class SyncHandler(handlers.EventHandler):
                 await self._send_to_ho(sync_event)
 
             if conv_id == conv_id_:
-                await self._ignore_handler_suppressor(
-                    self.run_pluggable_omnibus(
-                        'allmessages_once', self.bot, sync_event, command,
-                        _run_concurrent_=True))
-
-                if not sync_event.from_bot:
-                    await self._ignore_handler_suppressor(
-                        self.run_pluggable_omnibus(
-                            'message_once', self.bot, sync_event, command,
-                            _run_concurrent_=True))
+                target_event = sync_event
 
             logger.debug('run handler "allmessages" aka sending')
             await self._ignore_handler_suppressor(self.run_pluggable_omnibus(
@@ -199,13 +190,22 @@ class SyncHandler(handlers.EventHandler):
                         "message", self.bot, sync_event, command,
                         _run_concurrent_=True))
 
-                # handle the command in the target conv, not in a syned one
-                if conv_id_ == conv_id:
-                    cmd_event = sync_event
+        await self._ignore_handler_suppressor(
+            self.run_pluggable_omnibus(
+                'allmessages_once', self.bot, target_event, command,
+                _run_concurrent_=True))
 
-        if cmd_event is not None:
+        if not sync_event.from_bot:
+            await self._ignore_handler_suppressor(
+                self.run_pluggable_omnibus(
+                    'message_once', self.bot, target_event, command,
+                    _run_concurrent_=True))
+
+        # command not handled and a G+user (who is not the bot) raised the event
+        if (target_event.conv_id not in previous_targets
+                and not target_event.from_bot and user.id_.chat_id != 'sync'):
             # run the command as soon as all chats have the command-msg in queue
-            await self._handle_command(cmd_event)
+            await self._handle_command(target_event)
 
         logger.debug('done with handling')
 
@@ -248,6 +248,8 @@ class SyncHandler(handlers.EventHandler):
         for conv_id_ in targets:
             del self._cache_conv_user[conv_id_]
 
+        target_event = None
+
         for conv_id_ in targets:
             sync_event = SyncEventMembership(
                 identifier=identifier, conv_id=conv_id_, user=user, text=text,
@@ -258,6 +260,9 @@ class SyncHandler(handlers.EventHandler):
             # skip sending if the target already saw the event
             if conv_id_ not in previous_targets:
                 await self._send_to_ho(sync_event)
+
+            if conv_id == conv_id_:
+                target_event = sync_event
 
             await self._ignore_handler_suppressor(self.run_pluggable_omnibus(
                 'membership', self.bot, sync_event, command,
@@ -272,6 +277,11 @@ class SyncHandler(handlers.EventHandler):
                 self._bot_handlers.run_pluggable_omnibus(
                     "membership", self.bot, sync_event, command,
                     _run_concurrent_=True))
+
+        await self._ignore_handler_suppressor(
+            self.run_pluggable_omnibus(
+                'membership_once', self.bot, target_event, command,
+                _run_concurrent_=True))
 
     async def kick(self, *, user, conv_id):
         """kick a platform user out of the synced chats

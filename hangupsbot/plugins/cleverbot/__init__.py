@@ -41,7 +41,7 @@ __cleverbots = {}
 
 
 def _initialise(bot):
-    plugins.register_handler(_handle_incoming_message, type="message")
+    plugins.register_sync_handler(_handle_incoming_message, "message_once")
     plugins.register_user_command(["chat"])
     plugins.register_admin_command(["chatreset"])
 

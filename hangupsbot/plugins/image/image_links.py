@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    plugins.register_handler(_watch_image_link, type="message")
+    plugins.register_sync_handler(_watch_image_link, "message_once")
 
 
 async def _watch_image_link(bot, event, command):

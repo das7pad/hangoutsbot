@@ -15,7 +15,7 @@ HELP = {
 
 def _initialise():
     """register the message handler, commands and the help entrys"""
-    plugins.register_handler(_handle_me_action)
+    plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_user_command(["diceroll", "coinflip"])
     plugins.register_help(HELP)
 

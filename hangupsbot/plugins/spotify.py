@@ -36,7 +36,7 @@ class SpotifyPlaylist:
 
 
 def _initialise():
-    plugins.register_handler(_watch_for_music_link, type="message")
+    plugins.register_sync_handler(_watch_for_music_link, "message_once")
     plugins.register_user_command(["spotify"])
 
 

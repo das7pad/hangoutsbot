@@ -17,8 +17,8 @@ _internal = __internal_vars()
 
 
 def _initialise(bot):
-    plugins.register_handler(_check_if_admin_added_me, "membership")
-    plugins.register_handler(_verify_botkeeper_presence, "message")
+    plugins.register_sync_handler(_check_if_admin_added_me, "membership_once")
+    plugins.register_sync_handler(_verify_botkeeper_presence, "message_once")
     plugins.register_admin_command(["allowbotadd", "removebotadd"])
 
 

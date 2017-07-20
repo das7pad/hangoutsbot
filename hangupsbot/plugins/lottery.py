@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    plugins.register_handler(_handle_me_action)
+    plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_admin_command(["prepare", "perform_drawing"])
 
 

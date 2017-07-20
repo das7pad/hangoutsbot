@@ -39,7 +39,7 @@ def prettydate(diff):
 
 def _initialise(bot):
   plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])
-  plugins.register_handler(_watch_twitter_link, type="message")
+  plugins.register_sync_handler(_watch_twitter_link, "message_once")
 
 def twittersecret(bot, event, secret):
   '''Set your Twitter API Secret. Get one from https://apps.twitter.com/app'''

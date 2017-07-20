@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise():
-    plugins.register_handler(_watch_new_adds, type="membership")
+    plugins.register_sync_handler(_watch_new_adds, "membership_once")
     plugins.register_admin_command(["addmod", "delmod"])
 
 
@@ -24,11 +24,6 @@ async def _watch_new_adds(bot, event, command):
     # Check if watching for new adds is enabled
     if not bot.get_config_suboption(event.conv_id, 'watch_new_adds'):
         return
-
-    # Generate list of added or removed users
-    event_users = [event.conv.get_user(user_id) for user_id
-                   in event.conv_event.participant_ids]
-    names = ', '.join([user.full_name for user in event_users])
 
     # JOIN
     if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
@@ -48,6 +43,11 @@ async def _watch_new_adds(bot, event, command):
         except TypeError:
             # The mods are likely not configured. Continuing...
             pass
+
+        # Generate list of added or removed users
+        event_users = [event.conv.get_user(user_id) for user_id
+                       in event.conv_event.participant_ids]
+        names = ', '.join([user.full_name for user in event_users])
 
         html = _("<b>!!! WARNING !!!</b>\n"
                  "\n"

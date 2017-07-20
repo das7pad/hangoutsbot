@@ -17,7 +17,7 @@ _lookup = {}
 def _initialise(bot):
     _load_all_the_things()
     plugins.register_admin_command(["redditmemeword"])
-    plugins.register_handler(_scan_for_triggers)
+    plugins.register_sync_handler(_scan_for_triggers, "message_once")
 
 
 def redditmemeword(bot, event, *args):
