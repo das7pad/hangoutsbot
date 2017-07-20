@@ -418,10 +418,14 @@ class CommandDispatcher(object):
             args: tuple of string, including the command name in fist place
             kwds: dict, additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
+        Raises:
+            KeyError: specified command is unknown
+            any other: the kwarg 'raise_exceptions' is set and the command
+             raised
         """
         command_name = args[0].lower()
-        func = self.commands.get(command_name, self.unknown_command)
-        if func is None:
+        coro = self.commands.get(command_name, self.unknown_command)
+        if coro is None:
             raise KeyError("command {} not found".format(command_name))
 
         """default: if exceptions occur in a command, output as message
@@ -429,14 +433,12 @@ class CommandDispatcher(object):
         raise_exceptions = kwds.pop("raise_exceptions", False)
 
         setattr(event, 'command_name', command_name)
-        setattr(event, 'command_module', func.__module__ )
-        setattr(event, 'command_path', func.__module__ + '.' + command_name)
+        setattr(event, 'command_module', coro.__module__)
+        setattr(event, 'command_path', coro.__module__ + '.' + command_name)
 
         conv_id = event.conv_id
         context = None
         try:
-            coro = (func if asyncio.iscoroutinefunction(func)
-                    else asyncio.coroutine(func))
             result = await asyncio.wait_for(coro(bot, event, *args[1:], **kwds),
                                             bot.config['command_timeout'])
 
@@ -449,7 +451,7 @@ class CommandDispatcher(object):
 
         except Help as err:
             help_entry = (*err.args, '', '<b>%s:</b>' % command_name,
-                          get_func_help(bot, command_name, func))
+                          get_func_help(bot, command_name, coro))
             text = "\n".join(help_entry).strip()
             conv_id = await bot.get_1to1(event.user_id.chat_id) or conv_id
 
