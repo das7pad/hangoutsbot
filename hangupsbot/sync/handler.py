@@ -204,8 +204,8 @@ class SyncHandler(handlers.EventHandler):
                     cmd_event = sync_event
 
         if cmd_event is not None:
-            # run the command as soon as all chats have the command in queue
-            await self._handle_command(sync_event)
+            # run the command as soon as all chats have the command-msg in queue
+            await self._handle_command(cmd_event)
 
         logger.debug('done with handling')
 
