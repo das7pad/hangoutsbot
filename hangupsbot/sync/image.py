@@ -113,6 +113,10 @@ class MovieConverter(VideoFileClip):
         except (OSError, IOError):
             logger.warning('failed to remove %s', self._path)
 
+    def __del__(self):
+        super().__del__()
+        self.cleanup()
+
 
 class SyncImage(object):
     """store info to a synced image in one object and convert movies to gif
@@ -134,6 +138,11 @@ class SyncImage(object):
     """
     # pylint: disable=too-many-instance-attributes
     bot = None
+
+    # an incomplete init should not break __del__
+    _data = None
+    _movie = None
+    _size_cache = {}
 
     def __init__(self, *, data=None, cache=None, filename=None, type_=None,
                  size=None, url=None, cookies=None, headers=None):
@@ -454,7 +463,7 @@ class SyncImage(object):
     def __del__(self):
         """explicit cleanup"""
         if self._movie is not None:
-            self._movie.cleanup()
+            self._movie = None
         for data, dummy in self._size_cache.values():
             data.close()
         self._size_cache.clear()
