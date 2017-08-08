@@ -38,6 +38,13 @@ DEFAULT_CONFIG = {
     # dump to memory: every 6h
     'sync_cache_dump_image': 21600,
 
+    # gifs and videos processing consumes a lot of CPU-Time, even if no resize
+    # is needed in any chat room. The processing is detached and could run on
+    # multiple CPU-Cores. This config entry sets a limit for all chats on the
+    # input-file-size of videos and gifs.
+    # Media with a size above this limit will be forwarded 1:1. Unit is KB
+    "sync_process_animated_max_size": 4096,
+
     ############################################################################
     # the next entrys are set global, to be then able to set them also per conv
     # as access is similar to bot.get_config_suboption(conv_id, key)
@@ -97,13 +104,6 @@ DEFAULT_CONFIG = {
     'sync_sticker_on_edit': True,
     'sync_video_on_edit': True,
 
-    # gifs and videos processing consumes a lot of CPU-Time, even if no resize
-    # is needed in any chat room. The processing is detached and could run on
-    # multiple CPU-Cores. This config entry sets a limit for all chats on the
-    # input-file-size of videos and gifs.
-    # Media with a size above this limit will be forwarded 1:1. Unit is KB
-    "sync_process_animated_max_size": 4096,
-
     # size in px, or set to 0 to disable resizing
     # resizing of videos and gifs needs CPU-Power/takes some time
     'sync_size_photo': 0,
@@ -142,7 +142,8 @@ DEFAULT_MEMORY = {
 GLOBAL_KEYS = ('sync_cache_dump_image', 'sync_cache_timeout_conv_user',
                'sync_cache_timeout_gif', 'sync_cache_timeout_photo',
                'sync_cache_timeout_sending_queue', 'sync_cache_timeout_sticker',
-               'sync_cache_timeout_video', 'sync_separator', 'autokick')
+               'sync_cache_timeout_video', 'sync_separator', 'autokick',
+               'sync_process_animated_max_size')
 
 SYNC_CONFIG_KEYS = tuple(sorted(set(DEFAULT_CONFIG.keys()) - set(GLOBAL_KEYS)))
 
