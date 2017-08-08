@@ -256,12 +256,10 @@ class HangupsBot(object):
 
                 loop.run_until_complete(self._client.connect())
             except SystemExit:
+                logger.critical("bot is exiting")
                 raise
             except:                                 # pylint:disable=bare-except
                 logger.exception("low-level error")
-            else:
-                logger.critical("bot is exiting")
-                sys.exit(0)
 
             finally:
                 logger.info("bot started unloading")
@@ -322,7 +320,8 @@ class HangupsBot(object):
 
     def _stop(self):
         """Disconnect from Hangouts"""
-        asyncio.ensure_future(self.__stop())
+        asyncio.ensure_future(self.__stop()).add_done_callback(
+            lambda x: sys.exit(0))
 
     def list_conversations(self):
         """List all active conversations"""
