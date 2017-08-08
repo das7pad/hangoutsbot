@@ -3,6 +3,7 @@
 
 import argparse
 import asyncio
+import concurrent.futures
 import gettext
 import logging
 import logging.config
@@ -220,6 +221,10 @@ class HangupsBot(object):
 
         # Start asyncio event loop
         loop = asyncio.get_event_loop()
+
+        threads = self.get_config_option("max_threads") or 5
+        loop.set_default_executor(
+            concurrent.futures.ThreadPoolExecutor(max_workers=threads))
 
         # initialise pluggable framework
         sinks.start(self)
