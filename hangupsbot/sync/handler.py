@@ -146,12 +146,10 @@ class SyncHandler(handlers.EventHandler):
                 notified_users=notified_users, targets=targets,
                 previous_targets=previous_targets)
 
-            # process the image and cache the user_list
+            # process the image and add the user_list
             await sync_event.process()
 
-            # skip sending if the target already saw the event
-            if conv_id_ not in previous_targets:
-                await self._send_to_ho(sync_event)
+            await self._send_to_ho(sync_event)
 
             if conv_id == conv_id_:
                 target_event = sync_event
@@ -169,7 +167,8 @@ class SyncHandler(handlers.EventHandler):
 
             # skip the bot._handlers if
             # they saw the event already or non G+ user raised the event
-            if conv_id_ in previous_targets or user.id_.chat_id == 'sync':
+            if ('hangouts:' + conv_id_ in previous_targets
+                    or user.id_.chat_id == 'sync'):
                 continue
 
             # the message should not be relayed again
@@ -198,7 +197,7 @@ class SyncHandler(handlers.EventHandler):
                     _run_concurrent_=True))
 
         # command not handled and a G+user (who is not the bot) raised the event
-        if (target_event.conv_id not in previous_targets
+        if (not identifier.startswith('hangouts:')
                 and not target_event.from_bot and user.id_.chat_id != 'sync'):
             # run the command as soon as all chats have the command-msg in queue
             await self._handle_command(target_event)
@@ -255,9 +254,10 @@ class SyncHandler(handlers.EventHandler):
                 participant_user=participant_user,
                 targets=targets, previous_targets=previous_targets)
 
-            # skip sending if the target already saw the event
-            if conv_id_ not in previous_targets:
-                await self._send_to_ho(sync_event)
+            # add the user_list
+            await sync_event.process()
+
+            await self._send_to_ho(sync_event)
 
             if conv_id == conv_id_:
                 target_event = sync_event
@@ -268,7 +268,8 @@ class SyncHandler(handlers.EventHandler):
 
             # skip the bot._handlers if
             # they saw the event already or non G+ user raised the event
-            if conv_id_ in previous_targets or user.id_.chat_id == 'sync':
+            if ('hangouts:' + conv_id_ in previous_targets
+                    or user.id_.chat_id == 'sync'):
                 continue
 
             await self._ignore_handler_suppressor(
@@ -635,12 +636,12 @@ class SyncHandler(handlers.EventHandler):
             return
 
         messages = broadcast_targets.copy()
-        targets = set(message[0] for message in messages)
+        targets = set('hangouts:' + message[0] for message in messages)
         for message in messages:
             conv_id, text, image_id = message
             title = bot.conversations.get_name(conv_id, '')
             if image_id is None:
-                previous_targets = targets - set((conv_id,))
+                previous_targets = targets - set(('hangouts:' + conv_id,))
                 # skip direct sending and add it to the message queue instead
                 broadcast_targets.remove(message)
             else:
@@ -687,8 +688,7 @@ class SyncHandler(handlers.EventHandler):
         await self.message(identifier='hangouts:' + event.conv_id,
                            conv_id=event.conv_id, user=event.user, image=image,
                            title=event.conv.name,
-                           text=segments,
-                           previous_targets=set((event.conv_id,)))
+                           text=segments)
 
     async def _handle_membership(self, dummy, event):
         """forward a membership change on hangouts to the membership handler
@@ -699,6 +699,7 @@ class SyncHandler(handlers.EventHandler):
         """
         if isinstance(event, SyncEventMembership):
             return
+
         participant_ids = event.conv_event.participant_ids
         if (len(participant_ids) == 1 and
                 participant_ids[0].chat_id == event.user_id.chat_id):
@@ -707,8 +708,7 @@ class SyncHandler(handlers.EventHandler):
         await self.membership(
             identifier='hangouts:' + event.conv_id, conv_id=event.conv_id,
             user=event.user, type_=event.conv_event.type_,
-            participant_user=participant_ids, title=event.conv.name,
-            previous_targets=set((event.conv_id,)))
+            participant_user=participant_ids, title=event.conv.name)
 
     @staticmethod
     async def _handle_conv_user(bot, conv_id, dummy):
@@ -776,6 +776,11 @@ class SyncHandler(handlers.EventHandler):
         Args:
             event: event.SyncEvent instance
         """
+        ho_tag = 'hangouts:' + event.conv_id
+        if ho_tag in event.previous_targets:
+            return
+        event.previous_targets.add(ho_tag)
+
         text = event.get_formated_text(names_text_only=True)
         if text is None:
             return
