@@ -457,8 +457,21 @@ class SyncImage(object):
         Returns:
             boolean, True if size is below the limit, otherwise False
         """
-        return (len(self._data.getvalue())
-                < (self.bot.config['sync_process_animated_max_size']*1024))
+        below = (len(self._data.getvalue())
+                 < (self.bot.config['sync_process_animated_max_size']*1024))
+        if not below:
+            logger.info("%s does not meet the video-to-gif process size limit",
+                        str(self))
+        return below
+
+    def __str__(self):
+        return ' | '.join(('SyncImage',
+                           'type:%s' % self._type,
+                           'name:%s' % self._filename,
+                           'size:%sKB' % ((len(self._data.getvalue()) / 1024)
+                                          if self._data is not None
+                                          else 'empty'),
+                           'movie:%s' % self._movie))
 
     def __del__(self):
         """explicit cleanup"""
