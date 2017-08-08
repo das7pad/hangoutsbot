@@ -160,14 +160,14 @@ HELP = {
     'chattitle': _('Update the synced title for a conversation, specify a '
                    'conversation identifer to update the tag of another '
                    'conversation.\n{bot_cmd} chattitle [<conv id>] <new title>'
-                   '\nFormat the new title\n"shot version", "long version"\nto '
-                   'get a shot title sent with the message and have a different'
-                   ' one sent with @mentions/etc.\n'
-                   'The example <i>{bot_cmd} chattitle "touri", "Tourists '
-                   'Berlin"</i> might result in a message on another platform '
-                   'that looks like\nBob (touri) : @alice where do I find X?\n'
-                   'Bob (touri) @mentioned you in "Berlin Tourists":\n'
-                   '@alice where do I find X?'),
+                   '\nThe custom chattitle will be sent with a message from the'
+                   ' specified conversation\n'
+                   'The example <i>{bot_cmd} chattitle "touri"</i> might result'
+                   ' in a message on another platform that looks like\n'
+                   '\'<b>Bob (touri) :</b> @alice where do I find X?\'\n'
+                   'and the @mention message for "alice" will get the <i>live '
+                   '</i>-title:\n\'Bob @mentioned you in "Berlin Tourists":\n'
+                   '@alice where do I find X?\''),
 
     'syncusers': _('<b>Usage:</b>\n{bot_cmd} syncusers [<conv_id>] [flat] '
                    '[unique] [profilesync]\nAll arguments are optional, use\n '
