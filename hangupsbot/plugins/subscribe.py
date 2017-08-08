@@ -80,6 +80,7 @@ def _handle_once(bot, event):
     """
     matches = {}
     event_text = event.text.lower()
+    previous_targets = event.previous_targets.union(event.targets)
 
     for keyword, conversations in _global_keywords.copy().items():
         if keyword not in event_text:
@@ -87,13 +88,12 @@ def _handle_once(bot, event):
         for alias in conversations:
             conv_id = bot.call_shared('alias2convid', alias) or alias
 
-            if conv_id in event.targets:
-                # receives the message anyways
+            if 'hangouts:' + conv_id in previous_targets:
+                # received the message already
                 continue
             matches[conv_id] = keyword
 
     user = bot.sync.get_sync_user(user_id=bot.user_self()['chat_id'])
-    previous_targets = event.targets + list(event.previous_targets)
     for conv_id, keyword in matches.items():
         user_name = event.user.get_displayname(conv_id, text_only=True)
         title = event.title(conv_id)
