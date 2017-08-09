@@ -310,22 +310,7 @@ class HangupsBot(object):
         self.memory.flush()
         self.config.flush()
 
-        #pylint:disable=protected-access,bare-except
-        try:
-            # ignore a previous Exception
-            if self._client._listen_future._exception is not None:
-                logger.info('_stop: discard %s',
-                            repr(self._client._listen_future._exception))
-            self._client._listen_future._exception = None
-
-            await self._client.disconnect()
-        except:                                         # capture any exception
-            logger.exception('gracefully stop of hangups client failed')
-        finally:
-            if not self._client._connector.closed:
-                # the connector is still running, close it forcefully
-                self._client._connector.close()
-
+        await self._client.disconnect()
         logger.info("unloaded")
 
     def _schedule_stop(self):
