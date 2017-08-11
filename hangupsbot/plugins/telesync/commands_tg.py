@@ -59,6 +59,25 @@ def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
         return False
     return True
 
+async def command_start(tg_bot, msg, *args):
+    """answer with the start message and check for deeplinking, private only
+
+    /start [syncprofile]
+
+    Args:
+        msg: Message instance
+        args: tuple, arguments that were passed after the command
+    """
+    if ensure_private(tg_bot, msg):
+        tg_bot.send_html(msg.chat_id,
+                         tg_bot.config('start_message').format(
+                             name=msg.user.full_name,
+                             botusername=tg_bot.user.username,
+                             botname=tg_bot.user.full_name))
+
+    if 'syncprofile' in args:
+        await command_sync_profile(tg_bot, msg)
+
 async def command_whoami(tg_bot, msg, *dummys):
     """answer with user_id of request message, private only
 

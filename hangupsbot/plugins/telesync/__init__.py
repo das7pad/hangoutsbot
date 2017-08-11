@@ -108,6 +108,12 @@ def setup_config(bot):
             # number of repeated lowlevel-errors until the message loop dies
             'message_loop_retries': 5,
 
+            # html message a user receives on /start
+            # available keys:
+            # name (user who triggered /start), botusername, botname
+            'start_message': _('Hello {name}! You are talking to @{botusername}'
+                               ', known as {botname}.'),
+
         }
     }
     bot.config.set_defaults(default_config)
