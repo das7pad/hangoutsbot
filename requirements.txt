@@ -16,7 +16,7 @@ wolframalpha                                    # plugins: wolframalpha
 git+https://github.com/carpedm20/emoji          # plugins: slackrtm
 slackclient >=0.16                              # plugins: slackrtm
 selenium                                        # plugins: image_screenshot
-telepot>=11.0                                   # plugins: telesync
+telepot==12.2                                   # plugins: telesync
 cleverwrap                                      # plugins: cleverbot
 TwitterAPI                                      # plugins: twitter
 lxml                                            # plugins: twitter
