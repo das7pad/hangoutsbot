@@ -444,7 +444,8 @@ class TelegramBot(telepot.aio.Bot):
         logger.debug('forwarding %s from: %s to %s',
                      msg.content_type, msg.chat_id, ho_conv_ids)
 
-        segments = TelegramMessageSegment.from_str(msg.text)
+        segments = TelegramMessageSegment.from_str((msg.text,
+                                                    msg.get('entities', [])))
 
         for conv_id in ho_conv_ids:
             asyncio.ensure_future(self.bot.sync.message(
