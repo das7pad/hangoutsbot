@@ -4,10 +4,12 @@ rewrite: das7pad@outlook.com
 """
 # pylint: disable=wrong-import-position, wrong-import-order
 
+import asyncio
 import logging
 
 import telepot.exception
 
+import commands
 import plugins
 
 # reload the other modules
@@ -23,6 +25,9 @@ HELP = {
                   '    disable the sync to previously configured telegram chats'
                   ' - "all" may remove all syncs, space separated chat ids may'
                   ' remove only the specified chats'),
+
+    'telesync_set_token': _('usage:\n{bot_cmd} telesync_set_token <api_key>\n'
+                            'update the api key for the telesync plugin'),
 
 }
 
@@ -47,6 +52,8 @@ async def _initialise(bot):
     if not bot.config.get_by_path(['telesync', 'enabled']):
         return
 
+    plugins.register_admin_command(['telesync', 'telesync_set_token'])
+
     bot.tg_bot = TelegramBot(bot)
     if not await bot.tg_bot.is_running(retry=False):
         raise RuntimeError('Can not connect to the Telegram API')
@@ -55,7 +62,6 @@ async def _initialise(bot):
         # cleanup after a pluginreload
         plugins.SENTINALS.pop(__name__, None)
 
-    plugins.register_admin_command(['telesync'])
     plugins.register_help(HELP)
 
     plugins.tracking.current['metadata']['identifier'] = 'Telegram'
@@ -229,6 +235,42 @@ async def telesync(bot, event, *args):
             if bot.memory.exists(path) and bot.memory.get_by_path(path)
             else _('no chats'))
     return _('syncing "%s" to %s') % (ho_chat_id, text)
+
+async def telesync_set_token(bot, event, *args):
+    """sets the api key for the telesync bot
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        args: tuple of strings, may contain the api key as first tuple entry
+
+    Returns:
+        string, command output
+
+    Raises:
+        commands.Help: no api token specified in the args
+    """
+    if len(args) != 1:
+        raise commands.Help('specify your token')
+
+    api_key = (args[0][1:-1]
+               if (args[0][0] == args[0][-1] and args[0][0] in ('"', "'"))
+               else args[0])
+
+    api_key_path = ['telesync', 'api_key']
+    backup = bot.config.get_by_path(api_key_path)
+    bot.config.set_by_path(api_key_path, api_key)
+
+    # test the api-key first:
+    if not await TelegramBot(bot).is_running(retry=False):
+        bot.config.set_by_path(api_key_path, backup)
+        return 'invalid Telegram API Key'
+
+    bot.config.set_by_path(['telesync', 'enabled'], True)
+    bot.config.save()
+    asyncio.ensure_future(
+        commands.command.run(bot, event, 'pluginreload', __name__))
+    return 'Telegram API Key set.'
 
 async def _handle_profilesync(bot, platform, tg_chat_id, conv_1on1, split):
     """finish profile sync and set a 1on1 sync if requested
