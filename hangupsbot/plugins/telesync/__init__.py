@@ -71,6 +71,7 @@ async def _initialise(bot):
 
     plugins.register_sync_handler(_handle_message, 'allmessages')
     plugins.register_sync_handler(_handle_membership_change, 'membership')
+    plugins.register_sync_handler(_handle_conv_user, 'conv_user')
     plugins.register_sync_handler(_handle_profilesync, 'profilesync')
 
     plugins.start_asyncio_task(bot.tg_bot.start)
@@ -312,6 +313,42 @@ async def _handle_profilesync(bot, platform, tg_chat_id, conv_1on1, split):
 
     bot.memory.save()
     await bot.coro_send_message(conv_1on1, text)
+
+async def _handle_conv_user(bot, conv_id, profilesync_only):
+    """get all telegram user for this conv_id
+
+    Args:
+        bot: hangupsbot instance
+        conv_id: string, conversation identifier
+        profilesync_only: boolean, only include users synced to a G+ profile
+
+    Returns:
+        list of sync.user.SyncUser
+    """
+    path = ['telesync', 'ho2tg', conv_id]
+    tg_bot = bot.tg_bot
+    if not (bot.memory.exists(path) and await tg_bot.is_running()):
+        # no sync is set or the bot is not responding
+        return []
+
+    requests = []
+    for chat_id in bot.memory.get_by_path(path):
+        path = ['telesync', 'chat_data', chat_id, 'user']
+        if not bot.memory.exists(path):
+            continue
+        requests.extend((user_id, chat_id)
+                        for user_id in bot.memory.get_by_path(path))
+
+    if not requests:
+        return []
+
+    all_users = await asyncio.gather(*[tg_bot.get_tg_user(user_id=user_id,
+                                                          chat_id=chat_id,
+                                                          gpluslink=False)
+                                       for user_id, chat_id in requests])
+
+    return [user for user in all_users
+            if not profilesync_only or user.id_.chat_id != 'sync']
 
 async def _handle_message(bot, event):
     """forward message/photos from any platform to Telegram
