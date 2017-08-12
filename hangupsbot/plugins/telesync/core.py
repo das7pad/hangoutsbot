@@ -178,13 +178,15 @@ class TelegramBot(telepot.aio.Bot):
         queue = self._cache_sending_queue.get(tg_chat_id)
         queue.schedule(tg_chat_id, html)
 
-    async def get_tg_user(self, user_id, gpluslink=False, use_cache=True):
+    async def get_tg_user(self, user_id, chat_id=None, gpluslink=False,
+                          use_cache=True):
         """get a User matching the user_id in a chat with chat_id
 
         user data can only be fetched, if a chat with the user exists
 
         Args:
             user_id: string, user identifier
+            chat_id: string, telegram chat identifier
             gpluslink: boolean, set to True get G+Links instead of t.me links
             use_cache: boolean, set to False to ignore a cache hit and to
              perform an API request for updated user data
@@ -196,10 +198,9 @@ class TelegramBot(telepot.aio.Bot):
 
         if self.bot.memory.exists(path_user):
             tg_user = self.bot.memory.get_by_path(path_user)
-            chat_id = tg_user['last_seen']
+            chat_id = chat_id or tg_user['last_seen']
         else:
             tg_user = None
-            chat_id = None
 
         if not (use_cache and tg_user is not None):
             if chat_id is not None:
