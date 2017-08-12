@@ -48,9 +48,11 @@ class SyncUser(hangups.user.User):
                     type(user), dir(user))
 
         # get the synced G+ ID, if a platform is registerd for the identifier
-        if (user_id is not None and
-                self.bot.sync.profilesync_provider.get(identifier)):
-            path = ['profilesync', identifier, '2ho']
+        platform = (identifier.rsplit(':', 1)[0] if isinstance(identifier, str)
+                    else None)
+        if (user_id is not None and platform is not None and
+                self.bot.sync.profilesync_provider.get(platform)):
+            path = ['profilesync', platform, '2ho']
             user_id = self.bot.memory.get_by_path(path).get(user_id)
 
         if isinstance(user_id, str) and len(user_id) == 21:

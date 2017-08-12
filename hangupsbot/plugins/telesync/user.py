@@ -47,7 +47,8 @@ class User(SyncUser):
 
         user_link = self.get_user_link() if not gpluslink else None
 
-        super().__init__(self.bot, identifier='telesync', user_id=self.usr_id,
+        identifier = 'telesync:' + str(msg['chat']['id'])
+        super().__init__(self.bot, identifier=identifier, user_id=self.usr_id,
                          user_name=self.full_name, user_link=user_link,
                          user_nick=self.username)
 
@@ -58,9 +59,10 @@ class User(SyncUser):
         self.bot.memory.get_by_path(path).update(msg[chat_action])
 
         path += ['last_seen']
-        if not self.bot.memory.exists(path):
-            # first seen this user
-            self.bot.memory.set_by_path(path, msg.get('chat', {}).get('id'))
+        if not (self.bot.memory.exists(path)
+                and self.bot.memory.get_by_path(path)):
+            # first seen this user or the user has left a chat
+            self.bot.memory.set_by_path(path, msg['chat']['id'])
 
     def get_user_link(self):
         """create a short link with the users username

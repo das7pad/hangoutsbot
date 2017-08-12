@@ -99,7 +99,8 @@ class TelegramBot(telepot.aio.Bot):
             {bot_user['id']: bot_chat_id},
             path=['profilesync', 'telesync', '2ho'])
 
-        self.user = User(self, {'bot': bot_user}, chat_action='bot')
+        self.user = User(self, {'bot': bot_user, 'chat': {'id': None}},
+                         chat_action='bot')
         logger.info('Botuser: id: %s, name: %s, username: %s',
                     self.user.usr_id, self.user.first_name, self.user.username)
 
