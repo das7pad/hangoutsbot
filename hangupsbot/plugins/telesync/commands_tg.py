@@ -4,10 +4,14 @@ __author__ = 'das7pad@outlook.com'
 import asyncio
 import logging
 
+import telepot.exception
 from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
                                 ReplyKeyboardRemove)
 
+from commands import command    # pylint:disable=wrong-import-order
+
 from sync import SYNC_CONFIG_KEYS
+from sync.event import FakeEvent
 from sync.utils import get_sync_config_entry
 
 logger = logging.getLogger(__name__)
@@ -414,6 +418,68 @@ async def command_echo(tg_bot, msg, *args):
     if not ensure_args(tg_bot, msg.chat_id, args, at_least=1):
         return
     tg_bot.send_html(msg.chat_id, ' '.join(args))
+
+async def command_leave(tg_bot, msg, *dummys):
+    """leave the current chat and perform a cleanup before
+
+    /leave
+
+    Args:
+        msg: Message instance
+        *dummys: tuple, arguments that were passed after the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+
+    tg_bot.send_html(msg.chat_id, _("I'll be back!"))
+
+    path = ['telesync', 'tg2ho', msg.chat_id]
+    if tg_bot.bot.memory.exists(path):
+        targets = tg_bot.bot.memory.get_by_path(path).copy()
+        # cleanup tg->ho syncs
+        await command_clear_sync_ho(tg_bot, msg)
+    else:
+        targets = tuple()
+
+    # cleanup tg chat data
+    tg_bot.bot.memory.pop_by_path(['telesync', 'chat_data', msg.chat_id])
+
+    # cleanup ho -> tg
+    ho2tg = tg_bot.bot.memory.get_by_path(['telesync', 'ho2tg'])
+    args = ('telesync', 'remove', msg.chat_id)
+    for ho_conv_id, tg_chat_ids in ho2tg.copy().items():
+        if msg.chat_id in tg_chat_ids:
+            event = FakeEvent(ho_conv_id, tg_bot.user, '')
+            await command.run(tg_bot.bot, event, *args)
+
+    # pylint:disable=protected-access
+    queue = tg_bot._cache_sending_queue.get(msg.chat_id)
+    # pylint:enable=protected-access
+
+    await queue.single_stop(5)
+
+    try:
+        has_left = await tg_bot.leaveChat(msg.chat_id)
+    except telepot.exception.TelegramError:
+        logger.exception('leave request for %s failed',
+                         msg.chat_id)
+    else:
+        if has_left:
+            # there will be no bot api message for this membership change
+            # we need to create it manually
+            for conv_id in targets:
+                asyncio.ensure_future(tg_bot.bot.sync.membership(
+                    identifier='telesync:' + msg.chat_id, conv_id=conv_id,
+                    user=msg.user, title=msg.get_group_name(), type_=2,
+                    participant_user=[tg_bot.user,]))
+            return
+
+    # pylint:disable=protected-access
+    tg_bot._cache_sending_queue.pop(msg.chat_id)        # drop the blocked queue
+    # pylint:enable=protected-access
+
+    error = _('Sorry, but I am not able to leave this chat on my own.')
+    await tg_bot.send_html(msg.chat_id, error)
 
 async def command_chattitle(tg_bot, msg, *args):
     """change the synced title of the current or given chat
