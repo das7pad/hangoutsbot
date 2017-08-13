@@ -18,7 +18,7 @@ class Queue(list):
         group: string, identifier for a platform
         func: callable, will be called with the scheduled args/kwargs
     """
-    __slots__ = ('_logger', '_func', '_group', '_lock')
+    __slots__ = ('_logger', '_func', '_group', '_lock', '_instance_block')
     _loop = asyncio.get_event_loop()
     _blocks = {'__global__': False}
     _pending_tasks = {}
@@ -29,6 +29,7 @@ class Queue(list):
         self._func = func
         self._group = group
         self._lock = asyncio.Lock(loop=self._loop)
+        self._instance_block = False
 
         # do not overwrite an active block
         self._blocks.setdefault(group, False)
@@ -37,12 +38,14 @@ class Queue(list):
 
     @property
     def _blocked(self):
-        """check for a global or local sending block
+        """check for a global, local or instance sending block
 
         Returns:
             True if any block got applied otherwise False
         """
-        return self.__block['__global__'] or self.__block[self._group]
+        return (self._instance_block
+                or self._blocks['__global__']
+                or self._blocks[self._group])
 
     @property
     def _running(self):
@@ -58,6 +61,26 @@ class Queue(list):
         self._pending_tasks[self._group] += 1
         self.append((self._blocked, args, kwargs))
         asyncio.ensure_future(self._process(), loop=self._loop)
+
+    async def single_stop(self, timeout):
+        """apply a submit-block to the instance and wait for pending tasks
+
+        the instance-block is permanent, use with care
+
+        Args:
+            timeout: int, time in seconds to wait for pending tasks to complete
+        """
+        self._instance_block = True
+        while timeout > 0:
+            if not self and not self._running:
+                break
+            timeout -= 0.1
+            await asyncio.sleep(0.1)
+        else:
+            self._logger.warning('%s task%s did not finished',
+                                 len(self),
+                                 ('s' if self._pending_tasks[self._group] > 1
+                                  else ''))
 
     async def local_stop(self, timeout):
         """apply a submit-block to all group members and wait for pending tasks
