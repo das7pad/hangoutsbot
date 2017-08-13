@@ -592,3 +592,84 @@ async def command_sync_config(tg_bot, msg, *args):
     await tg_bot.sendMessage(
         msg.chat_id, text,
         reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+
+async def command_restrict_user(tg_bot, msg, *args):
+    """limit sending of given message types
+
+    /restrict_user <*ids|'all'> <False|'messages'|'media'|'sticker'|'websites'|
+                                 'sticker+websites'>
+
+    Args:
+        msg: Message instance
+        args: tuple, arguments that were passed after the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+
+    if msg['chat']['type'] != 'supergroup':
+        tg_bot.send_html(msg.chat_id,
+                         _('This command can be issued in supergroups only'))
+        return
+
+    options = ('false', 'messages', 'media', 'sticker', 'websites',
+               'sticker+websites')
+    if not args or args[-1].lower() not in options:
+        tg_bot.send_html(msg.chat_id,
+                         _('Check syntax:\n'
+                           '/restrict_user <ids | all> <"{options}">').format(
+                               options='" | "'.join(options)))
+        return
+
+    chat_users = tg_bot.bot.memory.get_by_path(
+        ['telesync', 'chat_data', msg.chat_id, 'user'])
+
+    if args[0].lower() == 'all':
+        target_users = chat_users.copy().keys()
+    else:
+        for user_id in args[:-1]:
+            if user_id not in chat_users:
+                tg_bot.send_html(
+                    msg.chat_id,
+                    _('The user %s is not member of the current chat or has not'
+                      ' written anything so far in here.') % user_id)
+                return
+        target_users = args[:-1]
+
+    restrict = args[-1].lower()
+    rights = {'can_send_messages': True,
+              'can_send_media_messages': True,
+              'can_send_other_messages': True,
+              'can_add_web_page_previews': True}
+    changes = ({'can_send_messages': False} if restrict == 'messages' else
+               {'can_send_media_messages': False} if restrict == 'media' else
+               {'can_send_other_messages': False} if restrict == 'sticker' else
+               {'can_add_web_page_previews': False} if restrict == 'websites'
+               else {'can_send_other_messages': False,
+                     'can_add_web_page_previews': False} if (restrict ==
+                                                             'sticker+websites')
+               else {})
+    rights.update(changes)
+
+    raw_results = await asyncio.gather(*[tg_bot.restrictChatMember(msg.chat_id,
+                                                                   user_id,
+                                                                   **rights)
+                                         for user_id in target_users],
+                                       return_exceptions=True)
+    results = {user_id: raw_results.pop(0)
+               for user_id in target_users}
+
+    failed = {user_id: (result.description
+                        if isinstance(result, telepot.exception.TelegramError)
+                        else result)
+              for user_id, result in results.items()
+              if result is not True}
+
+    if failed:
+        output = [_('Failed for')]
+        for user_id, result in failed.items():
+            output.append('- %s:\n  %s' %
+                          ((await tg_bot.get_tg_user(user_id)).full_name,
+                           result))
+    else:
+        output = [_('Success')]
+    tg_bot.send_html(msg.chat_id, '\n'.join(output))

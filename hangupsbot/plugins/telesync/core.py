@@ -38,6 +38,7 @@ from .commands_tg import (
     command_cancel,
     command_chattitle,
     command_sync_config,
+    command_restrict_user,
 )
 
 from .message import Message
@@ -97,6 +98,7 @@ class TelegramBot(telepot.aio.Bot):
                           '/cancel': command_cancel,
                           '/chattitle': command_chattitle,
                           '/sync_config': command_sync_config,
+                          '/restrict_user': command_restrict_user,
                          }
 
     def config(self, key=None, fallback=True):
