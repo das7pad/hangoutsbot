@@ -16,7 +16,7 @@ import plugins
 for _path_ in ('user', 'message', 'commands_tg', 'parsers', 'core'):
     plugins.load_module('plugins.telesync.' + _path_)
 
-from .core import TelegramBot, POOLS
+from .core import TelegramBot, POOLS, User
 
 HELP = {
     'telesync': _('usage:\n{bot_cmd} telesync add <telegram chat id>\n'
@@ -72,6 +72,7 @@ async def _initialise(bot):
     plugins.register_sync_handler(_handle_message, 'allmessages')
     plugins.register_sync_handler(_handle_membership_change, 'membership')
     plugins.register_sync_handler(_handle_conv_user, 'conv_user')
+    plugins.register_sync_handler(_handle_user_kick, 'user_kick')
     plugins.register_sync_handler(_handle_profilesync, 'profilesync')
 
     plugins.start_asyncio_task(bot.tg_bot.start)
@@ -319,6 +320,70 @@ async def _handle_profilesync(bot, platform, tg_chat_id, conv_1on1, split):
 
     bot.memory.save()
     await bot.coro_send_message(conv_1on1, text)
+
+async def _handle_user_kick(bot, conv_id, user):
+    """kick a user from a given conversation
+
+    Args:
+        bot: HangupsBot instance
+        conv_id: string, conversation identifier
+        user: SyncUser instance
+
+    Returns:
+        None: ignored, False: kick failed, True: kicked, 'whitelisted'
+    """
+    if not isinstance(user, User):
+        # not a telesync user
+        return None
+
+    if user.usr_id in bot.tg_bot.config('admins'):
+        return 'whitelisted'
+
+    path = ['telesync', 'ho2tg', conv_id]
+
+    if not await bot.tg_bot.is_running():
+        return False
+
+    kicked = False
+    tg_chat_id = user.identifier.split(':', 1)[1]
+    try:
+        tg_chat_ids = bot.memory.get_by_path(path)
+        tg_chat_ids.index(tg_chat_id)
+
+        resp = await bot.tg_bot.getChat(tg_chat_id)
+        if not resp.get('all_members_are_administrators'):
+            kicked = await bot.tg_bot.kickChatMember(tg_chat_id, user.usr_id)
+        else:
+            kicked = False
+            logger.error('%s not kicked from %s, as %s is set', user.usr_id,
+                         tg_chat_id, '"all_members_are_administrators"')
+    except (KeyError, ValueError):
+        # no sync set for this conversation
+        logger.info('ignoring deleted sync: HO %s -> TG %s',
+                    conv_id, tg_chat_id)
+
+    except telepot.exception.UnauthorizedError:
+        logger.error('bot is not authorized to kick %s from %s',
+                     user.usr_id, tg_chat_id)
+
+    except telepot.exception.TelegramError as err:
+        logger.error('failed to kick user %s from chat %s: %s',
+                     user.usr_id, tg_chat_id, repr(err))
+
+    if not kicked:
+        return False
+
+    # send a membership event as telegram does not broadcast one for bot kicks
+    path_chat = ['telesync', 'chat_data', tg_chat_id]
+    path_user = ['telesync', 'user_data']
+    msg = {
+        'chat': bot.memory.get_by_path(path_chat),
+        'left_chat_member': bot.memory.get_by_path(path_user + [user.usr_id]),
+        'from': bot.memory.get_by_path(path_user + [bot.tg_bot.user.usr_id]),
+        'message_id': 0,
+    }
+    await bot.tg_bot._handle(msg)              # pylint:disable=protected-access
+    return True
 
 async def _handle_conv_user(bot, conv_id, profilesync_only):
     """get all telegram user for this conv_id
