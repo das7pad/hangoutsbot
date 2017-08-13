@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import time
+import random
 
 import aiohttp
 import telepot
@@ -104,6 +105,11 @@ class TelegramBot(telepot.aio.Bot):
         logger.info('Botuser: id: %s, name: %s, username: %s',
                     self.user.usr_id, self.user.first_name, self.user.username)
 
+        tasks = [
+            asyncio.ensure_future(self._periodic_profile_updater()),
+            asyncio.ensure_future(self._periodic_profilesync_reminder()),
+        ]
+
         try:
             await self._message_loop()
         except asyncio.CancelledError:
@@ -112,6 +118,11 @@ class TelegramBot(telepot.aio.Bot):
             logger.critical('API-Key revoked!')
         finally:
             await AsyncQueue('telesync').local_stop(5)
+
+            # cancel housekeeping tasks
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
             try:
                 # discard the last few message
@@ -529,6 +540,56 @@ class TelegramBot(telepot.aio.Bot):
 
         logger.info('group %s upgraded to Supergroup %s',
                     old_chat_id, new_chat_id)
+
+    async def _periodic_profilesync_reminder(self):
+        """remind users to finish pending profilesyncs
+
+        sleep for x hours before each notify run
+        x determined by telesync config entry 'profilesync_reminder'
+        """
+        path = ['profilesync', 'telesync', 'pending_2ho']
+        try:
+            while 'profilesync_reminder' in self.config():
+                # to prevent spam on reboots, rather sleep before notify users
+                await asyncio.sleep(3600 * self.config('profilesync_reminder'))
+
+                for user_id in self.bot.memory.get_by_path(path).copy():
+                    await self.profilesync_info(user_id, is_reminder=True)
+        except asyncio.CancelledError:
+            return
+        except:                                    # pylint: disable=bare-except
+            logger.exception('lowlevel error in periodic profilesync reminder')
+
+    async def _periodic_profile_updater(self):
+        """update the telesync data periodically
+
+        sleep for x hours after each update run
+        x determined by telesync config entry 'profile_update_intervall'
+
+        this could likely end in a ratelimit, delay each query by 10-20 seconds
+        """
+        data_path = ['telesync', 'user_data']
+        chat_path = ['telesync', 'chat_data']
+        memory = self.bot.memory
+        try:
+            while True:
+
+                # update last_seen values
+                for chat_id, data in memory.get_by_path(chat_path).items():
+                    for user_id in data.get('users', ()):
+                        memory.set_by_path(data_path + [user_id, 'last_seen'],
+                                           chat_id)
+
+                for user_id in memory.get_by_path(data_path).copy():
+                    await self.get_tg_user(user_id=user_id, use_cache=False)
+                    await asyncio.sleep(random.randint(10, 20))
+
+                await asyncio.sleep(
+                    3600 * self.config('profile_update_intervall'))
+        except asyncio.CancelledError:
+            return
+        except:                                    # pylint: disable=bare-except
+            logger.exception('lowlevel error in profile updater')
 
     async def _message_loop(self):
         """long polling for updates and handle errors gracefully

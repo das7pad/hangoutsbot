@@ -109,6 +109,12 @@ def setup_config(bot):
             # number of repeated lowlevel-errors until the message loop dies
             'message_loop_retries': 5,
 
+            # remind the user on the pending sync every n hours
+            'profilesync_reminder': 36,
+
+            # intervall in hours to update the user profiles
+            'profile_update_intervall': 5,
+
             # html message a user receives on /start
             # available keys:
             # name (user who triggered /start), botusername, botname
