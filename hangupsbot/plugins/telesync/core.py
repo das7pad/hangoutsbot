@@ -20,12 +20,20 @@ import plugins
 from sync.parser import get_formatted
 from sync.sending_queue import AsyncQueue, AsyncQueueCache
 
-from .commands_tg import (command_whoami, command_whereami,
-                          command_set_sync_ho, command_clear_sync_ho,
-                          command_add_admin, command_remove_admin,
-                          command_sync_profile, command_unsync_profile,
-                          command_tldr, command_get_me, command_start,
-                         )
+from .commands_tg import (
+    command_whoami,
+    command_whereami,
+    command_set_sync_ho,
+    command_clear_sync_ho,
+    command_add_admin,
+    command_remove_admin,
+    command_sync_profile,
+    command_unsync_profile,
+    command_tldr,
+    command_get_me,
+    command_start,
+)
+
 from .message import Message
 from .parsers import TelegramMessageSegment
 from .user import User
