@@ -381,3 +381,18 @@ async def command_get_admins(tg_bot, msg, *dummys):
             lines.append('   HO: https://plus.google.com/' + chat_id)
 
     tg_bot.send_html(msg.chat_id, '\n'.join(lines))
+
+async def command_echo(tg_bot, msg, *args):
+    """send back params
+
+    /echo {text}
+
+    Args:
+        msg: Message instance
+        args: tuple, arguments that were passed after the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+    if not ensure_args(tg_bot, msg.chat_id, args, at_least=1):
+        return
+    tg_bot.send_html(msg.chat_id, ' '.join(args))
