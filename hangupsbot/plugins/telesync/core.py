@@ -34,6 +34,9 @@ from .commands_tg import (
     command_start,
     command_get_admins,
     command_echo,
+    command_cancel,
+    command_chattitle,
+    command_sync_config,
 )
 
 from .message import Message
@@ -85,6 +88,9 @@ class TelegramBot(telepot.aio.Bot):
                           '/start': command_start,
                           '/getadmins': command_get_admins,
                           '/echo': command_echo,
+                          '/cancel': command_cancel,
+                          '/chattitle': command_chattitle,
+                          '/sync_config': command_sync_config,
                          }
 
     def config(self, key=None, fallback=True):

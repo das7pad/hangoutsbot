@@ -1,7 +1,14 @@
 """Telegram-comamnds"""
 __author__ = 'das7pad@outlook.com'
 
+import asyncio
 import logging
+
+from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
+                                ReplyKeyboardRemove)
+
+from sync import SYNC_CONFIG_KEYS
+from sync.utils import get_sync_config_entry
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +84,17 @@ async def command_start(tg_bot, msg, *args):
 
     if 'syncprofile' in args:
         await command_sync_profile(tg_bot, msg)
+
+async def command_cancel(tg_bot, msg, *dummys):
+    """hide the custom keyboard
+
+    Args:
+        msg: Message instance
+        *dummys: tuple, arguments that were passed after the command
+    """
+    await tg_bot.sendMessage(
+        msg.chat_id, _('canceled'),
+        reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
 
 async def command_whoami(tg_bot, msg, *dummys):
     """answer with user_id of request message, private only
@@ -396,3 +414,115 @@ async def command_echo(tg_bot, msg, *args):
     if not ensure_args(tg_bot, msg.chat_id, args, at_least=1):
         return
     tg_bot.send_html(msg.chat_id, ' '.join(args))
+
+async def command_chattitle(tg_bot, msg, *args):
+    """change the synced title of the current or given chat
+
+    /chattitle [<chatid>] <title>
+
+    Args:
+        msg: Message instance
+        args: tuple, arguments that were passed after the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+
+    text = tg_bot.bot.call_shared(
+        'setchattitle', args=args, platform='telesync',
+        fallback=msg.chat_id, source=tg_bot.bot.memory['telesync']['chat_data'])
+
+    tg_bot.send_html(msg.chat_id, text)
+
+def get_chat_name(tg_bot, chat_id):
+    """get the cached name of a chat
+
+    Args:
+        chat_id: string, telegram chat identifier
+
+    Returns:
+        string, the chats title or 'unknown' if no title is cached
+    """
+    try:
+        return tg_bot.bot.memory.get_by_path(
+            ['telesync', 'chat_data', chat_id, 'name'])
+    except KeyError:
+        return _('unknown')
+
+async def command_sync_config(tg_bot, msg, *args):
+    """update a config entry for the current or given chat
+
+    /sync_config key value
+
+    Args:
+        msg: Message instance
+        args: tuple, arguments that were passed after the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+
+    available_chats = tg_bot.bot.memory['telesync']['chat_data']
+
+    if not args or args[0].lower() in ('interactive', 'ia'):
+        reply = msg.msg_id
+
+        if (len(args) == 3 and args[1] in available_chats and
+                (args[2] in SYNC_CONFIG_KEYS or
+                 'sync_' + args[2] in SYNC_CONFIG_KEYS)):
+            text = _('You may now copy and paste the next message and edit '
+                     'the current value')
+
+            new_msg = await tg_bot.sendMessage(msg.chat_id, text)
+
+            text = '/sync_config %s %s "%s"' % (
+                args[1], args[2], get_sync_config_entry(tg_bot.bot,
+                                                        'telesync:' + args[1],
+                                                        args[2]))
+
+            keyboard = ReplyKeyboardRemove(remove_keyboard=True)
+            reply = new_msg.get('message_id', reply)
+
+        elif len(args) > 1 and args[1] in available_chats:
+            keyboard = ReplyKeyboardMarkup(
+                resize_keyboard=True, selective=True, keyboard=(
+                    [[KeyboardButton(text='/cancel')]] +
+                    [[KeyboardButton(text='/sync_config ia %s %s' % (
+                        args[1], key))
+                     ] for key in SYNC_CONFIG_KEYS]))
+            text = _('available config entrys:')
+        else:
+            keyboard = ReplyKeyboardMarkup(
+                resize_keyboard=True, selective=True, keyboard=(
+                    [[KeyboardButton(text='/cancel')]] +
+                    [[KeyboardButton(text='/sync_config ia %s\n(%s)' % (
+                        chat_id, get_chat_name(tg_bot, chat_id)))]
+                     for chat_id in sorted(available_chats)]))
+            text = _('available Telegram Chats:')
+
+        await tg_bot.sendMessage(msg.chat_id, text, reply_markup=keyboard,
+                                 reply_to_message_id=reply)
+        return
+
+    if len(args) > 1 and args[0] in available_chats:
+        chat_id = args[0]
+        key = args[1]
+        value = ' '.join(args[2:])
+    else:
+        chat_id = msg.chat_id
+        key = args[0]
+        value = ' '.join(args[1:])
+
+    conv_id = 'telesync:' + chat_id
+
+    try:
+        last_value, new_value = tg_bot.bot.call_shared('sync_config', conv_id,
+                                                       key, value)
+    except (KeyError, TypeError) as err:
+        text = err.args[0]
+
+    else:
+        text = _('%s updated for channel "%s" from "%s" to "%s"') % (
+            key, chat_id, last_value, new_value)
+
+    await tg_bot.sendMessage(
+        msg.chat_id, text,
+        reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
