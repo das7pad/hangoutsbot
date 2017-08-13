@@ -348,3 +348,36 @@ async def command_get_me(tg_bot, msg, *dummys):
         'id: {usr_id}, name: {name}, username: @{username}'.format(
             usr_id=tg_bot.user.usr_id, name=tg_bot.user.first_name,
             username=tg_bot.user.username))
+
+async def command_get_admins(tg_bot, msg, *dummys):
+    """send back a formated list of Admins
+
+    /getadmins
+
+    Args:
+        msg: Message instance
+        *dummys: tuple, arguments that were passed after the command
+    """
+    admin_users = []
+    max_name_length = 0
+    for admin_id in tg_bot.config('admins'):
+        sync_user = await tg_bot.get_tg_user(user_id=admin_id, gpluslink=True)
+
+        admin_users.append(sync_user)
+
+        # update name length
+        if len(sync_user.full_name) > max_name_length:
+            max_name_length = len(sync_user.full_name)
+
+    lines = [_('<b>Telegram Botadmins:</b>')]
+    for admin in admin_users:
+        lines.append(
+            '~ TG: {tg_name:>{max_name_length}}'.format(
+                tg_name=admin.get_user_link() or admin.full_name,
+                max_name_length=max_name_length))
+
+        chat_id = admin.id_.chat_id
+        if chat_id != 'sync':
+            lines.append('   HO: https://plus.google.com/' + chat_id)
+
+    tg_bot.send_html(msg.chat_id, '\n'.join(lines))

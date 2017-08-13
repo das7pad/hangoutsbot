@@ -32,6 +32,7 @@ from .commands_tg import (
     command_tldr,
     command_get_me,
     command_start,
+    command_get_admins,
 )
 
 from .message import Message
@@ -81,6 +82,7 @@ class TelegramBot(telepot.aio.Bot):
                           '/tldr': command_tldr,
                           '/getme': command_get_me,
                           '/start': command_start,
+                          '/getadmins': command_get_admins,
                          }
 
     def config(self, key=None, fallback=True):
