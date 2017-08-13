@@ -54,6 +54,10 @@ if 'default' not in POOLS or POOLS['default'].closed:
     POOLS['default'] = aiohttp.ClientSession(
         connector=aiohttp.TCPConnector(limit=10))
 
+IGNORED_MESSAGE_TYPES = (
+    'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
+)
+
 class TelegramBot(telepot.aio.Bot):
     """enhanced telepot bot with Hangouts sync
 
@@ -427,7 +431,8 @@ class TelegramBot(telepot.aio.Bot):
             self._on_supergroup_upgrade(response)
             return
 
-        if telepot.flavor(response) != 'chat':
+        if (telepot.flavor(response) != 'chat'
+                or any(key in response for key in IGNORED_MESSAGE_TYPES)):
             return
 
         msg = Message(response)
