@@ -9,6 +9,7 @@ from utils.cache import Cache
 
 logger = logging.getLogger(__name__)
 
+SENDING_BLOCK_RETRY_DELAY = 5   # seconds
 
 class Queue(list):
     """a queue to schedule synced calls and remain the sequence in processing
@@ -17,25 +18,25 @@ class Queue(list):
         group: string, identifier for a platform
         func: callable, will be called with the scheduled args/kwargs
     """
-    __slots__ = ('_func', '_group', '_queue', '_running', '_logger')
+    __slots__ = ('_logger', '_func', '_group', '_lock')
     _loop = asyncio.get_event_loop()
-    __block = {'__global__': False}
+    _blocks = {'__global__': False}
     _pending_tasks = {}
 
     def __init__(self, group, func=None):
         super().__init__()
+        self._logger = logging.getLogger('%s.%s' % (__name__, group))
         self._func = func
         self._group = group
-        self._running = False
-        self._logger = logging.getLogger('%s.%s' % (__name__, group))
+        self._lock = asyncio.Lock(loop=self._loop)
 
         # do not overwrite an active block
-        self.__block.setdefault(group, False)
+        self._blocks.setdefault(group, False)
         # do not reset the counter
         self._pending_tasks.setdefault(group, 0)
 
     @property
-    def _block(self):
+    def _blocked(self):
         """check for a global or local sending block
 
         Returns:
@@ -43,10 +44,19 @@ class Queue(list):
         """
         return self.__block['__global__'] or self.__block[self._group]
 
+    @property
+    def _running(self):
+        """check if a queue processor is already running
+
+        Returns:
+            boolean, True if a queue processor is running, otherwise False
+        """
+        return self._lock.locked()
+
     def schedule(self, *args, **kwargs):
         """queue an item with the given args/kwargs for the coro"""
         self._pending_tasks[self._group] += 1
-        self.append((self._block, args, kwargs))
+        self.append((self._blocked, args, kwargs))
         asyncio.ensure_future(self._process(), loop=self._loop)
 
     async def local_stop(self, timeout):
@@ -58,7 +68,7 @@ class Queue(list):
         Args:
             timeout: int, time in seconds to wait for pending tasks to complete
         """
-        self.__block[self._group] = True
+        self._blocks[self._group] = True
         if self._pending_tasks[self._group] > 0:
             self._logger.info('waiting for %s tasks',
                               self._pending_tasks[self._group])
@@ -80,9 +90,9 @@ class Queue(list):
         Args:
             timeout: int, time in seconds to wait for pending tasks to complete
         """
-        cls.__block['__global__'] = True
+        cls._blocks['__global__'] = True
         pending = {group: tasks
-                   for group, tasks in cls._pending_tasks.copy().items()
+                   for group, tasks in cls._pending_tasks.items()
                    if tasks > 0}
         if not pending:
             return
@@ -90,7 +100,7 @@ class Queue(list):
         logger.info('global stop: waiting for %s tasks',
                     sum(pending.values()))
         await asyncio.gather(*[Queue(group, None).local_stop(timeout)
-                               for group in cls._pending_tasks.copy()])
+                               for group in pending])
 
     @classmethod
     def release_block(cls, group=None):
@@ -100,45 +110,44 @@ class Queue(list):
             group: string, platform identifier or None to release globally
         """
         if group is None:
-            cls.__block.clear()
-            cls.__block['__global__'] = False
+            cls._blocks.clear()
+            cls._blocks['__global__'] = False
             cls._pending_tasks.clear()
         else:
-            cls.__block[group] = False
+            cls._blocks[group] = False
             cls._pending_tasks[group] = 0
 
     async def _process(self):
         """process the queue and await the result on each call"""
+        if not self:
+            # all tasks are handled
+            return
+
         if self._running:
             # only one queue processor is allowed
             return
-        self._running = True
-        empty = False
-        try:
-            blocked, args, kwargs = self.pop(0)
-            if blocked:
-                delay = 5
-                while delay > 0:
-                    await asyncio.sleep(.1)
-                    delay -= .1
-                    if not self._block:
-                        # block got released
-                        break
-                else:
-                    self._logger.error(
-                        'block timeout reached\ndiscard args=%s, kwargs=%s',
-                        repr(args), repr(kwargs))
-                    return
 
-            self._logger.debug('sending %s %s', repr(args), repr(kwargs))
-            await self._send(args, kwargs)
-            # self._logger.debug('sent %s %s', repr(args), repr(kwargs))
-        except IndexError:
-            empty = True
-        finally:
-            # cleanup on success or any Exception like asyncio.CancelledError
-            self._running = False
-            if not empty:
+        async with self._lock:
+            try:
+                blocked, args, kwargs = self.pop(0)
+                if blocked:
+                    delay = 0
+                    while delay < SENDING_BLOCK_RETRY_DELAY:
+                        if not self._blocked:
+                            # block got released
+                            break
+                        await asyncio.sleep(.1)
+                        delay += .1
+                    else:
+                        self._logger.error(
+                            'block timeout reached\ndiscard args=%s, kwargs=%s',
+                            repr(args), repr(kwargs))
+                        return
+
+                self._logger.debug('sending %s %s', repr(args), repr(kwargs))
+                await self._send(args, kwargs)
+                self._logger.debug('sent %s %s', repr(args), repr(kwargs))
+            finally:
                 self._pending_tasks[self._group] -= 1
                 asyncio.ensure_future(self._process(), loop=self._loop)
 
