@@ -186,9 +186,9 @@ class Queue(list):
             await asyncio.shield(self._loop.run_in_executor(None, wrapped))
         except asyncio.CancelledError:
             pass
-        except Exception as err:                  # pylint: disable=broad-except
-            self._logger.warning('sending args="%s", kwargs="%s" failed:\n%s',
-                                 args, kwargs, repr(err))
+        except:                                    # pylint: disable=bare-except
+            self._logger.exception('sending args="%s", kwargs="%s" failed',
+                                   repr(args), repr(kwargs))
 
 
 class AsyncQueue(Queue):
@@ -211,9 +211,9 @@ class AsyncQueue(Queue):
             await asyncio.shield(self._func(*args, **kwargs))
         except asyncio.CancelledError:
             pass
-        except Exception as err:                  # pylint: disable=broad-except
-            self._logger.warning('sending args="%s", kwargs="%s" failed:\n%s',
-                                 args, kwargs, repr(err))
+        except:                                    # pylint: disable=bare-except
+            self._logger.exception('sending args="%s", kwargs="%s" failed',
+                                   repr(args), repr(kwargs))
 
 
 class QueueCache(Cache):

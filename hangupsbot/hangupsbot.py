@@ -281,6 +281,7 @@ class HangupsBot(object):
             try:
                 loop.run_until_complete(task)
             except asyncio.CancelledError:
+                logger.critical("bot is exiting")
                 return
 
             # restore the functionality to stop the bot on KeyboardInterrupt
