@@ -447,7 +447,8 @@ class TelegramBot(telepot.aio.Bot):
                 # the command is valid and the command shall not be synced
                 return
 
-        if msg.content_type in ('new_chat_member', 'left_chat_member'):
+        if msg.content_type in ('new_chat_member', 'new_chat_members',
+                                'left_chat_member'):
             self._on_membership_change(msg)
 
         else:
@@ -507,30 +508,40 @@ class TelegramBot(telepot.aio.Bot):
             return
         ho_conv_ids = bot.memory.get_by_path(['telesync', 'tg2ho', msg.chat_id])
 
-        changed_member = User(self, msg, chat_action=msg.content_type)
-
-        path_chat = ['telesync', 'chat_data', msg.chat_id, 'user',
-                     changed_member.usr_id]
-        if msg.content_type == 'new_chat_member':
-            bot.memory.set_by_path(path_chat, 1)
-            type_ = 1
+        if 'new_chat_members' in msg:
+            raw_users = msg['new_chat_members']
+            changed_members = []
+            for raw_user in raw_users:
+                msg['_user_'] = raw_user
+                changed_members.append(User(self, msg, chat_action='_user_'))
         else:
-            type_ = 2
-            if bot.memory.exists(path_chat):
-                bot.memory.pop_by_path(path_chat)
+            changed_members = [User(self, msg, chat_action=msg.content_type)]
 
-            path_last_seen = ['telesync', 'user_data', changed_member.usr_id,
-                              'last_seen']
-            if str(bot.memory.get_by_path(path_last_seen)) == msg.chat_id:
-                bot.memory.set_by_path(path_last_seen, None)
+        for changed_member in changed_members:
+            path_chat = ['telesync', 'chat_data', msg.chat_id, 'user',
+                         changed_member.usr_id]
+            if msg.content_type == 'left_chat_member':
+                type_ = 2
+                if bot.memory.exists(path_chat):
+                    bot.memory.pop_by_path(path_chat)
+
+                path_last_seen = ['telesync', 'user_data',
+                                  changed_member.usr_id, 'last_seen']
+                if str(bot.memory.get_by_path(path_last_seen)) == msg.chat_id:
+                    bot.memory.set_by_path(path_last_seen, None)
+            else:
+                bot.memory.set_by_path(path_chat, 1)
+                type_ = 1
 
         bot.memory.save()
 
-        participant_user = ([] if msg.user.usr_id == changed_member.usr_id
-                            else [changed_member])
+        participant_user = ([] if (len(changed_members) == 1 and
+                                   msg.user.usr_id == changed_members[0].usr_id)
+                            else changed_members)
 
-        logger.info('membership change [%s] in %s: %s%s%s',
-                    msg.content_type, msg.chat_id, changed_member.full_name,
+        logger.info('membership change [%s] in %s: <"%s">%s%s',
+                    msg.content_type, msg.chat_id,
+                    '">, <"'.join(user.full_name for user in changed_members),
                     ' triggered by ' if participant_user else '',
                     msg.user.full_name if participant_user else '')
 
