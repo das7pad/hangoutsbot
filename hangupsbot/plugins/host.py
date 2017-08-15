@@ -14,6 +14,20 @@ Additional config entrys that can be set manually:
       threshold for the 5min load value of the system to trigger a notification,
       defaults to the cpu count
 
+    - "datadog_log_level": <int>
+      you can track incoming messages in the detail of your choice
+        0   disable
+        1 'hangupsbot.messages.summery'
+            globally
+        2 'hangupsbot.messages.<bot-name>.summery'
+            per bot-user
+        3 'hangupsbot.messages.<platform>.summery'
+            per source platform
+        4 'hangupsbot.messages.<bot-name>.<platform>.summery'
+            per user and source platform
+        5 'hangupsbot.messages.<bot-name>.<platform>.<chat_id>'
+            per user, source platform and chat
+
     - "datadog_notify_in_events": <string>
       add a custom text to each event, e.g. "@slack" to get the message into a
       connected slack, use \n to add a linebreak
@@ -66,10 +80,46 @@ def _initialise(bot):
 
     bot.config.set_defaults({
         'check_load': [],
+        'datadog_log_level': 0,
         'datadog_notify_in_events': '',
         'load_threshold': (os.cpu_count() or 1),
         'report_online': [],
     })
+
+    if statsd is not None and bot.config.get_option('datadog_log_level'):
+        plugins.register_sync_handler(log_event, 'allmessages_once')
+
+def log_event(bot, event):
+    """incremets the metrics for an incoming message
+
+    Args:
+        bot: HangupsBot instance
+        event: sync.event.SyncEvent instance
+    """
+    level = bot.config['datadog_log_level']
+    if not level:
+        return
+
+    bot_name = bot.user_self()['full_name'].split()[0]
+    bot_name = (''.join(char for char in bot_name if char.isalnum())
+                or _('bot_name'))
+
+    if level == 1:
+        metric = ('summery',)
+    elif level == 2:
+        metric = (bot_name, 'summery')
+    else:
+        platform = ''.join(char if char.isalnum() else '.'
+                           for char in event.identifier.rsplit(':', 1)[0])
+        if level == 3:
+            metric = (platform, 'summery')
+        elif level == 4:
+            metric = (bot_name, platform, 'summery')
+        else:
+            chat_id = event.identifier.rsplit(':', 1)[1]
+            metric = (bot_name, platform, chat_id)
+
+    statsd.increment('hangupsbot.messages.' + '.'.join(metric), 1)
 
 def _seconds_to_str(seconds):
     """get a printable representation of a timespawn
