@@ -22,28 +22,33 @@ HELP = {
                     '<i>The threshold can be set manually to a different value:'
                     '\n  set "load_threshold" in your config to a custom value'
                     '</i>'),
+    'report_online': _('enable/disable sending of a message into the current '
+                       'conv on bot reboot'),
     'uptime': _('post the current sytem uptime in our private chat'),
     'who': _('list current ssh-session on the host in our private chat')
 }
 
 def _initialise(bot):
-    """register the admin commands and start the coro
+    """register the admin commands and start the coros
 
     Args:
         bot: HangupsBot instance
     """
     plugins.register_admin_command([
         'check_load',
+        'report_online',
         'uptime',
         'who',
     ])
 
     plugins.register_help(HELP)
     plugins.start_asyncio_task(_check_load)
+    plugins.start_asyncio_task(_report_online)
 
     bot.config.set_defaults({
         'check_load': [],
         'load_threshold': (os.cpu_count() or 1),
+        'report_online': [],
     })
 
 def _seconds_to_str(seconds):
@@ -103,6 +108,16 @@ async def check_load(bot, event, *dummys):
         dummys: unused
     """
     await _update(bot, event, 'check_load')
+
+async def report_online(bot, event, *dummys):
+    """add/remove the current conv_id from 'report_online' in config
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        dummys: unused
+    """
+    await _update(bot, event, 'report_online')
 
 async def uptime(bot, event, *dummys):
     """display the current system uptime
@@ -174,6 +189,30 @@ async def who(bot, event, *dummys):
 
     output = '\n'.join(lines)
     await bot.coro_send_to_user(event.user_id.chat_id, output)
+
+async def _report_online(bot):
+    """report the startup
+
+    Args:
+        bot: HangupsBot instance
+    """
+    if not bot.config.get_option('report_online'):
+        return
+
+    bot_user = bot.user_self()  # dict with user info
+    bot_name = bot_user['full_name'].split()[0]
+
+    title_template = _('{name} is back up')
+
+    process = psutil.Process()
+    startup = datetime.strftime(datetime.fromtimestamp(process.create_time()),
+                                '%Y-%m-%d %H:%M:%S')
+
+    title = title_template.format(name='<b>%s</b>' % bot_name)
+
+    message = title + '\nstarted on %s' % startup
+    for conv_id in bot.config['report_online'].copy():
+        await bot.coro_send_message(conv_id, message)
 
 async def _check_load(bot):
     """check periodically the system load and notify above the threshold
