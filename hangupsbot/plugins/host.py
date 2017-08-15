@@ -1,6 +1,13 @@
-"""host utils"""
+"""host utils
+
+Additional config entry that can be set manually:
+    - "load_threshold": <int>
+      threshold for the 5min load value of the system to trigger a notification,
+      defaults to the cpu count
+"""
 __author__ = 'das7pad@outlook.com'
 
+import asyncio
 from datetime import timedelta, datetime
 import os
 import time
@@ -10,18 +17,34 @@ import psutil
 import plugins
 
 HELP = {
+    'check_load': _('enable/disable system load reporting above an average 1 '
+                    'load per core into the current conv\n\n'
+                    '<i>The threshold can be set manually to a different value:'
+                    '\n  set "load_threshold" in your config to a custom value'
+                    '</i>'),
     'uptime': _('post the current sytem uptime in our private chat'),
     'who': _('list current ssh-session on the host in our private chat')
 }
 
-def _initialise():
-    """register the admin commands"""
+def _initialise(bot):
+    """register the admin commands and start the coro
+
+    Args:
+        bot: HangupsBot instance
+    """
     plugins.register_admin_command([
+        'check_load',
         'uptime',
         'who',
     ])
 
     plugins.register_help(HELP)
+    plugins.start_asyncio_task(_check_load)
+
+    bot.config.set_defaults({
+        'check_load': [],
+        'load_threshold': (os.cpu_count() or 1),
+    })
 
 def _seconds_to_str(seconds):
     """get a printable representation of a timespawn
@@ -44,6 +67,42 @@ def _uptime_in_seconds(now):
         float, time in seconds since the last boot
     """
     return now.timestamp() - psutil.boot_time()
+
+async def _update(bot, event, feature):
+    """flip the state of a given feature and reload the plugin
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        feature: string, plugin feature to update targets for
+    """
+    targets = bot.config.get_option(feature) or []   # do not overwrite defaults
+    target = event.conv_id
+    output = _('Notifications ')
+
+    if target in targets:
+        targets.remove(target)
+        output += _('disabled')
+    else:
+        targets.append(target)
+        output += _('enabled')
+
+    bot.config.set_by_path([feature], targets)
+    bot.config.save()
+
+    await bot.coro_send_message(event.conv_id, output)
+
+    asyncio.ensure_future(plugins.reload_plugin(bot, 'plugins.host'))
+
+async def check_load(bot, event, *dummys):
+    """add/remove the current conv_id from 'check_load' in config
+
+    Args:
+        bot: HangupsBot instance
+        event: event.ConversationEvent instance
+        dummys: unused
+    """
+    await _update(bot, event, 'check_load')
 
 async def uptime(bot, event, *dummys):
     """display the current system uptime
@@ -115,3 +174,39 @@ async def who(bot, event, *dummys):
 
     output = '\n'.join(lines)
     await bot.coro_send_to_user(event.user_id.chat_id, output)
+
+async def _check_load(bot):
+    """check periodically the system load and notify above the threshold
+
+    Args:
+        bot: HangupsBot instance
+    """
+    if not bot.config.get_option('check_load'):
+        return
+
+    try:
+        while bot.config.get_option('check_load'):
+            loadavg = os.getloadavg()
+            load_threshold = bot.config['load_threshold']
+
+            if loadavg[2] > load_threshold:
+                now = datetime.today()
+                today = datetime.strftime(now, '%Y-%m-%d %H:%M:%S')
+
+                onlinetime = _seconds_to_str(_uptime_in_seconds(now))
+                output = ('<b>LOAD-WARNING</b>\n{}\n'
+                          'server uptime:  {}\nserver load:       {}  {}  {}'
+                         ).format(today, onlinetime,
+                                  loadavg[0], loadavg[1], loadavg[2])
+
+                for conv_id in bot.config['check_load'].copy():
+                    await bot.coro_send_message(conv_id, output)
+
+                await asyncio.sleep(600)        # do not spam with load warnings
+            elif loadavg[1] > load_threshold:
+                # we might hit the treshold soon
+                await asyncio.sleep(60)
+            else:
+                await asyncio.sleep(300)
+    except asyncio.CancelledError:
+        return
