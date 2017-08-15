@@ -1,9 +1,22 @@
 """host utils
 
-Additional config entry that can be set manually:
+requirements for advanced report_online functionality:
+    a running datadog service on your host and the datadog module:
+        $ /path/to/venv/pip3 install datadog
+
+    The command "report_online" can start periodic incrementation of the metric
+    "hangupsbot.online.<botname>", the intervall is set to 30 seconds
+    In addition datadog events are fired on bot start and on bot shutdown.
+
+
+Additional config entrys that can be set manually:
     - "load_threshold": <int>
       threshold for the 5min load value of the system to trigger a notification,
       defaults to the cpu count
+
+    - "datadog_notify_in_events": <string>
+      add a custom text to each event, e.g. "@slack" to get the message into a
+      connected slack, use \n to add a linebreak
 """
 __author__ = 'das7pad@outlook.com'
 
@@ -12,6 +25,10 @@ from datetime import timedelta, datetime
 import os
 import time
 
+try:
+    from datadog import statsd
+except ImportError:
+    statsd = None
 import psutil
 
 import plugins
@@ -23,7 +40,9 @@ HELP = {
                     '\n  set "load_threshold" in your config to a custom value'
                     '</i>'),
     'report_online': _('enable/disable sending of a message into the current '
-                       'conv on bot reboot'),
+                       'conv on bot reboot\n<i>datadog: toggles the periodic '
+                       'reporting of an online state of the bot to '
+                       'datadog - this requires an active datadog service</i>'),
     'uptime': _('post the current sytem uptime in our private chat'),
     'who': _('list current ssh-session on the host in our private chat')
 }
@@ -47,6 +66,7 @@ def _initialise(bot):
 
     bot.config.set_defaults({
         'check_load': [],
+        'datadog_notify_in_events': '',
         'load_threshold': (os.cpu_count() or 1),
         'report_online': [],
     })
@@ -191,7 +211,7 @@ async def who(bot, event, *dummys):
     await bot.coro_send_to_user(event.user_id.chat_id, output)
 
 async def _report_online(bot):
-    """report the startup
+    """report the startup and send periodically an online state to datadog
 
     Args:
         bot: HangupsBot instance
@@ -213,6 +233,30 @@ async def _report_online(bot):
     message = title + '\nstarted on %s' % startup
     for conv_id in bot.config['report_online'].copy():
         await bot.coro_send_message(conv_id, message)
+
+    if statsd is None:
+        # datadog module is not available
+        return
+
+    body = _('HangupsBot using user https://plus.google.com/{chat_id}\n'
+             'started on {startup}').format(chat_id=bot_user['chat_id'],
+                                            startup=startup)
+
+    bot_name = (''.join(char for char in bot_name if char.isalnum())
+                or _('bot_name'))
+    additional_mentions = bot.config['datadog_notify_in_events']
+    if additional_mentions:
+        body += '\nNotify: %s' % additional_mentions
+    statsd.event(title_template.format(name=bot_name), body,
+                 alert_type='success')
+
+    try:
+        while bot.config.get_option('report_online'):
+            statsd.set('hangupsbot.online.{}'.format(bot_name), 1)
+            await asyncio.sleep(30)
+    except asyncio.CancelledError:
+        statsd.event(_('{name} is going down').format(name=bot_name), body,
+                     alert_type='warning')
 
 async def _check_load(bot):
     """check periodically the system load and notify above the threshold
