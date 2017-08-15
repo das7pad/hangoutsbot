@@ -103,14 +103,15 @@ class SyncEvent(FakeEvent):
         title: string, Chat Title of the source conversation
         edited: boolean, True if the message is an edited message
         image: SyncImage instance, already wrapped image info
+        context: dict, optional information about the message
         notified_users: set, object to track user that were notified for the
             message content
     """
     bot = None
 
     def __init__(self, *, identifier=None, conv_id, user, text=None,
-                 targets=None, reply=None, title=None, edited=None,
-                 image=None, notified_users=None, previous_targets=None):
+                 targets=None, reply=None, title=None, edited=None, image=None,
+                 context=None, notified_users=None, previous_targets=None):
 
         # validate user or create one
         user = (user if isinstance(user, SyncUser)
@@ -120,6 +121,7 @@ class SyncEvent(FakeEvent):
         self.targets = targets if isinstance(targets, list) else []
         self.image = image if isinstance(image, SyncImage) else None
         self.reply = reply if isinstance(reply, SyncReply) else None
+        self.context = context if isinstance(context, dict) else {}
 
         # keep the reference of notified_users, to track them in all other convs
         self.notified_users = (notified_users if notified_users is not None else

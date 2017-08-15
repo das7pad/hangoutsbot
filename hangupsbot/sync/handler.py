@@ -102,7 +102,7 @@ class SyncHandler(handlers.EventHandler):
     ############################################################################
 
     async def message(self, *, identifier, conv_id, user, text=None, reply=None,
-                      title=None, edited=False, image=None,
+                      title=None, edited=False, image=None, context=None,
                       previous_targets=None, notified_users=None):
         """Handle a synced message from any platform
 
@@ -125,9 +125,11 @@ class SyncHandler(handlers.EventHandler):
             title: string, chat title of source chat
             edited: boolean, True if the message is an edited message
             image: sync.SyncImage instance, already wrapped image info
+            context: dict, optional information about the message
             previous_targets: set of strings, conversation identifiers
             notified_users: set of strings, user chat ids
         """
+        # pylint:disable=too-many-locals
         logger.info('received a message from %s for %s', identifier, conv_id)
 
         # ensure types and set targets
@@ -143,13 +145,13 @@ class SyncHandler(handlers.EventHandler):
             sync_event = SyncEvent(
                 identifier=identifier, conv_id=conv_id_, user=user, text=text,
                 reply=reply, title=title, edited=edited, image=image,
-                notified_users=notified_users, targets=targets,
+                notified_users=notified_users, targets=targets, context=context,
                 previous_targets=previous_targets)
 
             # process the image and add the user_list
             await sync_event.process()
 
-            await self._send_to_ho(sync_event)
+            await self._send_to_ho(sync_event, conv_id)
 
             if conv_id == conv_id_:
                 target_event = sync_event
@@ -257,7 +259,7 @@ class SyncHandler(handlers.EventHandler):
             # add the user_list
             await sync_event.process()
 
-            await self._send_to_ho(sync_event)
+            await self._send_to_ho(sync_event, conv_id)
 
             if conv_id == conv_id_:
                 target_event = sync_event
@@ -650,8 +652,8 @@ class SyncHandler(handlers.EventHandler):
 
             user = self.get_sync_user(identifier='bot',
                                       user_id=self.bot.user_self()['chat_id'])
-            await self.message(identifier='bot', conv_id=conv_id,
-                               user=user, text=text, title=title,
+            await self.message(identifier='bot', conv_id=conv_id, user=user,
+                               text=text, title=title, context=context,
                                previous_targets=previous_targets)
 
     async def _handle_message(self, dummy, event):
@@ -770,11 +772,12 @@ class SyncHandler(handlers.EventHandler):
             return False
         return True
 
-    async def _send_to_ho(self, event):
+    async def _send_to_ho(self, event, original_conv_id):
         """send a message to the event conv
 
         Args:
             event: event.SyncEvent instance
+            original_conv_id: string, original target conversation of the event
         """
         ho_tag = 'hangouts:' + event.conv_id
         if ho_tag in event.previous_targets:
@@ -788,8 +791,15 @@ class SyncHandler(handlers.EventHandler):
         conv_id = event.conv_id
         queue = self._cache_sending_queue.get(conv_id)
         image_id = await event.get_image_id()
-        queue.schedule(conv_id, text, image_id=image_id,
-                       context={'syncroom_no_repeat': True, '__ignore__': True})
+
+        # attach the context to the original conversation only
+        context = event.context if event.conv_id == original_conv_id else {}
+
+        if not context:
+            # do not store the context if nothing was added so far
+            context['__ignore__'] = True
+        context['syncroom_no_repeat'] = True
+        queue.schedule(conv_id, text, image_id=image_id, context=context)
 
     def _update_defaults(self, *, identifier, user, conv_id, previous_targets,
                          notified_users):
