@@ -522,6 +522,11 @@ class SyncHandler(handlers.EventHandler):
 
         Note: to start a profilesync a command must be set for the platform
 
+        confirmed syncs will be broadcasted to the 'profilesync' handlers:
+        footprint: func(bot, platform, remote_user, conv_1on1, split_1on1s)
+        the variables are passed by keyword, you may drop an argument, but the
+        variable-names may not differ
+
         Args:
             platform: string, identifier for the platform
             platform_cmd: string, command to start the sync from the platform
@@ -553,10 +558,7 @@ class SyncHandler(handlers.EventHandler):
     def start_profile_sync(self, platform, user_id):
         """start syncing a profile for a user on the given platform
 
-        to start a profilesync a command must be set for the platform
-
-        confirmed syncs will be broadcasted in the 'profilesync' handler:
-        func(bot, platform, user_id, conv_1on1, split_1on1s)
+        see doc of `.register_profile_sync` for details
 
         Args:
             platform: string, identifier for the platform

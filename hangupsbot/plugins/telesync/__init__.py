@@ -286,22 +286,24 @@ async def telesync_set_token(bot, event, *args):
         commands.command.run(bot, event, 'pluginreload', __name__))
     return 'Telegram API Key set.'
 
-async def _handle_profilesync(bot, platform, tg_chat_id, conv_1on1, split):
+async def _handle_profilesync(bot, platform, remote_user, conv_1on1,
+                              split_1on1s):
     """finish profile sync and set a 1on1 sync if requested
 
     Args:
         bot: hangupsbot instance
         platform: string, identifier for the platform which started the sync
-        tg_chat_id: string, telegram user id
+        remote_user: string, telegram user id
         conv_1on1: string, users 1on1 chat with the bot
-        split: boolean, toggle to sync the private chats
+        split_1on1s: boolean, toggle to sync the private chats
     """
     if platform != 'telesync':
         return
+    tg_chat_id = remote_user
 
     path_tg2ho = ['telesync', 'tg2ho', tg_chat_id]
     path_ho2tg = ['telesync', 'ho2tg', conv_1on1]
-    if split:
+    if split_1on1s:
         try:
             bot.memory.pop_by_path(path_tg2ho)
             bot.memory.pop_by_path(path_ho2tg)

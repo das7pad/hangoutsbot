@@ -541,16 +541,17 @@ async def syncprofile(bot, event, *args):
     base_path = ['profilesync', platform]
 
     # cleanup
-    user_id = bot.memory.pop_by_path(base_path + ['pending_ho2', token])
-    bot.memory.pop_by_path(base_path + ['pending_2ho', user_id])
+    remote_user = bot.memory.pop_by_path(base_path + ['pending_ho2', token])
+    bot.memory.pop_by_path(base_path + ['pending_2ho', remote_user])
 
     # profile sync
-    bot.memory.set_by_path(base_path + ['2ho', user_id], chat_id)
-    bot.memory.set_by_path(base_path + ['ho2', chat_id], user_id)
+    bot.memory.set_by_path(base_path + ['2ho', remote_user], chat_id)
+    bot.memory.set_by_path(base_path + ['ho2', chat_id], remote_user)
     bot.memory.save()
 
-    await bot.sync.run_pluggable_omnibus('profilesync', bot, platform, user_id,
-                                         conv_1on1, split)
+    await bot.sync.run_pluggable_omnibus(
+        'profilesync', bot=bot, platform=platform, remote_user=remote_user,
+        conv_1on1=conv_1on1, split_1on1s=split)
 
 async def sync1to1(bot, event, *args):
     """change the setting for 1on1 syncing to a platform
@@ -594,11 +595,12 @@ async def sync1to1(bot, event, *args):
                  'Start one there with <b>%s</b>') % (label, cmd)
     platform_id = bot.memory.get_by_path(path)
 
-    conv_1to1 = (await bot.get_1to1(chat_id, force=True)).id_
+    conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
 
     split = args[-1].lower() == _('off')
-    await bot.sync.run_pluggable_omnibus('profilesync', bot, platform,
-                                         platform_id, conv_1to1, split)
+    await bot.sync.run_pluggable_omnibus(
+        'profilesync', bot=bot, platform=platform,
+        remote_user=platform_id, conv_1on1=conv_1on1, split_1on1s=split)
 
 async def check_users(bot, event, *args):
     """add or kick all users that are missing or not on the list, include syncs
