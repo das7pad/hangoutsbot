@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 _monitored = {}
 
 def _initialise(bot):
-    return
-    if not bot.config.get_option("botalive"):
+    if not bot.get_config_option("botalive"):
         return
 
     plugins.register_admin_command(["dumpwatermarklogs"])
@@ -34,10 +33,10 @@ def _initialise(bot):
 def dumpwatermarklogs(bot, event, *args):
     """dump the contents of the internal registers to log/console, useful for debugging"""
 
+    yield from bot.coro_send_message(event.conv, "<b>please see log/console</b>")
+
     pp = pprint.PrettyPrinter(indent=2)
     pp.pprint(_monitored)
-
-    return "<b>please see log/console</b>"
 
 
 def _conv_external_event(bot, event, command):
@@ -70,7 +69,8 @@ def _conv_monitor(bot, conv_id, overrides={}):
             _monitored[conv_id][key] = val
 
 
-async def _tick(bot):
+@asyncio.coroutine
+def _tick(bot):
     """manage the list of conversation states and update watermarks sequentially:
     * add/update conversation and watermark intervals dynamically
     * update the watermarks for conversations that need them
@@ -79,7 +79,7 @@ async def _tick(bot):
         randomness introduced by fuzzing pauses between conversation watermarks"""
 
     while True:
-        config_botalive = bot.config.get_option("botalive") or {}
+        config_botalive = bot.get_config_option("botalive") or {}
 
         watermarked = []
         failed = []
@@ -104,7 +104,7 @@ async def _tick(bot):
                 config_botalive["admins"] = 60 # minimum: once per minute
 
             # most efficient way to add admin one-to-ones
-            admins = bot.config.get_option('admins')
+            admins = bot.get_config_option('admins')
             for admin in admins:
                 if bot.memory.exists(["user_data", admin, "1on1"]):
                     conv_id = bot.memory.get_by_path(["user_data", admin, "1on1"])
@@ -135,7 +135,7 @@ async def _tick(bot):
 
             if do_watermark and len(conv_state['errors']) < config_botalive['permafail']:
                 try:
-                    _timestamp = await _conv_watermark_now(bot, conv_id)
+                    _timestamp = yield from _conv_watermark_now(bot, conv_id)
                     _conv_monitor(bot, conv_id,
                         overrides={ "errors": [], "last_watermark": _timestamp })
                     watermarked.append(conv_id)
@@ -155,22 +155,23 @@ async def _tick(bot):
                     pause = random.randint(3, config_botalive['maxfuzz'])
                 else:
                     pause = 1
-                await asyncio.sleep(pause)
+                yield from asyncio.sleep(pause)
 
         if watermarked or failed or errors:
             logger.info("success: {}, failed: {}, unique errors: {}".format( len(watermarked),
                                                                              len(failed),
                                                                              list(errors.keys()) ))
 
-        await asyncio.sleep(60)
+        yield from asyncio.sleep(60)
 
 
-async def _conv_watermark_now(bot, conv_id):
+@asyncio.coroutine
+def _conv_watermark_now(bot, conv_id):
     """watermarks the supplied conversation by its id, returns float timestamp
     devnote: this is a direct-to-hangups call, and should remain separate for migration between library versions"""
 
     now = datetime.datetime.now()
-    await bot._client.update_watermark(
+    yield from bot._client.update_watermark(
         hangups.hangouts_pb2.UpdateWatermarkRequest(
             request_header = bot._client.get_request_header(),
             conversation_id = hangups.hangouts_pb2.ConversationId(
