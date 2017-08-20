@@ -1,7 +1,7 @@
 """plugin to watermark conversations periodically determined by config entry"""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import random
 import hangups.exceptions
@@ -37,28 +37,6 @@ def _initialise(bot):
 
     logger.info('botalive config %s', config_botalive)
 
-    watch_event_types = [
-        'message',
-        'membership',
-        'rename'
-        ]
-    for event_type in watch_event_types:
-        plugins.register_handler(_log_message, event_type)
-
-def _log_message(bot, event):
-    """log time to conv_data of event conv
-
-    Args:
-        bot: hangupsbot instance, not used
-        event: hangups Event instance
-    """
-    conv_id = str(event.conv_id)
-    if not bot.memory.exists(['conv_data', conv_id]):
-        bot.memory.set_by_path(['conv_data', conv_id], {})
-        bot.memory.save()
-    bot.memory.set_by_path(['conv_data', conv_id, 'botalive'],
-                           datetime.now().timestamp())
-    # not worth a dump to disk, skip bot.memory.save()
 
 @asyncio.coroutine
 def _periodic_watermark_update(bot, watermark_updater, target):
@@ -82,17 +60,14 @@ def _periodic_watermark_update(bot, watermark_updater, target):
             for admin in bot_admin_ids:
                 if bot.memory.exists(['user_data', admin, '1on1']):
                     conv_id = bot.memory.get_by_path(
-                        ['user_data', admin, '1on1'])
-                    watermark_updater.add(conv_id)
+                        ['user_data', admin, '1on1']
+                        )
+                    watermark_updater.add(conv_id, overwrite=True)
         else:
             for conv_id, conv_data in bot.conversations.get().items():
                 if conv_data['type'] != 'GROUP':
                     continue
-                if not bot.memory.exists(['conv_data', conv_id, 'botalive']):
-                    continue
-                if last_run < bot.memory.get_by_path(
-                        ['conv_data', conv_id, 'botalive']):
-                    watermark_updater.add(conv_id)
+                watermark_updater.add(conv_id)
 
         last_run = datetime.now().timestamp()
         yield from watermark_updater.start()
@@ -102,7 +77,7 @@ class WatermarkUpdater:
     """use a queue to update the watermarks sequentially instead of all-at-once
 
     usage:
-    .add(<conv id>) as many conversation ids as you want
+    .add(<conv id>, overwrite=<boolean>) as many conversation ids as you want
     .start() will start processing to queue
 
     if a hangups exception is raised, log the exception and output to console
@@ -118,24 +93,28 @@ class WatermarkUpdater:
         self.failed = dict() # track errors
         self.failed_permanent = set() # track conv_ids that failed 5 times
 
-    def add(self, conv_id):
-        """insert a conv_id to the queue if the id is not blacklisted
+    def add(self, conv_id, overwrite=False):
+        """schedule a conversation for watermarking and filter blacklisted
 
         Args:
             conv_id: string, id of a conversation
+            overwrite: boolean, toggle to update the watermark even when there
+                were no new events in the conversations
         """
         if conv_id not in self.failed_permanent:
-            self.queue.add(conv_id)
+            self.queue.add((conv_id, overwrite))
 
-    def start(self):
-        """start the watermarking if it is not already running"""
-        if self.running or not self.queue:
+    async def start(self):
+        """process the watermarking queue"""
+        if self.running:
             return
         self.running = True
-        yield from self.update_next_conversation()
+        while self.queue:
+            await asyncio.sleep(random.randint(5, 10))
+            await self.update_next_conversation()
+        self.running = False
 
-    @asyncio.coroutine
-    def update_next_conversation(self):
+    async def update_next_conversation(self):
         """watermark the next conv, stop the loop if no more ids are present
 
         if an Exception is raised during the watermarking:
@@ -144,20 +123,14 @@ class WatermarkUpdater:
                 if the bot still stores the conv in memory:
                     add id to recently failed conv_ids and to the queue
         """
-        try:
-            conv_id = self.queue.pop()
-        except KeyError:
-            self.running = False
-            return
+        conv_id, overwrite = self.queue.pop()
+        read_timestamp = datetime.now(timezone.utc) if overwrite else None
 
-        logger.info('watermarking %s', conv_id)
-
+        logger.debug('watermarking %s', conv_id)
         try:
             # pylint:disable=protected-access
-            yield from self.bot._client.updatewatermark(
-                conv_id, datetime.now())
-            self.failed.pop(conv_id, None)
-
+            await self.bot._conv_list.get(conv_id).update_read_timestamp(
+                read_timestamp=read_timestamp)
         except hangups.exceptions.NetworkError:
             self.failed[conv_id] = self.failed.get(conv_id, 0) + 1
 
@@ -171,5 +144,5 @@ class WatermarkUpdater:
                 if conv_id in self.bot.conversations.get():
                     self.add(conv_id)
 
-        yield from asyncio.sleep(random.randint(5, 10))
-        yield from self.update_next_conversation()
+        else:
+            self.failed.pop(conv_id, None)
