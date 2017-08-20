@@ -47,26 +47,23 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
         bot: hangupsbot instance
         target: 'admins' to add admin 1on1 ids, 'groups' to add group conv_ids
     """
-
     last_run = time.time()
 
-    path = ["botalive", target]
+    path = ['botalive', target]
     while bot.config.exists(path):
         timestamp = time.time()
         await asyncio.sleep(
             max(5, last_run - timestamp + bot.config.get_by_path(path)))
 
-        if target == "admins":
+        if target == 'admins':
             bot_admin_ids = bot.get_config_option('admins')
             for admin in bot_admin_ids:
-                admin_1on1 = ["user_data", admin, "1on1"]
+                admin_1on1 = ['user_data', admin, '1on1']
                 if bot.memory.exists(admin_1on1):
                     conv_id = bot.memory.get_by_path(admin_1on1)
                     watermark_updater.add(conv_id, overwrite=True)
         else:
-            for conv_id, conv_data in bot.conversations.get().items():
-                if conv_data['type'] != 'GROUP':
-                    continue
+            for conv_id in bot.conversations.get('type:group'):
                 watermark_updater.add(conv_id)
 
         last_run = time.time()
@@ -76,13 +73,15 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
 class WatermarkUpdater:
     """use a queue to update the watermarks sequentially instead of all-at-once
 
-    usage:
-    .add(<conv id>, overwrite=<boolean>) as many conversation ids as you want
-    .start() will start processing to queue
+    .add(<conv id>, overwrite=<boolean>) queue conversations for a watermark
+    .start() start processing of the queue
 
-    if a hangups exception is raised, log the exception and output to console
+    if a hangups exception is raised, log the exception
     to prevent the processor from being consumed entirely and also to not act
         too much as a bot, we sleep 5-10sec after each watermark update
+
+    Args:
+        bot: HangupsBot instance
     """
 
     def __init__(self, bot):
@@ -111,17 +110,13 @@ class WatermarkUpdater:
         self.running = True
         while self.queue:
             await asyncio.sleep(random.randint(5, 10))
-            await self.update_next_conversation()
+            await self._update_next_conversation()
         self.running = False
 
-    async def update_next_conversation(self):
+    async def _update_next_conversation(self):
         """watermark the next conv, stop the loop if no more ids are present
 
-        if an Exception is raised during the watermarking:
-            if the id failed 5 times, blacklist it,
-            otherwise
-                if the bot still stores the conv in memory:
-                    add id to recently failed conv_ids and to the queue
+        blacklist a conversation after five failed watermark attempts
         """
         conv_id, overwrite = self.queue.pop()
         read_timestamp = datetime.now(timezone.utc) if overwrite else None
@@ -131,18 +126,15 @@ class WatermarkUpdater:
             # pylint:disable=protected-access
             await self.bot._conv_list.get(conv_id).update_read_timestamp(
                 read_timestamp=read_timestamp)
-        except hangups.exceptions.NetworkError:
+        except hangups.exceptions.NetworkError as err:
             self.failed[conv_id] = self.failed.get(conv_id, 0) + 1
 
             if self.failed[conv_id] > 5:
+                self.failed.pop(conv_id)
                 self.failed_permanent.add(conv_id)
                 logger.error('critical error threshold reached for %s', conv_id)
             else:
-                logger.exception('WATERMARK FAILED FOR %s', conv_id)
-
-                # is the bot still in the conv
-                if conv_id in self.bot.conversations.get():
-                    self.add(conv_id)
-
+                logger.warning('watermark failed for %s: %s',
+                               conv_id, repr(err))
         else:
             self.failed.pop(conv_id, None)
