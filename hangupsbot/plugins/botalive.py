@@ -89,7 +89,7 @@ class WatermarkUpdater:
 
     def __init__(self, bot):
         self.bot = bot
-        self.running = False
+        self._lock = asyncio.Lock()
 
         self.queue = set()
         self.failed = dict() # track errors
@@ -108,13 +108,12 @@ class WatermarkUpdater:
 
     async def start(self):
         """process the watermarking queue"""
-        if self.running:
+        if self._lock.locked():
             return
-        self.running = True
-        while self.queue:
-            await asyncio.sleep(random.randint(5, 10))
-            await asyncio.shield(self._update_next_conversation())
-        self.running = False
+        async with self._lock:
+            while self.queue:
+                await asyncio.sleep(random.randint(5, 10))
+                await asyncio.shield(self._update_next_conversation())
 
     async def _update_next_conversation(self):
         """watermark the next conv, stop the loop if no more ids are present
