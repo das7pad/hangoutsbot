@@ -4,6 +4,8 @@ import asyncio
 from datetime import datetime, timezone
 import logging
 import random
+import time
+
 import hangups.exceptions
 import plugins
 
@@ -38,8 +40,7 @@ def _initialise(bot):
     logger.info('botalive config %s', config_botalive)
 
 
-@asyncio.coroutine
-def _periodic_watermark_update(bot, watermark_updater, target):
+async def _periodic_watermark_update(bot, watermark_updater, target):
     """add conv_ids to the watermark_updater queue and start to process it
 
     Args:
@@ -47,21 +48,20 @@ def _periodic_watermark_update(bot, watermark_updater, target):
         target: 'admins' to add admin 1on1 ids, 'groups' to add group conv_ids
     """
 
-    last_run = datetime.now().timestamp()
+    last_run = time.time()
 
-    path = ['botalive', target]
+    path = ["botalive", target]
     while bot.config.exists(path):
-        timestamp = datetime.now().timestamp()
-        yield from asyncio.sleep(
+        timestamp = time.time()
+        await asyncio.sleep(
             max(5, last_run - timestamp + bot.config.get_by_path(path)))
 
-        if target == 'admins':
+        if target == "admins":
             bot_admin_ids = bot.get_config_option('admins')
             for admin in bot_admin_ids:
-                if bot.memory.exists(['user_data', admin, '1on1']):
-                    conv_id = bot.memory.get_by_path(
-                        ['user_data', admin, '1on1']
-                        )
+                admin_1on1 = ["user_data", admin, "1on1"]
+                if bot.memory.exists(admin_1on1):
+                    conv_id = bot.memory.get_by_path(admin_1on1)
                     watermark_updater.add(conv_id, overwrite=True)
         else:
             for conv_id, conv_data in bot.conversations.get().items():
@@ -69,8 +69,8 @@ def _periodic_watermark_update(bot, watermark_updater, target):
                     continue
                 watermark_updater.add(conv_id)
 
-        last_run = datetime.now().timestamp()
-        yield from watermark_updater.start()
+        last_run = time.time()
+        await watermark_updater.start()
 
 
 class WatermarkUpdater:
