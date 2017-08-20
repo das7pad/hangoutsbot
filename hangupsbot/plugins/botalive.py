@@ -15,28 +15,10 @@ def _initialise(bot):
     Args:
         bot: hangupsbot instance
     """
-    config_botalive = bot.get_config_option('botalive') or {}
-    if not config_botalive:
-        return
+    config_botalive = bot.get_config_option('botalive')
 
-    if not bot.memory.exists(['conv_data']):
-        # should not come to this, but create it once as we need to store data
-        #   for each conv in it
-        bot.memory.set_by_path(['conv_data'], {})
-        bot.memory.save()
-
-    # backwards compatibility
-    if isinstance(config_botalive, list):
-        _new_config = {}
-        if 'admins' in config_botalive:
-            _new_config['admins'] = 900
-        if 'groups' in config_botalive:
-            _new_config['groups'] = 10800
-        bot.config.set_by_path(['botalive'], _new_config)
-        bot.config.save()
-        config_botalive = _new_config
-
-    if 'admins' not in config_botalive and 'groups' not in config_botalive:
+    if (not isinstance(config_botalive, dict) or
+            not ('admins' in config_botalive or 'groups' in config_botalive)):
         return
 
     watermark_updater = WatermarkUpdater(bot)
