@@ -50,24 +50,27 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
     last_run = time.time()
 
     path = ['botalive', target]
-    while bot.config.exists(path):
-        timestamp = time.time()
-        await asyncio.sleep(
-            max(5, last_run - timestamp + bot.config.get_by_path(path)))
+    try:
+        while bot.config.exists(path):
+            timestamp = time.time()
+            await asyncio.sleep(
+                max(5, last_run - timestamp + bot.config.get_by_path(path)))
 
-        if target == 'admins':
-            bot_admin_ids = bot.get_config_option('admins')
-            for admin in bot_admin_ids:
-                admin_1on1 = ['user_data', admin, '1on1']
-                if bot.memory.exists(admin_1on1):
-                    conv_id = bot.memory.get_by_path(admin_1on1)
-                    watermark_updater.add(conv_id, overwrite=True)
-        else:
-            for conv_id in bot.conversations.get('type:group'):
-                watermark_updater.add(conv_id)
+            if target == 'admins':
+                bot_admin_ids = bot.get_config_option('admins')
+                for admin in bot_admin_ids:
+                    admin_1on1 = ['user_data', admin, '1on1']
+                    if bot.memory.exists(admin_1on1):
+                        conv_id = bot.memory.get_by_path(admin_1on1)
+                        watermark_updater.add(conv_id, overwrite=True)
+            else:
+                for conv_id in bot.conversations.get('type:group'):
+                    watermark_updater.add(conv_id)
 
-        last_run = time.time()
-        await watermark_updater.start()
+            last_run = time.time()
+            await watermark_updater.start()
+    except asyncio.CancelledError:
+        return
 
 
 class WatermarkUpdater:
@@ -110,7 +113,7 @@ class WatermarkUpdater:
         self.running = True
         while self.queue:
             await asyncio.sleep(random.randint(5, 10))
-            await self._update_next_conversation()
+            await asyncio.shield(self._update_next_conversation())
         self.running = False
 
     async def _update_next_conversation(self):
