@@ -79,9 +79,13 @@ class WatermarkUpdater:
     .add(<conv id>, overwrite=<boolean>) queue conversations for a watermark
     .start() start processing of the queue
 
-    if a hangups exception is raised, log the exception
+    if a hangups exception is raised, log the exception and drop a conversation
+        from watermarking after N retries
+        N is set in config with the key 'permafail' and defaults to 5 retries
+
     to prevent the processor from being consumed entirely and also to not act
-        too much as a bot, we sleep 5-10sec after each watermark update
+        too much as a bot, we sleep 5 to T seconds after each watermark update
+        T is set in config with the key 'maxfuzz' and defaults to 10 seconds
 
     Args:
         bot: HangupsBot instance
@@ -94,6 +98,9 @@ class WatermarkUpdater:
         self.queue = set()
         self.failed = dict() # track errors
         self.failed_permanent = set() # track conv_ids that failed 5 times
+
+        bot.config.set_defaults({'maxfuzz': 10, 'permafail': 5},
+                                path=['botalive'])
 
     def add(self, conv_id, overwrite=False):
         """schedule a conversation for watermarking and filter blacklisted
@@ -111,8 +118,10 @@ class WatermarkUpdater:
         if self._lock.locked():
             return
         async with self._lock:
+            delay_path = ['botalive', 'maxfuzz']
+            delay = self.bot.config.get_by_path(delay_path)
             while self.queue:
-                await asyncio.sleep(random.randint(5, 10))
+                await asyncio.sleep(random.randint(5, delay))
                 await asyncio.shield(self._update_next_conversation())
 
     async def _update_next_conversation(self):
@@ -131,7 +140,8 @@ class WatermarkUpdater:
         except hangups.exceptions.NetworkError as err:
             self.failed[conv_id] = self.failed.get(conv_id, 0) + 1
 
-            if self.failed[conv_id] > 5:
+            limit = self.bot.config.get_by_path(['botalive', 'permafail'])
+            if self.failed[conv_id] > limit:
                 self.failed.pop(conv_id)
                 self.failed_permanent.add(conv_id)
                 logger.error('critical error threshold reached for %s', conv_id)
