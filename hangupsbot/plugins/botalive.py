@@ -141,6 +141,11 @@ class WatermarkUpdater:
         except KeyError:
             logger.debug('conversation %s already left', conv_id)
         except hangups.exceptions.NetworkError as err:
+            if 'Former member' in repr(err):
+                self.failed.pop(conv_id, None)
+                self.bot.conversations.remove(conv_id)
+                return
+
             self.failed[conv_id] = self.failed.get(conv_id, 0) + 1
 
             limit = self.bot.config.get_by_path(['botalive', 'permafail'])
