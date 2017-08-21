@@ -132,11 +132,14 @@ class WatermarkUpdater:
         conv_id, overwrite = self.queue.pop()
         read_timestamp = datetime.now(timezone.utc) if overwrite else None
 
-        logger.debug('watermarking %s', conv_id)
+        logger.debug('watermarking %s %s',
+                     conv_id, 'explicit' if overwrite else 'if needed')
         try:
             # pylint:disable=protected-access
             await self.bot._conv_list.get(conv_id).update_read_timestamp(
                 read_timestamp=read_timestamp)
+        except KeyError:
+            logger.debug('conversation %s already left', conv_id)
         except hangups.exceptions.NetworkError as err:
             self.failed[conv_id] = self.failed.get(conv_id, 0) + 1
 
