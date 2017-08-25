@@ -168,7 +168,14 @@ class Queue(list):
                         return
 
                 self._logger.debug('sending %s %s', repr(args), repr(kwargs))
-                await self._send(args, kwargs)
+                try:
+                    await asyncio.shield(self._send(args, kwargs))
+                except asyncio.CancelledError:
+                    pass
+                except:                            # pylint: disable=bare-except
+                    self._logger.exception(
+                        'sending args="%s", kwargs="%s" failed',
+                        repr(args), repr(kwargs))
                 self._logger.debug('sent %s %s', repr(args), repr(kwargs))
             finally:
                 self._pending_tasks[self._group] -= 1
@@ -182,13 +189,7 @@ class Queue(list):
             kwargs: dict, keyword arguments for the coro
         """
         wrapped = functools.partial(self._func, *args, **kwargs)
-        try:
-            await asyncio.shield(self._loop.run_in_executor(None, wrapped))
-        except asyncio.CancelledError:
-            pass
-        except:                                    # pylint: disable=bare-except
-            self._logger.exception('sending args="%s", kwargs="%s" failed',
-                                   repr(args), repr(kwargs))
+        await self._loop.run_in_executor(None, wrapped)
 
 
 class AsyncQueue(Queue):
@@ -207,13 +208,7 @@ class AsyncQueue(Queue):
             args: tuple, positional arguments for the coro
             kwargs: dict, keyword arguments for the coro
         """
-        try:
-            await asyncio.shield(self._func(*args, **kwargs))
-        except asyncio.CancelledError:
-            pass
-        except:                                    # pylint: disable=bare-except
-            self._logger.exception('sending args="%s", kwargs="%s" failed',
-                                   repr(args), repr(kwargs))
+        await self._func(*args, **kwargs)
 
 
 class QueueCache(Cache):
