@@ -11,6 +11,31 @@ logger = logging.getLogger(__name__)
 
 SENDING_BLOCK_RETRY_DELAY = 5   # seconds
 
+
+class Status(asyncio.Event):
+    """Blocker for scheduled tasks"""
+    __slots__ = ('_status', )
+
+    FAILED = False
+    SUCCESS = True
+
+    def __init__(self):
+        super().__init__()
+        self._status = None
+
+    def set(self, status):
+        # pylint:disable=arguments-differ
+        self._status = status
+        super().set()
+
+    async def wait(self):
+        await super().wait()
+        return self._status
+
+    def __await__(self):
+        return self.wait().__await__()
+
+
 class Queue(list):
     """a queue to schedule synced calls and remain the sequence in processing
 
@@ -57,10 +82,18 @@ class Queue(list):
         return self._lock.locked()
 
     def schedule(self, *args, **kwargs):
-        """queue an item with the given args/kwargs for the coro"""
+        """queue an item with the given args/kwargs for the coro
+
+        Returns:
+            `Status` instance: the scheduled task sets a boolean result after
+            being processed in the Status
+            `await queue.schedule(...)` returns True on success otherwise False
+        """
         self._pending_tasks[self._group] += 1
-        self.append((self._blocked, args, kwargs))
+        status = Status()
+        self.append((status, self._blocked, args, kwargs))
         asyncio.ensure_future(self._process(), loop=self._loop)
+        return status
 
     async def single_stop(self, timeout):
         """apply a submit-block to the instance and wait for pending tasks
@@ -152,7 +185,7 @@ class Queue(list):
 
         async with self._lock:
             try:
-                blocked, args, kwargs = self.pop(0)
+                status, blocked, args, kwargs = self.pop(0)
                 if blocked:
                     delay = 0
                     while delay < SENDING_BLOCK_RETRY_DELAY:
@@ -162,6 +195,7 @@ class Queue(list):
                         await asyncio.sleep(.1)
                         delay += .1
                     else:
+                        status.set(Status.FAILED)
                         self._logger.error(
                             'block timeout reached\ndiscard args=%s, kwargs=%s',
                             repr(args), repr(kwargs))
@@ -169,13 +203,21 @@ class Queue(list):
 
                 self._logger.debug('sending %s %s', repr(args), repr(kwargs))
                 try:
-                    await asyncio.shield(self._send(args, kwargs))
+                    result = await asyncio.shield(self._send(args, kwargs))
+
                 except asyncio.CancelledError:
                     pass
                 except:                            # pylint: disable=bare-except
+                    status.set(Status.FAILED)
                     self._logger.exception(
                         'sending args="%s", kwargs="%s" failed',
                         repr(args), repr(kwargs))
+
+                else:
+                    # ignore the return value in case it was not set
+                    success = True if result is None else result
+                    status.set(Status.SUCCESS if success else Status.FAILED)
+
                 self._logger.debug('sent %s %s', repr(args), repr(kwargs))
             finally:
                 self._pending_tasks[self._group] -= 1
@@ -187,9 +229,12 @@ class Queue(list):
         Args:
             args: tuple, positional arguments for the coro
             kwargs: dict, keyword arguments for the coro
+
+        Returns:
+            any type
         """
         wrapped = functools.partial(self._func, *args, **kwargs)
-        await self._loop.run_in_executor(None, wrapped)
+        return await self._loop.run_in_executor(None, wrapped)
 
 
 class AsyncQueue(Queue):
@@ -207,8 +252,11 @@ class AsyncQueue(Queue):
         Args:
             args: tuple, positional arguments for the coro
             kwargs: dict, keyword arguments for the coro
+
+        Returns:
+            any type
         """
-        await self._func(*args, **kwargs)
+        return await self._func(*args, **kwargs)
 
 
 class QueueCache(Cache):
