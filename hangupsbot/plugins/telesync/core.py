@@ -211,9 +211,14 @@ class TelegramBot(telepot.aio.Bot):
         Args:
             tg_chat_id: int, a chat the bot user has access to
             html: string, nested html tags are not allowed
+
+        Returns:
+            a `sync.sending_queue.Status` instance for the scheduled task which
+            can be awaited for a boolean value, returned as the task completed:
+                True on success otherwise False
         """
         queue = self._cache_sending_queue.get(tg_chat_id)
-        queue.schedule(tg_chat_id, html)
+        return queue.schedule(tg_chat_id, html)
 
     async def get_tg_user(self, user_id, chat_id=None, gpluslink=False,
                           use_cache=True):
@@ -352,15 +357,19 @@ class TelegramBot(telepot.aio.Bot):
         self.send_html(user_id, '{} syncprofile {} <i>split</i>'.format(bot_cmd,
                                                                         token))
 
-    async def _send_html(self, tg_chat_id, text, as_html=True, silent=None):
+    async def _send_html(self, tg_chat_id, text, as_html=True, silent=False):
         """send html to telegram chat
 
         Args:
             tg_chat_id: int, a chat the bot user has access to
             text: string, nested html tags are not allowed
+            silent: boolean, set to True to disable a client notification
+
+        Returns:
+            boolean, True in case of a successful api-call, otherwise False
         """
         if not await self.is_running() or not text:
-            return
+            return False
 
         text = get_formatted(text, 'html_flat', internal_source=True)
 
@@ -376,29 +385,36 @@ class TelegramBot(telepot.aio.Bot):
                                          parse_mode='HTML' if as_html else None,
                                          disable_web_page_preview=True,
                                          disable_notification=silent)
-            Message.add_message(tg_chat_id, msg.get('message_id'))
 
         except telepot.exception.TooManyRequestsError as err:
             delay = err.json.get('parameters', {}).get('retry_after')
             logger.warning('too many requests! received a delay of %s', delay)
             await asyncio.sleep(int(delay or 60))
-            await self._send_html(tg_chat_id, text, as_html, silent)
+            status = await self._send_html(tg_chat_id, text, as_html, silent)
 
         except telepot.exception.TelegramError as err:
+            status = False
             if 'chat not found' in err.description:
                 logger.error('the bot is not a member of "%s"', tg_chat_id)
                 next_part = None
             elif 'can\'t parse entities in message text' in err.description:
                 logger.info('html failed in %s, content: %s', tg_chat_id, text)
-                await self._send_html(tg_chat_id, get_formatted(text, 'text'),
-                                      as_html=False, silent=silent)
+                status = await self._send_html(tg_chat_id,
+                                               get_formatted(text, 'text'),
+                                               as_html=False, silent=silent)
             else:
                 logger.error('sending of "%s" to "%s" failed:\n%s',
-                             text, tg_chat_id, err)
+                             text, tg_chat_id, repr(err))
+
+        else:
+            Message.add_message(tg_chat_id, msg.get('message_id'))
+            status = True
+
         finally:
             if next_part is not None:
-                await self._send_html(tg_chat_id, next_part, as_html=as_html,
-                                      silent=True)
+                status = await self._send_html(tg_chat_id, next_part,
+                                               as_html=as_html, silent=True)
+        return status
 
     def _parse_command(self, msg):
         """get cmd and assigned bot_name
