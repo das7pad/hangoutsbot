@@ -325,6 +325,12 @@ class TelegramBot(telepot.aio.Bot):
             user_id: str, identifier for the user and its 1on1 chat with the bot
             is_reminder: bool, set to True to prepend the reminder flag
         """
+        bot = self.bot
+        path = ['profilesync', 'telesync', 'pending_2ho', user_id]
+        if not bot.memory.exists(path):
+            return
+        token = bot.memory.get_by_path(path)
+
         if is_reminder:
             html = _('<b> [ REMINDER ] </b>\n')
         else:
@@ -348,10 +354,12 @@ class TelegramBot(telepot.aio.Bot):
             ).format(bot_cmd=bot_cmd, bot_id=self.bot.user_self()['chat_id'],
                      name=self.user.first_name)
 
-        self.send_html(user_id, html)
-
-        token = self.bot.memory.get_by_path(
-            ['profilesync', 'telesync', 'pending_2ho', user_id])
+        if not await self.send_html(user_id, html):
+            base_path = ['profilesync', 'telesync']
+            token = bot.memory.pop_by_path(base_path + ['pending_2ho', user_id])
+            bot.memory.pop_by_path(base_path + ['pending_ho2', token])
+            bot.memory.pop_by_path(['profilesync', '_pending_', token])
+            return
 
         self.send_html(user_id, '{} syncprofile {}'.format(bot_cmd, token))
         self.send_html(user_id, '{} syncprofile {} <i>split</i>'.format(bot_cmd,
@@ -394,8 +402,9 @@ class TelegramBot(telepot.aio.Bot):
 
         except telepot.exception.TelegramError as err:
             status = False
-            if 'chat not found' in err.description:
-                logger.error('the bot is not a member of "%s"', tg_chat_id)
+            if ('chat not found' in err.description
+                    or 'bot was blocked by the user' in err.description):
+                logger.error('%s: "%s"', err.description, tg_chat_id)
                 next_part = None
             elif 'can\'t parse entities in message text' in err.description:
                 logger.info('html failed in %s, content: %s', tg_chat_id, text)
