@@ -529,7 +529,7 @@ async def syncprofile(bot, event, *args):
     if platform is None:
         lines = [_('Check spelling or start the sync from the platform of your '
                    'choice:')]
-        for label, cmd in bot.sync.profilesync_cmds.values():
+        for label, cmd, dummy in bot.sync.profilesync_cmds.values():
             lines.append('~ in <b>{}</b> use {}'.format(label, cmd))
         return '\n'.join(lines)
 
@@ -570,7 +570,7 @@ async def sync1to1(bot, event, *args):
     user_platform = args[0].lower()
     platforms = {}
     matching = []
-    for platform, value in bot.sync.profilesync_cmds.copy().items():
+    for platform, value in bot.sync.profilesync_cmds.items():
         if (user_platform in platform.lower()
                 or user_platform in str(value).lower()):
             matching.append(platform)
@@ -590,7 +590,7 @@ async def sync1to1(bot, event, *args):
     chat_id = event.user_id.chat_id
     path = ['profilesync', platform, 'ho2', chat_id]
     if not bot.memory.exists(path):
-        label, cmd = bot.sync.profilesync_cmds[platform]
+        label, cmd, dummy = bot.sync.profilesync_cmds[platform]
         return _('You do not have a profilesync set for <b>%s</b>!\n'
                  'Start one there with <b>%s</b>') % (label, cmd)
     platform_id = bot.memory.get_by_path(path)

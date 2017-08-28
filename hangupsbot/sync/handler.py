@@ -544,7 +544,8 @@ class SyncHandler(handlers.EventHandler):
         self.profilesync_provider[platform] = True
 
         label = label if isinstance(label, str) else platform
-        self.profilesync_cmds[platform] = (label, cmd)
+        module_path = plugins.tracking.current['metadata'].get('module.path')
+        self.profilesync_cmds[platform] = (label, cmd, module_path)
 
         self._update_syncprofile_help()
 
@@ -579,6 +580,24 @@ class SyncHandler(handlers.EventHandler):
 
         self.bot.memory.save()
         return token
+
+    def deregister_plugin(self, module_path):
+        """remove previously registered handlers and profilesyncs
+
+        Args:
+            module_path: string, identifier for a loaded module
+        """
+        # deregister the profilesyncs
+        for platform, data in self.profilesync_cmds.copy().items():
+            if data[2] != module_path:
+                continue
+            self.profilesync_cmds.pop(platform)
+            self.profilesync_provider.pop(platform)
+
+        self._update_syncprofile_help()
+
+        # deregister handler
+        super().deregister_plugin(module_path)
 
     ############################################################################
     # PRIVATE METHODS
@@ -917,7 +936,7 @@ class SyncHandler(handlers.EventHandler):
     def _update_syncprofile_help(self):
         """insert the profilesync commands per platform into the command help"""
         cmds = []
-        for label_, cmd_ in self.profilesync_cmds.values():
+        for label_, cmd_, dummy in self.profilesync_cmds.values():
             cmds.append('<b>{}</b>: {}'.format(label_, cmd_))
 
         plugins.register_help(
