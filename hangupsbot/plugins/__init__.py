@@ -1,6 +1,7 @@
 """registration of plugin features"""
 
-#TODO(das7pad): add the support for a plugin selfunload function
+# TODO(das7pad): add the support for a plugin selfunload function
+# TODO(das7pad): add a context manager for the Tracker
 
 import asyncio
 import importlib
@@ -653,17 +654,10 @@ async def unload(bot, module_path):
                 logger.debug("deregistering tagged command %s", command_name)
                 del command.command_tagsets[command_name]
 
-    for type_ in bot._handlers.pluggables:
-        for handler in bot._handlers.pluggables[type_]:
-            if handler[2]["module.path"] == module_path:
-                logger.debug("removing handler %s %s", type_, handler)
-                bot._handlers.pluggables[type_].remove(handler)
-
-    for pluggable in bot.sync.pluggables:
-        for handler in bot.sync.pluggables[pluggable]:
-            if handler[2]["module.path"] == module_path:
-                logger.debug("removing handler %s %s", pluggable, handler)
-                bot.sync.pluggables[pluggable].remove(handler)
+    # pylint:disable=protected-access
+    bot._handlers.deregister_plugin(module_path)
+    # pylint:enable=protected-access
+    bot.sync.deregister_plugin(module_path)
 
     shared = plugin["shared"]
     for shared_def in shared:

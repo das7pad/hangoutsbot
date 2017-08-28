@@ -134,6 +134,19 @@ class EventHandler(object):
         self._reprocessors[reprocessor_id] = func
         return reprocessor_id
 
+    def deregister_plugin(self, module_path):
+        """remove previously registered handlers of a given plugin
+
+        Args:
+            module_path: string, identifier for a loaded module
+        """
+        for pluggable in self.pluggables:
+            for handler_ in self.pluggables[pluggable]:
+                if handler_[2]["module.path"] != module_path:
+                    continue
+                logger.debug("removing handler %s %s", pluggable, handler_)
+                self.pluggables[pluggable].remove(handler_)
+
     def attach_reprocessor(self, func, return_as_dict=None):
         """connect a func to an identifier to reprocess the event on receive
 
