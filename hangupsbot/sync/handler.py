@@ -546,14 +546,7 @@ class SyncHandler(handlers.EventHandler):
         label = label if isinstance(label, str) else platform
         self.profilesync_cmds[platform] = (label, cmd)
 
-        cmds = []
-        for label_, cmd_ in self.profilesync_cmds.values():
-            cmds.append('<b>{}</b>: {}'.format(label_, cmd_))
-
-        plugins.register_help(
-            SYNCPROFILE_HELP.format(bot_cmd='{bot_cmd}',
-                                    platform_cmds='\n'.join(cmds)),
-            name='syncprofile')
+        self._update_syncprofile_help()
 
     def start_profile_sync(self, platform, user_id):
         """start syncing a profile for a user on the given platform
@@ -920,3 +913,14 @@ class SyncHandler(handlers.EventHandler):
         if return_flat is True:
             return tuple(itertools.chain.from_iterable(results.values()))
         return results
+
+    def _update_syncprofile_help(self):
+        """insert the profilesync commands per platform into the command help"""
+        cmds = []
+        for label_, cmd_ in self.profilesync_cmds.values():
+            cmds.append('<b>{}</b>: {}'.format(label_, cmd_))
+
+        plugins.register_help(
+            SYNCPROFILE_HELP.format(bot_cmd='{bot_cmd}',
+                                    platform_cmds='\n'.join(cmds)),
+            name='syncprofile')
