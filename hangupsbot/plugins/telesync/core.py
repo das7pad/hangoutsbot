@@ -76,9 +76,8 @@ class TelegramBot(telepot.aio.Bot):
         api_key = self.config('api_key', False)
         super().__init__(api_key)
 
-        queue_timeout = ho_bot.config['sync_cache_timeout_sending_queue']
-        self._cache_sending_queue = AsyncQueueCache(queue_timeout, 'telesync',
-                                                    self._send_html)
+        self._cache_sending_queue = AsyncQueueCache('telesync', self._send_html,
+                                                    bot=ho_bot)
         self._cache_sending_queue.start()
 
         self._commands = {'/whoami': command_whoami,

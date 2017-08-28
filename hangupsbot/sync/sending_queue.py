@@ -6,6 +6,7 @@ import functools
 import logging
 
 from utils.cache import Cache
+from . import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -262,15 +263,22 @@ class AsyncQueue(Queue):
 class QueueCache(Cache):
     """caches Queues and recreates one if a cache miss happens
 
+    for a custom timeout: specify either `timeout` or provide the `bot` instance
+    otherwise the sync.DEFAULT_CONFIG entry for queue caches is used
+
     Args:
-        timeout: integer, time in seconds for a queue to live in cache
         group: string, identifier for a platform to separate queues for
-        func: coroutine function, will be called with the scheduled args/kwargs
+        func: non-coroutine function, will be called with scheduled args/kwargs
+        timeout: integer, optional, time in seconds for a queue to live in cache
+        bot: HangupsBot instance, optional
     """
     __slots__ = ('_default_args',)
     _queue = Queue
+    DEFAULT_TIMEOUT = DEFAULT_CONFIG['sync_cache_timeout_sending_queue']
 
-    def __init__(self, timeout, group, func):
+    def __init__(self, group, func, timeout=None, bot=None):
+        timeout = timeout or (bot.config['sync_cache_timeout_sending_queue']
+                              if bot is not None else self.DEFAULT_TIMEOUT)
         super().__init__(timeout, name='Sending Queues@%s' % group)
         self._default_args = (group, func)
         self._queue.release_block(group)
@@ -297,9 +305,10 @@ class AsyncQueueCache(QueueCache):
     """caches AsyncQueues and recreates one if a cache miss happens
 
     Args:
-        timeout: integer, time in seconds for a queue to live in cache
         group: string, identifier for a platform to separate queues for
         func: coroutine function, will be called with the scheduled args/kwargs
+        timeout: integer, optional, time in seconds for a queue to live in cache
+        bot: HangupsBot instance, optional
     """
     __slots__ = ()
     _queue = AsyncQueue

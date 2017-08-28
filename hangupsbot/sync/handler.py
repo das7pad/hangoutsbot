@@ -90,9 +90,8 @@ class SyncHandler(handlers.EventHandler):
                                       increase_on_access=False)
 
         # sending queues
-        sending_queue_timeout = bot.config['sync_cache_timeout_sending_queue']
         self._cache_sending_queue = AsyncQueueCache(
-            sending_queue_timeout, 'hangouts', bot.coro_send_message)
+            'hangouts', bot.coro_send_message, bot=bot)
 
         self.profilesync_cmds = {}
         self.profilesync_provider = {}
