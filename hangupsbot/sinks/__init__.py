@@ -10,7 +10,7 @@ import threadmanager
 
 from aiohttp import web
 
-from plugins import tracking
+import plugins
 from utils import class_from_name
 
 # pylint: disable=unused-import
@@ -173,7 +173,7 @@ def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
         functools.partial(aiohttp_started, handler=handler, app=app,
                           group=group, callback=callback))
 
-    tracking.register_aiohttp_web(group)
+    plugins.tracking.register_aiohttp_web(group)
 
 def aiohttp_started(future, handler, app, group, callback=None):
     server = future.result()

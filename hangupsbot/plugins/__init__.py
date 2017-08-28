@@ -14,6 +14,7 @@ from inspect import getmembers, isfunction
 
 from commands import command
 import utils
+from sinks import aiohttp_terminate
 
 
 logger = logging.getLogger(__name__)
@@ -689,7 +690,6 @@ async def unload(bot, module_path):
                     module_path)
 
     if plugin["aiohttp.web"]:
-        from sinks import aiohttp_terminate # XXX: needs to be late-imported
         for group in plugin["aiohttp.web"]:
             await aiohttp_terminate(group)
 
