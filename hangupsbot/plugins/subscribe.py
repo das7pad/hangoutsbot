@@ -64,16 +64,21 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
     event_text = re.sub(r"\s+", " ", event.text).lower()
     for user in users_in_chat:
         chat_id = user.id_.chat_id
+        if (not include_event_user and
+                chat_id in event.notified_users):
+            # user is part of event or already got mentioned for this event
+            continue
         user_phrases = _keywords.get(chat_id, [])
+        matches = []
         for phrase in user_phrases:
-            if (not include_event_user and
-                    chat_id in event.notified_users):
-                # user is part of event or already got mentioned for this event
-                continue
             if phrase in event_text:
-                event.notified_users.add(user.id_.chat_id)
-                asyncio.ensure_future(
-                    _send_notification(bot, event, phrase, user))
+                matches.append(phrase)
+
+        if not matches:
+            continue
+        event.notified_users.add(user.id_.chat_id)
+        asyncio.ensure_future(
+            _send_notification(bot, event, matches, user))
 
 def _handle_once(bot, event):
     """scan the text of an event for subscribed keywords and notify the targets
@@ -110,17 +115,17 @@ def _handle_once(bot, event):
                              conv_id=conv_id, user=user, text=text, title='',
                              previous_targets=previous_targets))
 
-async def _send_notification(bot, event, phrase, user):
+async def _send_notification(bot, event, matches, user):
     """Alert a user that a keyword that they subscribed to has been used
 
     Args:
         bot: HangupsBot instance
         event: sync.event.SyncEvent instance
-        phrase: string, keyword that was found in the message
+        matches: list of strings, keywords that were found in the message
         user: sync.user.SyncUser instance, user who subscribe to the phrase
     """
-    logger.info("keyword '%s' in '%s' (%s)",
-                phrase, event.title(), event.conv_id)
+    logger.info("keywords %s in '%s' (%s)",
+                matches, event.title(), event.conv_id)
 
     conv_1on1 = await bot.get_1to1(
         user.id_.chat_id, context={'initiator_convid': event.conv_id})
@@ -138,7 +143,8 @@ async def _send_notification(bot, event, phrase, user):
         logger.info("%s (%s) has dnd", user.full_name, user.id_.chat_id)
         return
 
-    template = MENTION_TEMPLATE % (phrase, event.display_title)
+    phrases = '</b>", "<b>'.join(matches)
+    template = MENTION_TEMPLATE % (phrases, event.display_title)
     text = event.get_formated_text(template=template, names_text_only=True)
 
     await bot.coro_send_message(conv_1on1, text)
