@@ -13,6 +13,7 @@ from commands import command    # pylint:disable=wrong-import-order
 from sync import SYNC_CONFIG_KEYS
 from sync.event import FakeEvent
 from sync.utils import get_sync_config_entry
+from sync.user import SyncUser
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +277,9 @@ async def command_tldr(tg_bot, msg, *args):
                                               args=' '.join(args)).strip()
     if msg.user.id_.chat_id == 'sync':
         # a valid chat_id is required to run commands
-        msg.user.id_.chat_id = tg_bot.bot.user_tg_bot()['chat_id']
+        chat_id = tg_bot.bot.user_self()['chat_id']
+        msg.user = SyncUser(tg_bot.bot, user_id=chat_id)
+        msg.user.is_self = False
 
     # sync the message text to get the tldr
     return True
