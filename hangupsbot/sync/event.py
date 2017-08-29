@@ -243,7 +243,7 @@ class SyncEvent(FakeEvent):
             list, a list of hangups.ChatMessageSegment
         """
         if isinstance(text, str):
-            return hangups.ChatMessageSegment.from_str(text)
+            return MessageSegment.from_str(text)
 
         if isinstance(text, list):
             return text
@@ -309,7 +309,7 @@ class SyncEvent(FakeEvent):
         edited_tag = (get_sync_config_entry(bot, conv_id, 'sync_tag_edited')
                       if self.edited else '')
 
-        reply = self.get_reply_text(conv_id)
+        reply = self.get_reply_text(conv_id) if '{reply}' in template else None
 
         text = template.format(reply=reply,
                                edited=edited_tag,
