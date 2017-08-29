@@ -68,6 +68,7 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
                 # user is part of event or already got mentioned for this event
                 continue
             if phrase in event_text:
+                event.notified_users.add(user.id_.chat_id)
                 asyncio.ensure_future(
                     _send_notification(bot, event, phrase, user))
 
@@ -118,29 +119,31 @@ async def _send_notification(bot, event, phrase, user):
     logger.info("keyword '%s' in '%s' (%s)",
                 phrase, event.title(), event.conv_id)
 
+    conv_1on1 = await bot.get_1to1(
+        user.id_.chat_id, context={'initiator_convid': event.conv_id})
+    if not conv_1on1:
+        logger.warning("user %s (%s) could not be alerted via 1on1",
+                       user.full_name, user.id_.chat_id)
+        return
+
+    try:
+        user_has_dnd = bot.call_shared("dnd.user_check", user.id_.chat_id)
+    except KeyError:
+        user_has_dnd = False
+
+    if user_has_dnd:
+        logger.info("%s (%s) has dnd", user.full_name, user.id_.chat_id)
+        return
+
     source_name = event.user.get_displayname(event.conv_id, text_only=True)
     text = event.text
 
-    conv_1on1 = await bot.get_1to1(
-        user.id_.chat_id, context={'initiator_convid': event.conv_id})
-    if conv_1on1:
-        try:
-            user_has_dnd = bot.call_shared("dnd.user_check", user.id_.chat_id)
-        except KeyError:
-            user_has_dnd = False
-        if not user_has_dnd: # shared dnd check
-            await bot.coro_send_message(
-                conv_1on1, _("<b>{}</b> mentioned '{}' in <i>{}</i> :\n{}"
-                            ).format(source_name, phrase, event.display_title,
-                                     text))
-            logger.info("%s (%s) alerted via 1on1 (%s)",
-                        user.full_name, user.id_.chat_id, conv_1on1.id_)
-            event.notified_users.add(user.id_.chat_id)
-        else:
-            logger.info("%s (%s) has dnd", user.full_name, user.id_.chat_id)
-    else:
-        logger.warning("user %s (%s) could not be alerted via 1on1",
-                       user.full_name, user.id_.chat_id)
+    await bot.coro_send_message(
+        conv_1on1, _("<b>{}</b> mentioned '{}' in <i>{}</i> :\n{}"
+                    ).format(source_name, phrase, event.display_title,
+                             text))
+    logger.info("%s (%s) alerted via 1on1 (%s)",
+                user.full_name, user.id_.chat_id, conv_1on1.id_)
 
 async def subscribe(bot, event, *args):
     """allow users to subscribe to phrases, only one input at a time
