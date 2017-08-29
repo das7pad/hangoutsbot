@@ -22,6 +22,9 @@ USER_NOTE_START_1ON1 = _(
 _keywords = {}
 _global_keywords = {}
 
+MENTION_TEMPLATE = (
+    '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
+
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
@@ -135,13 +138,10 @@ async def _send_notification(bot, event, phrase, user):
         logger.info("%s (%s) has dnd", user.full_name, user.id_.chat_id)
         return
 
-    source_name = event.user.get_displayname(event.conv_id, text_only=True)
-    text = event.text
+    template = MENTION_TEMPLATE % (phrase, event.display_title)
+    text = event.get_formated_text(template=template, names_text_only=True)
 
-    await bot.coro_send_message(
-        conv_1on1, _("<b>{}</b> mentioned '{}' in <i>{}</i> :\n{}"
-                    ).format(source_name, phrase, event.display_title,
-                             text))
+    await bot.coro_send_message(conv_1on1, text)
     logger.info("%s (%s) alerted via 1on1 (%s)",
                 user.full_name, user.id_.chat_id, conv_1on1.id_)
 
