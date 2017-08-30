@@ -193,37 +193,9 @@ async def telesync(bot, event, *args):
         event: hangups event instance
         args: additional text as tuple
     """
-    ho_chat_id = event.conv_id
-    path = ['telesync', 'ho2tg', ho_chat_id]
-    args = args if args else ('show',)
-
-    if args[0] == _('remove') and len(args) == 2:
-        if not (bot.memory.exists(path) and bot.memory.get_by_path(path)):
-            return _('no previous sync target set')
-
-        tg_chat_ids = bot.memory.get_by_path(path)
-        remove = tuple(tg_chat_ids) if args[1] == _('all') else args[1:]
-        lines = []
-        tg2ho = bot.memory['telesync']['tg2ho']
-        for tg_chat_id in remove:
-            if tg_chat_id in tg_chat_ids:
-                tg_chat_ids.remove(tg_chat_id)
-                lines.append(_('HO -> TG: target "%s" removed') % tg_chat_id)
-            else:
-                lines.append(_('HO -> TG: target "%s" not set') % tg_chat_id)
-
-            if tg_chat_id in tg2ho and ho_chat_id in tg2ho[tg_chat_id]:
-                tg2ho[tg_chat_id].remove(ho_chat_id)
-                lines.append(_('HO <- TG: sync removed from "%s"') % tg_chat_id)
-            else:
-                lines.append(_('HO <- TG: sync not set from "%s"') % tg_chat_id)
-
-        bot.memory.save()
-        return '\n'.join(lines)
-
-    elif args[0] == _('add') and len(args) == 2:
+    def _add():
+        """add the given telegram chat ids to the current convs' sync targets"""
         tg_chat_id = args[1]
-        lines = []
 
         ho2tg = bot.memory.get_by_path(['telesync', 'ho2tg'])
         targets = ho2tg.setdefault(ho_chat_id, [])
@@ -242,13 +214,54 @@ async def telesync(bot, event, *args):
             lines.append(_('HO <- TG: sync from "%s" added') % tg_chat_id)
 
         bot.memory.save()
-        return '\n'.join(lines)
 
-    path = ['telesync', 'ho2tg', ho_chat_id]
-    text = ('"%s"' % '", "'.join(bot.memory.get_by_path(path))
-            if bot.memory.exists(path) and bot.memory.get_by_path(path)
-            else _('no chats'))
-    return _('syncing "%s" to %s') % (ho_chat_id, text)
+    def _remove():
+        """remove the given or all chat ids from the current convs' targets"""
+        path = ['telesync', 'ho2tg', ho_chat_id]
+
+        if not (bot.memory.exists(path) and bot.memory.get_by_path(path)):
+            lines.append(_('no previous sync target set'))
+            return
+
+        tg_chat_ids = bot.memory.get_by_path(path)
+        remove = tuple(tg_chat_ids) if args[1] == _('all') else args[1:]
+        tg2ho = bot.memory['telesync']['tg2ho']
+        for tg_chat_id in remove:
+            if tg_chat_id in tg_chat_ids:
+                tg_chat_ids.remove(tg_chat_id)
+                lines.append(_('HO -> TG: target "%s" removed') % tg_chat_id)
+            else:
+                lines.append(_('HO -> TG: target "%s" not set') % tg_chat_id)
+
+            if tg_chat_id in tg2ho and ho_chat_id in tg2ho[tg_chat_id]:
+                tg2ho[tg_chat_id].remove(ho_chat_id)
+                lines.append(_('HO <- TG: sync removed from "%s"') % tg_chat_id)
+            else:
+                lines.append(_('HO <- TG: sync not set from "%s"') % tg_chat_id)
+
+        bot.memory.save()
+
+    def _show():
+        """list the current convs' sync targets"""
+        path = ['telesync', 'ho2tg', ho_chat_id]
+        text = ('"%s"' % '", "'.join(bot.memory.get_by_path(path))
+                if bot.memory.exists(path) and bot.memory.get_by_path(path)
+                else _('no chats'))
+        lines.append(_('syncing "%s" to %s') % (ho_chat_id, text))
+
+    ho_chat_id = event.conv_id
+    lines = []
+    args = args if args else (_('show'),)
+
+    if len(args) > 1:
+        if args[0] == _('remove'):
+            _remove()
+        elif args[0] == _('add'):
+            _add()
+
+    if not lines:
+        _show()
+    return '\n'.join(lines)
 
 async def telesync_set_token(bot, event, *args):
     """sets the api key for the telesync bot
