@@ -24,7 +24,8 @@ HELP = {
                   '{bot_cmd} telesync remove <"all"|<telegram chat ids>>\n'
                   '    disable the sync to previously configured telegram chats'
                   ' - "all" may remove all syncs, space separated chat ids may'
-                  ' remove only the specified chats'),
+                  ' remove only the specified chats\n'
+                  '{bot_cmd} telesync show\n    show current sync targets'),
 
     'telesync_set_token': _('usage:\n{bot_cmd} telesync_set_token <api_key>\n'
                             'update the api key for the telesync plugin'),
@@ -192,6 +193,9 @@ async def telesync(bot, event, *args):
         bot: hangupsbot instance
         event: hangups event instance
         args: additional text as tuple
+
+    Raises:
+        commands.Help: no subcommand such as `remove`, `add` or `show` provided
     """
     def _add():
         """add the given telegram chat ids to the current convs' sync targets"""
@@ -259,8 +263,12 @@ async def telesync(bot, event, *args):
         elif args[0] == _('add'):
             _add()
 
-    if not lines:
+    if args[0] == _('show'):
         _show()
+
+    if not lines:
+        # no sub-command was specified
+        raise commands.Help()
     return '\n'.join(lines)
 
 async def telesync_set_token(bot, event, *args):
