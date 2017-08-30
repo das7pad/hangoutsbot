@@ -139,6 +139,9 @@ async def command_set_sync_ho(tg_bot, msg, *args):
     if not ensure_admin(tg_bot, msg):
         return
 
+    one_way = _('oneway') in args
+    args = tuple(set(args) - set((_('oneway'),))) if one_way else args
+
     if not ensure_args(tg_bot, msg.chat_id, args):
         return
 
@@ -153,13 +156,14 @@ async def command_set_sync_ho(tg_bot, msg, *args):
         targets.append(target)
         lines.append(_("TG -> HO: target '{}' added".format(target)))
 
-    ho2tg = bot.memory.get_by_path(['telesync', 'ho2tg'])
-    targets = ho2tg.setdefault(target, [])
-    if msg.chat_id in targets:
-        lines.append(_("TG <- HO: sync already set"))
-    else:
-        lines.append(_("TG <- HO: chat added"))
-        targets.append(msg.chat_id)
+    if not one_way:
+        ho2tg = bot.memory.get_by_path(['telesync', 'ho2tg'])
+        targets = ho2tg.setdefault(target, [])
+        if msg.chat_id in targets:
+            lines.append(_("TG <- HO: sync already set"))
+        else:
+            lines.append(_("TG <- HO: chat added"))
+            targets.append(msg.chat_id)
 
     bot.memory.save()
 
@@ -168,7 +172,7 @@ async def command_set_sync_ho(tg_bot, msg, *args):
 async def command_clear_sync_ho(tg_bot, msg, *args):
     """unset sync for current chat
 
-    /clearsyncho
+    /clearsyncho <conv_ids>
 
     Args:
         msg: Message instance
@@ -183,6 +187,8 @@ async def command_clear_sync_ho(tg_bot, msg, *args):
     lines = []
     tg2ho = bot.memory.get_by_path(path_tg2ho)
     targets = tg2ho.setdefault(msg.chat_id, [])
+    one_way = _('oneway') in args
+    args = tuple(set(args) - set((_('oneway'),))) if one_way else args
 
     if not args:
         args = tuple(targets)
@@ -197,11 +203,16 @@ async def command_clear_sync_ho(tg_bot, msg, *args):
         else:
             lines.append(_('TG -> HO: "%s" was not a target') % conv_id)
 
+        if one_way:
+            continue
+
         if conv_id in ho2tg and msg.chat_id in ho2tg[conv_id]:
             ho2tg[conv_id].remove(msg.chat_id)
             lines.append(_('TG <- HO: chat removed from "%s"') % conv_id)
             if not ho2tg[conv_id]:
                 bot.memory.pop_by_path(path_ho2tg + [conv_id])
+        else:
+            lines.append(_('TG <- HO: chat was no target of "%s"') % conv_id)
 
     if not targets:
         tg2ho.pop(msg.chat_id)
