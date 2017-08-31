@@ -140,7 +140,9 @@ async def command_set_sync_ho(tg_bot, msg, *args):
         return
 
     one_way = _('oneway') in args
-    args = tuple(set(args) - set((_('oneway'),))) if one_way else args
+    channel = _('channel') in args
+    args = (tuple(set(args) - set((_('oneway'), _('channel'))))
+            if one_way or channel else args)
 
     if not ensure_args(tg_bot, msg.chat_id, args):
         return
@@ -148,7 +150,8 @@ async def command_set_sync_ho(tg_bot, msg, *args):
     bot = tg_bot.bot
     target = args[0]
     lines = []
-    tg2ho = bot.memory.get_by_path(['telesync', 'tg2ho'])
+    tg2ho = bot.memory.get_by_path(['telesync', ('channel2ho' if channel
+                                                 else 'tg2ho')])
     targets = tg2ho.setdefault(msg.chat_id, [])
     if target in targets:
         lines.append(_("TG -> HO: target '{}' already set").format(target))
@@ -182,13 +185,15 @@ async def command_clear_sync_ho(tg_bot, msg, *args):
     if not ensure_admin(tg_bot, msg):
         return
 
-    path_tg2ho = ['telesync', 'tg2ho']
-
     lines = []
-    tg2ho = bot.memory.get_by_path(path_tg2ho)
-    targets = tg2ho.setdefault(msg.chat_id, [])
     one_way = _('oneway') in args
-    args = tuple(set(args) - set((_('oneway'),))) if one_way else args
+    channel = _('channel') in args
+    args = (tuple(set(args) - set((_('oneway'), _('channel'))))
+            if one_way or channel else args)
+
+    tg2ho = bot.memory.get_by_path(['telesync', ('channel2ho' if channel
+                                                 else 'tg2ho')])
+    targets = tg2ho.setdefault(msg.chat_id, [])
 
     if not args:
         args = tuple(targets)

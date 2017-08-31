@@ -25,7 +25,9 @@ HELP = {
                   '    disable the sync to previously configured telegram chats'
                   ' - "all" may remove all syncs, space separated chat ids may'
                   ' remove only the specified chats\n'
-                  '{bot_cmd} telesync show\n    show current sync targets'),
+                  '{bot_cmd} telesync show\n    show current sync targets\n'
+                  'add "channel" to a request to setup a channel sync, which '
+                  'does not sync the senders\' name'),
 
     'telesync_set_token': _('usage:\n{bot_cmd} telesync_set_token <api_key>\n'
                             'update the api key for the telesync plugin'),
@@ -186,7 +188,7 @@ def setup_memory(bot):
     _migrate_20170609()
     bot.memory.save()
 
-async def telesync(bot, event, *args):
+def telesync(bot, event, *args):
     """set a telegram chat as sync target for the current ho
 
     Args:
@@ -197,6 +199,22 @@ async def telesync(bot, event, *args):
     Raises:
         commands.Help: no subcommand such as `remove`, `add` or `show` provided
     """
+    def _set_message_format(channel_id, remove_name=True):
+        """remove or add the username from a forwarded message to a channel
+
+        Args:
+            remove_name: boolean, defaults to True
+        """
+        channel_tag = 'telesync:' + channel_id
+        config_path = ['conversations', channel_tag, 'sync_format_message']
+        if remove_name:
+            if not channel:
+                return
+            bot_message_format = bot.config['sync_format_message_bot']
+            bot.config.set_by_path(config_path, bot_message_format)
+        elif bot.config.exists(config_path):
+            bot.config.pop_by_path(config_path)
+
     def _add():
         """add the given telegram chat ids to the current convs' sync targets"""
         tg_chat_id = args[1]
@@ -207,32 +225,34 @@ async def telesync(bot, event, *args):
             lines.append(_('HO -> TG: "%s" is already target') % tg_chat_id)
         else:
             targets.append(tg_chat_id)
+            _set_message_format(tg_chat_id)
             lines.append(_('HO -> TG: target "%s" added') % tg_chat_id)
 
         if one_way:
-            bot.memory.save()
             return
 
-        tg2ho = bot.memory.get_by_path(['telesync', 'tg2ho'])
         targets = tg2ho.setdefault(tg_chat_id, [])
         if ho_chat_id in targets:
-            lines.append(_('HO <- TG: sync from "%s" already set') % tg_chat_id)
+            lines.append(
+                (_('HO <- TG: channel sync from "%s" already set') if channel
+                 else _('HO <- TG: sync from "%s" already set')) % tg_chat_id)
         else:
             targets.append(ho_chat_id)
-            lines.append(_('HO <- TG: sync from "%s" added') % tg_chat_id)
-
-        bot.memory.save()
+            lines.append(
+                (_('HO <- TG: channel sync from "%s" added') if channel
+                 else _('HO <- TG: sync from "%s" added')) % tg_chat_id)
 
     def _remove():
         """remove the given or all chat ids from the current convs' targets"""
         path = ['telesync', 'ho2tg', ho_chat_id]
 
-        tg_chat_ids = bot.memory.get_by_path(path)
+        tg_chat_ids = (bot.memory.get_by_path(path) if bot.memory.exists(path)
+                       else ())
         remove = tuple(tg_chat_ids) if args[1] == _('all') else args[1:]
-        tg2ho = bot.memory['telesync']['tg2ho']
         for tg_chat_id in remove:
             if tg_chat_id in tg_chat_ids:
                 tg_chat_ids.remove(tg_chat_id)
+                _set_message_format(tg_chat_id, False)
                 lines.append(_('HO -> TG: target "%s" removed') % tg_chat_id)
             else:
                 lines.append(_('HO -> TG: target "%s" not set') % tg_chat_id)
@@ -242,11 +262,13 @@ async def telesync(bot, event, *args):
 
             if tg_chat_id in tg2ho and ho_chat_id in tg2ho[tg_chat_id]:
                 tg2ho[tg_chat_id].remove(ho_chat_id)
-                lines.append(_('HO <- TG: sync removed from "%s"') % tg_chat_id)
+                lines.append(
+                    (_('HO <- TG: channel sync removed from "%s"') if channel
+                     else _('HO <- TG: sync removed from "%s"')) % tg_chat_id)
             else:
-                lines.append(_('HO <- TG: sync not set from "%s"') % tg_chat_id)
-
-        bot.memory.save()
+                lines.append(
+                    (_('HO <- TG: channel sync not set from "%s"') if channel
+                     else _('HO <- TG: sync not set from "%s"')) % tg_chat_id)
 
     def _show():
         """list the current convs' sync targets"""
@@ -260,13 +282,20 @@ async def telesync(bot, event, *args):
     lines = []
     args = args if args else (_('show'),)
     one_way = _('oneway') in args
-    args = tuple(set(args) - set((_('oneway'),))) if one_way else args
+    channel = _('channel') in args
+    args = (tuple(set(args) - set((_('oneway'), _('channel'))))
+            if one_way or channel else args)
 
     if len(args) > 1:
+        tg2ho = bot.memory.get_by_path(['telesync', ('channel2ho' if channel
+                                                     else 'tg2ho')])
         if args[0] == _('remove'):
             _remove()
         elif args[0] == _('add'):
             _add()
+
+        bot.memory.save()
+        bot.config.save()
 
     if args[0] == _('show'):
         _show()
