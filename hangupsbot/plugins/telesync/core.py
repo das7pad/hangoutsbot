@@ -671,7 +671,7 @@ class TelegramBot(telepot.aio.Bot):
             """
             if error[1] >= 500:
                 delay = 30.
-                flat = repr(err).lower()
+                flat = repr(error).lower()
                 reason = ('server restart' if 'restart' in flat else
                           'pending server restart' if 'gateway' in flat else
                           error[2])
