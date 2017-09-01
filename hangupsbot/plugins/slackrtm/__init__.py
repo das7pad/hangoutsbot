@@ -44,6 +44,12 @@ import logging
 
 import plugins
 
+# reload the other modules
+# pylint: disable=wrong-import-position,unused-import
+for _path_ in ('exceptions', 'parsers', 'message', 'utils', 'commands_hangouts',
+               'commands_slack', 'bridgeinstance', 'core'):
+    plugins.load_module('plugins.slackrtm.' + _path_)
+
 from .commands_hangouts import ( slacks,
                                  slack_channels,
                                  slack_users,
