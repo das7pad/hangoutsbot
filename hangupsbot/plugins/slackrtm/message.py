@@ -13,15 +13,11 @@ class SlackMessage(object):
         self.username = None
         self.username4ho = None
         self.realname4ho = None
-        self.tag_from_slack = None
         self.edited = None
         self.from_ho_id = None
         self.sender_id = None
         self.channel = None
         self.file_attachment = None
-
-        if 'type' not in reply:
-            raise ParseError('no "type" in reply: %s' % str(reply))
 
         if reply['type'] in [ 'pong', 'presence_change', 'user_typing', 'file_shared', 'file_public',
                               'file_comment_added', 'file_comment_deleted', 'message_deleted', 'file_created' ]:
@@ -123,19 +119,15 @@ class SlackMessage(object):
 
         username4ho = username
         realname4ho = username
-        tag_from_slack = False # XXX: prevents key not defined on unmonitored channels
         if not is_bot:
-            domain = slackrtm.get_slack_domain()
             username = slackrtm.get_username(user, user)
             realname = slackrtm.get_realname(user,username)
 
             username4ho = u'{}'.format(username)
             realname4ho = u'{}'.format(realname)
-            tag_from_slack = True
         elif sender_id != '':
             username4ho = u'{}'.format(username)
             realname4ho = u'{}'.format(username)
-            tag_from_slack = False
 
         if 'channel' in reply:
             channel = reply['channel']
@@ -152,7 +144,6 @@ class SlackMessage(object):
         self.username = username
         self.username4ho = username4ho
         self.realname4ho = realname4ho
-        self.tag_from_slack = tag_from_slack
         self.edited = edited
         self.from_ho_id = from_ho_id
         self.sender_id = sender_id
