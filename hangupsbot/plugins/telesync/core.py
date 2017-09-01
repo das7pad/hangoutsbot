@@ -345,7 +345,7 @@ class TelegramBot(telepot.aio.Bot):
             '\nIf you copy the message below, Telegram might add <b>{name}:</b>'
             ' to my message. Just delete that until the message starts with <b>'
             '{bot_cmd}</b>.\n'
-            'Our private Hangout and this chat will be automatcally synced. You'
+            'Our private Hangout and this chat will be automatically synced. You'
             ' can then receive mentions and other messages I only send to '
             'private Hangouts. Use <i>split</i>  next to the token to block '
             'this sync.\n'
@@ -671,7 +671,7 @@ class TelegramBot(telepot.aio.Bot):
             """
             if error[1] >= 500:
                 delay = 30.
-                flat = repr(err).lower()
+                flat = repr(error).lower()
                 reason = ('server restart' if 'restart' in flat else
                           'pending server restart' if 'gateway' in flat else
                           error[2])
