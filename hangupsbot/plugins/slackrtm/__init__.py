@@ -51,19 +51,21 @@ for _path_ in ('exceptions', 'parsers', 'message', 'utils', 'commands_hangouts',
                'commands_slack', 'bridgeinstance', 'core'):
     plugins.load_module('plugins.slackrtm.' + _path_)
 
-from .commands_hangouts import ( slacks,
-                                 slack_channels,
-                                 slack_users,
-                                 slack_listsyncs,
-                                 slack_syncto,
-                                 slack_disconnect,
-                                 slack_setsyncjoinmsgs,
-                                 slack_setimageupload,
-                                 slack_sethotag,
-                                 slack_setslacktag,
-                                 slack_showslackrealnames,
-                                 slack_showhorealnames,
-                                 slack_identify )
+from .commands_hangouts import (
+    slacks,
+    slack_channels,
+    slack_users,
+    slack_listsyncs,
+    slack_syncto,
+    slack_disconnect,
+    slack_setsyncjoinmsgs,
+    slack_setimageupload,
+    slack_sethotag,
+    slack_setslacktag,
+    slack_showslackrealnames,
+    slack_showhorealnames,
+    slack_identify,
+)
 from .core import SlackRTMThread
 from .utils import _slackrtms
 

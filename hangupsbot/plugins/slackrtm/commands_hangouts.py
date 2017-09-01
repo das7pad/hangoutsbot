@@ -1,9 +1,13 @@
 import logging
 
-from .exceptions import ( AlreadySyncingError,
-                          NotSyncingError )
-from .utils import ( _slackrtms,
-                     _slackrtm_link_profiles )
+from .exceptions import (
+    AlreadySyncingError,
+    NotSyncingError,
+)
+from .utils import (
+    _slackrtms,
+    _slackrtm_link_profiles,
+)
 
 
 logger = logging.getLogger(__name__)

@@ -2,8 +2,10 @@ import logging
 import re
 import sys
 
-from .exceptions import ( AlreadySyncingError,
-                          NotSyncingError )
+from .exceptions import (
+    AlreadySyncingError,
+    NotSyncingError,
+)
 from .utils import _slackrtm_link_profiles
 
 

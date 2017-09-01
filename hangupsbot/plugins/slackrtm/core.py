@@ -13,19 +13,27 @@ import emoji
 
 import hangups_shim as hangups
 
-from .bridgeinstance import ( BridgeInstance,
-                              FakeEvent )
+from .bridgeinstance import (
+    BridgeInstance,
+    FakeEvent,
+)
 from .commands_slack import slackCommandHandler
-from .exceptions import ( AlreadySyncingError,
-                          NotSyncingError,
-                          ParseError,
-                          IncompleteLoginError )
+from .exceptions import (
+    AlreadySyncingError,
+    NotSyncingError,
+    ParseError,
+    IncompleteLoginError,
+)
 from .message import SlackMessage
-from .parsers import ( slack_markdown_to_hangups,
-                       hangups_markdown_to_slack )
-from .utils import  ( _slackrtms,
-                      _slackrtm_conversations_set,
-                      _slackrtm_conversations_get )
+from .parsers import (
+    slack_markdown_to_hangups,
+    hangups_markdown_to_slack,
+)
+from .utils import (
+    _slackrtms,
+    _slackrtm_conversations_set,
+    _slackrtm_conversations_get,
+)
 
 
 logger = logging.getLogger(__name__)

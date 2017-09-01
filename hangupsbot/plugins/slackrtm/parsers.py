@@ -4,7 +4,11 @@
 import re
 import uuid
 
-from reparser import Parser, Token, MatchGroup
+from reparser import (
+    Parser,
+    Token,
+    MatchGroup,
+)
 
 
 # slack to hangups

@@ -3,11 +3,15 @@ import asyncio
 import logging
 import re
 
-from webbridge import ( WebFramework,
-                        FakeEvent )
+from webbridge import (
+    WebFramework,
+    FakeEvent,
+)
 
-from .utils import ( _slackrtms,
-                     _slackrtm_conversations_get )
+from .utils import (
+    _slackrtms,
+    _slackrtm_conversations_get,
+)
 
 
 logger = logging.getLogger(__name__)
