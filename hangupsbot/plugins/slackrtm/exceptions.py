@@ -1,14 +1,16 @@
+"""exceptions for slackrtm"""
+
 class ParseError(Exception):
-    pass
+    """critical slack-message part is missing - api-change"""
 
 
 class AlreadySyncingError(Exception):
-    pass
+    """attemted to create a duplicate sync"""
 
 
 class NotSyncingError(Exception):
-    pass
+    """attemted to access/remove a non-existing sync"""
 
 
 class IncompleteLoginError(Exception):
-    pass
+    """did not receive a full rtm.connect response on login"""
