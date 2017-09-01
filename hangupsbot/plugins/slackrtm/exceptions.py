@@ -10,9 +10,5 @@ class NotSyncingError(Exception):
     pass
 
 
-class ConnectionFailedError(Exception):
-    pass
-
-
 class IncompleteLoginError(Exception):
     pass

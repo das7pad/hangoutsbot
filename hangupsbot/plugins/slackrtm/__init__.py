@@ -2,6 +2,7 @@
 Improved Slack sync plugin using the Slack RTM API instead of webhooks.
 (c) 2015 Patrick Cernko <errror@gmx.de>
 
+async rewrite: das7pad@outlook.com
 
 Create a Slack bot integration (not webhooks!) for each team you want
 to sync into hangouts.
@@ -83,9 +84,7 @@ def _initialise(bot):
         for sinkConfig in slack_sink:
             # start up slack listener in a separate thread
             t = SlackRTMThread(bot, loop, sinkConfig)
-            t.daemon = True
-            t.start()
-            t.isFullyLoaded.wait()
+            plugins.start_asyncio_task(t.run())
             threads.append(t)
     logger.info("%d sink thread(s) started", len(threads))
 

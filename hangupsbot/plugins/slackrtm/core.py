@@ -1,26 +1,22 @@
 import asyncio
-import json
 import logging
 import mimetypes
 import os
 import pprint
 import re
-import threading
 import time
 import urllib.request
+
+import aiohttp
 import hangups
 import emoji
 
 import hangups_shim as hangups
 
-from slackclient import SlackClient
-from websocket import WebSocketConnectionClosedException
-
 from .bridgeinstance import ( BridgeInstance,
                               FakeEvent )
 from .commands_slack import slackCommandHandler
 from .exceptions import ( AlreadySyncingError,
-                          ConnectionFailedError,
                           NotSyncingError,
                           ParseError,
                           IncompleteLoginError )
@@ -108,40 +104,43 @@ class SlackRTMSync(object):
 
 
 class SlackRTM(object):
-    def __init__(self, sink_config, bot, loop, threaded=False):
+    _session = None
+    _websocket = None
+
+    def __init__(self, sink_config, bot, loop):
         self.bot = bot
         self.loop = loop
         self.config = sink_config
         self.apikey = self.config['key']
-        self.threadname = None
         self.lastimg = ''
+        self._login_data = {}
 
-        self.slack = SlackClient(self.apikey)
-        if not self.slack.rtm_connect():
-            raise ConnectionFailedError
-        for key in ['self', 'team', 'users', 'channels', 'groups']:
-            if key not in self.slack.server.login_data:
+    async def start(self):
+        self._session = aiohttp.ClientSession()
+        self._login_data = await self.api_call('rtm.connect')
+
+        for key in ('self', 'team', 'url'):
+            if key not in self._login_data:
                 raise IncompleteLoginError
-        if threaded:
-            if 'name' in self.config:
-                self.name = self.config['name']
-            else:
-                self.name = '%s@%s' % (self.slack.server.login_data['self']['name'], self.slack.server.login_data['team']['domain'])
-                logger.warning('no name set in config file, using computed name %s', self.name)
-            self.threadname = 'SlackRTM:' + self.name
-            threading.current_thread().name = self.threadname
-            logger.info('started RTM connection for SlackRTM thread %s', pprint.pformat(threading.current_thread()))
-            for t in threading.enumerate():
-                if t.name == self.threadname and t != threading.current_thread():
-                    logger.info('old thread found: %s - killing it', pprint.pformat(t))
-                    t.stop()
 
-        self.update_userinfos(self.slack.server.login_data['users'])
-        self.update_channelinfos(self.slack.server.login_data['channels'])
-        self.update_groupinfos(self.slack.server.login_data['groups'])
-        self.update_teaminfos(self.slack.server.login_data['team'])
+        self._websocket = await self._session.ws_connect(
+            self._login_data['url'])
+
+        if 'name' in self.config:
+            self.name = self.config['name']
+        else:
+            self.name = '%s@%s' % (self._login_data['self']['name'],
+                                   self._login_data['team']['domain'])
+            logger.warning('no name set in config file, using computed name %s',
+                           self.name)
+        logger.info('started RTM connection for SlackRTM %s', self.name)
+
+        await self.update_userinfos()
+        await self.update_channelinfos()
+        await self.update_groupinfos()
+        await self.update_teaminfos()
         self.dminfos = {}
-        self.my_uid = self.slack.server.login_data['self']['id']
+        self.my_uid = self._login_data['self']['id']
 
         self.admins = []
         if 'admins' in self.config:
@@ -187,39 +186,31 @@ class SlackRTM(object):
                 _new_sync.team_name = self.name # chatbridge needs this for context
                 self.syncs.append(_new_sync)
 
-    # As of https://github.com/slackhq/python-slackclient/commit/ac343caf6a3fd8f4b16a79246264a05a7d257760
-    # SlackClient.api_call returns a pre-parsed json object (a dict).
-    # Wrap this call in a compatibility duck-hunt.
-    def api_call(self, *args, **kwargs):
-        response = self.slack.api_call(*args, **kwargs)
-        if isinstance(response, str):
-            try:
-                response = response.decode('utf-8')
-            except:
-                pass
-            response = json.loads(response)
+    async def api_call(self, method, **kwargs):
+        response = await self._session.post(
+            'https://slack.com/api/' + method,
+            data={'token': self.apikey, **kwargs})
+        return await response.json()
 
-        return response
-
-    def get_slackDM(self, userid):
+    async def get_slackDM(self, userid):
         if not userid in self.dminfos:
-            self.dminfos[userid] = self.api_call('im.open', user = userid)['channel']
+            self.dminfos[userid] = (await self.api_call('im.open', user=userid))['channel']
         return self.dminfos[userid]['id']
 
-    def update_userinfos(self, users=None):
+    async def update_userinfos(self, users=None):
         if users is None:
-            response = self.api_call('users.list')
+            response = await self.api_call('users.list')
             users = response['members']
         userinfos = {}
         for u in users:
             userinfos[u['id']] = u
         self.userinfos = userinfos
 
-    def get_channel_users(self, channelid, default=None):
+    async def get_channel_users(self, channelid, default=None):
         channelinfo = None
         if channelid.startswith('C'):
             if not channelid in self.channelinfos:
-                self.update_channelinfos()
+                await self.update_channelinfos()
             if not channelid in self.channelinfos:
                 logger.error('get_channel_users: Failed to find channel %s' % channelid)
                 return None
@@ -227,7 +218,7 @@ class SlackRTM(object):
                 channelinfo = self.channelinfos[channelid]
         else:
             if not channelid in self.groupinfos:
-                self.update_groupinfos()
+                await self.update_groupinfos()
             if not channelid in self.groupinfos:
                 logger.error('get_channel_users: Failed to find private group %s' % channelid)
                 return None
@@ -244,9 +235,9 @@ class SlackRTM(object):
 
         return users
 
-    def update_teaminfos(self, team=None):
+    async def update_teaminfos(self, team=None):
         if team is None:
-            response = self.api_call('team.info')
+            response = await self.api_call('team.info')
             team = response['team']
         self.team = team
 
@@ -260,11 +251,9 @@ class SlackRTM(object):
 
     def get_realname(self, user, default=None):
         if user not in self.userinfos:
-            logger.debug('user not found, reloading users')
-            self.update_userinfos()
-            if user not in self.userinfos:
-                logger.warning('could not find user "%s" although reloaded', user)
-                return default
+            logger.debug('user %s not found', user)
+            asyncio.ensure_future(self.update_userinfos())
+            return default
         if not self.userinfos[user]['real_name']:
             return default
         return self.userinfos[user]['real_name']
@@ -272,16 +261,14 @@ class SlackRTM(object):
 
     def get_username(self, user, default=None):
         if user not in self.userinfos:
-            logger.debug('user not found, reloading users')
-            self.update_userinfos()
-            if user not in self.userinfos:
-                logger.warning('could not find user "%s" although reloaded', user)
-                return default
+            logger.debug('user %s not found', user)
+            asyncio.ensure_future(self.update_userinfos())
+            return default
         return self.userinfos[user]['name']
 
-    def update_channelinfos(self, channels=None):
+    async def update_channelinfos(self, channels=None):
         if channels is None:
-            response = self.api_call('channels.list')
+            response = await self.api_call('channels.list')
             channels = response['channels']
         channelinfos = {}
         for c in channels:
@@ -299,16 +286,14 @@ class SlackRTM(object):
 
     def get_channelname(self, channel, default=None):
         if channel not in self.channelinfos:
-            logger.debug('channel not found, reloading channels')
-            self.update_channelinfos()
-            if channel not in self.channelinfos:
-                logger.warning('could not find channel "%s" although reloaded', channel)
-                return default
+            logger.debug('channel %s not found', channel)
+            asyncio.ensure_future(self.update_channelinfos())
+            return default
         return self.channelinfos[channel]['name']
 
-    def update_groupinfos(self, groups=None):
+    async def update_groupinfos(self, groups=None):
         if groups is None:
-            response = self.api_call('groups.list')
+            response = await self.api_call('groups.list')
             groups = response['groups']
         groupinfos = {}
         for c in groups:
@@ -317,11 +302,9 @@ class SlackRTM(object):
 
     def get_groupname(self, group, default=None):
         if group not in self.groupinfos:
-            logger.debug('group not found, reloading groups')
-            self.update_groupinfos()
-            if group not in self.groupinfos:
-                logger.warning('could not find group "%s" although reloaded', group)
-                return default
+            logger.debug('group %s not found')
+            asyncio.ensure_future(self.update_groupinfos())
+            return default
         return self.groupinfos[group]['name']
 
     def get_syncs(self, channelid=None, hangoutid=None):
@@ -333,11 +316,11 @@ class SlackRTM(object):
                 syncs.append(sync)
         return syncs
 
-    def rtm_read(self):
-        return self.slack.rtm_read()
+    async def rtm_read(self):
+        return await self._websocket.receive_json()
 
     def ping(self):
-        return self.slack.server.ping()
+        self._websocket.ping()
 
     def matchReference(self, match):
         out = ""
@@ -570,7 +553,7 @@ class SlackRTM(object):
         _slackrtm_conversations_set(self.bot, self.name, syncs)
         return
 
-    def handle_reply(self, reply):
+    async def handle_reply(self, reply):
         """handle incoming replies from slack"""
 
         try:
@@ -583,7 +566,7 @@ class SlackRTM(object):
 
         # commands can be processed even from unsynced channels
         try:
-            slackCommandHandler(self, msg)
+            await slackCommandHandler(self, msg)
         except Exception as e:
             logger.exception('error in handleCommands: %s(%s)', type(e), str(e))
 
@@ -632,17 +615,15 @@ class SlackRTM(object):
                             "source_gid": sync.channelid,
                             "source_title": channel_name }))
 
-    @asyncio.coroutine
-    def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url, fragment):
-        self.api_call('chat.postMessage',
+    async def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url, fragment):
+        await self.api_call('chat.postMessage',
                       channel = sync.channelid,
                       text = "{} {}".format(image_link, fragment),
                       username = full_name,
                       link_names = True,
                       icon_url = photo_url)
 
-    @asyncio.coroutine
-    def handle_ho_message(self, event, conv_id, channel_id):
+    async def handle_ho_message(self, event, conv_id, channel_id):
         user = event.passthru["original_request"]["user"]
         message = event.passthru["original_request"]["message"]
 
@@ -737,14 +718,14 @@ class SlackRTM(object):
             message = "{} {}".format(message, slackrtm_fragment)
 
             logger.info("message {}: {}".format(sync.channelid, message))
-            self.api_call('chat.postMessage',
+            await self.api_call('chat.postMessage',
                           channel = sync.channelid,
                           text = message,
                           username = display_name,
                           link_names = True,
                           icon_url = bridge_user["photo_url"])
 
-    def handle_ho_membership(self, event):
+    async def handle_ho_membership(self, event):
         # Generate list of added or removed users
         links = []
         for user_id in event.conv_event.participant_ids:
@@ -771,13 +752,13 @@ class SlackRTM(object):
                 message = u'%s has left _%s_' % (names, honame)
             message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            self.api_call('chat.postMessage',
+            await self.api_call('chat.postMessage',
                           channel=sync.channelid,
                           text=message,
                           as_user=True,
                           link_names=True)
 
-    def handle_ho_rename(self, event):
+    async def handle_ho_rename(self, event):
         name = self.bot.conversations.get_name(event.conv)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):
@@ -788,7 +769,7 @@ class SlackRTM(object):
             message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
             message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            self.api_call('chat.postMessage',
+            await self.api_call('chat.postMessage',
                           channel=sync.channelid,
                           text=message,
                           as_user=True,
@@ -799,81 +780,70 @@ class SlackRTM(object):
         for s in self.syncs:
             s._bridgeinstance.close()
 
+    def __del__(self):
+        if self._websocket is not None:
+            self._websocket.close()
 
-class SlackRTMThread(threading.Thread):
+        if self._session is not None:
+            self._session.close()
+
+
+class SlackRTMThread():
+    _listener = None
     def __init__(self, bot, loop, config):
-        super(SlackRTMThread, self).__init__()
-        self._stop = threading.Event()
         self._bot = bot
         self._loop = loop
         self._config = config
-        self._listener = None
-        self.isFullyLoaded = threading.Event()
 
-    def run(self):
+    async def run(self):
         logger.debug('SlackRTMThread.run()')
-        asyncio.set_event_loop(self._loop)
 
         start_ts = time.time()
         try:
             if self._listener and self._listener in _slackrtms:
                 self._listener.close()
                 _slackrtms.remove(self._listener)
-            self._listener = SlackRTM(self._config, self._bot, self._loop, threaded=True)
+            self._listener = SlackRTM(self._config, self._bot, self._loop)
             _slackrtms.append(self._listener)
+            await self._listener.start()
             last_ping = int(time.time())
-            self.isFullyLoaded.set()
             while True:
-                if self.stopped():
-                    return
-                replies = self._listener.rtm_read()
-                if replies:
-                    for reply in replies:
-                        if "type" not in reply:
-                            logger.warning("no type available for {}".format(reply))
-                            continue
-                        if reply["type"] == "hello":
-                            # discard the initial api reply
-                            continue
-                        if reply["type"] == "message" and float(reply["ts"]) < start_ts:
-                            # discard messages in the queue older than the thread start timestamp
-                            continue
-                        try:
-                            self._listener.handle_reply(reply)
-                        except Exception as e:
-                            logger.exception('error during handle_reply(): %s\n%s', str(e), pprint.pformat(reply))
+                reply = await self._listener.rtm_read()
+                if "type" not in reply:
+                    logger.warning("no type available for {}".format(reply))
+                    continue
+                if reply["type"] == "hello":
+                    # discard the initial api reply
+                    continue
+                if reply["type"] == "message" and float(reply["ts"]) < start_ts:
+                    # discard messages in the queue older than the thread start timestamp
+                    continue
+                try:
+                    await self._listener.handle_reply(reply)
+                except Exception as e:
+                    logger.exception('error during handle_reply(): %s\n%s', str(e), pprint.pformat(reply))
+
                 now = int(time.time())
                 if now > last_ping + 30:
                     self._listener.ping()
                     last_ping = now
-                time.sleep(.1)
-        except KeyboardInterrupt:
+                await asyncio.sleep(.1)
+        except asyncio.CancelledError:
             # close, nothing to do
             return
-        except WebSocketConnectionClosedException as e:
-            logger.exception('WebSocketConnectionClosedException(%s)', str(e))
-            return self.run()
         except IncompleteLoginError:
-            logger.exception('IncompleteLoginError, restarting')
-            time.sleep(1)
-            return self.run()
-        except (ConnectionFailedError, TimeoutError):
-            logger.exception('Connection failed or Timeout, waiting 10 sec trying to restart')
-            time.sleep(10)
-            return self.run()
-        except ConnectionResetError:
-            logger.exception('ConnectionResetError, attempting to restart')
-            time.sleep(1)
-            return self.run()
-        except Exception as e:
-            logger.exception('SlackRTMThread: unhandled exception: %s', str(e))
+            logger.error('IncompleteLoginError, restarting')
+            await asyncio.sleep(1)
+            return await self.run()
+        except aiohttp.ClientError:
+            logger.exception('Connection failed, waiting 10 sec for a restart')
+            await asyncio.sleep(10)
+            return await self.run()
+        except Exception as err:
+            logger.exception('SlackRTMThread: unhandled exception: %s', err)
         return
 
-    def stop(self):
+    def __del__(self):
         if self._listener and self._listener in _slackrtms:
             self._listener.close()
             _slackrtms.remove(self._listener)
-        self._stop.set()
-
-    def stopped(self):
-        return self._stop.isSet()
