@@ -116,7 +116,7 @@ class WebFramework:
         if not applicable_configurations:
             return
 
-        passthru = context["passthru"]
+        passthru = context.setdefault("passthru", {})
 
         if "norelay" not in passthru:
             passthru["norelay"] = []
