@@ -28,7 +28,7 @@ class SlackMessage(object):
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
 
         self.text = None
-        self.user = None
+        self.user_id = None
         self.username = None
         self.username4ho = None
         self.realname4ho = None
@@ -46,13 +46,13 @@ class SlackMessage(object):
         channel = None
         is_joinleave = False
         # only used during parsing
-        user = ''
+        user_id = ''
         is_bot = False
 
         if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'message_changed':
             if 'edited' in reply['message']:
                 edited = '(Edited)'
-                user = reply['message']['edited']['user']
+                user_id = reply['message']['edited']['user']
                 text = reply['message']['text']
             else:
                 # sent images from HO got an additional message_changed subtype without an 'edited' when slack renders the preview
@@ -63,11 +63,11 @@ class SlackMessage(object):
                     raise ParseError('strange edited message without "edited" member:\n%s' % str(reply))
 
         elif reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'file_comment':
-            user = reply['comment']['user']
+            user_id = reply['comment']['user']
             text = reply['text']
 
         elif reply['type'] == 'file_comment_added':
-            user = reply['comment']['user']
+            user_id = reply['comment']['user']
             text = reply['comment']['comment']
 
         else:
@@ -80,7 +80,7 @@ class SlackMessage(object):
                 raise ParseError('no text/user in reply:\n%s' % str(reply))
 
             else:
-                user = reply['user']
+                user_id = reply['user']
 
             if 'text' not in reply or not len(reply['text']):
                 # IFTTT?
@@ -132,8 +132,8 @@ class SlackMessage(object):
         username4ho = username
         realname4ho = username
         if not is_bot:
-            username = slackrtm.get_username(user, user)
-            realname = slackrtm.get_realname(user,username)
+            username = slackrtm.get_username(user_id, user_id)
+            realname = slackrtm.get_realname(user_id, username)
 
             username4ho = u'{}'.format(username)
             realname4ho = u'{}'.format(realname)
@@ -152,7 +152,7 @@ class SlackMessage(object):
             is_joinleave = True
 
         self.text = text
-        self.user = user
+        self.user_id = user_id
         self.username = username
         self.username4ho = username4ho
         self.realname4ho = realname4ho

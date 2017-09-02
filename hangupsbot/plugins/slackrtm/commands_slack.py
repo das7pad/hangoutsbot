@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 async def slackCommandHandler(slackbot, msg):
     tokens = msg.text.strip().split()
-    if not msg.user:
+    if not msg.user_id:
         # do not respond to messages that originate from outside slack
         return
 
@@ -28,7 +28,7 @@ async def slackCommandHandler(slackbot, msg):
         if command in commands_user:
             return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
         elif command in commands_admin:
-            if msg.user in slackbot.admins:
+            if msg.user_id in slackbot.admins:
                 return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
             else:
                 await slackbot.api_call(
@@ -81,7 +81,7 @@ async def help(slackbot, msg, args):
             command,
             getattr(sys.modules[__name__], command).__doc__))
 
-    if msg.user in slackbot.admins:
+    if msg.user_id in slackbot.admins:
         lines.append("*admin commands:*\n")
         for command in commands_admin:
             lines.append("* *{}*: {}\n".format(
@@ -90,7 +90,7 @@ async def help(slackbot, msg, args):
 
     await slackbot.api_call(
         'chat.postMessage',
-        channel = await slackbot.get_slackDM(msg.user),
+        channel = await slackbot.get_slackDM(msg.user_id),
         text = "\n".join(lines),
         as_user = True,
         link_names = True )
@@ -108,11 +108,11 @@ async def whereami(slackbot, msg, args):
 async def whoami(slackbot, msg, args):
     """tells you your own user id"""
 
-    userID = await slackbot.get_slackDM(msg.user)
+    userID = await slackbot.get_slackDM(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
-        text=u'@%s: your userid is %s' % (msg.username, msg.user),
+        text=u'@%s: your userid is %s' % (msg.username, msg.user_id),
         as_user=True,
         link_names=True )
 
@@ -138,7 +138,7 @@ async def whois(slackbot, msg, args):
         else:
             message = u'@%s: the user id of _%s_ is %s' % (msg.username, slackbot.get_username(user), user)
 
-    userID = await slackbot.get_slackDM(msg.user)
+    userID = await slackbot.get_slackDM(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -152,7 +152,7 @@ async def admins(slackbot, msg, args):
     message = '@%s: my admins are:\n' % msg.username
     for a in slackbot.admins:
         message += '@%s: _%s_\n' % (slackbot.get_username(a), a)
-    userID = await slackbot.get_slackDM(msg.user)
+    userID = await slackbot.get_slackDM(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -175,7 +175,7 @@ async def hangoutmembers(slackbot, msg, args):
         message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync.hangoutid)
         for u in conv.users:
             message += ' + <https://plus.google.com/%s|%s>\n' % (u.id_.gaia_id, u.full_name)
-    userID = await slackbot.get_slackDM(msg.user)
+    userID = await slackbot.get_slackDM(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -216,7 +216,7 @@ async def identify(slackbot, msg, args):
 
     hangouts_uid = hangups_user.id_.chat_id
     slack_teamname = slackbot.name
-    slack_uid = msg.user
+    slack_uid = msg.user_id
 
     message = _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid, "slack", remove)
 
@@ -233,7 +233,7 @@ async def hangouts(slackbot, msg, args):
     message = '@%s: list of active hangouts:\n' % msg.username
     for c in slackbot.bot.list_conversations():
         message += '*%s:* _%s_\n' % (slackbot.bot.conversations.get_name(c), c.id_)
-    userID = await slackbot.get_slackDM(msg.user)
+    userID = await slackbot.get_slackDM(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -258,7 +258,7 @@ async def listsyncs(slackbot, msg, args):
             sync.hangoutid,
             sync.getPrintableOptions()
             )
-    userID = await slackbot.get_slackDM(msg.user)
+    userID = await slackbot.get_slackDM(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,

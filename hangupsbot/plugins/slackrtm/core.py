@@ -607,7 +607,7 @@ class SlackRTM(object):
                                 msg.file_attachment,
                                 sync,
                                 username,
-                                msg.user,
+                                msg.user_id,
                                 channel_name ))
 
                         self.lastimg = os.path.basename(msg.file_attachment)
@@ -622,7 +622,7 @@ class SlackRTM(object):
                         message,
                         {   "sync": sync,
                             "source_user": username,
-                            "source_uid": msg.user,
+                            "source_uid": msg.user_id,
                             "source_gid": sync.channelid,
                             "source_title": channel_name }))
 
