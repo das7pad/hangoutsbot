@@ -4,10 +4,23 @@ import re
 
 import emoji
 
-from .exceptions import ParseError
+from .exceptions import (
+    IgnoreMessage,
+    ParseError,
+)
+
+TYPES_TO_SKIP = (
+    'file_created', 'file_shared', 'file_public', 'file_change',
+    'file_comment_added', 'file_comment_deleted', 'file_comment_edited',
+    'message_deleted', 'presence_change', 'user_typing', 'pong'
+)
+
 
 class SlackMessage(object):
     def __init__(self, slackrtm, reply):
+        if reply['type'] in TYPES_TO_SKIP:
+            raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
+
         self.text = None
         self.user = None
         self.username = None
@@ -18,11 +31,6 @@ class SlackMessage(object):
         self.sender_id = None
         self.channel = None
         self.file_attachment = None
-
-        if reply['type'] in [ 'pong', 'presence_change', 'user_typing', 'file_shared', 'file_public',
-                              'file_comment_added', 'file_comment_deleted', 'message_deleted', 'file_created' ]:
-
-            raise ParseError('not a "message" type reply: type=%s' % reply['type'])
 
         text = u''
         username = ''
@@ -44,7 +52,7 @@ class SlackMessage(object):
                 # sent images from HO got an additional message_changed subtype without an 'edited' when slack renders the preview
                 if 'username' in reply['message']:
                     # we ignore them as we already got the (unedited) message
-                    raise ParseError('ignore "edited" message from bot, possibly slack-added preview')
+                    raise IgnoreMessage('ignore "edited" message from bot, possibly slack-added preview')
                 else:
                     raise ParseError('strange edited message without "edited" member:\n%s' % str(reply))
 

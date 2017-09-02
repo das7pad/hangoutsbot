@@ -21,6 +21,7 @@ from .commands_slack import slackCommandHandler
 from .exceptions import (
     AlreadySyncingError,
     NotSyncingError,
+    IgnoreMessage,
     ParseError,
     IncompleteLoginError,
 )
@@ -566,7 +567,8 @@ class SlackRTM(object):
 
         try:
             msg = SlackMessage(self, reply)
-        except ParseError as e:
+        except (ParseError, IgnoreMessage) as err:
+            logger.debug(repr(err))
             return
         except Exception as e:
             logger.exception('error parsing Slack reply: %s(%s)', type(e), str(e))
@@ -575,6 +577,8 @@ class SlackRTM(object):
         # commands can be processed even from unsynced channels
         try:
             await slackCommandHandler(self, msg)
+        except IgnoreMessage:
+            return
         except Exception as e:
             logger.exception('error in handleCommands: %s(%s)', type(e), str(e))
 

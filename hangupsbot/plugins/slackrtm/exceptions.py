@@ -1,5 +1,9 @@
 """exceptions for slackrtm"""
 
+class IgnoreMessage(Exception):
+    """do not sync a given message"""
+
+
 class ParseError(Exception):
     """critical slack-message part is missing - api-change"""
 

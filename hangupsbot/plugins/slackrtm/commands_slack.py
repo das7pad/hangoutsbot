@@ -5,6 +5,7 @@ import sys
 from .exceptions import (
     AlreadySyncingError,
     NotSyncingError,
+    IgnoreMessage,
 )
 from .utils import _slackrtm_link_profiles
 
@@ -43,6 +44,7 @@ async def slackCommandHandler(slackbot, msg):
                 text = "@{}: {} is not recognised".format(msg.username, command),
                 as_user = True,
                 link_names = True )
+        raise IgnoreMessage()
 
 """
 command definitions
