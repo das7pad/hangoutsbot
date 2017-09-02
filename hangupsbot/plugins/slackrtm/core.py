@@ -39,11 +39,11 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-
 # fix for simple_smile support
 emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
 emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
 
+REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
 class SlackRTMSync(object):
     def __init__(self, hangoutsbot, channelid, hangoutid, hotag, slacktag, sync_joins=True, image_upload=True, showslackrealnames=False, showhorealnames="real"):
@@ -587,8 +587,7 @@ class SlackRTM(object):
             # stop processing replies if no syncs are available (optimisation)
             return
 
-        reffmt = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
-        message = reffmt.sub(self.matchReference, msg.text)
+        message = REFFMT.sub(self.matchReference, msg.text)
         message = slack_markdown_to_hangups(message)
 
         for sync in syncs:

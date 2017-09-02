@@ -16,6 +16,12 @@ TYPES_TO_SKIP = (
 )
 
 
+HOIDFMT = re.compile(r'^(.*) <ho://([^/]+)/([^|]+)\| >$',
+                     re.MULTILINE | re.DOTALL)
+
+GUCFMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
+                    re.MULTILINE | re.DOTALL)
+
 class SlackMessage(object):
     def __init__(self, slackrtm, reply):
         if reply['type'] in TYPES_TO_SKIP:
@@ -99,15 +105,13 @@ class SlackMessage(object):
                 file_attachment = reply['file']['url_private_download']
 
         # now we check if the message has the hidden ho relay tag, extract and remove it
-        hoidfmt = re.compile(r'^(.*) <ho://([^/]+)/([^|]+)\| >$', re.MULTILINE | re.DOTALL)
-        match = hoidfmt.match(text)
+        match = HOIDFMT.match(text)
         if match:
             text = match.group(1)
             from_ho_id = match.group(2)
             sender_id = match.group(3)
             if 'googleusercontent.com' in text:
-                gucfmt = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$', re.MULTILINE | re.DOTALL)
-                match = gucfmt.match(text)
+                match = GUCFMT.match(text)
                 if match:
                     text = match.group(1)
                     file_attachment = match.group(2)
