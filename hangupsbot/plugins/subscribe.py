@@ -87,6 +87,11 @@ def _handle_once(bot, event):
         bot: HangupsBot instance
         event: sync.event.SyncEvent instance
     """
+    # ignore marked HOs
+    if bot.get_config_suboption(event.conv_id, 'ignore_hosubscribe'):
+       return
+
+
     matches = {}
     event_text = event.text.lower()
     previous_targets = event.previous_targets.union(event.targets)
