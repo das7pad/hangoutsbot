@@ -49,11 +49,8 @@ class SlackMessage(object):
                         if reply['type'] == 'message' else None)
 
         self.set_raw_content(reply)
-        user_id = self.user_id
-        is_bot = user_id is None
         text = self.text
         edited = '(edited)' if self.edited else ''
-        username = self.username or ''
 
         file_attachment = None
         if 'file' in reply:
@@ -85,17 +82,13 @@ class SlackMessage(object):
         # convert emoji aliases into their unicode counterparts
         text = emoji.emojize(text, use_aliases=True)
 
-        username4ho = username
-        realname4ho = username
-        if not is_bot:
-            username = slackrtm.get_username(user_id, user_id)
-            realname = slackrtm.get_realname(user_id, username)
 
-            username4ho = u'{}'.format(username)
-            realname4ho = u'{}'.format(realname)
-        elif sender_id != '':
-            username4ho = u'{}'.format(username)
-            realname4ho = u'{}'.format(username)
+        if self.user_id is not None:
+            self.username = slackrtm.get_username(self.user_id,
+                                                  self.user_id)
+            realname4ho = slackrtm.get_realname(self.user_id, self.username)
+        else:
+            realname4ho = self.username
 
         if 'channel' in reply:
             channel = reply['channel']
@@ -108,8 +101,7 @@ class SlackMessage(object):
             is_joinleave = True
 
         self.text = text
-        self.username = username
-        self.username4ho = username4ho
+        self.username4ho = self.username
         self.realname4ho = realname4ho
         self.edited = edited
         self.from_ho_id = from_ho_id
