@@ -15,6 +15,8 @@ TYPES_TO_SKIP = (
     'message_deleted', 'presence_change', 'user_typing', 'pong'
 )
 
+TYPES_MEMBERSHIP_CHANGE = ('channel_join', 'channel_leave',
+                           'group_join', 'group_leave')
 
 HOIDFMT = re.compile(r'^(.*) <ho://([^/]+)/([^|]+)\| >$',
                      re.MULTILINE | re.DOTALL)
@@ -38,66 +40,20 @@ class SlackMessage(object):
         self.channel = None
         self.file_attachment = None
 
-        text = u''
-        username = ''
-        edited = ''
         from_ho_id = ''
         sender_id = ''
         channel = None
         is_joinleave = False
-        # only used during parsing
-        user_id = ''
-        is_bot = False
 
-        if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'message_changed':
-            if 'edited' in reply['message']:
-                edited = '(Edited)'
-                user_id = reply['message']['edited']['user']
-                text = reply['message']['text']
-            else:
-                # sent images from HO got an additional message_changed subtype without an 'edited' when slack renders the preview
-                if 'username' in reply['message']:
-                    # we ignore them as we already got the (unedited) message
-                    raise IgnoreMessage('ignore "edited" message from bot, possibly slack-added preview')
-                else:
-                    raise ParseError('strange edited message without "edited" member:\n%s' % str(reply))
+        self.subtype = (reply.get('subtype')
+                        if reply['type'] == 'message' else None)
 
-        elif reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'file_comment':
-            user_id = reply['comment']['user']
-            text = reply['text']
-
-        elif reply['type'] == 'file_comment_added':
-            user_id = reply['comment']['user']
-            text = reply['comment']['comment']
-
-        else:
-            if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'bot_message' and 'user' not in reply:
-                is_bot = True
-                # this might be a HO relayed message, check if username is set and use it as username
-                username = reply['username']
-
-            elif 'text' not in reply or 'user' not in reply:
-                raise ParseError('no text/user in reply:\n%s' % str(reply))
-
-            else:
-                user_id = reply['user']
-
-            if 'text' not in reply or not len(reply['text']):
-                # IFTTT?
-                if 'attachments' in reply:
-                    if 'text' in reply['attachments'][0]:
-                        text = reply['attachments'][0]['text']
-                    else:
-                        raise ParseError('strange message without text in attachments:\n%s' % pprint.pformat(reply))
-                    if 'fields' in reply['attachments'][0]:
-                        for field in reply['attachments'][0]['fields']:
-                            text += "\n*%s*\n%s" % (field['title'], field['value'])
-                else:
-                    raise ParseError('strange message without text and without attachments:\n%s' % pprint.pformat(reply))
-
-            else:
-                # dev: normal messages that are entered by a slack user usually go this route
-                text = reply['text']
+        self.set_raw_content(reply)
+        user_id = self.user_id
+        is_bot = user_id is None
+        text = self.text
+        edited = '(edited)' if self.edited else ''
+        username = self.username or ''
 
         file_attachment = None
         if 'file' in reply:
@@ -148,11 +104,10 @@ class SlackMessage(object):
         if not channel:
             raise ParseError('no channel found in reply:\n%s' % pprint.pformat(reply))
 
-        if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] in ['channel_join', 'channel_leave', 'group_join', 'group_leave']:
+        if self.subtype in TYPES_MEMBERSHIP_CHANGE:
             is_joinleave = True
 
         self.text = text
-        self.user_id = user_id
         self.username = username
         self.username4ho = username4ho
         self.realname4ho = realname4ho
@@ -162,3 +117,63 @@ class SlackMessage(object):
         self.channel = channel
         self.file_attachment = file_attachment
         self.is_joinleave = is_joinleave
+
+    def set_raw_content(self, reply):
+        """set the message text and try to fetch a user (id) or set a username
+
+        Args:
+            reply: dict, slack response
+        """
+        subtype = self.subtype
+        if subtype == 'message_changed':
+            if 'edited' not in reply['message']:
+                raise IgnoreMessage('not a user message')
+
+            self.edited = True
+            self.user_id = reply['message']['edited'].get('user')
+            self.text = str(reply['message'].get('text'))
+
+        elif subtype == 'file_comment':
+            self.user_id = reply['comment']['user']
+            self.text = reply['text']
+
+        elif reply['type'] == 'file_comment_added':
+            self.user_id = reply['comment']['user']
+            self.text = reply['comment']['comment']
+
+        elif subtype == 'bot_message':
+            self.parse_bot_message(reply)
+
+        else:
+            # set user
+            if 'user' not in reply and 'username' not in reply:
+                raise IgnoreMessage('not a user message')
+
+            self.username = reply.get('username')
+            self.user_id = reply.get('user')
+
+            # set text
+            if 'text' in reply and reply['text']:
+                self.text = reply['text']
+
+            elif 'attachments' in reply:
+                attachment = reply['attachments'][0]
+                if 'text' not in attachment:
+                    raise ParseError('message without text in attachment')
+                lines = [attachment['text']]
+                if 'fields' in attachment:
+                    for field in attachment['fields']:
+                        lines.append('*%s*' % field['title'])
+                        lines.append('%s' % field['value'])
+                self.text = '\n'.join(lines)
+
+    def parse_bot_message(self, reply):
+        """parse bot messages from various services
+
+        add custom parsing here
+
+        Args:
+            reply: dict, slack response
+        """
+        # pylint: disable=no-self-use
+        raise IgnoreMessage('unknown service: %s' % reply)
