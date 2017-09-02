@@ -54,8 +54,17 @@ class SlackMessage(object):
 
         file_attachment = None
         if 'file' in reply:
-            if 'url_private_download' in reply['file']:
-                file_attachment = reply['file']['url_private_download']
+            if reply.get('upload') is False:
+                raise IgnoreMessage('already seen this image')
+
+            file_attachment = reply['file']['url_private_download']
+            lines = []
+            lines.append(reply['file'].get('title', ''))
+            lines.append(
+                ('> ' + reply['file']['initial_comment'].get('comment', ''))
+                if 'initial_comment' in reply['file'] else '')
+            # if no title or comment are given, use the default text as fallback
+            text = '\n'.join(lines).strip() or text
 
         # now we check if the message has the hidden ho relay tag, extract and remove it
         match = HOIDFMT.match(text)
