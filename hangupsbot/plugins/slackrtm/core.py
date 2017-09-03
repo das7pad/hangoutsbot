@@ -55,6 +55,7 @@ class SlackRTMSync(object):
         self.slacktag = slacktag
         self.showslackrealnames = showslackrealnames
         self.showhorealnames = showhorealnames
+        self.team_name = None
 
         self._bridgeinstance = BridgeInstance(hangoutsbot, "slackrtm")
 
@@ -124,6 +125,15 @@ class SlackRTM(object):
         self.apikey = self.config['key']
         self.lastimg = ''
         self._login_data = {}
+        self.dminfos = {}
+        self.userinfos = {}
+        self.groupinfos = {}
+        self.channelinfos = {}
+        self.my_uid = None
+        self.name = None
+        self.team = {}
+        self.admins = []
+        self.syncs = []
 
     async def start(self):
         self._session = aiohttp.ClientSession()
@@ -150,10 +160,8 @@ class SlackRTM(object):
         await self.update_channelinfos()
         await self.update_groupinfos()
         await self.update_teaminfos()
-        self.dminfos = {}
         self.my_uid = self._login_data['self']['id']
 
-        self.admins = []
         if 'admins' in self.config:
             for a in self.config['admins']:
                 if a not in self.userinfos:
@@ -163,7 +171,6 @@ class SlackRTM(object):
         if not len(self.admins):
             self.logger.warning('no admins specified in config file')
 
-        self.syncs = []
         syncs = _slackrtm_conversations_get(self.bot, self.name)
 
         for s in syncs:
