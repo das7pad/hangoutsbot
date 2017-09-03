@@ -185,7 +185,7 @@ HELP = {
                   '{bot_cmd} sync1to1 <platform> [off]'),
 
     'check_users': _('Perform a platform wide member check on the current or '
-                     'given conversation. Users will be automatcally kicked or'
+                     'given conversation. Users will be automatically kicked or'
                      ' added, profilesyncs are used to identify users on other '
                      'platforms. Usage:\n{bot_cmd} check_users [<conv id>] '
                      '[<G+ user ids, 21 digits each>] [kick_only] '
