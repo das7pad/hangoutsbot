@@ -7,25 +7,15 @@ logger = logging.getLogger(__name__)
 _slackrtms = []
 
 def _slackrtm_conversations_set(bot, team_name, synced_hangouts):
-    memory_root_key = "slackrtm"
-
-    if not bot.memory.exists([ memory_root_key ]):
-        bot.memory.set_by_path([ memory_root_key ], {})
-
-    if not bot.memory.exists([ memory_root_key, team_name ]):
-        bot.memory.set_by_path([ memory_root_key, team_name ], {})
-
-    bot.memory.set_by_path([ memory_root_key, team_name, "synced_conversations" ], synced_hangouts)
+    bot.memory.set_by_path(["slackrtm", team_name, "synced_conversations"],
+                           synced_hangouts)
     bot.memory.save()
 
 def _slackrtm_conversations_get(bot, team_name):
-    memory_root_key = "slackrtm"
-    synced_conversations = False
-    if bot.memory.exists([ memory_root_key ]):
-        full_path = [ memory_root_key, team_name, "synced_conversations" ]
-        if bot.memory.exists(full_path):
-            synced_conversations = bot.memory.get_by_path(full_path) or False
-    return synced_conversations
+    full_path = ["slackrtm", team_name, "synced_conversations"]
+    if bot.memory.exists(full_path):
+        return bot.memory.get_by_path(full_path)
+    return []
 
 def _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid, base_key, remove):
     memory_path = ["slackrtm", slack_teamname, "identities"]

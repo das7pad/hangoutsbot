@@ -57,7 +57,7 @@ class BridgeInstance(WebFramework):
         mutated_configurations = []
         for slackrtm_config in slackrtm_configs:
             # mutate the config earlier, as slackrtm is messy
-            synced_conversations = _slackrtm_conversations_get(self.bot, slackrtm_config["name"]) or []
+            synced_conversations = _slackrtm_conversations_get(self.bot, slackrtm_config["name"])
             for synced in synced_conversations:
                 config_clone = dict(slackrtm_config)
                 config_clone["hangouts"] = [ synced["hangoutid"] ]

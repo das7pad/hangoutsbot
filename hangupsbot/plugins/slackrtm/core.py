@@ -165,8 +165,6 @@ class SlackRTM(object):
 
         self.syncs = []
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
 
         for s in syncs:
             sync = SlackRTMSync.fromDict(self.bot, s)
@@ -382,8 +380,6 @@ class SlackRTM(object):
         self.logger.info('adding sync: %s', sync.toDict())
         self.syncs.append(sync)
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         self.logger.info('storing sync: %s', sync.toDict())
         syncs.append(sync.toDict())
         _slackrtm_conversations_set(self.bot, self.name, syncs)
@@ -401,8 +397,6 @@ class SlackRTM(object):
             raise NotSyncingError
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 self.logger.info('removing stored sync: %s', s)
@@ -422,8 +416,6 @@ class SlackRTM(object):
         sync.sync_joins = enable
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 syncs.remove(s)
@@ -444,8 +436,6 @@ class SlackRTM(object):
         sync.hotag = hotag
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 syncs.remove(s)
@@ -466,8 +456,6 @@ class SlackRTM(object):
         sync.image_upload = upload
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 syncs.remove(s)
@@ -488,8 +476,6 @@ class SlackRTM(object):
         sync.slacktag = slacktag
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 syncs.remove(s)
@@ -510,8 +496,6 @@ class SlackRTM(object):
         sync.showslackrealnames = realnames
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 syncs.remove(s)
@@ -532,8 +516,6 @@ class SlackRTM(object):
         sync.showhorealnames = realnames
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
         for s in syncs:
             if s['channelid'] == channel and s['hangoutid'] == hangoutid:
                 syncs.remove(s)
