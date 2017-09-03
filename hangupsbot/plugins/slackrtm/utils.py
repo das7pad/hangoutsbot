@@ -25,10 +25,6 @@ def _slackrtm_conversations_get(bot, team_name):
         full_path = [ memory_root_key, team_name, "synced_conversations" ]
         if bot.memory.exists(full_path):
             synced_conversations = bot.memory.get_by_path(full_path) or False
-    else:
-        # XXX: older versions of this plugin incorrectly uses "user_data" key
-        logger.warning("using broken legacy memory of synced conversations")
-        synced_conversations = bot.user_memory_get(team_name, 'synced_conversations')
     return synced_conversations
 
 def _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid, base_key, remove):

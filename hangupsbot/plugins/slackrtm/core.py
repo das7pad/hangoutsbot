@@ -163,13 +163,6 @@ class SlackRTM(object):
         if not len(self.admins):
             self.logger.warning('no admins specified in config file')
 
-        self.hangoutids = {}
-        self.hangoutnames = {}
-        for c in self.bot.list_conversations():
-            name = self.bot.conversations.get_name(c)
-            self.hangoutids[name] = c.id_
-            self.hangoutnames[c.id_] = name
-
         self.syncs = []
         syncs = _slackrtm_conversations_get(self.bot, self.name)
         if not syncs:
@@ -181,21 +174,6 @@ class SlackRTM(object):
                 sync.slacktag = self.get_teamname()
             sync.team_name = self.name # chatbridge needs this for context
             self.syncs.append(sync)
-
-        if 'synced_conversations' in self.config and len(self.config['synced_conversations']):
-            self.logger.warning('defining synced_conversations in config is deprecated')
-            for conv in self.config['synced_conversations']:
-                if len(conv) == 3:
-                    hotag = conv[2]
-                else:
-                    if conv[1] not in self.hangoutnames:
-                        self.logger.error("could not find conv %s in bot's conversations, but used in (deprecated) synced_conversations in config!", conv[1])
-                        hotag = conv[1]
-                    else:
-                        hotag = self.hangoutnames[conv[1]]
-                _new_sync = SlackRTMSync(self.bot, conv[0], conv[1], hotag, self.get_teamname())
-                _new_sync.team_name = self.name # chatbridge needs this for context
-                self.syncs.append(_new_sync)
 
     async def api_call(self, method, **kwargs):
         response = await self._session.post(
