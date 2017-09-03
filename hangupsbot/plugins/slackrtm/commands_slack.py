@@ -90,7 +90,7 @@ async def help(slackbot, msg, args):
 
     await slackbot.api_call(
         'chat.postMessage',
-        channel = await slackbot.get_slackDM(msg.user_id),
+        channel = await slackbot.get_slack1on1(msg.user_id),
         text = "\n".join(lines),
         as_user = True,
         link_names = True )
@@ -108,7 +108,7 @@ async def whereami(slackbot, msg, args):
 async def whoami(slackbot, msg, args):
     """tells you your own user id"""
 
-    userID = await slackbot.get_slackDM(msg.user_id)
+    userID = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -138,7 +138,7 @@ async def whois(slackbot, msg, args):
         else:
             message = u'@%s: the user id of _%s_ is %s' % (msg.username, slackbot.get_username(user), user)
 
-    userID = await slackbot.get_slackDM(msg.user_id)
+    userID = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -152,7 +152,7 @@ async def admins(slackbot, msg, args):
     message = '@%s: my admins are:\n' % msg.username
     for a in slackbot.admins:
         message += '@%s: _%s_\n' % (slackbot.get_username(a), a)
-    userID = await slackbot.get_slackDM(msg.user_id)
+    userID = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -175,7 +175,7 @@ async def hangoutmembers(slackbot, msg, args):
         message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync.hangoutid)
         for u in conv.users:
             message += ' + <https://plus.google.com/%s|%s>\n' % (u.id_.gaia_id, u.full_name)
-    userID = await slackbot.get_slackDM(msg.user_id)
+    userID = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -233,7 +233,7 @@ async def hangouts(slackbot, msg, args):
     message = '@%s: list of active hangouts:\n' % msg.username
     for c in slackbot.bot.list_conversations():
         message += '*%s:* _%s_\n' % (slackbot.bot.conversations.get_name(c), c.id_)
-    userID = await slackbot.get_slackDM(msg.user_id)
+    userID = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,
@@ -258,7 +258,7 @@ async def listsyncs(slackbot, msg, args):
             sync.hangoutid,
             sync.getPrintableOptions()
             )
-    userID = await slackbot.get_slackDM(msg.user_id)
+    userID = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
         channel=userID,

@@ -179,7 +179,7 @@ class SlackRTM(object):
             data={'token': self.apikey, **kwargs})
         return await response.json()
 
-    async def get_slackDM(self, userid):
+    async def get_slack1on1(self, userid):
         if not userid in self.dminfos:
             self.dminfos[userid] = (await self.api_call('im.open', user=userid))['channel']
         return self.dminfos[userid]['id']
