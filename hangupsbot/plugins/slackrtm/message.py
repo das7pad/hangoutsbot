@@ -1,5 +1,4 @@
 import html
-import pprint
 import re
 
 import emoji
@@ -29,6 +28,10 @@ class SlackMessage(object):
         if reply['type'] in TYPES_TO_SKIP:
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
 
+        self.channel = reply.get('channel') or reply.get('group')
+        if self.channel is None:
+            raise ParseError('no channel found in reply')
+
         self.text = None
         self.user_id = None
         self.username = None
@@ -37,12 +40,10 @@ class SlackMessage(object):
         self.edited = None
         self.from_ho_id = None
         self.sender_id = None
-        self.channel = None
         self.file_attachment = None
 
         from_ho_id = ''
         sender_id = ''
-        channel = None
         is_joinleave = False
 
         self.subtype = (reply.get('subtype')
@@ -99,13 +100,6 @@ class SlackMessage(object):
         else:
             realname4ho = self.username
 
-        if 'channel' in reply:
-            channel = reply['channel']
-        elif 'group' in reply:
-            channel = reply['group']
-        if not channel:
-            raise ParseError('no channel found in reply:\n%s' % pprint.pformat(reply))
-
         if self.subtype in TYPES_MEMBERSHIP_CHANGE:
             is_joinleave = True
 
@@ -115,7 +109,6 @@ class SlackMessage(object):
         self.edited = edited
         self.from_ho_id = from_ho_id
         self.sender_id = sender_id
-        self.channel = channel
         self.file_attachment = file_attachment
         self.is_joinleave = is_joinleave
 
