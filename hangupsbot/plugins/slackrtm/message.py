@@ -35,30 +35,21 @@ class SlackMessage(object):
         self.text = None
         self.user_id = None
         self.username = None
-        self.username4ho = None
-        self.realname4ho = None
-        self.edited = None
+        self.edited = False
         self.from_ho_id = None
-        self.sender_id = None
         self.file_attachment = None
-
-        from_ho_id = ''
-        sender_id = ''
-        is_joinleave = False
 
         self.subtype = (reply.get('subtype')
                         if reply['type'] == 'message' else None)
 
         self.set_raw_content(reply)
         text = self.text
-        edited = '(edited)' if self.edited else ''
 
-        file_attachment = None
         if 'file' in reply:
             if reply.get('upload') is False:
                 raise IgnoreMessage('already seen this image')
 
-            file_attachment = reply['file']['url_private_download']
+            self.file_attachment = reply['file']['url_private_download']
             lines = []
             lines.append(reply['file'].get('title', ''))
             lines.append(
@@ -71,13 +62,12 @@ class SlackMessage(object):
         match = HOIDFMT.match(text)
         if match:
             text = match.group(1)
-            from_ho_id = match.group(2)
-            sender_id = match.group(3)
+            self.from_ho_id = match.group(2)
             if 'googleusercontent.com' in text:
                 match = GUCFMT.match(text)
                 if match:
                     text = match.group(1)
-                    file_attachment = match.group(2)
+                    self.file_attachment = match.group(2)
 
         # text now contains the real message, but html entities have to be dequoted still
         text = html.unescape(text)
@@ -100,17 +90,11 @@ class SlackMessage(object):
         else:
             realname4ho = self.username
 
-        if self.subtype in TYPES_MEMBERSHIP_CHANGE:
-            is_joinleave = True
+        self.is_joinleave = self.subtype in TYPES_MEMBERSHIP_CHANGE
 
         self.text = text
         self.username4ho = self.username
         self.realname4ho = realname4ho
-        self.edited = edited
-        self.from_ho_id = from_ho_id
-        self.sender_id = sender_id
-        self.file_attachment = file_attachment
-        self.is_joinleave = is_joinleave
 
     def set_raw_content(self, reply):
         """set the message text and try to fetch a user (id) or set a username
