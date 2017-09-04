@@ -87,6 +87,10 @@ def _handle_once(bot, event):
         bot: HangupsBot instance
         event: sync.event.SyncEvent instance
     """
+    # ignore private chats with the bot
+    if bot.user_memory_get(event.user.id_.chat_id, "1on1") == event.conv_id:
+        return
+
     matches = {}
     event_text = event.text.lower()
     previous_targets = event.previous_targets.union(event.targets)
