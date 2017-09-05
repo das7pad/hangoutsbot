@@ -2,9 +2,7 @@ import asyncio
 import logging
 import mimetypes
 import os
-import pprint
 import re
-import time
 import urllib.request
 
 import aiohttp
@@ -24,6 +22,7 @@ from .exceptions import (
     IgnoreMessage,
     ParseError,
     IncompleteLoginError,
+    WebsocketFailed,
 )
 from .message import SlackMessage
 from .parsers import (
@@ -115,7 +114,6 @@ class SlackRTMSync(object):
 
 class SlackRTM(object):
     _session = None
-    _websocket = None
     logger = logger
 
     def __init__(self, sink_config, bot, loop):
@@ -143,9 +141,6 @@ class SlackRTM(object):
             if key not in self._login_data:
                 raise IncompleteLoginError
 
-        self._websocket = await self._session.ws_connect(
-            self._login_data['url'])
-
         if 'name' in self.config:
             self.name = self.config['name']
         else:
@@ -154,7 +149,6 @@ class SlackRTM(object):
             logger.warning('no name set in config file, using computed name %s',
                            self.name)
         self.logger = logging.getLogger('plugins.slackrtm.%s' % self.name)
-        self.logger.info('started RTM connection')
 
         await self.update_userinfos()
         await self.update_channelinfos()
@@ -179,6 +173,17 @@ class SlackRTM(object):
                 sync.slacktag = self.get_teamname()
             sync.team_name = self.name # chatbridge needs this for context
             self.syncs.append(sync)
+
+        try:
+            await self._process_websocket(self._login_data['url'])
+        except WebsocketFailed:
+            self.logger.critical('closing SlackRTM')
+            return
+        except:                                     # pylint:disable=bare-except
+            self.logger.exception('core error')
+        finally:
+            self.close()
+        return await self.start()
 
     async def api_call(self, method, **kwargs):
         response = await self._session.post(
@@ -309,12 +314,6 @@ class SlackRTM(object):
             elif hangoutid == sync.hangoutid:
                 syncs.append(sync)
         return syncs
-
-    async def rtm_read(self):
-        return await self._websocket.receive_json()
-
-    def ping(self):
-        self._websocket.ping()
 
     def matchReference(self, match):
         out = ""
@@ -530,6 +529,49 @@ class SlackRTM(object):
         syncs.append(sync.toDict())
         _slackrtm_conversations_set(self.bot, self.name, syncs)
         return
+
+    async def _process_websocket(self, url):
+        """read and process events from a slack websocket
+
+        Args:
+            url: string, websocket target URI
+
+        Raises:
+            exceptions.WebsocketFailed: websocket connection failed or too many
+                invalid events received from slack
+            any exception that is not covered in `.handle_reply`
+        """
+        try:
+            async with self._session.ws_connect(url, heartbeat=30) as websocket:
+                self.logger.info('started new SlackRTM connection')
+
+                soft_reset = 0
+                while soft_reset < 5:
+                    try:
+                        reply = await websocket.receive_json()
+                        if not reply:
+                            # gracefully stopped
+                            return
+                        if 'type' not in reply:
+                            raise ValueError('reply has no `type` entry: %s'
+                                             % repr(reply))
+                    except ValueError as err:
+                        # covers json-decode errors and replys without a `type`
+                        self.logger.warning('bad websocket read: %s', repr(err))
+                        soft_reset += 1
+                        await asyncio.sleep(2**soft_reset)
+                        continue
+
+                    await self.handle_reply(reply)
+
+                    # valid response handled, leave fail-state
+                    soft_reset = 0
+
+        except aiohttp.ClientError as err:
+            self.logger.error('websocket connection failed: %s', repr(err))
+
+        # can not connect or permanent websocket read error
+        raise WebsocketFailed()
 
     async def handle_reply(self, reply):
         """handle incoming replies from slack"""
@@ -760,13 +802,11 @@ class SlackRTM(object):
         for s in self.syncs:
             s._bridgeinstance.close()
 
-    def __del__(self):
-        if self._websocket is not None:
-            self._websocket.close()
-
         if self._session is not None:
             self._session.close()
 
+    def __del__(self):
+        self.close()
 
 class SlackRTMThread():
     _listener = None
@@ -778,7 +818,6 @@ class SlackRTMThread():
     async def run(self):
         logger.debug('SlackRTMThread.run()')
 
-        start_ts = time.time()
         try:
             if self._listener and self._listener in _slackrtms:
                 self._listener.close()
@@ -786,28 +825,6 @@ class SlackRTMThread():
             self._listener = SlackRTM(self._config, self._bot, self._loop)
             _slackrtms.append(self._listener)
             await self._listener.start()
-            last_ping = int(time.time())
-            while True:
-                reply = await self._listener.rtm_read()
-                if "type" not in reply:
-                    logger.warning("no type available for {}".format(reply))
-                    continue
-                if reply["type"] == "hello":
-                    # discard the initial api reply
-                    continue
-                if reply["type"] == "message" and float(reply["ts"]) < start_ts:
-                    # discard messages in the queue older than the thread start timestamp
-                    continue
-                try:
-                    await self._listener.handle_reply(reply)
-                except Exception as e:
-                    logger.exception('error during handle_reply(): %s\n%s', str(e), pprint.pformat(reply))
-
-                now = int(time.time())
-                if now > last_ping + 30:
-                    self._listener.ping()
-                    last_ping = now
-                await asyncio.sleep(.1)
         except asyncio.CancelledError:
             # close, nothing to do
             return

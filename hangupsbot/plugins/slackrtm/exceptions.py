@@ -18,3 +18,6 @@ class NotSyncingError(Exception):
 
 class IncompleteLoginError(Exception):
     """did not receive a full rtm.connect response on login"""
+
+class WebsocketFailed(Exception):
+    """can not establish a connection or reading failed permanent"""
