@@ -684,11 +684,16 @@ async def command_restrict_user(tg_bot, msg, *args):
               NO_WEBPREVIEW_AND_STICKER_RIGHTS if restrict == 'sticker+websites'
               else {})
 
+    status_msg = await tg_bot.sendMessage(
+        msg.chat_id,
+        _('Processing the queue of /restrict_users for %s users.')
+        % len(target_users))
     raw_results = await asyncio.gather(*[tg_bot.restrictChatMember(msg.chat_id,
                                                                    user_id,
                                                                    **rights)
                                          for user_id in target_users],
                                        return_exceptions=True)
+    await tg_bot.deleteMessage((msg.chat_id, status_msg['message_id']))
     results = {user_id: raw_results.pop(0)
                for user_id in target_users}
 
