@@ -25,6 +25,13 @@ _global_keywords = {}
 MENTION_TEMPLATE = (
     '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
 
+IGNORED_COMMANDS = (
+    'subscribe',
+    'unsubscribe',
+    'global_subscribe',
+    'global_unsubscribe',
+)
+
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
@@ -54,8 +61,25 @@ def _populate_keywords(bot):
             _keywords[userchatid] = userkeywords
     _global_keywords.update(bot.memory['hosubscribe'])
 
+def _is_ignored_command(event):
+    """check whether the event runs a command that should not trigger a mention
+
+    Args:
+        event: sync.event.SyncEvent instance
+
+    Returns:
+        boolean
+    """
+    args = event.text.split()
+    if len(args) < 2:
+        return False
+    prefixes = event.bot._handlers.bot_command # pylint:disable=protected-access
+    return args[0] in prefixes and args[1] in IGNORED_COMMANDS
+
 def _handle_keyword(bot, event, dummy, include_event_user=False):
     """handle keyword"""
+    if _is_ignored_command(event):
+        return
 
     users_in_chat = event.user_list
     if not bot.get_config_suboption(event.conv_id, 'subscribe.enabled'):
@@ -87,8 +111,7 @@ def _handle_once(bot, event):
         bot: HangupsBot instance
         event: sync.event.SyncEvent instance
     """
-    # ignore private chats with the bot
-    if bot.user_memory_get(event.user.id_.chat_id, "1on1") == event.conv_id:
+    if _is_ignored_command(event):
         return
 
     matches = {}
