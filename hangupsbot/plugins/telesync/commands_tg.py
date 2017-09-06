@@ -17,6 +17,28 @@ from sync.user import SyncUser
 
 logger = logging.getLogger(__name__)
 
+# rights for /restrict_user
+NO_SENDING_RIGHTS = {'can_send_messages': False,
+                     'can_send_media_messages': False,
+                     'can_send_other_messages': False,
+                     'can_add_web_page_previews': False}
+NO_MEDIA_RIGHTS = {'can_send_media_messages': False,
+                   'can_send_messages': True,
+                   'can_send_other_messages': True,
+                   'can_add_web_page_previews': True}
+NO_STICKER_RIGHTS = {'can_send_other_messages': False,
+                     'can_send_messages': True,
+                     'can_send_media_messages': True,
+                     'can_add_web_page_previews': True}
+NO_WEBPREVIEW_RIGHTS = {'can_add_web_page_previews': False,
+                        'can_send_messages': True,
+                        'can_send_media_messages': True,
+                        'can_send_other_messages': True}
+NO_WEBPREVIEW_AND_STICKER_RIGHTS = {'can_send_other_messages': False,
+                                    'can_add_web_page_previews': False,
+                                    'can_send_messages': True,
+                                    'can_send_media_messages': True}
+
 def ensure_admin(tg_bot, msg):
     """return weather the user is admin, and respond if be_quiet is off
 
@@ -655,22 +677,12 @@ async def command_restrict_user(tg_bot, msg, *args):
         target_users = args[:-1]
 
     restrict = args[-1].lower()
-    rights = {'can_send_messages': True,
-              'can_send_media_messages': True,
-              'can_send_other_messages': True,
-              'can_add_web_page_previews': True}
-    changes = ({'can_send_messages': False,
-                'can_send_media_messages': False,
-                'can_send_other_messages': False,
-                'can_add_web_page_previews': False} if restrict == 'messages' else
-               {'can_send_media_messages': False} if restrict == 'media' else
-               {'can_send_other_messages': False} if restrict == 'sticker' else
-               {'can_add_web_page_previews': False} if restrict == 'websites'
-               else {'can_send_other_messages': False,
-                     'can_add_web_page_previews': False} if (restrict ==
-                                                             'sticker+websites')
-               else {})
-    rights.update(changes)
+    rights = (NO_SENDING_RIGHTS if restrict == 'messages' else
+              NO_MEDIA_RIGHTS if restrict == 'media' else
+              NO_STICKER_RIGHTS if restrict == 'sticker' else
+              NO_WEBPREVIEW_RIGHTS if restrict == 'websites' else
+              NO_WEBPREVIEW_AND_STICKER_RIGHTS if restrict == 'sticker+websites'
+              else {})
 
     raw_results = await asyncio.gather(*[tg_bot.restrictChatMember(msg.chat_id,
                                                                    user_id,
