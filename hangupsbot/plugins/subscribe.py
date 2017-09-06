@@ -25,12 +25,12 @@ _global_keywords = {}
 MENTION_TEMPLATE = (
     '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
 
-IGNORED_COMMANDS = (
+IGNORED_COMMANDS = set((
     'subscribe',
     'unsubscribe',
     'global_subscribe',
     'global_unsubscribe',
-)
+))
 
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
@@ -43,11 +43,26 @@ def _initialise(bot):
     plugins.register_user_command(["subscribe", "unsubscribe"])
     plugins.register_admin_command(["global_subscribe", "global_unsubscribe"])
     plugins.register_admin_command(["testsubscribe"])
+    bot.register_shared('hide_from_subscribe', _hide_from_subscribe)
     bot.config.set_defaults({"subscribe.enabled": True})
     bot.memory.set_defaults({"hosubscribe": {}})
     bot.memory.ensure_path(["user_data"])
     bot.memory.save()
     _populate_keywords(bot)
+
+def _hide_from_subscribe(item):
+    """register a command to be hidden from subscribes on execute
+
+    Args:
+        item: string or tuple or list, a single or multiple commands
+    """
+    if isinstance(item, str):
+        IGNORED_COMMANDS.add(item)
+    elif isinstance(item, (list, tuple)):
+        IGNORED_COMMANDS.update(item)
+    else:
+        logger.warning('%s is not a valid command container', repr(item),
+                       include_stack=True)
 
 def _populate_keywords(bot):
     """Pull the keywords from memory
