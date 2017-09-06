@@ -88,9 +88,9 @@ def _handle_once(bot, event):
         event: sync.event.SyncEvent instance
     """
     # ignore marked HOs
-    if bot.get_config_suboption(event.conv_id, 'ignore_hosubscribe'):
-       return
-
+    if any(bot.get_config_suboption(conv_id, 'ignore_hosubscribe')
+           for conv_id in event.targets):
+        return
 
     matches = {}
     event_text = event.text.lower()
