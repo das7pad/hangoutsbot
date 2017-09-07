@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 def _initialise(bot):
     # unbreak slackrtm memory.json usage
     #   previously, this plugin wrote into "user_data" key to store its internal team settings
-    _slackrtm_conversations_migrate_20170319(bot)
+    _migrate_20170319(bot)
 
     slack_sink = bot.get_config_option('slackrtm')
     threads = []
@@ -108,7 +108,7 @@ def _initialise(bot):
 
     plugins.register_user_command(["slack_identify"])
 
-def _slackrtm_conversations_migrate_20170319(bot):
+def _migrate_20170319(bot):
     memory_root_key = "slackrtm"
     if bot.memory.exists([memory_root_key]):
         return

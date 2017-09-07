@@ -13,7 +13,7 @@ from .utils import _slackrtm_link_profiles
 logger = logging.getLogger(__name__)
 
 
-async def slackCommandHandler(slackbot, msg):
+async def slack_command_handler(slackbot, msg):
     tokens = msg.text.strip().split()
     if not msg.user_id:
         # do not respond to messages that originate from outside slack
@@ -25,9 +25,9 @@ async def slackCommandHandler(slackbot, msg):
     if tokens.pop(0).lower() in ["@hobot", "<@" + slackbot.my_uid.lower() + ">"]:
         command = tokens.pop(0).lower()
         args = tokens
-        if command in commands_user:
+        if command in COMMANDS_USER:
             return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
-        elif command in commands_admin:
+        elif command in COMMANDS_ADMIN:
             if msg.user_id in slackbot.admins:
                 return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
             else:
@@ -53,7 +53,7 @@ dev: due to the way the plugin reloader works, any changes to files unrelated wi
 package loader (__init__.py) will require a bot restart for any changes to be reflected
 """
 
-commands_user = [
+COMMANDS_USER = [
     "help",
     "whereami",
     "whoami",
@@ -63,7 +63,7 @@ commands_user = [
     "identify",
 ]
 
-commands_admin = [
+COMMANDS_ADMIN = [
     "hangouts",
     "listsyncs",
     "syncto",
@@ -80,14 +80,14 @@ async def help(slackbot, msg, args):
     """list help for all available commands"""
     lines = ["*user commands:*\n"]
 
-    for command in commands_user:
+    for command in COMMANDS_USER:
         lines.append("* *{}*: {}\n".format(
             command,
             getattr(sys.modules[__name__], command).__doc__))
 
     if msg.user_id in slackbot.admins:
         lines.append("*admin commands:*\n")
-        for command in commands_admin:
+        for command in COMMANDS_ADMIN:
             lines.append("* *{}*: {}\n".format(
                 command,
                 getattr(sys.modules[__name__], command).__doc__))
@@ -259,7 +259,7 @@ async def listsyncs(slackbot, msg, args):
             sync.channelid,
             hangoutname,
             sync.hangoutid,
-            sync.getPrintableOptions()
+            sync.get_printable_options()
             )
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(

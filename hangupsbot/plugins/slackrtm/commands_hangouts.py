@@ -158,7 +158,7 @@ async def slack_listsyncs(bot, event, *args):
                 sync.channelid,
                 hangoutname,
                 sync.hangoutid,
-                sync.getPrintableOptions()))
+                sync.get_printable_options()))
 
     await bot.coro_send_message(event.conv_id, "\n".join(lines))
 
