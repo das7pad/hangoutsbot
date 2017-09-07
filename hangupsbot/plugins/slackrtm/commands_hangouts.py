@@ -77,9 +77,8 @@ async def slack_channels(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -118,9 +117,8 @@ async def slack_users(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -154,9 +152,9 @@ async def slack_listsyncs(bot, event, *args):
     for slackrtm in _slackrtms:
         for sync in slackrtm.syncs:
             hangoutname = 'unknown'
-            for c in bot.list_conversations():
-                if c.id_ == sync.hangoutid:
-                    hangoutname = bot.conversations.get_name(c)
+            for conv in bot.list_conversations():
+                if conv.id_ == sync.hangoutid:
+                    hangoutname = bot.conversations.get_name(conv)
                     break
             lines.append("{} : {} ({})\n  {} ({})\n  {}".format(
                 slackrtm.name,
@@ -184,9 +182,8 @@ async def slack_syncto(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -220,9 +217,8 @@ async def slack_disconnect(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -256,9 +252,8 @@ async def slack_setsyncjoinmsgs(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -304,9 +299,8 @@ async def slack_setimageupload(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -353,9 +347,8 @@ async def slack_sethotag(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -405,9 +398,8 @@ async def slack_setslacktag(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -456,9 +448,8 @@ async def slack_showslackrealnames(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
@@ -504,9 +495,8 @@ async def slack_showhorealnames(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for s in _slackrtms:
-        if s.name == slackname:
-            slackrtm = s
+    for slackrtm in _slackrtms:
+        if slackrtm.name == slackname:
             break
     if not slackrtm:
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))

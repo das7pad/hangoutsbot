@@ -81,11 +81,11 @@ def _initialise(bot):
     slack_sink = bot.get_config_option('slackrtm')
     threads = []
     if isinstance(slack_sink, list):
-        for sinkConfig in slack_sink:
+        for sink_config in slack_sink:
             # start up slack listener in a separate thread
-            t = SlackRTMThread(bot, sinkConfig)
-            plugins.start_asyncio_task(t.run())
-            threads.append(t)
+            thread = SlackRTMThread(bot, sink_config)
+            plugins.start_asyncio_task(thread.run())
+            threads.append(thread)
     logger.info("%d sink thread(s) started", len(threads))
 
     plugins.register_handler(_handle_membership_change, type="membership")
@@ -138,8 +138,8 @@ def _handle_membership_change(bot, event, command):
     for slackrtm in _slackrtms:
         try:
             slackrtm.handle_ho_membership(event)
-        except Exception as e:
-            logger.exception('_handle_membership_change threw: %s', str(e))
+        except Exception as err:
+            logger.exception('_handle_membership_change threw: %s', repr(err))
 
 
 @asyncio.coroutine
@@ -149,5 +149,5 @@ def _handle_rename(bot, event, command):
     for slackrtm in _slackrtms:
         try:
             slackrtm.handle_ho_rename(event)
-        except Exception as e:
-            logger.exception('_handle_rename threw: %s', str(e))
+        except Exception as err:
+            logger.exception('_handle_rename threw: %s', repr(err))

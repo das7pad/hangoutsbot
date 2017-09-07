@@ -108,10 +108,10 @@ async def whereami(slackbot, msg, args):
 async def whoami(slackbot, msg, args):
     """tells you your own user id"""
 
-    userID = await slackbot.get_slack1on1(msg.user_id)
+    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
-        channel=userID,
+        channel=user_1on1,
         text=u'@%s: your userid is %s' % (msg.username, msg.user_id),
         as_user=True,
         link_names=True )
@@ -138,10 +138,10 @@ async def whois(slackbot, msg, args):
         else:
             message = u'@%s: the user id of _%s_ is %s' % (msg.username, slackbot.get_username(user), user)
 
-    userID = await slackbot.get_slack1on1(msg.user_id)
+    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
-        channel=userID,
+        channel=user_1on1,
         text=message,
         as_user=True,
         link_names=True )
@@ -150,12 +150,12 @@ async def admins(slackbot, msg, args):
     """lists the slack users with admin privileges"""
 
     message = '@%s: my admins are:\n' % msg.username
-    for a in slackbot.admins:
-        message += '@%s: _%s_\n' % (slackbot.get_username(a), a)
-    userID = await slackbot.get_slack1on1(msg.user_id)
+    for admin in slackbot.admins:
+        message += '@%s: _%s_\n' % (slackbot.get_username(admin), admin)
+    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
-        channel=userID,
+        channel=user_1on1,
         text=message,
         as_user=True,
         link_names=True )
@@ -167,18 +167,17 @@ async def hangoutmembers(slackbot, msg, args):
     for sync in slackbot.get_syncs(channelid=msg.channel):
         hangoutname = 'unknown'
         conv = None
-        for c in slackbot.bot.list_conversations():
-            if c.id_ == sync.hangoutid:
-                conv = c
-                hangoutname = slackbot.bot.conversations.get_name(c)
+        for conv in slackbot.bot.list_conversations():
+            if conv.id_ == sync.hangoutid:
+                hangoutname = slackbot.bot.conversations.get_name(conv)
                 break
         message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync.hangoutid)
-        for u in conv.users:
-            message += ' + <https://plus.google.com/%s|%s>\n' % (u.id_.gaia_id, u.full_name)
-    userID = await slackbot.get_slack1on1(msg.user_id)
+        for user in conv.users:
+            message += ' + <https://plus.google.com/%s|%s>\n' % (user.id_.gaia_id, user.full_name)
+    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
-        channel=userID,
+        channel=user_1on1,
         text=message,
         as_user=True,
         link_names=True )
@@ -231,12 +230,12 @@ async def hangouts(slackbot, msg, args):
     """admin-only: lists all connected hangouts, suggested: use only in direct message"""
 
     message = '@%s: list of active hangouts:\n' % msg.username
-    for c in slackbot.bot.list_conversations():
-        message += '*%s:* _%s_\n' % (slackbot.bot.conversations.get_name(c), c.id_)
-    userID = await slackbot.get_slack1on1(msg.user_id)
+    for conv in slackbot.bot.list_conversations():
+        message += '*%s:* _%s_\n' % (slackbot.bot.conversations.get_name(conv), conv.id_)
+    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
-        channel=userID,
+        channel=user_1on1,
         text=message,
         as_user=True,
         link_names=True)
@@ -247,9 +246,9 @@ async def listsyncs(slackbot, msg, args):
     message = '@%s: list of current sync connections with this slack team:\n' % msg.username
     for sync in slackbot.syncs:
         hangoutname = 'unknown'
-        for c in slackbot.bot.list_conversations():
-            if c.id_ == sync.hangoutid:
-                hangoutname = slackbot.bot.conversations.get_name(c)
+        for conv in slackbot.bot.list_conversations():
+            if conv.id_ == sync.hangoutid:
+                hangoutname = slackbot.bot.conversations.get_name(conv)
                 break
         message += '*%s (%s) : %s (%s)* _%s_\n' % (
             slackbot.get_channelgroupname(sync.channelid, 'unknown'),
@@ -258,10 +257,10 @@ async def listsyncs(slackbot, msg, args):
             sync.hangoutid,
             sync.getPrintableOptions()
             )
-    userID = await slackbot.get_slack1on1(msg.user_id)
+    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.api_call(
         'chat.postMessage',
-        channel=userID,
+        channel=user_1on1,
         text=message,
         as_user=True,
         link_names=True)
@@ -284,9 +283,9 @@ async def syncto(slackbot, msg, args):
     if len(args) > 1:
         shortname = ' '.join(args[1:])
     hangoutname = None
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -331,9 +330,9 @@ async def disconnect(slackbot, msg, args):
 
     hangoutid = args[0]
     hangoutname = None
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -370,9 +369,9 @@ async def setsyncjoinmsgs(slackbot, msg, args):
 
     hangoutid = args[0]
     enable = args[1]
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -431,9 +430,9 @@ async def sethotag(slackbot, msg, args):
 
     hangoutid = args[0]
     hotag = ' '.join(args[1:])
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -491,9 +490,9 @@ async def setimageupload(slackbot, msg, args):
 
     hangoutid = args[0]
     upload = args[1]
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -550,9 +549,9 @@ async def setslacktag(slackbot, msg, args):
 
     hangoutid = args[0]
     slacktag = ' '.join(args[1:])
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -609,9 +608,9 @@ async def showslackrealnames(slackbot, msg, args):
 
     hangoutid = args[0]
     realnames = args[1]
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -668,9 +667,9 @@ async def showhorealnames(slackbot, msg, args):
 
     hangoutid = args[0]
     realnames = args[1]
-    for c in slackbot.bot.list_conversations():
-        if c.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(c)
+    for conv in slackbot.bot.list_conversations():
+        if conv.id_ == hangoutid:
+            hangoutname = slackbot.bot.conversations.get_name(conv)
             break
     if not hangoutname:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
