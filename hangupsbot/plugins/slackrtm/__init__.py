@@ -67,7 +67,7 @@ from .commands_hangouts import (
     slack_identify,
 )
 from .core import SlackRTMThread
-from .utils import _slackrtms
+from .utils import SLACKRTMS
 
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ def _slackrtm_conversations_migrate_20170319(bot):
 
 @asyncio.coroutine
 def _handle_membership_change(bot, event, command):
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         try:
             slackrtm.handle_ho_membership(event)
         except Exception as err:
@@ -136,9 +136,9 @@ def _handle_membership_change(bot, event, command):
 
 @asyncio.coroutine
 def _handle_rename(bot, event, command):
-    if not _slackrtms:
+    if not SLACKRTMS:
         return
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         try:
             slackrtm.handle_ho_rename(event)
         except Exception as err:

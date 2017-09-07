@@ -30,7 +30,7 @@ from .parsers import (
     hangups_markdown_to_slack,
 )
 from .utils import (
-    _slackrtms,
+    SLACKRTMS,
     _slackrtm_conversations_set,
     _slackrtm_conversations_get,
 )
@@ -818,11 +818,11 @@ class SlackRTMThread():
         logger.debug('SlackRTMThread.run()')
 
         try:
-            if self._listener and self._listener in _slackrtms:
+            if self._listener and self._listener in SLACKRTMS:
                 self._listener.close()
-                _slackrtms.remove(self._listener)
+                SLACKRTMS.remove(self._listener)
             self._listener = SlackRTM(self._bot, self._config)
-            _slackrtms.append(self._listener)
+            SLACKRTMS.append(self._listener)
             await self._listener.start()
         except asyncio.CancelledError:
             # close, nothing to do
@@ -840,6 +840,6 @@ class SlackRTMThread():
         return
 
     def __del__(self):
-        if self._listener and self._listener in _slackrtms:
+        if self._listener and self._listener in SLACKRTMS:
             self._listener.close()
-            _slackrtms.remove(self._listener)
+            SLACKRTMS.remove(self._listener)

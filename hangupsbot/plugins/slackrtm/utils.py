@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-_slackrtms = []
+SLACKRTMS = []
 
 def _slackrtm_conversations_set(bot, team_name, synced_hangouts):
     bot.memory.set_by_path(["slackrtm", team_name, "synced_conversations"],

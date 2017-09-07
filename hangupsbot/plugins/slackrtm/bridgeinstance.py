@@ -9,7 +9,7 @@ from webbridge import (
 )
 
 from .utils import (
-    _slackrtms,
+    SLACKRTMS,
     _slackrtm_conversations_get,
 )
 
@@ -76,9 +76,9 @@ class BridgeInstance(WebFramework):
         since the config is further separated by hangouts conv_id for relay, we also supply extra info
             to the handler, so it can decide for itself whether/where the message should be forwarded"""
 
-        logger.info("{}:{}:_send_to_external_chat, slackrtms = {}".format(self.plugin_name, self.uid, len(_slackrtms)))
+        logger.info("{}:{}:_send_to_external_chat, slackrtms = {}".format(self.plugin_name, self.uid, len(SLACKRTMS)))
 
-        for slackrtm in _slackrtms:
+        for slackrtm in SLACKRTMS:
             try:
                 # identify the correct thread, then send the message
                 if slackrtm.name == team_name:

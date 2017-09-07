@@ -5,7 +5,7 @@ from .exceptions import (
     NotSyncingError,
 )
 from .utils import (
-    _slackrtms,
+    SLACKRTMS,
     _slackrtm_link_profiles,
 )
 
@@ -20,7 +20,7 @@ async def slacks(bot, event, *args):
 
     lines = ["**Configured Slack teams:**"]
 
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         lines.append("* {}".format(slackrtm.name))
 
     await bot.coro_send_message(event.conv_id, "\n".join(lines))
@@ -42,7 +42,7 @@ async def slack_identify(bot, event, *args):
 
     slack_teamname = parameters.pop(0)
     slackrtm = False
-    for _slackrtm in _slackrtms:
+    for _slackrtm in SLACKRTMS:
         if _slackrtm.name == slack_teamname:
             slackrtm = _slackrtm
     if not slackrtm:
@@ -77,7 +77,7 @@ async def slack_channels(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -113,7 +113,7 @@ async def slack_users(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -145,7 +145,7 @@ async def slack_listsyncs(bot, event, *args):
 
     lines = ["**Currently synced:**"]
 
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         for sync in slackrtm.syncs:
             hangoutname = 'unknown'
             for conv in bot.list_conversations():
@@ -178,7 +178,7 @@ async def slack_syncto(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -213,7 +213,7 @@ async def slack_disconnect(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -248,7 +248,7 @@ async def slack_setsyncjoinmsgs(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -295,7 +295,7 @@ async def slack_setimageupload(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -343,7 +343,7 @@ async def slack_sethotag(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -394,7 +394,7 @@ async def slack_setslacktag(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -444,7 +444,7 @@ async def slack_showslackrealnames(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
@@ -491,7 +491,7 @@ async def slack_showhorealnames(bot, event, *args):
 
     slackname = args[0]
     slackrtm = None
-    for slackrtm in _slackrtms:
+    for slackrtm in SLACKRTMS:
         if slackrtm.name == slackname:
             break
     if not slackrtm:
