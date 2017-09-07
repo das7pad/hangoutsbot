@@ -91,36 +91,38 @@ def _initialise(bot):
     plugins.register_handler(_handle_membership_change, type="membership")
     plugins.register_handler(_handle_rename, type="rename")
 
-    plugins.register_admin_command([ "slacks",
-                                     "slack_channels",
-                                     "slack_listsyncs",
-                                     "slack_syncto",
-                                     "slack_disconnect",
-                                     "slack_setsyncjoinmsgs",
-                                     "slack_setimageupload",
-                                     "slack_sethotag",
-                                     "slack_users",
-                                     "slack_setslacktag",
-                                     "slack_showslackrealnames",
-                                     "slack_showhorealnames" ])
+    plugins.register_admin_command([
+        "slacks",
+        "slack_channels",
+        "slack_listsyncs",
+        "slack_syncto",
+        "slack_disconnect",
+        "slack_setsyncjoinmsgs",
+        "slack_setimageupload",
+        "slack_sethotag",
+        "slack_users",
+        "slack_setslacktag",
+        "slack_showslackrealnames",
+        "slack_showhorealnames",
+    ])
 
-    plugins.register_user_command([ "slack_identify" ])
+    plugins.register_user_command(["slack_identify"])
 
 def _slackrtm_conversations_migrate_20170319(bot):
     memory_root_key = "slackrtm"
-    if bot.memory.exists([ memory_root_key ]):
+    if bot.memory.exists([memory_root_key]):
         return
 
     configurations = bot.get_config_option('slackrtm') or []
     migrated_configurations = {}
     for configuration in configurations:
         team_name = configuration["name"]
-        broken_path = [ 'user_data', team_name ]
+        broken_path = ['user_data', team_name]
         if bot.memory.exists(broken_path):
             legacy_team_memory = dict(bot.memory.get_by_path(broken_path))
-            migrated_configurations[ team_name ] = legacy_team_memory
+            migrated_configurations[team_name] = legacy_team_memory
 
-    bot.memory.set_by_path([ memory_root_key ], migrated_configurations)
+    bot.memory.set_by_path([memory_root_key], migrated_configurations)
     bot.memory.save()
 
 @asyncio.coroutine

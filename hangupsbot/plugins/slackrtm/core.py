@@ -79,15 +79,15 @@ class SlackRTMSync(object):
         horealnames = 'real'
         if 'showhorealnames' in sync_dict:
             horealnames = sync_dict['showhorealnames']
-        return SlackRTMSync( hangoutsbot,
-                             sync_dict['channelid'],
-                             sync_dict['hangoutid'],
-                             sync_dict['hotag'],
-                             slacktag,
-                             sync_joins,
-                             image_upload,
-                             slackrealnames,
-                             horealnames)
+        return SlackRTMSync(hangoutsbot,
+                            sync_dict['channelid'],
+                            sync_dict['hangoutid'],
+                            sync_dict['hotag'],
+                            slacktag,
+                            sync_joins,
+                            image_upload,
+                            slackrealnames,
+                            horealnames)
 
     def toDict(self):
         return {
@@ -360,7 +360,7 @@ class SlackRTM(object):
 
         if physical_extension == filename_extension:
             pass
-        elif filename_extension == ".jpe" and physical_extension in [ ".jpg", ".jpeg", ".jpe", ".jif", ".jfif" ]:
+        elif filename_extension == ".jpe" and physical_extension in [".jpg", ".jpeg", ".jpe", ".jif", ".jfif"]:
             # account for mimetypes idiosyncrancy to return jpe for valid jpeg
             pass
         else:
@@ -374,11 +374,11 @@ class SlackRTM(object):
         yield from sync._bridgeinstance._send_to_internal_chat(
             sync.hangoutid,
             "shared media from slack",
-            {   "sync": sync,
-                "source_user": username,
-                "source_uid": userid,
-                "source_title": channel_name },
-            image_id=image_id )
+            {"sync": sync,
+             "source_user": username,
+             "source_uid": userid,
+             "source_title": channel_name},
+            image_id=image_id)
 
     def config_syncto(self, channel, hangoutid, shortname):
         for sync in self.syncs:
@@ -621,7 +621,7 @@ class SlackRTM(object):
                                 sync,
                                 username,
                                 msg.user_id,
-                                channel_name ))
+                                channel_name))
 
                         self.lastimg = os.path.basename(msg.file_attachment)
                     else:
@@ -632,19 +632,19 @@ class SlackRTM(object):
                     sync._bridgeinstance._send_to_internal_chat(
                         sync.hangoutid,
                         message,
-                        {   "sync": sync,
-                            "source_user": username,
-                            "source_uid": msg.user_id,
-                            "source_gid": sync.channelid,
-                            "source_title": channel_name }))
+                        {"sync": sync,
+                         "source_user": username,
+                         "source_uid": msg.user_id,
+                         "source_gid": sync.channelid,
+                         "source_title": channel_name}))
 
     async def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url, fragment):
         await self.api_call('chat.postMessage',
-                      channel = sync.channelid,
-                      text = "{} {}".format(image_link, fragment),
-                      username = full_name,
-                      link_names = True,
-                      icon_url = photo_url)
+                            channel=sync.channelid,
+                            text="{} {}".format(image_link, fragment),
+                            username=full_name,
+                            link_names=True,
+                            icon_url=photo_url)
 
     async def handle_ho_message(self, event, conv_id, channel_id):
         user = event.passthru["original_request"]["user"]
@@ -670,7 +670,7 @@ class SlackRTM(object):
             active_syncs.append(sync)
 
         for sync in active_syncs:
-            bridge_user = sync._bridgeinstance._get_user_details(user, { "event": event })
+            bridge_user = sync._bridgeinstance._get_user_details(user, {"event": event})
 
             extras = []
             if sync.showhorealnames == "nick":
@@ -710,8 +710,8 @@ class SlackRTM(object):
                 message = "shared media: {}".format(media_link)
 
             elif isinstance(event, FakeEvent):
-                if( "image_id" in event.passthru["original_request"]
-                        and event.passthru["original_request"]["image_id"] ):
+                if ("image_id" in event.passthru["original_request"]
+                        and event.passthru["original_request"]["image_id"]):
                     # without media link, create a deferred post until a public media link becomes available
                     image_id = event.passthru["original_request"]["image_id"]
                     self.logger.info("wait for media link: {}".format(image_id))
@@ -724,11 +724,11 @@ class SlackRTM(object):
                             display_name,
                             True,
                             bridge_user["photo_url"],
-                            slackrtm_fragment ))
+                            slackrtm_fragment))
 
-            elif( hasattr(event, "conv_event")
-                    and hasattr(event.conv_event, "attachments")
-                    and len(event.conv_event.attachments) == 1 ):
+            elif (hasattr(event, "conv_event")
+                  and hasattr(event.conv_event, "attachments")
+                  and len(event.conv_event.attachments) == 1):
                 # catch actual events with media link  but didn' go through the passthru
                 media_link = event.conv_event.attachments[0]
                 self.logger.info("media link in original event: {}".format(media_link))
@@ -741,11 +741,11 @@ class SlackRTM(object):
 
             self.logger.info("message {}: {}".format(sync.channelid, message))
             await self.api_call('chat.postMessage',
-                          channel = sync.channelid,
-                          text = message,
-                          username = display_name,
-                          link_names = True,
-                          icon_url = bridge_user["photo_url"])
+                                channel=sync.channelid,
+                                text=message,
+                                username=display_name,
+                                link_names=True,
+                                icon_url=bridge_user["photo_url"])
 
     async def handle_ho_membership(self, event):
         # Generate list of added or removed users
@@ -775,10 +775,10 @@ class SlackRTM(object):
             message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
             await self.api_call('chat.postMessage',
-                          channel=sync.channelid,
-                          text=message,
-                          as_user=True,
-                          link_names=True)
+                                channel=sync.channelid,
+                                text=message,
+                                as_user=True,
+                                link_names=True)
 
     async def handle_ho_rename(self, event):
         name = self.bot.conversations.get_name(event.conv)
@@ -792,10 +792,10 @@ class SlackRTM(object):
             message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
             await self.api_call('chat.postMessage',
-                          channel=sync.channelid,
-                          text=message,
-                          as_user=True,
-                          link_names=True)
+                                channel=sync.channelid,
+                                text=message,
+                                as_user=True,
+                                link_names=True)
 
     def close(self):
         self.logger.debug("closing all bridge instances")

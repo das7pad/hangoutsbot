@@ -18,7 +18,7 @@ async def slacks(bot, event, *args):
 
        usage: /bot slacks"""
 
-    lines = [ "**Configured Slack teams:**" ]
+    lines = ["**Configured Slack teams:**"]
 
     for slackrtm in _slackrtms:
         lines.append("* {}".format(slackrtm.name))
@@ -52,10 +52,10 @@ async def slack_identify(bot, event, *args):
     usersearch = " ".join(parameters).strip()
     slack_user = False
     for _slackuid, _slackuser in slackrtm.userinfos.items():
-        if( _slackuser["name"] == usersearch
+        if (_slackuser["name"] == usersearch
                 or _slackuid == usersearch
-                or( _slackuser["real_name"]
-                        and _slackuser["real_name"].lower() == usersearch.lower() )):
+                or (_slackuser["real_name"]
+                    and _slackuser["real_name"].lower() == usersearch.lower())):
             slack_user = _slackuser
             break
     if not slack_user:
@@ -126,10 +126,10 @@ async def slack_users(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
-    lines = [ "**Slack users in channel {}**:".format(channelname) ]
+    lines = ["**Slack users in channel {}**:".format(channelname)]
 
     users = await slackrtm.get_channel_users(channelid)
     for username, realname in sorted(users.items()):
@@ -143,7 +143,7 @@ async def slack_listsyncs(bot, event, *args):
 
     usage: /bot slack_listsyncs"""
 
-    lines = [ "**Currently synced:**" ]
+    lines = ["**Currently synced:**"]
 
     for slackrtm in _slackrtms:
         for sync in slackrtm.syncs:
@@ -158,7 +158,7 @@ async def slack_listsyncs(bot, event, *args):
                 sync.channelid,
                 hangoutname,
                 sync.hangoutid,
-                sync.getPrintableOptions()) )
+                sync.getPrintableOptions()))
 
     await bot.coro_send_message(event.conv_id, "\n".join(lines))
 
@@ -190,7 +190,7 @@ async def slack_syncto(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     try:
@@ -225,7 +225,7 @@ async def slack_disconnect(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     try:
@@ -260,7 +260,7 @@ async def slack_setsyncjoinmsgs(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     flag = args[2]
@@ -307,7 +307,7 @@ async def slack_setimageupload(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     flag = args[2]
@@ -355,7 +355,7 @@ async def slack_sethotag(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     if len(args) == 3:
@@ -406,7 +406,7 @@ async def slack_setslacktag(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     if len(args) == 3:
@@ -456,7 +456,7 @@ async def slack_showslackrealnames(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     flag = args[2]
@@ -503,7 +503,7 @@ async def slack_showhorealnames(bot, event, *args):
     if not channelname:
         await bot.coro_send_message(
             event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname) )
+            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
         return
 
     flag = args[2]

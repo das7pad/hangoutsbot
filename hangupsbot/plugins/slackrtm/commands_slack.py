@@ -22,7 +22,7 @@ async def slackCommandHandler(slackbot, msg):
     if len(tokens) < 2:
         return
 
-    if tokens.pop(0).lower() in [ "@hobot", "<@" + slackbot.my_uid.lower() + ">" ]:
+    if tokens.pop(0).lower() in ["@hobot", "<@" + slackbot.my_uid.lower() + ">"]:
         command = tokens.pop(0).lower()
         args = tokens
         if command in commands_user:
@@ -33,17 +33,17 @@ async def slackCommandHandler(slackbot, msg):
             else:
                 await slackbot.api_call(
                     'chat.postMessage',
-                    channel = msg.channel,
-                    text = "@{}: {} is an admin-only command".format(msg.username, command),
-                    as_user = True,
-                    link_names = True )
+                    channel=msg.channel,
+                    text="@{}: {} is an admin-only command".format(msg.username, command),
+                    as_user=True,
+                    link_names=True)
         else:
             await slackbot.api_call(
                 'chat.postMessage',
-                channel = msg.channel,
-                text = "@{}: {} is not recognised".format(msg.username, command),
-                as_user = True,
-                link_names = True )
+                channel=msg.channel,
+                text="@{}: {} is not recognised".format(msg.username, command),
+                as_user=True,
+                link_names=True)
         raise IgnoreMessage()
 
 """
@@ -53,24 +53,28 @@ dev: due to the way the plugin reloader works, any changes to files unrelated wi
 package loader (__init__.py) will require a bot restart for any changes to be reflected
 """
 
-commands_user = [ "help",
-                  "whereami",
-                  "whoami",
-                  "whois",
-                  "admins",
-                  "hangoutmembers",
-                  "identify" ]
+commands_user = [
+    "help",
+    "whereami",
+    "whoami",
+    "whois",
+    "admins",
+    "hangoutmembers",
+    "identify",
+]
 
-commands_admin = [ "hangouts",
-                   "listsyncs",
-                   "syncto",
-                   "disconnect",
-                   "setsyncjoinmsgs",
-                   "sethotag",
-                   "setimageupload",
-                   "setslacktag",
-                   "showslackrealnames",
-                   "showhorealnames" ]
+commands_admin = [
+    "hangouts",
+    "listsyncs",
+    "syncto",
+    "disconnect",
+    "setsyncjoinmsgs",
+    "sethotag",
+    "setimageupload",
+    "setslacktag",
+    "showslackrealnames",
+    "showhorealnames",
+]
 
 async def help(slackbot, msg, args):
     """list help for all available commands"""
@@ -90,10 +94,10 @@ async def help(slackbot, msg, args):
 
     await slackbot.api_call(
         'chat.postMessage',
-        channel = await slackbot.get_slack1on1(msg.user_id),
-        text = "\n".join(lines),
-        as_user = True,
-        link_names = True )
+        channel=await slackbot.get_slack1on1(msg.user_id),
+        text="\n".join(lines),
+        as_user=True,
+        link_names=True)
 
 async def whereami(slackbot, msg, args):
     """tells you the current channel/group id"""
@@ -103,7 +107,7 @@ async def whereami(slackbot, msg, args):
         channel=msg.channel,
         text=u'@%s: you are in channel %s' % (msg.username, msg.channel),
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def whoami(slackbot, msg, args):
     """tells you your own user id"""
@@ -114,7 +118,7 @@ async def whoami(slackbot, msg, args):
         channel=user_1on1,
         text=u'@%s: your userid is %s' % (msg.username, msg.user_id),
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def whois(slackbot, msg, args):
     """whois @username tells you the user id of @username"""
@@ -144,7 +148,7 @@ async def whois(slackbot, msg, args):
         channel=user_1on1,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def admins(slackbot, msg, args):
     """lists the slack users with admin privileges"""
@@ -158,7 +162,7 @@ async def admins(slackbot, msg, args):
         channel=user_1on1,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def hangoutmembers(slackbot, msg, args):
     """lists the users of the hangouts synced to this channel"""
@@ -180,7 +184,7 @@ async def hangoutmembers(slackbot, msg, args):
         channel=user_1on1,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def identify(slackbot, msg, args):
     """link your hangouts user"""
@@ -191,10 +195,10 @@ async def identify(slackbot, msg, args):
     if len(parameters) < 1:
         await slackbot.api_call(
             'chat.postMessage',
-            channel = msg.channel,
-            text = "supply hangouts user id",
-            as_user = True,
-            link_names = True )
+            channel=msg.channel,
+            text="supply hangouts user id",
+            as_user=True,
+            link_names=True)
         return
 
     remove = False
@@ -207,10 +211,10 @@ async def identify(slackbot, msg, args):
     if hangups_user.is_default:
         await slackbot.api_call(
             'chat.postMessage',
-            channel = msg.channel,
-            text = "{} is not a valid hangouts user id".format(_hangouts_uid),
-            as_user = True,
-            link_names = True )
+            channel=msg.channel,
+            text="{} is not a valid hangouts user id".format(_hangouts_uid),
+            as_user=True,
+            link_names=True)
         return
 
     hangouts_uid = hangups_user.id_.chat_id
@@ -221,10 +225,10 @@ async def identify(slackbot, msg, args):
 
     await slackbot.api_call(
         'chat.postMessage',
-        channel = msg.channel,
-        text = message,
-        as_user = True,
-        link_names = True )
+        channel=msg.channel,
+        text=message,
+        as_user=True,
+        link_names=True)
 
 async def hangouts(slackbot, msg, args):
     """admin-only: lists all connected hangouts, suggested: use only in direct message"""
@@ -294,7 +298,7 @@ async def syncto(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     if not shortname:
@@ -315,7 +319,7 @@ async def syncto(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def disconnect(slackbot, msg, args):
     """admin-only: stop syncing messages from current channel/group to specified hangout, suggested: use only in direct message
@@ -354,7 +358,7 @@ async def disconnect(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def setsyncjoinmsgs(slackbot, msg, args):
     """admin-only: toggle messages about membership changes in synced hangout conversation, default: enabled
@@ -408,7 +412,7 @@ async def setsyncjoinmsgs(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def sethotag(slackbot, msg, args):
     """admin-only: sets an alternate short title/tag to show on hangouts message (instead of conversation title)
@@ -441,7 +445,7 @@ async def sethotag(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     if msg.channel.startswith('D'):
@@ -470,7 +474,7 @@ async def sethotag(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def setimageupload(slackbot, msg, args):
     """admin-only: toggle uploading of shared images to hangouts, default: enabled
@@ -485,7 +489,7 @@ async def setimageupload(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     hangoutid = args[0]
@@ -501,7 +505,7 @@ async def setimageupload(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     if msg.channel.startswith('D'):
@@ -520,7 +524,7 @@ async def setimageupload(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     try:
@@ -534,7 +538,7 @@ async def setimageupload(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def setslacktag(slackbot, msg, args):
     """admin-only: sets an alternate short title/tag to show for slack messages relayed to hangouts (instead of slack team name)
@@ -560,7 +564,7 @@ async def setslacktag(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     if msg.channel.startswith('D'):
@@ -588,7 +592,7 @@ async def setslacktag(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def showslackrealnames(slackbot, msg, args):
     """admin-only: toggle display of real names or usernames in hangouts, default: usernames
@@ -603,7 +607,7 @@ async def showslackrealnames(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     hangoutid = args[0]
@@ -619,7 +623,7 @@ async def showslackrealnames(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     if msg.channel.startswith('D'):
@@ -647,7 +651,7 @@ async def showslackrealnames(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)
 
 async def showhorealnames(slackbot, msg, args):
     """admin-only: show real names and/or usernames for hangouts messages in slack, default: real
@@ -662,7 +666,7 @@ async def showhorealnames(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     hangoutid = args[0]
@@ -678,7 +682,7 @@ async def showhorealnames(slackbot, msg, args):
             channel=msg.channel,
             text=message,
             as_user=True,
-            link_names=True )
+            link_names=True)
         return
 
     if msg.channel.startswith('D'):
@@ -702,4 +706,4 @@ async def showhorealnames(slackbot, msg, args):
         channel=msg.channel,
         text=message,
         as_user=True,
-        link_names=True )
+        link_names=True)

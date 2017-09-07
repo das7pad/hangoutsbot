@@ -20,7 +20,7 @@ def _slackrtm_conversations_get(bot, team_name):
 def _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid, base_key, remove):
     memory_path = ["slackrtm", slack_teamname, "identities"]
 
-    mapped_identities = { "slack": {}, "hangouts": {} }
+    mapped_identities = {"slack": {}, "hangouts": {}}
     if hangoutsbot.memory.exists(memory_path):
         mapped_identities = hangoutsbot.memory.get_by_path(memory_path)
 
@@ -37,9 +37,9 @@ def _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid
 
     if uid1 in mapped_identities[base_key]:
         existing_uid2 = mapped_identities[base_key][uid1]
-        if( existing_uid2 != uid2
-            and ( existing_uid2 in mapped_identities[link_key]
-                  and mapped_identities[link_key][existing_uid2] == uid1 )):
+        if (existing_uid2 != uid2 and
+                (existing_uid2 in mapped_identities[link_key]
+                 and mapped_identities[link_key][existing_uid2] == uid1)):
             return "profile already synced to another user, please contact bot administrator"
 
         if not remove:
@@ -55,8 +55,8 @@ def _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid
         logger.info("{} {} to {} {}, slack team = {}".format(base_key, uid1, link_key, uid2, slack_teamname))
 
         # a user must be mapped on slack->ho AND ho->slack to be valid
-        if( uid2 not in mapped_identities[link_key]
-                or mapped_identities[link_key][uid2] != uid1 ):
+        if (uid2 not in mapped_identities[link_key]
+                or mapped_identities[link_key][uid2] != uid1):
             message = "use the equivalent identify command in {} to complete the mapping".format(link_key)
         else:
             message = "mapping is complete"
