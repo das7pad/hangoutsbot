@@ -113,12 +113,18 @@ class SlackRTMSync(object):
 
 
 class SlackRTM(object):
+    """hander for a single slack team
+
+    Args:
+        bot: HangupsBot instance
+        sink_config: dict, basic configuration including the api `key`, a
+            `name` for the team and `admins` a list of slack user ids
+    """
     _session = None
     logger = logger
 
-    def __init__(self, sink_config, bot, loop):
+    def __init__(self, bot, sink_config):
         self.bot = bot
-        self.loop = loop
         self.config = sink_config
         self.apikey = self.config['key']
         self.lastimg = ''
@@ -612,8 +618,7 @@ class SlackRTM(object):
                 if msg.file_attachment:
                     if sync.image_upload:
 
-                        self.loop.call_soon_threadsafe(
-                            asyncio.ensure_future,
+                        asyncio.ensure_future(
                             self.upload_image(
                                 msg.file_attachment,
                                 sync,
@@ -626,8 +631,7 @@ class SlackRTM(object):
                         # we should not upload the images, so we have to send the url instead
                         message += msg.file_attachment
 
-                self.loop.call_soon_threadsafe(
-                    asyncio.ensure_future,
+                asyncio.ensure_future(
                     sync._bridgeinstance._send_to_internal_chat(
                         sync.hangoutid,
                         message,
@@ -715,8 +719,7 @@ class SlackRTM(object):
                     image_id = event.passthru["original_request"]["image_id"]
                     self.logger.info("wait for media link: {}".format(image_id))
 
-                    loop = asyncio.get_event_loop()
-                    task = loop.create_task(
+                    asyncio.ensure_future(
                         self.bot._handlers.image_uri_from(
                             image_id,
                             self._send_deferred_media,
@@ -810,9 +813,8 @@ class SlackRTM(object):
 
 class SlackRTMThread():
     _listener = None
-    def __init__(self, bot, loop, config):
+    def __init__(self, bot, config):
         self._bot = bot
-        self._loop = loop
         self._config = config
 
     async def run(self):
@@ -822,7 +824,7 @@ class SlackRTMThread():
             if self._listener and self._listener in _slackrtms:
                 self._listener.close()
                 _slackrtms.remove(self._listener)
-            self._listener = SlackRTM(self._config, self._bot, self._loop)
+            self._listener = SlackRTM(self._bot, self._config)
             _slackrtms.append(self._listener)
             await self._listener.start()
         except asyncio.CancelledError:

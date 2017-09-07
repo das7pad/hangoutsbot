@@ -78,14 +78,12 @@ def _initialise(bot):
     #   previously, this plugin wrote into "user_data" key to store its internal team settings
     _slackrtm_conversations_migrate_20170319(bot)
 
-    # Start and asyncio event loop
-    loop = asyncio.get_event_loop()
     slack_sink = bot.get_config_option('slackrtm')
     threads = []
     if isinstance(slack_sink, list):
         for sinkConfig in slack_sink:
             # start up slack listener in a separate thread
-            t = SlackRTMThread(bot, loop, sinkConfig)
+            t = SlackRTMThread(bot, sinkConfig)
             plugins.start_asyncio_task(t.run())
             threads.append(t)
     logger.info("%d sink thread(s) started", len(threads))
