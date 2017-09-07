@@ -669,7 +669,7 @@ async def command_restrict_user(tg_bot, msg, *args):
         ['telesync', 'chat_data', msg.chat_id, 'user'])
 
     if args[0].lower() == 'all':
-        target_users = chat_users.copy().keys()
+        target_users = tuple(chat_users.copy().keys())
     else:
         for user_id in args[:-1]:
             if user_id not in chat_users:
@@ -692,14 +692,24 @@ async def command_restrict_user(tg_bot, msg, *args):
         msg.chat_id,
         _('Processing the queue of /restrict_users for %s users.')
         % len(target_users))
-    raw_results = await asyncio.gather(*[tg_bot.restrictChatMember(msg.chat_id,
-                                                                   user_id,
-                                                                   **rights)
-                                         for user_id in target_users],
-                                       return_exceptions=True)
+
+    results = {}
+    for chunk in (target_users[start:start+10]
+                  for start in range(0, len(target_users), 10)):
+        await tg_bot.editMessageText(
+            (msg.chat_id, status_msg['message_id']),
+            _('Finished %s/%s requests for /restrict_users') % (
+                len(results), len(target_users)))
+
+        raw_results = await asyncio.gather(
+            *(tg_bot.restrictChatMember(msg.chat_id, user_id, **rights)
+              for user_id in chunk),
+            return_exceptions=True)
+
+        results.update({user_id: raw_results.pop(0)
+                        for user_id in chunk})
+
     await tg_bot.deleteMessage((msg.chat_id, status_msg['message_id']))
-    results = {user_id: raw_results.pop(0)
-               for user_id in target_users}
 
     failed = {user_id: (result.description
                         if isinstance(result, telepot.exception.TelegramError)
