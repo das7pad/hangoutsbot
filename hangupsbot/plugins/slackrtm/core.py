@@ -129,10 +129,8 @@ class SlackRTM(object):
         self.apikey = self.config['key']
         self.lastimg = ''
         self._login_data = {}
-        self.dminfos = {}
+        self.conversations = {}
         self.userinfos = {}
-        self.groupinfos = {}
-        self.channelinfos = {}
         self.my_uid = None
         self.name = None
         self.team = {}
@@ -198,9 +196,9 @@ class SlackRTM(object):
         return await response.json()
 
     async def get_slack1on1(self, userid):
-        if not userid in self.dminfos:
-            self.dminfos[userid] = (await self.api_call('im.open', user=userid))['channel']
-        return self.dminfos[userid]['id']
+        if not userid in self.conversations:
+            self.conversations[userid] = (await self.api_call('im.open', user=userid))['channel']
+        return self.conversations[userid]['id']
 
     async def update_userinfos(self, users=None):
         if users is None:
@@ -214,21 +212,21 @@ class SlackRTM(object):
     async def get_channel_users(self, channelid, default=None):
         channelinfo = None
         if channelid.startswith('C'):
-            if not channelid in self.channelinfos:
+            if not channelid in self.conversations:
                 await self.update_channelinfos()
-            if not channelid in self.channelinfos:
+            if not channelid in self.conversations:
                 self.logger.error('get_channel_users: Failed to find channel %s' % channelid)
                 return None
             else:
-                channelinfo = self.channelinfos[channelid]
+                channelinfo = self.conversations[channelid]
         else:
-            if not channelid in self.groupinfos:
+            if not channelid in self.conversations:
                 await self.update_groupinfos()
-            if not channelid in self.groupinfos:
+            if not channelid in self.conversations:
                 self.logger.error('get_channel_users: Failed to find private group %s' % channelid)
                 return None
             else:
-                channelinfo = self.groupinfos[channelid]
+                channelinfo = self.conversations[channelid]
 
         channelusers = channelinfo['members']
         users = {}
@@ -278,7 +276,7 @@ class SlackRTM(object):
         channelinfos = {}
         for c in channels:
             channelinfos[c['id']] = c
-        self.channelinfos = channelinfos
+        self.conversations.update(channelinfos)
 
     def get_channelgroupname(self, channel, default=None):
         if channel.startswith('C'):
@@ -290,11 +288,11 @@ class SlackRTM(object):
         return default
 
     def get_channelname(self, channel, default=None):
-        if channel not in self.channelinfos:
+        if channel not in self.conversations:
             self.logger.debug('channel %s not found', channel)
             asyncio.ensure_future(self.update_channelinfos())
             return default
-        return self.channelinfos[channel]['name']
+        return self.conversations[channel]['name']
 
     async def update_groupinfos(self, groups=None):
         if groups is None:
@@ -303,14 +301,14 @@ class SlackRTM(object):
         groupinfos = {}
         for c in groups:
             groupinfos[c['id']] = c
-        self.groupinfos = groupinfos
+        self.conversations.update(groupinfos)
 
     def get_groupname(self, group, default=None):
-        if group not in self.groupinfos:
+        if group not in self.conversations:
             self.logger.debug('group %s not found')
             asyncio.ensure_future(self.update_groupinfos())
             return default
-        return self.groupinfos[group]['name']
+        return self.conversations[group]['name']
 
     def get_syncs(self, channelid=None, hangoutid=None):
         syncs = []

@@ -90,12 +90,9 @@ async def slack_channels(bot, event, *args):
 
     lines = ['<b>Channels:</b>', '<b>Private groups</b>']
 
-    conversations = slackrtm.channelinfos.copy()
-    conversations.update(slackrtm.groupinfos)
-
-    for channel in conversations:
-        if conversations[channel].get('is_archived'):
-            # filter archived channels/groups
+    for channel in slackrtm.conversations:
+        if slackrtm.conversations[channel].get('is_archived', True):
+            # filter dms and archived channels/groups
             continue
         line = '- %s: %s' % (channel, slackrtm.get_channelgroupname(channel))
         if channel[0] == 'C':
