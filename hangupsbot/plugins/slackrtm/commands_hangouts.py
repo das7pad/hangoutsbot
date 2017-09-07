@@ -85,19 +85,23 @@ async def slack_channels(bot, event, *args):
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
         return
 
-    lines = ["**Channels:**"]
-
     await slackrtm.update_channelinfos()
-    for cid in slackrtm.channelinfos:
-        if not slackrtm.channelinfos[cid]['is_archived']:
-            lines.append("* {1} {0}".format(slackrtm.channelinfos[cid]['name'], cid))
-
-    lines.append("**Private groups:**")
-
     await slackrtm.update_groupinfos()
-    for gid in slackrtm.groupinfos:
-        if not slackrtm.groupinfos[gid]['is_archived']:
-            lines.append("* {1} {0}".format(slackrtm.groupinfos[gid]['name'], gid))
+
+    lines = ['<b>Channels:</b>', '<b>Private groups</b>']
+
+    conversations = slackrtm.channelinfos.copy()
+    conversations.update(slackrtm.groupinfos)
+
+    for channel in conversations:
+        if conversations[channel].get('is_archived'):
+            # filter archived channels/groups
+            continue
+        line = '- %s: %s' % (channel, slackrtm.get_channelgroupname(channel))
+        if channel[0] == 'C':
+            lines.insert(1, line)
+        else:
+            lines.append(line)
 
     await bot.coro_send_message(event.conv_id, "\n".join(lines))
 
