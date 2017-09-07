@@ -23,6 +23,8 @@ from .exceptions import (
     ParseError,
     IncompleteLoginError,
     WebsocketFailed,
+    SlackAPIError,
+    SlackAuthError,
 )
 from .message import SlackMessage
 from .parsers import (
@@ -180,8 +182,8 @@ class SlackRTM(object):
 
         try:
             await self._process_websocket(self._login_data['url'])
-        except WebsocketFailed:
-            self.logger.critical('closing SlackRTM')
+        except (SlackAuthError, WebsocketFailed) as err:
+            self.logger.critical('closing SlackRTM: %s', repr(err))
             return
         except:                                     # pylint:disable=bare-except
             self.logger.exception('core error')
@@ -190,10 +192,49 @@ class SlackRTM(object):
         return await self.start()
 
     async def api_call(self, method, **kwargs):
-        response = await self._session.post(
-            'https://slack.com/api/' + method,
-            data={'token': self.apikey, **kwargs})
-        return await response.json()
+        """perform an api call to slack
+
+        more documentation on the api call: https://api.slack.com/web
+        more documentation on methods: https://api.slack.com/methods
+
+        delay the execution in case of a ratelimit
+
+        Args:
+            method: the api-method to call
+            kwargs: optional kwargs passed with api-method
+
+        Returns:
+            dict, pre-parsed json response
+
+        Raises:
+            SlackAPIError: invalid request
+            SlackAuthError: the token got revoked
+        """
+        delay = kwargs.pop('delay', 0)
+        await asyncio.sleep(delay)
+        parsed = None
+        try:
+            async with await asyncio.shield(self._session.post(
+                'https://slack.com/api/' + method,
+                data={'token': self.apikey, **kwargs})) as resp:
+
+                parsed = await resp.json()
+                if parsed.get('ok'):
+                    return parsed
+                if 'auth' in parsed.get('error', ''):
+                    raise SlackAuthError(parsed)
+
+                raise RuntimeError('invalid request')
+        except (aiohttp.ClientError, ValueError, RuntimeError) as err:
+            try:
+                parsed = parsed or (await resp.text())
+            except (NameError, aiohttp.ClientError):
+                pass
+
+            self.logger.error(
+                'api_call failed: %s, method=%s, kwargs=%s, parsed=%s',
+                repr(err), method, kwargs, parsed)
+        raise SlackAPIError(parsed)
 
     async def get_slack1on1(self, userid):
         if not userid in self.conversations:
