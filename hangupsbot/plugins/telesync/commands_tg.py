@@ -38,6 +38,10 @@ NO_WEBPREVIEW_AND_STICKER_RIGHTS = {'can_send_other_messages': False,
                                     'can_add_web_page_previews': False,
                                     'can_send_messages': True,
                                     'can_send_media_messages': True}
+FULL_RIGHTS = {'can_send_messages': True,
+               'can_send_media_messages': True,
+               'can_send_other_messages': True,
+               'can_add_web_page_previews': True}
 
 def ensure_admin(tg_bot, msg):
     """return weather the user is admin, and respond if be_quiet is off
@@ -682,7 +686,7 @@ async def command_restrict_user(tg_bot, msg, *args):
               NO_STICKER_RIGHTS if restrict == 'sticker' else
               NO_WEBPREVIEW_RIGHTS if restrict == 'websites' else
               NO_WEBPREVIEW_AND_STICKER_RIGHTS if restrict == 'sticker+websites'
-              else {})
+              else FULL_RIGHTS)
 
     status_msg = await tg_bot.sendMessage(
         msg.chat_id,
