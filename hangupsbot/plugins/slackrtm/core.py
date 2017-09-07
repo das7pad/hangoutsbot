@@ -166,7 +166,7 @@ class SlackRTM(object):
                     self.logger.warning('userid %s not found in user list, ignoring', admin)
                 else:
                     self.admins.append(admin)
-        if not len(self.admins):
+        if not self.admins:
             self.logger.warning('no admins specified in config file')
 
         syncs = _slackrtm_conversations_get(self.bot, self.name)

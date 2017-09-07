@@ -123,7 +123,7 @@ async def whoami(slackbot, msg, args):
 async def whois(slackbot, msg, args):
     """whois @username tells you the user id of @username"""
 
-    if not len(args):
+    if not args:
         message = u'%s: sorry, but you have to specify a username for command `whois`' % (msg.username)
     else:
         user = args[0]
@@ -277,7 +277,7 @@ async def syncto(slackbot, msg, args):
     if [short title] specified, messages will be tagged with it, instead of hangout title"""
 
     message = '@%s: ' % msg.username
-    if not len(args):
+    if not args:
         message += u'sorry, but you have to specify a Hangout Id for command `syncto`'
         await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
         return
@@ -327,7 +327,7 @@ async def disconnect(slackbot, msg, args):
     usage: disconnect [hangout conversation id]"""
 
     message = '@%s: ' % msg.username
-    if not len(args):
+    if not args:
         message += u'sorry, but you have to specify a Hangout Id for command `disconnect`'
         await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
         return
