@@ -24,6 +24,7 @@ from .exceptions import (
     IncompleteLoginError,
     WebsocketFailed,
     SlackAPIError,
+    SlackRateLimited,
     SlackAuthError,
 )
 from .message import SlackMessage
@@ -221,10 +222,16 @@ class SlackRTM(object):
                 parsed = await resp.json()
                 if parsed.get('ok'):
                     return parsed
+                if 'rate_limited' in parsed:
+                    raise SlackRateLimited()
                 if 'auth' in parsed.get('error', ''):
                     raise SlackAuthError(parsed)
 
                 raise RuntimeError('invalid request')
+        except SlackRateLimited:
+            self.logger.warning('ratelimit reached\n%s', parsed)
+            delay += parsed.get('Retry-After', 30)
+            return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
             try:
                 parsed = parsed or (await resp.text())

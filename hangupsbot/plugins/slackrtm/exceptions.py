@@ -28,5 +28,9 @@ class SlackAPIError(Exception):
     """invalid request or missing permissions"""
 
 
+class SlackRateLimited(SlackAPIError):
+    """too many requests performed in a short timespan"""
+
+
 class SlackAuthError(SlackAPIError):
     """error on login"""
