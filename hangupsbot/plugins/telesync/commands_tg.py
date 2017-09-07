@@ -718,11 +718,12 @@ async def command_restrict_user(tg_bot, msg, *args):
               if result is not True}
 
     if failed:
-        output = [_('Failed for')]
         for user_id, result in failed.items():
-            output.append('- %s:\n  %s' %
-                          ((await tg_bot.get_tg_user(user_id)).full_name,
-                           result))
+            failed[user_id] = '- %s:\n  %s' % (
+                (await tg_bot.get_tg_user(user_id)).full_name, result)
+
+        tg_bot.send_html(
+            msg.chat_id, _('/restrict_users failed for:\n') + '\n'.join(
+                failed.values()))
     else:
-        output = [_('Success')]
-    tg_bot.send_html(msg.chat_id, '\n'.join(output))
+        tg_bot.send_html(msg.chat_id, _('/restrict_users finished successful'))
