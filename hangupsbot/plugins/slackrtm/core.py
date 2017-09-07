@@ -215,7 +215,7 @@ class SlackRTM(object):
             if not channelid in self.conversations:
                 await self.update_channelinfos()
             if not channelid in self.conversations:
-                self.logger.error('get_channel_users: Failed to find channel %s' % channelid)
+                self.logger.error('get_channel_users: Failed to find channel %s', channelid)
                 return None
             else:
                 channelinfo = self.conversations[channelid]
@@ -223,7 +223,7 @@ class SlackRTM(object):
             if not channelid in self.conversations:
                 await self.update_groupinfos()
             if not channelid in self.conversations:
-                self.logger.error('get_channel_users: Failed to find private group %s' % channelid)
+                self.logger.error('get_channel_users: Failed to find private group %s', channelid)
                 return None
             else:
                 channelinfo = self.conversations[channelid]
@@ -364,7 +364,7 @@ class SlackRTM(object):
             # account for mimetypes idiosyncrancy to return jpe for valid jpeg
             pass
         else:
-            self.logger.warning("unable to determine extension: {} {}".format(filename_extension, physical_extension))
+            self.logger.warning("unable to determine extension: %s %s", filename_extension, physical_extension)
             filename += filename_extension
 
         self.logger.info('uploading as %s', filename)
@@ -705,7 +705,7 @@ class SlackRTM(object):
             if "attachments" in event.passthru["original_request"] and event.passthru["original_request"]["attachments"]:
                 # automatically prioritise incoming events with attachments available
                 media_link = event.passthru["original_request"]["attachments"][0]
-                self.logger.info("media link in original request: {}".format(media_link))
+                self.logger.info("media link in original request: %s", media_link)
 
                 message = "shared media: {}".format(media_link)
 
@@ -714,7 +714,7 @@ class SlackRTM(object):
                         and event.passthru["original_request"]["image_id"]):
                     # without media link, create a deferred post until a public media link becomes available
                     image_id = event.passthru["original_request"]["image_id"]
-                    self.logger.info("wait for media link: {}".format(image_id))
+                    self.logger.info("wait for media link: %s", image_id)
 
                     asyncio.ensure_future(
                         self.bot._handlers.image_uri_from(
@@ -731,7 +731,7 @@ class SlackRTM(object):
                   and len(event.conv_event.attachments) == 1):
                 # catch actual events with media link  but didn' go through the passthru
                 media_link = event.conv_event.attachments[0]
-                self.logger.info("media link in original event: {}".format(media_link))
+                self.logger.info("media link in original event: %s", media_link)
 
                 message = "shared media: {}".format(media_link)
 
@@ -739,7 +739,7 @@ class SlackRTM(object):
 
             message = "{} {}".format(message, slackrtm_fragment)
 
-            self.logger.info("message {}: {}".format(sync.channelid, message))
+            self.logger.info("message %s: %s", sync.channelid, message)
             await self.api_call('chat.postMessage',
                                 channel=sync.channelid,
                                 text=message,

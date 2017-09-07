@@ -52,7 +52,8 @@ def _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid
 
     else:
         mapped_identities[base_key][uid1] = uid2
-        logger.info("{} {} to {} {}, slack team = {}".format(base_key, uid1, link_key, uid2, slack_teamname))
+        logger.info("%s %s to %s %s, slack team=%s",
+                    base_key, uid1, link_key, uid2, slack_teamname)
 
         # a user must be mapped on slack->ho AND ho->slack to be valid
         if (uid2 not in mapped_identities[link_key]
