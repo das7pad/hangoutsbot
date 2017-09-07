@@ -46,12 +46,7 @@ async def slack_command_handler(slackbot, msg):
                 link_names=True)
         raise IgnoreMessage()
 
-"""
-command definitions
-
-dev: due to the way the plugin reloader works, any changes to files unrelated with the
-package loader (__init__.py) will require a bot restart for any changes to be reflected
-"""
+# command definitions
 
 COMMANDS_USER = [
     "help",

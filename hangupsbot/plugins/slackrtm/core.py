@@ -655,11 +655,11 @@ class SlackRTM(object):
 
         message = hangups_markdown_to_slack(message)
 
-        """slackrtm uses an overengineered pseudo SlackRTMSync "structure" to contain individual 1-1 syncs
-            we rely on the chatbridge to iterate through multiple syncs, and ensure we only have
-            to deal with a single mapping at this level
-
-            XXX: the mapping SHOULD BE single, but let duplicates get through"""
+        # NOTE:
+        # slackrtm uses an overengineered pseudo SlackRTMSync "structure" to contain individual 1-1 syncs
+        # we rely on the chatbridge to iterate through multiple syncs, and ensure we only have
+        # to deal with a single mapping at this level
+        # XXX: the mapping SHOULD BE single, but let duplicates get through
 
         active_syncs = []
         for sync in self.get_syncs(hangoutid=conv_id):
@@ -693,13 +693,11 @@ class SlackRTM(object):
 
             slackrtm_fragment = "<ho://{}/{}| >".format(conv_id, bridge_user["chat_id"] or bridge_user["preferred_name"])
 
-            """XXX: media sending:
-
-            * if media link is already available, send it immediately
-              * real events from google servers will have the medialink in event.conv_event.attachment
-              * media link can also be added as part of the passthru
-            * for events raised by other external chats, wait for the public link to become available
-            """
+            # XXX: media sending:
+            # * if media link is already available, send it immediately
+            #   * real events from google servers will have the medialink in event.conv_event.attachment
+            #   * media link can also be added as part of the passthru
+            # * for events raised by other external chats, wait for the public link to become available
 
 
             if "attachments" in event.passthru["original_request"] and event.passthru["original_request"]["attachments"]:
@@ -735,7 +733,7 @@ class SlackRTM(object):
 
                 message = "shared media: {}".format(media_link)
 
-            """standard message relay"""
+            # standard message relay
 
             message = "{} {}".format(message, slackrtm_fragment)
 

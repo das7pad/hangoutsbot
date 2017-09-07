@@ -72,11 +72,12 @@ class SlackMessage(object):
         # text now contains the real message, but html entities have to be dequoted still
         text = html.unescape(text)
 
-        """
-        strip :skin-tone-<id>: if present and apparently combined with an actual emoji alias
-        * depends on the slack users emoji style, e.g. hangouts style has no skin tone support
-        * do it BEFORE emojize() for more reliable detection of sub-pattern :some_emoji(::skin-tone-\d:)
-        """
+        # Note:
+        # strip :skin-tone-<id>:
+        # * depends on the slack users emoji style,
+        #       e.g. hangouts style has no skin tone support
+        # * do it BEFORE emojize() for more reliable detection of sub-pattern
+        #       :some_emoji(::skin-tone-\d:)
         text = re.sub(r"::skin-tone-\d:", ":", text, flags=re.IGNORECASE)
 
         # convert emoji aliases into their unicode counterparts
