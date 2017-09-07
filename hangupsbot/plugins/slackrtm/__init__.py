@@ -106,8 +106,6 @@ def _initialise(bot):
 
     plugins.register_user_command([ "slack_identify" ])
 
-    plugins.start_asyncio_task(_wait_until_unloaded).add_done_callback(_plugin_unloaded)
-
 def _slackrtm_conversations_migrate_20170319(bot):
     memory_root_key = "slackrtm"
     if bot.memory.exists([ memory_root_key ]):
@@ -124,14 +122,6 @@ def _slackrtm_conversations_migrate_20170319(bot):
 
     bot.memory.set_by_path([ memory_root_key ], migrated_configurations)
     bot.memory.save()
-
-@asyncio.coroutine
-def _wait_until_unloaded(bot):
-    while True:
-        yield from asyncio.sleep(60)
-
-def _plugin_unloaded(future):
-    pass
 
 @asyncio.coroutine
 def _handle_membership_change(bot, event, command):

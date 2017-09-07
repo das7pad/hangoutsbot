@@ -107,13 +107,9 @@ async def slack_users(bot, event, *args):
 
         usage: /bot slack_users <team> <channel>"""
 
-    if len(args) >= 3:
-        honame = ' '.join(args[2:])
-    else:
-        if len(args) != 2:
-            await bot.coro_send_message(event.conv_id, "specify slack team and channel")
-            return
-        honame = bot.conversations.get_name(event.conv)
+    if len(args) != 2:
+        await bot.coro_send_message(event.conv_id, "specify slack team and channel")
+        return
 
     slackname = args[0]
     slackrtm = None
