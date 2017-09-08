@@ -680,6 +680,9 @@ async def command_restrict_user(tg_bot, msg, *args):
                 return
         target_users = args[:-1]
 
+    # filter the bot users user_id
+    target_users = tuple(set(target_users) - set((tg_bot.user.usr_id,)))
+
     restrict = args[-1].lower()
     rights = (NO_SENDING_RIGHTS if restrict == 'messages' else
               NO_MEDIA_RIGHTS if restrict == 'media' else
