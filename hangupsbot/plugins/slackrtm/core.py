@@ -272,25 +272,10 @@ class SlackRTM(object):
             storage.update({item['id']: item for item in data})
 
     async def get_channel_users(self, channelid, default=None):
-        channelinfo = None
-        if channelid.startswith('C'):
-            if not channelid in self.conversations:
-                await self.update_cache('channels')
-            if not channelid in self.conversations:
-                self.logger.error('get_channel_users: Failed to find channel %s', channelid)
-                return None
-            else:
-                channelinfo = self.conversations[channelid]
-        else:
-            if not channelid in self.conversations:
-                await self.update_cache('groups')
-            if not channelid in self.conversations:
-                self.logger.error('get_channel_users: Failed to find private group %s', channelid)
-                return None
-            else:
-                channelinfo = self.conversations[channelid]
+        channelusers = self._get_channel_data(channelid, 'members', None)
+        if channelusers is None:
+            return default
 
-        channelusers = channelinfo['members']
         users = {}
         for user in channelusers:
             username = self.get_username(user)
@@ -325,6 +310,24 @@ class SlackRTM(object):
             return default
         return self.userinfos[user].get(key, default)
 
+    def _get_channel_data(self, channel, key, default=None):
+        """fetch channel info from cache or pull all data once
+
+        Args:
+            channel: string, channel or group identifier
+            key: string, data entry in the channel data
+            default: value to return if no data is available for the channel
+
+        Returns:
+            dict with info about the channel or the default value
+        """
+        if channel not in self.conversations:
+            type_ = 'channels' if channel.startswith('C') else 'groups'
+            self.logger.debug('%s not found, reloading %s', channel, type_)
+            asyncio.ensure_future(self.update_cache(type_))
+            return default
+        return self.conversations[channel].get(key, default)
+
     def get_realname(self, user, default=None):
         return self._get_user_data(user, 'real_name', default)
 
@@ -341,18 +344,10 @@ class SlackRTM(object):
         return default
 
     def get_channelname(self, channel, default=None):
-        if channel not in self.conversations:
-            self.logger.debug('channel %s not found', channel)
-            asyncio.ensure_future(self.update_cache('channels'))
-            return default
-        return self.conversations[channel]['name']
+        return self._get_channel_data(channel, 'name', default=default)
 
     def get_groupname(self, group, default=None):
-        if group not in self.conversations:
-            self.logger.debug('group %s not found')
-            asyncio.ensure_future(self.update_cache('groups'))
-            return default
-        return self.conversations[group]['name']
+        return self._get_channel_data(group, 'name', default=default)
 
     def get_syncs(self, channelid=None, hangoutid=None):
         syncs = []
