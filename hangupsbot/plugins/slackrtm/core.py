@@ -308,21 +308,28 @@ class SlackRTM(object):
         # team info is static, no need to update
         return self.team['domain']
 
-    def get_realname(self, user, default=None):
+    def _get_user_data(self, user, key, default=None):
+        """get user info described by the given key
+
+        Args:
+            user: string, user_id
+            key: string, data entry in the user data
+            default: any type, value for missing user
+
+        Returns:
+            any type, or the default value
+        """
         if user not in self.userinfos:
-            self.logger.debug('user %s not found', user)
+            self.logger.debug('user %s not found, reloading users', user)
             asyncio.ensure_future(self.update_cache('users'))
             return default
-        if not self.userinfos[user]['real_name']:
-            return default
-        return self.userinfos[user]['real_name']
+        return self.userinfos[user].get(key, default)
+
+    def get_realname(self, user, default=None):
+        return self._get_user_data(user, 'real_name', default)
 
     def get_username(self, user, default=None):
-        if user not in self.userinfos:
-            self.logger.debug('user %s not found', user)
-            asyncio.ensure_future(self.update_cache('users'))
-            return default
-        return self.userinfos[user]['name']
+        return self._get_user_data(user, 'name', default)
 
     def get_channelgroupname(self, channel, default=None):
         if channel.startswith('C'):
