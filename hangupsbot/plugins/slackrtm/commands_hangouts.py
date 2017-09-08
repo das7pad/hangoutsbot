@@ -84,8 +84,8 @@ async def slack_channels(bot, event, *args):
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
         return
 
-    await slackrtm.update_channelinfos()
-    await slackrtm.update_groupinfos()
+    await slackrtm.update_cache('channels')
+    await slackrtm.update_cache('groups')
 
     lines = ['<b>Channels:</b>', '<b>Private groups</b>']
 
@@ -120,7 +120,7 @@ async def slack_users(bot, event, *args):
         await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
         return
 
-    await slackrtm.update_channelinfos()
+    await slackrtm.update_cache('channels')
     channelid = args[1]
     channelname = slackrtm.get_channelgroupname(channelid)
     if not channelname:
