@@ -334,20 +334,11 @@ class SlackRTM(object):
     def get_username(self, user, default=None):
         return self._get_user_data(user, 'name', default)
 
-    def get_channelgroupname(self, channel, default=None):
-        if channel.startswith('C'):
-            return self.get_channelname(channel, default)
-        if channel.startswith('G'):
-            return self.get_groupname(channel, default)
+    def get_chatname(self, channel, default=None):
         if channel.startswith('D'):
+            # dms have no custom name
             return 'DM'
-        return default
-
-    def get_channelname(self, channel, default=None):
         return self._get_channel_data(channel, 'name', default=default)
-
-    def get_groupname(self, group, default=None):
-        return self._get_channel_data(group, 'name', default=default)
 
     def get_syncs(self, channelid=None, hangoutid=None):
         syncs = []
@@ -367,13 +358,14 @@ class SlackRTM(object):
             if linktext != "":
                 out = linktext
             else:
-                out = "@%s" % self.get_username(match.group(3), 'unknown:%s' % match.group(3))
+                out = "@%s" % self.get_username(match.group(3),
+                                                'unknown:%s' % match.group(3))
         elif match.group(2) == '#':
             if linktext != "":
                 out = "#%s" % linktext
             else:
-                out = "#%s" % self.get_channelgroupname(match.group(3),
-                                                        'unknown:%s' % match.group(3))
+                out = "#%s" % self.get_chatname(match.group(3),
+                                                'unknown:%s' % match.group(3))
         else:
             linktarget = match.group(1)
             if linktext == "":
@@ -649,7 +641,7 @@ class SlackRTM(object):
 
             if msg.from_ho_id != sync.hangoutid:
                 username = msg.realname4ho if sync.showslackrealnames else msg.username4ho
-                channel_name = self.get_channelgroupname(msg.channel)
+                channel_name = self.get_chatname(msg.channel)
 
                 if msg.file_attachment:
                     if sync.image_upload:
