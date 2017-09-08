@@ -335,5 +335,5 @@ def global_unsubscribe(bot, event, *args):
 
     bot.memory['hosubscribe'] = _global_keywords
     bot.memory.save()
-    return _('The conversation "%s" will not longer receive messages '
+    return _('The conversation "%s" will no longer receive messages '
              'containing "%s"') % (alias, keyword)

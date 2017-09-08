@@ -202,7 +202,7 @@ HELP = {
                      '012345678910111213141 123456789101112131415 kick_only\n'
                      '~ reset the user list of "UgyiJIGTDLfz6d5cLVp4AaABAQ" to '
                      'the two specified G+IDs and check all relays of the given'
-                     ' conv_id weather users not matching these two user IDs '
+                     ' conv_id whether users not matching these two user IDs '
                      'are attending and kick those'),
 
     'sync_config': _('Change a per conversation config entry for the current '

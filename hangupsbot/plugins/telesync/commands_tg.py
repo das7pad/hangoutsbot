@@ -44,7 +44,7 @@ FULL_RIGHTS = {'can_send_messages': True,
                'can_add_web_page_previews': True}
 
 def ensure_admin(tg_bot, msg):
-    """return weather the user is admin, and respond if be_quiet is off
+    """return whether the user is admin, and respond if be_quiet is off
 
     Args:
         msg: Message instance
@@ -59,7 +59,7 @@ def ensure_admin(tg_bot, msg):
     return True
 
 def ensure_private(tg_bot, msg):
-    """return weather the chat is private, and respond if be_quiet is off
+    """return whether the chat is private, and respond if be_quiet is off
 
     Args:
         msg: Message instance
