@@ -8,9 +8,9 @@ from webbridge import (
     FakeEvent,
 )
 
-from .utils import (
+from .storage import (
     SLACKRTMS,
-    _slackrtm_conversations_get,
+    slackrtm_conversations_get,
 )
 
 
@@ -57,7 +57,7 @@ class BridgeInstance(WebFramework):
         mutated_configurations = []
         for slackrtm_config in slackrtm_configs:
             # mutate the config earlier, as slackrtm is messy
-            synced_conversations = _slackrtm_conversations_get(self.bot, slackrtm_config["name"])
+            synced_conversations = slackrtm_conversations_get(self.bot, slackrtm_config["name"])
             for synced in synced_conversations:
                 config_clone = dict(slackrtm_config)
                 config_clone["hangouts"] = [ synced["hangoutid"] ]

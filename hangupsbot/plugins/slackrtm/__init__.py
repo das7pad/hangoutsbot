@@ -47,8 +47,8 @@ import plugins
 
 # reload the other modules
 # pylint: disable=wrong-import-position,unused-import
-for _path_ in ('exceptions', 'parsers', 'message', 'utils', 'commands_hangouts',
-               'commands_slack', 'bridgeinstance', 'core'):
+for _path_ in ('exceptions', 'parsers', 'message', 'utils', 'storage',
+               'commands_hangouts', 'commands_slack', 'bridgeinstance', 'core'):
     plugins.load_module('plugins.slackrtm.' + _path_)
 
 from .commands_hangouts import (
@@ -67,7 +67,10 @@ from .commands_hangouts import (
     slack_identify,
 )
 from .core import SlackRTMThread
-from .utils import SLACKRTMS
+from .storage import (
+    SLACKRTMS,
+    migrate_20170319,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +79,7 @@ logger = logging.getLogger(__name__)
 def _initialise(bot):
     # unbreak slackrtm memory.json usage
     #   previously, this plugin wrote into "user_data" key to store its internal team settings
-    _migrate_20170319(bot)
+    migrate_20170319(bot)
 
     slack_sink = bot.get_config_option('slackrtm')
     threads = []
@@ -107,23 +110,6 @@ def _initialise(bot):
     ])
 
     plugins.register_user_command(["slack_identify"])
-
-def _migrate_20170319(bot):
-    memory_root_key = "slackrtm"
-    if bot.memory.exists([memory_root_key]):
-        return
-
-    configurations = bot.get_config_option('slackrtm') or []
-    migrated_configurations = {}
-    for configuration in configurations:
-        team_name = configuration["name"]
-        broken_path = ['user_data', team_name]
-        if bot.memory.exists(broken_path):
-            legacy_team_memory = dict(bot.memory.get_by_path(broken_path))
-            migrated_configurations[team_name] = legacy_team_memory
-
-    bot.memory.set_by_path([memory_root_key], migrated_configurations)
-    bot.memory.save()
 
 @asyncio.coroutine
 def _handle_membership_change(bot, event, command):
