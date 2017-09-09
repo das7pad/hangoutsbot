@@ -137,9 +137,17 @@ class SlackRTM(object):
         self.my_uid = None
         self.name = None
         self.team = {}
-        self.admins = []
         self.syncs = []
         self._session = aiohttp.ClientSession()
+
+    @property
+    def admins(self):
+        """get the configured admins
+
+        Returns:
+            list of strings, a list of slack user ids
+        """
+        return self.config.get('admins', [])
 
     async def start(self):
         self._login_data = await self.api_call('rtm.connect')
@@ -163,12 +171,10 @@ class SlackRTM(object):
         await self.update_cache('team')
         self.my_uid = self._login_data['self']['id']
 
-        if 'admins' in self.config:
-            for admin in self.config['admins']:
-                if admin not in self.userinfos:
-                    self.logger.warning('userid %s not found in user list, ignoring', admin)
-                else:
-                    self.admins.append(admin)
+        for admin in self.admins:
+            if admin not in self.userinfos:
+                self.logger.warning('admin userid %s not found in user list',
+                                    admin)
         if not self.admins:
             self.logger.warning('no admins specified in config file')
 
