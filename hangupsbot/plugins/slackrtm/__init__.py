@@ -69,7 +69,7 @@ from .commands_hangouts import (
 from .core import SlackRTMThread
 from .storage import (
     SLACKRTMS,
-    migrate_20170319,
+    setup_storage,
 )
 
 
@@ -77,18 +77,15 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    # unbreak slackrtm memory.json usage
-    #   previously, this plugin wrote into "user_data" key to store its internal team settings
-    migrate_20170319(bot)
+    setup_storage(bot)
 
     slack_sink = bot.get_config_option('slackrtm')
     threads = []
-    if isinstance(slack_sink, list):
-        for sink_config in slack_sink:
-            # start up slack listener in a separate thread
-            thread = SlackRTMThread(bot, sink_config)
-            plugins.start_asyncio_task(thread.run())
-            threads.append(thread)
+    for sink_config in slack_sink:
+        # start up slack listener in a separate thread
+        thread = SlackRTMThread(bot, sink_config)
+        plugins.start_asyncio_task(thread.run())
+        threads.append(thread)
     logger.info("%d sink thread(s) started", len(threads))
 
     plugins.register_handler(_handle_membership_change, type="membership")
