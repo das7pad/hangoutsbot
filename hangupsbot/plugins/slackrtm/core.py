@@ -139,9 +139,9 @@ class SlackRTM(object):
         self.team = {}
         self.admins = []
         self.syncs = []
+        self._session = aiohttp.ClientSession()
 
     async def start(self):
-        self._session = aiohttp.ClientSession()
         self._login_data = await self.api_call('rtm.connect')
 
         for key in ('self', 'team', 'url'):
@@ -831,11 +831,11 @@ class SlackRTM(object):
         for sync in self.syncs:
             sync._bridgeinstance.close()
 
-        if self._session is not None:
-            self._session.close()
-
     def __del__(self):
         self.close()
+
+        if self._session is not None:
+            self._session.close()
 
 class SlackRTMThread():
     _listener = None
