@@ -151,26 +151,98 @@ class SlackRTM(object):
         return self.config.get('admins', [])
 
     async def start(self):
-        login_data = await self.api_call('rtm.connect')
+        async def _login():
+            """connect to the slack api and fetch the base data
 
-        for key in ('self', 'team', 'url'):
-            if key not in login_data:
-                raise IncompleteLoginError
+            Returns:
+                dict: `team`: team data, `self`: bot user, `url`: websocket-url
+
+            Raises:
+                IncompleteLoginError:
+                    connection error
+                    or incomplete api-response received from `rtm.connect`
+                SlackAuthError:
+                    the auth-token got revoked
+            """
+            try:
+                login_data = await self.api_call('rtm.connect')
+            except SlackAPIError:
+                raise IncompleteLoginError() from None
+
+            if any(key not in login_data for key in ('self', 'team', 'url')):
+                raise IncompleteLoginError()
+            return login_data
+
+        async def _build_cache(login_data):
+            """set the team; fetch users, channels and groups
+
+            Args:
+                login_data (dict): slack-api response of `rtm.connect`, which
+                    contains the team data in the entry `team`
+            """
+            self.team = login_data['team']
+            await asyncio.gather(*(self.update_cache(name)
+                                   for name in ('users', 'channels', 'groups')))
+
+        def _set_selfuser_and_id(login_data):
+            """set the bot user
+
+            .rebuild_base() requires the self user being present
+
+            Args:
+                login_data (dict): slack-api response of `rtm.connect`, which
+                    contains the bot user object in the entry `self`
+            """
+            self.my_uid = login_data['self']['id']
+            self.userinfos[self.my_uid] = login_data['self']
+
+
+        hard_reset = 0
+        while hard_reset < 5:
+            try:
+                await asyncio.sleep(hard_reset*10)
+                hard_reset += 1
+
+                login_data = await _login()
+
+                await _build_cache(login_data)
+                _set_selfuser_and_id(login_data)
+                self.rebuild_base()
+
+                await self._process_websocket(login_data['url'])
+            except asyncio.CancelledError:
+                return
+            except IncompleteLoginError:
+                self.logger.error('Incomplete Login, restarting')
+            except WebsocketFailed:
+                self.logger.warning('Connection failed, waiting %s sec',
+                                    hard_reset * 10)
+            except SlackAuthError as err:
+                self._session.close()           # do not allow further api-calls
+                self.logger.critical('closing SlackRTM: %s', repr(err))
+                return
+            except:                                 # pylint:disable=bare-except
+                self.logger.exception('core error')
+            else:
+                self.logger.info('websocket closed gracefully, restarting')
+                hard_reset = 0
+            finally:
+                self.close()
+
+        self.logger.critical('ran out of retries, closing the connection')
+
+    def rebuild_base(self):
+        """reset everything that is based on the sink config or team data"""
+        bot_username = self.get_username(self.my_uid)
+        domain = self.get_slack_domain()
 
         if 'name' in self.config:
             self.name = self.config['name']
         else:
-            self.name = '%s@%s' % (login_data['self']['name'],
-                                   login_data['team']['domain'])
+            self.name = '%s@%s' % (bot_username, domain)
             logger.warning('no name set in config file, using computed name %s',
                            self.name)
-        self.logger = logging.getLogger('plugins.slackrtm.%s' % self.name)
-
-        await self.update_cache('users')
-        await self.update_cache('channels')
-        await self.update_cache('groups')
-        await self.update_cache('team')
-        self.my_uid = login_data['self']['id']
+        self.logger = logging.getLogger('plugins.slackrtm.%s' % domain)
 
         for admin in self.admins:
             if admin not in self.userinfos:
@@ -184,17 +256,6 @@ class SlackRTM(object):
         for sync in syncs:
             sync = SlackRTMSync.from_dict(self, sync)
             self.syncs.append(sync)
-
-        try:
-            await self._process_websocket(login_data['url'])
-        except (SlackAuthError, WebsocketFailed) as err:
-            self.logger.critical('closing SlackRTM: %s', repr(err))
-            return
-        except:                                     # pylint:disable=bare-except
-            self.logger.exception('core error')
-        finally:
-            self.close()
-        return await self.start()
 
     async def api_call(self, method, **kwargs):
         """perform an api call to slack
@@ -856,20 +917,8 @@ class SlackRTMThread():
             self._listener = SlackRTM(self._bot, self._config)
             SLACKRTMS.append(self._listener)
             await self._listener.start()
-        except asyncio.CancelledError:
-            # close, nothing to do
-            return
-        except IncompleteLoginError:
-            logger.error('IncompleteLoginError, restarting')
-            await asyncio.sleep(1)
-            return await self.run()
-        except aiohttp.ClientError:
-            logger.exception('Connection failed, waiting 10 sec for a restart')
-            await asyncio.sleep(10)
-            return await self.run()
         except Exception as err:
             logger.exception('SlackRTMThread: unhandled exception: %s', err)
-        return
 
     def __del__(self):
         if self._listener and self._listener in SLACKRTMS:
