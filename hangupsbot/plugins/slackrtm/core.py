@@ -131,7 +131,6 @@ class SlackRTM(object):
         self.config = sink_config
         self.apikey = self.config['key']
         self.lastimg = ''
-        self._login_data = {}
         self.conversations = {}
         self.userinfos = {}
         self.my_uid = None
@@ -150,17 +149,17 @@ class SlackRTM(object):
         return self.config.get('admins', [])
 
     async def start(self):
-        self._login_data = await self.api_call('rtm.connect')
+        login_data = await self.api_call('rtm.connect')
 
         for key in ('self', 'team', 'url'):
-            if key not in self._login_data:
+            if key not in login_data:
                 raise IncompleteLoginError
 
         if 'name' in self.config:
             self.name = self.config['name']
         else:
-            self.name = '%s@%s' % (self._login_data['self']['name'],
-                                   self._login_data['team']['domain'])
+            self.name = '%s@%s' % (login_data['self']['name'],
+                                   login_data['team']['domain'])
             logger.warning('no name set in config file, using computed name %s',
                            self.name)
         self.logger = logging.getLogger('plugins.slackrtm.%s' % self.name)
@@ -169,7 +168,7 @@ class SlackRTM(object):
         await self.update_cache('channels')
         await self.update_cache('groups')
         await self.update_cache('team')
-        self.my_uid = self._login_data['self']['id']
+        self.my_uid = login_data['self']['id']
 
         for admin in self.admins:
             if admin not in self.userinfos:
@@ -188,7 +187,7 @@ class SlackRTM(object):
             self.syncs.append(sync)
 
         try:
-            await self._process_websocket(self._login_data['url'])
+            await self._process_websocket(login_data['url'])
         except (SlackAuthError, WebsocketFailed) as err:
             self.logger.critical('closing SlackRTM: %s', repr(err))
             return
