@@ -48,7 +48,7 @@ emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face
 REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
 class SlackRTMSync(object):
-    def __init__(self, hangoutsbot, channelid, hangoutid, hotag, slacktag, sync_joins=True, image_upload=True, showslackrealnames=False, showhorealnames="real"):
+    def __init__(self, slackrtm, channelid, hangoutid, hotag, slacktag, sync_joins=True, image_upload=True, showslackrealnames=False, showhorealnames="real"):
         self.channelid = channelid
         self.hangoutid = hangoutid
         self.hotag = hotag
@@ -57,14 +57,16 @@ class SlackRTMSync(object):
         self.slacktag = slacktag
         self.showslackrealnames = showslackrealnames
         self.showhorealnames = showhorealnames
-        self.team_name = None
+        if self.slacktag == 'NOT_IN_CONFIG':
+            self.slacktag = slackrtm.get_teamname()
+        self.team_name = slackrtm.name # chatbridge needs this for context
 
-        self._bridgeinstance = BridgeInstance(hangoutsbot, "slackrtm")
+        self._bridgeinstance = BridgeInstance(slackrtm.bot, "slackrtm")
 
         self._bridgeinstance.set_extra_configuration(hangoutid, channelid)
 
     @staticmethod
-    def from_dict(hangoutsbot, sync_dict):
+    def from_dict(slackrtm, sync_dict):
         sync_joins = True
         if 'sync_joins' in sync_dict and not sync_dict['sync_joins']:
             sync_joins = False
@@ -82,7 +84,7 @@ class SlackRTMSync(object):
         horealnames = 'real'
         if 'showhorealnames' in sync_dict:
             horealnames = sync_dict['showhorealnames']
-        return SlackRTMSync(hangoutsbot,
+        return SlackRTMSync(slackrtm,
                             sync_dict['channelid'],
                             sync_dict['hangoutid'],
                             sync_dict['hotag'],
@@ -180,10 +182,7 @@ class SlackRTM(object):
         syncs = slackrtm_conversations_get(self.bot, self.name)
 
         for sync in syncs:
-            sync = SlackRTMSync.from_dict(self.bot, sync)
-            if sync.slacktag == 'NOT_IN_CONFIG':
-                sync.slacktag = self.get_teamname()
-            sync.team_name = self.name # chatbridge needs this for context
+            sync = SlackRTMSync.from_dict(self, sync)
             self.syncs.append(sync)
 
         try:
@@ -421,8 +420,7 @@ class SlackRTM(object):
             if sync.channelid == channel and sync.hangoutid == hangoutid:
                 raise AlreadySyncingError
 
-        sync = SlackRTMSync(self.bot, channel, hangoutid, shortname, self.get_teamname())
-        sync.team_name = self.name # chatbridge needs this for context
+        sync = SlackRTMSync(self, channel, hangoutid, shortname, self.get_teamname())
         self.logger.info('adding sync: %s', sync.to_dict())
         self.syncs.append(sync)
         syncs = slackrtm_conversations_get(self.bot, self.name)
