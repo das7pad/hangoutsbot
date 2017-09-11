@@ -132,6 +132,7 @@ class SlackRTM(object):
         self.bot = bot
         self.config = sink_config
         self.apikey = self.config['key']
+        self.slack_domain = None
         self.lastimg = ''
         self.conversations = {}
         self.userinfos = {}
@@ -234,15 +235,17 @@ class SlackRTM(object):
     def rebuild_base(self):
         """reset everything that is based on the sink config or team data"""
         bot_username = self.get_username(self.my_uid)
-        domain = self.get_slack_domain()
+        self.slack_domain = self.team['domain']
 
         if 'name' in self.config:
             self.name = self.config['name']
         else:
-            self.name = '%s@%s' % (bot_username, domain)
+            self.name = '%s@%s' % (bot_username, self.slack_domain)
             logger.warning('no name set in config file, using computed name %s',
                            self.name)
-        self.logger = logging.getLogger('plugins.slackrtm.%s' % domain)
+
+        self.logger = logging.getLogger('plugins.slackrtm.%s'
+                                        % self.slack_domain)
 
         for admin in self.admins:
             if admin not in self.userinfos:
@@ -353,10 +356,6 @@ class SlackRTM(object):
     def get_teamname(self):
         # team info is static, no need to update
         return self.team['name']
-
-    def get_slack_domain(self):
-        # team info is static, no need to update
-        return self.team['domain']
 
     def _get_user_data(self, user, key, default=None):
         """get user info described by the given key
