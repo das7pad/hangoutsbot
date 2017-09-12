@@ -133,7 +133,6 @@ class SlackRTM(object):
         self.config = sink_config
         self.apikey = self.config['key']
         self.slack_domain = None
-        self.lastimg = ''
         self.conversations = {}
         self.userinfos = {}
         self.my_uid = None
@@ -717,7 +716,6 @@ class SlackRTM(object):
                                 msg.user_id,
                                 channel_name))
 
-                        self.lastimg = os.path.basename(msg.file_attachment)
                     else:
                         # we should not upload the images, so we have to send the url instead
                         message += msg.file_attachment
