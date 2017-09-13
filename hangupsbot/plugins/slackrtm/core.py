@@ -33,7 +33,6 @@ from .parsers import (
     hangups_markdown_to_slack,
 )
 from .storage import (
-    SLACKRTMS,
     slackrtm_conversations_set,
     slackrtm_conversations_get,
 )
@@ -864,27 +863,3 @@ class SlackRTM(object):
 
         if self._session is not None:
             self._session.close()
-
-class SlackRTMThread():
-    _listener = None
-    def __init__(self, bot, config):
-        self._bot = bot
-        self._config = config
-
-    async def run(self):
-        logger.debug('SlackRTMThread.run()')
-
-        try:
-            if self._listener and self._listener in SLACKRTMS:
-                self._listener.close()
-                SLACKRTMS.remove(self._listener)
-            self._listener = SlackRTM(self._bot, self._config)
-            SLACKRTMS.append(self._listener)
-            await self._listener.start()
-        except Exception as err:
-            logger.exception('SlackRTMThread: unhandled exception: %s', err)
-
-    def __del__(self):
-        if self._listener and self._listener in SLACKRTMS:
-            self._listener.close()
-            SLACKRTMS.remove(self._listener)
