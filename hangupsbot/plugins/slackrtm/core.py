@@ -48,12 +48,11 @@ emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face
 REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
 class SlackRTMSync(object):
-    def __init__(self, slackrtm, channelid, hangoutid, hotag, slacktag, sync_joins=True, image_upload=True, showslackrealnames=False, showhorealnames="real"):
+    def __init__(self, slackrtm, channelid, hangoutid, hotag, slacktag, sync_joins=True, showslackrealnames=False, showhorealnames="real"):
         self.channelid = channelid
         self.hangoutid = hangoutid
         self.hotag = hotag
         self.sync_joins = sync_joins
-        self.image_upload = image_upload
         self.slacktag = slacktag
         self.showslackrealnames = showslackrealnames
         self.showhorealnames = showhorealnames
@@ -70,9 +69,6 @@ class SlackRTMSync(object):
         sync_joins = True
         if 'sync_joins' in sync_dict and not sync_dict['sync_joins']:
             sync_joins = False
-        image_upload = True
-        if 'image_upload' in sync_dict and not sync_dict['image_upload']:
-            image_upload = False
         slacktag = None
         if 'slacktag' in sync_dict:
             slacktag = sync_dict['slacktag']
@@ -90,7 +86,6 @@ class SlackRTMSync(object):
                             sync_dict['hotag'],
                             slacktag,
                             sync_joins,
-                            image_upload,
                             slackrealnames,
                             horealnames)
 
@@ -100,17 +95,15 @@ class SlackRTMSync(object):
             'hangoutid': self.hangoutid,
             'hotag': self.hotag,
             'sync_joins': self.sync_joins,
-            'image_upload': self.image_upload,
             'slacktag': self.slacktag,
             'showslackrealnames': self.showslackrealnames,
             'showhorealnames': self.showhorealnames,
             }
 
     def get_printable_options(self):
-        return 'hotag=%s, sync_joins=%s, image_upload=%s, slacktag=%s, showslackrealnames=%s, showhorealnames="%s"' % (
+        return 'hotag=%s, sync_joins=%s, slacktag=%s, showslackrealnames=%s, showhorealnames="%s"' % (
             '"{}"'.format(self.hotag) if self.hotag else 'NONE',
             self.sync_joins,
-            self.image_upload,
             '"{}"'.format(self.slacktag) if self.slacktag else 'NONE',
             self.showslackrealnames,
             self.showhorealnames,
@@ -546,26 +539,6 @@ class SlackRTM(object):
         slackrtm_conversations_set(self.bot, self.name, syncs)
         return
 
-    def config_setimageupload(self, channel, hangoutid, upload):
-        sync = None
-        for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
-                break
-        if not sync:
-            raise NotSyncingError
-
-        self.logger.info('setting image_upload=%s for sync=%s', upload, sync.to_dict())
-        sync.image_upload = upload
-
-        syncs = slackrtm_conversations_get(self.bot, self.name)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                syncs.remove(sync)
-        self.logger.info('storing new sync=%s with changed hotag', sync)
-        syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
     def config_setslacktag(self, channel, hangoutid, slacktag):
         sync = None
         for sync in self.syncs:
@@ -706,19 +679,13 @@ class SlackRTM(object):
                 channel_name = self.get_chatname(msg.channel)
 
                 if msg.file_attachment:
-                    if sync.image_upload:
-
-                        asyncio.ensure_future(
-                            self.upload_image(
-                                msg.file_attachment,
-                                sync,
-                                username,
-                                msg.user_id,
-                                channel_name))
-
-                    else:
-                        # we should not upload the images, so we have to send the url instead
-                        message += msg.file_attachment
+                    asyncio.ensure_future(
+                        self.upload_image(
+                            msg.file_attachment,
+                            sync,
+                            username,
+                            msg.user_id,
+                            channel_name))
 
                 asyncio.ensure_future(
                     sync._bridgeinstance._send_to_internal_chat(

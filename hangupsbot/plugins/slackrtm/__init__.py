@@ -59,7 +59,6 @@ from .commands_hangouts import (
     slack_syncto,
     slack_disconnect,
     slack_setsyncjoinmsgs,
-    slack_setimageupload,
     slack_sethotag,
     slack_setslacktag,
     slack_showslackrealnames,

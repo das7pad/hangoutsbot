@@ -286,53 +286,6 @@ async def slack_setsyncjoinmsgs(bot, event, *args):
         await bot.coro_send_message(event.conv_id, "membership changes will no longer be synced with {} : {}".format(slackname, channelname))
 
 
-async def slack_setimageupload(bot, event, *args):
-    """enable/disable image upload between the synced conversations (default: enabled)
-
-    usage: /bot slack_setimageupload <teamname> <channelid> {true|false}"""
-
-    if len(args) != 3:
-        await bot.coro_send_message(event.conv_id, "specify exactly three parameters: slack team, slack channel, and \"true\" or \"false\"")
-        return
-
-    slackname = args[0]
-    slackrtm = None
-    for slackrtm in SLACKRTMS:
-        if slackrtm.name == slackname:
-            break
-    if not slackrtm:
-        await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
-        return
-
-    channelid = args[1]
-    channelname = slackrtm.get_chatname(channelid)
-    if not channelname:
-        await bot.coro_send_message(
-            event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
-        return
-
-    flag = args[2]
-    if flag.lower() in ['true', 'on', 'y', 'yes']:
-        flag = True
-    elif flag.lower() in ['false', 'off', 'n', 'no']:
-        flag = False
-    else:
-        await bot.coro_send_message(event.conv_id, "cannot interpret {} as either \"true\" or \"false\"".format(flag))
-        return
-
-    try:
-        slackrtm.config_setimageupload(channelid, event.conv.id_, flag)
-    except NotSyncingError:
-        await bot.coro_send_message(event.conv_id, "current hangout not previously synced with {} : {}".format(slackname, channelname))
-        return
-
-    if flag:
-        await bot.coro_send_message(event.conv_id, "images will be uploaded to this hangout when shared in {} : {}".format(slackname, channelname))
-    else:
-        await bot.coro_send_message(event.conv_id, "images will not be uploaded to this hangout when shared in {} : {}".format(slackname, channelname))
-
-
 async def slack_sethotag(bot, event, *args):
     """sets the identity of current hangout when syncing this conversation
     (default: title of this hangout when sync was set up, use 'none' to disable tagging)

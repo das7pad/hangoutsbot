@@ -65,7 +65,6 @@ COMMANDS_ADMIN = [
     "disconnect",
     "setsyncjoinmsgs",
     "sethotag",
-    "setimageupload",
     "setslacktag",
     "showslackrealnames",
     "showhorealnames",
@@ -464,70 +463,6 @@ async def sethotag(slackbot, msg, args):
     else:
         message += u'OK, messages from Hangout _%s_ will %s in slack channel %s.' % (hangoutname, oktext, channelname)
 
-    await slackbot.api_call(
-        'chat.postMessage',
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def setimageupload(slackbot, msg, args):
-    """admin-only: toggle uploading of shared images to hangouts, default: enabled
-
-    usage: setimageupload [hangouts conversation id] [true|false]"""
-
-    message = '@%s: ' % msg.username
-    if len(args) != 2:
-        message += u'sorry, but you have to specify a Hangout Id and a `true` or `false` for command `setimageupload`'
-        await slackbot.api_call(
-            'chat.postMessage',
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    hangoutid = args[0]
-    upload = args[1]
-    for conv in slackbot.bot.list_conversations():
-        if conv.id_ == hangoutid:
-            hangoutname = slackbot.bot.conversations.get_name(conv)
-            break
-    if not hangoutname:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
-
-    if upload.lower() in ['true', 'on', 'y', 'yes']:
-        upload = True
-    elif upload.lower() in ['false', 'off', 'n', 'no']:
-        upload = False
-    else:
-        message += u'sorry, but "%s" is not "true" or "false"' % upload
-        await slackbot.api_call(
-            'chat.postMessage',
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    try:
-        slackbot.config_setimageupload(msg.channel, hangoutid, upload)
-    except NotSyncingError:
-        message += u'This channel (%s) is not synced with Hangout _%s_, not changing imageupload.' % (channelname, hangoutname)
-    else:
-        message += u'OK, I will %s upload images shared in this channel (%s) with Hangout _%s_.' % (('now' if upload else 'no longer'), channelname, hangoutname)
     await slackbot.api_call(
         'chat.postMessage',
         channel=msg.channel,
