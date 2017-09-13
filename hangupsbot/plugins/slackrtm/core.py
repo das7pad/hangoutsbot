@@ -302,6 +302,28 @@ class SlackRTM(object):
                 repr(err), method, kwargs, parsed)
         raise SlackAPIError(parsed)
 
+    async def send_message(self, **kwargs):
+        """send the content to slack
+
+        Args:
+            kwargs (dict): see api documentation for `chat.postMessage`
+
+        Returns:
+            boolean: True in case of a successful api-call, otherwise False
+
+        Raises:
+            SlackAuthError: the api-token got revoked
+        """
+        self.logger.debug("sending to channel/group %s: %s",
+                          kwargs.get('channel'), kwargs.get('text'))
+        try:
+            await self.api_call('chat.postMessage', **kwargs)
+        except SlackAPIError:
+            # already logged
+            return False
+        else:
+            return True
+
     async def get_slack1on1(self, userid):
         if not userid in self.conversations:
             self.conversations[userid] = (await self.api_call('im.open', user=userid))['channel']
@@ -697,12 +719,11 @@ class SlackRTM(object):
                          "source_title": channel_name}))
 
     async def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url, fragment):
-        await self.api_call('chat.postMessage',
-                            channel=sync.channelid,
-                            text="{} {}".format(image_link, fragment),
-                            username=full_name,
-                            link_names=True,
-                            icon_url=photo_url)
+        await self.send_message(channel=sync.channelid,
+                                text="{} {}".format(image_link, fragment),
+                                username=full_name,
+                                link_names=True,
+                                icon_url=photo_url)
 
     async def handle_ho_message(self, event, conv_id, channel_id):
         user = event.passthru["original_request"]["user"]
@@ -796,12 +817,11 @@ class SlackRTM(object):
             message = "{} {}".format(message, slackrtm_fragment)
 
             self.logger.info("message %s: %s", sync.channelid, message)
-            await self.api_call('chat.postMessage',
-                                channel=sync.channelid,
-                                text=message,
-                                username=display_name,
-                                link_names=True,
-                                icon_url=bridge_user["photo_url"])
+            await self.send_message(channel=sync.channelid,
+                                    text=message,
+                                    username=display_name,
+                                    link_names=True,
+                                    icon_url=bridge_user["photo_url"])
 
     async def handle_ho_membership(self, event):
         # Generate list of added or removed users
@@ -830,11 +850,10 @@ class SlackRTM(object):
                 message = u'%s has left _%s_' % (names, honame)
             message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            await self.api_call('chat.postMessage',
-                                channel=sync.channelid,
-                                text=message,
-                                as_user=True,
-                                link_names=True)
+            await self.send_message(channel=sync.channelid,
+                                    text=message,
+                                    as_user=True,
+                                    link_names=True)
 
     async def handle_ho_rename(self, event):
         name = self.bot.conversations.get_name(event.conv)
@@ -847,11 +866,10 @@ class SlackRTM(object):
             message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
             message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            await self.api_call('chat.postMessage',
-                                channel=sync.channelid,
-                                text=message,
-                                as_user=True,
-                                link_names=True)
+            await self.send_message(channel=sync.channelid,
+                                    text=message,
+                                    as_user=True,
+                                    link_names=True)
 
     def close(self):
         self.logger.debug("closing all bridge instances")

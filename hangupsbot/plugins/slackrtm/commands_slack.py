@@ -31,15 +31,13 @@ async def slack_command_handler(slackbot, msg):
             if msg.user_id in slackbot.admins:
                 return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
             else:
-                await slackbot.api_call(
-                    'chat.postMessage',
+                await slackbot.send_message(
                     channel=msg.channel,
                     text="@{}: {} is an admin-only command".format(msg.username, command),
                     as_user=True,
                     link_names=True)
         else:
-            await slackbot.api_call(
-                'chat.postMessage',
+            await slackbot.send_message(
                 channel=msg.channel,
                 text="@{}: {} is not recognised".format(msg.username, command),
                 as_user=True,
@@ -86,8 +84,7 @@ async def help(slackbot, msg, args):
                 command,
                 getattr(sys.modules[__name__], command).__doc__))
 
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=await slackbot.get_slack1on1(msg.user_id),
         text="\n".join(lines),
         as_user=True,
@@ -96,8 +93,7 @@ async def help(slackbot, msg, args):
 async def whereami(slackbot, msg, args):
     """tells you the current channel/group id"""
 
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=u'@%s: you are in channel %s' % (msg.username, msg.channel),
         as_user=True,
@@ -107,8 +103,7 @@ async def whoami(slackbot, msg, args):
     """tells you your own user id"""
 
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=user_1on1,
         text=u'@%s: your userid is %s' % (msg.username, msg.user_id),
         as_user=True,
@@ -137,8 +132,7 @@ async def whois(slackbot, msg, args):
             message = u'@%s: the user id of _%s_ is %s' % (msg.username, slackbot.get_username(user), user)
 
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=user_1on1,
         text=message,
         as_user=True,
@@ -151,8 +145,7 @@ async def admins(slackbot, msg, args):
     for admin in slackbot.admins:
         message += '@%s: _%s_\n' % (slackbot.get_username(admin), admin)
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=user_1on1,
         text=message,
         as_user=True,
@@ -169,8 +162,7 @@ async def hangoutmembers(slackbot, msg, args):
         for user in slackbot.bot.get_users_in_conversation(sync.hangoutid):
             message += ' + <https://plus.google.com/%s|%s>\n' % (user.id_.gaia_id, user.full_name)
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=user_1on1,
         text=message,
         as_user=True,
@@ -183,8 +175,7 @@ async def identify(slackbot, msg, args):
 
     parameters = list(args)
     if len(parameters) < 1:
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text="supply hangouts user id",
             as_user=True,
@@ -199,8 +190,7 @@ async def identify(slackbot, msg, args):
     _hangouts_uid = parameters.pop(0)
     hangups_user = hangoutsbot.get_hangups_user(_hangouts_uid)
     if hangups_user.is_default:
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text="{} is not a valid hangouts user id".format(_hangouts_uid),
             as_user=True,
@@ -213,8 +203,7 @@ async def identify(slackbot, msg, args):
 
     message = _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid, "slack", remove)
 
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -229,8 +218,7 @@ async def hangouts(slackbot, msg, args):
         message += '*%s:* _%s_\n' % (bot.conversations.get_name(conv_id),
                                      conv_id)
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=user_1on1,
         text=message,
         as_user=True,
@@ -251,8 +239,7 @@ async def listsyncs(slackbot, msg, args):
             sync.get_printable_options()
             )
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=user_1on1,
         text=message,
         as_user=True,
@@ -268,7 +255,7 @@ async def syncto(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if not args:
         message += u'sorry, but you have to specify a Hangout Id for command `syncto`'
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     hangoutid = args[0]
@@ -278,8 +265,7 @@ async def syncto(slackbot, msg, args):
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -299,8 +285,7 @@ async def syncto(slackbot, msg, args):
         message += u'This channel (%s) is already synced with Hangout _%s_.' % (channelname, hangoutname)
     else:
         message += u'OK, I will now sync all messages in this channel (%s) with Hangout _%s_.' % (channelname, hangoutname)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -314,14 +299,14 @@ async def disconnect(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if not args:
         message += u'sorry, but you have to specify a Hangout Id for command `disconnect`'
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     hangoutid = args[0]
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     if msg.channel.startswith('D'):
@@ -334,8 +319,7 @@ async def disconnect(slackbot, msg, args):
         message += u'This channel (%s) is *not* synced with Hangout _%s_.' % (channelname, hangoutid)
     else:
         message += u'OK, I will no longer sync messages in this channel (%s) with Hangout _%s_.' % (channelname, hangoutname)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -349,7 +333,7 @@ async def setsyncjoinmsgs(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if len(args) != 2:
         message += u'sorry, but you have to specify a Hangout Id and a `true` or `false` for command `setsyncjoinmsgs`'
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     hangoutid = args[0]
@@ -357,8 +341,7 @@ async def setsyncjoinmsgs(slackbot, msg, args):
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -376,7 +359,7 @@ async def setsyncjoinmsgs(slackbot, msg, args):
         enable = False
     else:
         message += u'sorry, but "%s" is not "true" or "false"' % enable
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     try:
@@ -385,8 +368,7 @@ async def setsyncjoinmsgs(slackbot, msg, args):
         message += u'This channel (%s) is not synced with Hangout _%s_, not changing syncjoinmsgs.' % (channelname, hangoutname)
     else:
         message += u'OK, I will %s sync join/leave messages in this channel (%s) with Hangout _%s_.' % (('now' if enable else 'no longer'), channelname, hangoutname)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -402,8 +384,7 @@ async def sethotag(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if len(args) < 2:
         message += u'sorry, but you have to specify a Hangout Id and a tag ("none" for no titles; "true" for chatbridge titles) for command `sethotag`'
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -415,8 +396,7 @@ async def sethotag(slackbot, msg, args):
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -444,8 +424,7 @@ async def sethotag(slackbot, msg, args):
     else:
         message += u'OK, messages from Hangout _%s_ will %s in slack channel %s.' % (hangoutname, oktext, channelname)
 
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -459,7 +438,7 @@ async def setslacktag(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if len(args) < 2:
         message += u'sorry, but you have to specify a Hangout Id and a tag ("none" for no titles; "true" for chatbridge titles) for command `setslacktag`'
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     hangoutid = args[0]
@@ -467,8 +446,7 @@ async def setslacktag(slackbot, msg, args):
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -495,8 +473,7 @@ async def setslacktag(slackbot, msg, args):
         message += u'This channel (%s) is not synced with Hangout _%s_, not changing Slack tag.' % (channelname, hangoutname)
     else:
         message += u'OK, messages in this slack channel (%s) will %s in Hangout _%s_.' % (channelname, oktext, hangoutname)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -510,8 +487,7 @@ async def showslackrealnames(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if len(args) != 2:
         message += u'sorry, but you have to specify a Hangout Id and a `true` or `false` for command `showslackrealnames`'
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -523,8 +499,7 @@ async def showslackrealnames(slackbot, msg, args):
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -542,7 +517,7 @@ async def showslackrealnames(slackbot, msg, args):
         realnames = False
     else:
         message += u'sorry, but "%s" is not "true" or "false"' % realnames
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     try:
@@ -551,8 +526,7 @@ async def showslackrealnames(slackbot, msg, args):
         message += u'This channel (%s) is not synced with Hangout _%s_, not changing showslackrealnames.' % (channelname, hangoutname)
     else:
         message += u'OK, I will display %s when syncing messages from this channel (%s) with Hangout _%s_.' % (('realnames' if realnames else 'usernames'), channelname, hangoutname)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
@@ -566,8 +540,7 @@ async def showhorealnames(slackbot, msg, args):
     message = '@%s: ' % msg.username
     if len(args) != 2:
         message += u'sorry, but you have to specify a Hangout Id and a `real`/`nick`/`both` for command `showhorealnames`'
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -579,8 +552,7 @@ async def showhorealnames(slackbot, msg, args):
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.api_call(
-            'chat.postMessage',
+        await slackbot.send_message(
             channel=msg.channel,
             text=message,
             as_user=True,
@@ -594,7 +566,7 @@ async def showhorealnames(slackbot, msg, args):
 
     if realnames not in ['real', 'nick', 'both']:
         message += u'sorry, but "%s" is not one of "real", "nick" or "both"' % realnames
-        await slackbot.api_call('chat.postMessage', channel=msg.channel, text=message, as_user=True, link_names=True)
+        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
         return
 
     try:
@@ -603,8 +575,7 @@ async def showhorealnames(slackbot, msg, args):
         message += u'This channel (%s) is not synced with Hangout _%s_, not changing showhorealnames.' % (channelname, hangoutname)
     else:
         message += u'OK, I will display %s names when syncing messages from this channel (%s) with Hangout _%s_.' % (realnames, channelname, hangoutname)
-    await slackbot.api_call(
-        'chat.postMessage',
+    await slackbot.send_message(
         channel=msg.channel,
         text=message,
         as_user=True,
