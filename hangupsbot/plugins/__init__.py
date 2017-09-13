@@ -635,7 +635,12 @@ async def unload(bot, module_path):
     Raises:
         RuntimeError: the plugin has registered threads
     """
-    plugin = tracking.list.pop(module_path)
+    try:
+        plugin = tracking.list.pop(module_path)
+    except KeyError:
+        logger.debug('Duplicate call on `plugins.unload(bot, "%s")`',
+                     module_path)
+        return True
 
     if plugin["threads"]:
         raise RuntimeError("%s has %s thread(s)" % (module_path,
