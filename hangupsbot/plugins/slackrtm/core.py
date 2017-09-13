@@ -666,22 +666,24 @@ class SlackRTM(object):
     async def handle_reply(self, reply):
         """handle incoming replies from slack"""
 
+        error_message = 'error while parsing a Slack reply\n%s'
+        error_is_critical = True
         try:
             msg = SlackMessage(self, reply)
+
+            error_message = 'error in command handling\nreply=%s'
+            error_is_critical = False
+            await slack_command_handler(self, msg)
         except (ParseError, IgnoreMessage) as err:
             self.logger.debug(repr(err))
             return
-        except Exception as err:
-            self.logger.exception('error parsing Slack reply: %s', repr(err))
-            return
-
-        # commands can be processed even from unsynced channels
-        try:
-            await slack_command_handler(self, msg)
-        except IgnoreMessage:
-            return
-        except Exception as err:
-            self.logger.exception('error in handleCommands: %s', repr(err))
+        except SlackAuthError as err:
+            self.logger.critical(repr(err))
+            # continue with message handling
+        except:
+            self.logger.exception(error_message, repr(reply))
+            if error_is_critical:
+                return
 
         syncs = self.get_syncs(channelid=msg.channel)
         if not syncs:
