@@ -42,6 +42,8 @@ FULL_RIGHTS = {'can_send_messages': True,
                'can_send_media_messages': True,
                'can_send_other_messages': True,
                'can_add_web_page_previews': True}
+RESTRICT_OPTIONS = ('false', 'messages', 'media', 'sticker', 'websites',
+                    'sticker+websites')
 
 def ensure_admin(tg_bot, msg):
     """return whether the user is admin, and respond if be_quiet is off
@@ -656,13 +658,11 @@ async def command_restrict_user(tg_bot, msg, *args):
                          _('This command can be issued in supergroups only'))
         return
 
-    options = ('false', 'messages', 'media', 'sticker', 'websites',
-               'sticker+websites')
-    if not args or args[-1].lower() not in options:
+    if not args or args[-1].lower() not in RESTRICT_OPTIONS:
         tg_bot.send_html(msg.chat_id,
                          _('Check syntax:\n'
                            '/restrict_user <ids | all> <"{options}">').format(
-                               options='" | "'.join(options)))
+                               options='" | "'.join(RESTRICT_OPTIONS)))
         return
 
     chat_users = tg_bot.bot.memory.get_by_path(
@@ -680,53 +680,79 @@ async def command_restrict_user(tg_bot, msg, *args):
                 return
         target_users = args[:-1]
 
-    # filter the bot users user_id
-    target_users = tuple(set(target_users) - set((tg_bot.user.usr_id,)))
+    mode = args[-1].lower()
+    failed = await restrict_users(tg_bot, msg.chat_id, mode, target_users)
 
-    restrict = args[-1].lower()
-    rights = (NO_SENDING_RIGHTS if restrict == 'messages' else
-              NO_MEDIA_RIGHTS if restrict == 'media' else
-              NO_STICKER_RIGHTS if restrict == 'sticker' else
-              NO_WEBPREVIEW_RIGHTS if restrict == 'websites' else
-              NO_WEBPREVIEW_AND_STICKER_RIGHTS if restrict == 'sticker+websites'
+    if failed:
+        lines = [_('/restrict_users failed for:')]
+        for user_id, result in failed.items():
+            lines.append('- %s:\n  %s' % (
+                (await tg_bot.get_tg_user(user_id)).full_name, repr(result)))
+
+        tg_bot.send_html(msg.chat_id, '\n'.join(lines))
+    else:
+        tg_bot.send_html(msg.chat_id, _('/restrict_users finished successful'))
+
+
+async def restrict_users(tg_bot, tg_chat_id, mode, user_ids, silent=False):
+    """limit sending of given message types for users
+
+    Args:
+        tg_bot (core.TelegramBot): the running instance
+        tg_chat_id (str): a Telegram supergroup chat_id
+        mode (str): a restrict mode, see `RESTRICT_OPTIONS`
+        user_ids (iterable): a set of Telegram `user_id`s (str)
+        silent (bool): (optional) set to `True` to disable status messages
+
+    Returns:
+        dict: keys are the `user_id`s of users that could not restricted,
+         values are `Exception`s raised during the restriction or `False`
+
+    Raises:
+        ValueError: the given `mode` is not valid
+    """
+    if mode not in RESTRICT_OPTIONS:
+        raise ValueError('"%s" is not a valid restrict `mode`' % repr(mode))
+
+    # filter the bot users user_id
+    user_ids = tuple(set(user_ids) - set((tg_bot.user.usr_id,)))
+
+    rights = (NO_SENDING_RIGHTS if mode == 'messages' else
+              NO_MEDIA_RIGHTS if mode == 'media' else
+              NO_STICKER_RIGHTS if mode == 'sticker' else
+              NO_WEBPREVIEW_RIGHTS if mode == 'websites' else
+              NO_WEBPREVIEW_AND_STICKER_RIGHTS if mode == 'sticker+websites'
               else FULL_RIGHTS)
 
-    status_msg = await tg_bot.sendMessage(
-        msg.chat_id,
-        _('Processing the queue of /restrict_users for %s users.')
-        % len(target_users))
+    if not silent:
+        status_msg = await tg_bot.sendMessage(
+            tg_chat_id,
+            _('Processing the queue of /restrict_users for %s users.')
+            % len(user_ids))
 
     results = {}
-    for chunk in (target_users[start:start+10]
-                  for start in range(0, len(target_users), 10)):
-        await tg_bot.editMessageText(
-            (msg.chat_id, status_msg['message_id']),
-            _('Finished %s/%s requests for /restrict_users') % (
-                len(results), len(target_users)))
+    for chunk in (user_ids[start:start+10]
+                  for start in range(0, len(user_ids), 10)):
+        if not silent:
+            await tg_bot.editMessageText(
+                (tg_chat_id, status_msg['message_id']),
+                _('Finished %s/%s requests for /restrict_users') % (
+                    len(results), len(user_ids)))
 
         raw_results = await asyncio.gather(
-            *(tg_bot.restrictChatMember(msg.chat_id, user_id, **rights)
+            *(tg_bot.restrictChatMember(tg_chat_id, user_id, **rights)
               for user_id in chunk),
             return_exceptions=True)
 
         results.update({user_id: raw_results.pop(0)
                         for user_id in chunk})
 
-    await tg_bot.deleteMessage((msg.chat_id, status_msg['message_id']))
+    if not silent:
+        await tg_bot.deleteMessage((tg_chat_id, status_msg['message_id']))
 
     failed = {user_id: (result.description
                         if isinstance(result, telepot.exception.TelegramError)
                         else result)
               for user_id, result in results.items()
               if result is not True}
-
-    if failed:
-        for user_id, result in failed.items():
-            failed[user_id] = '- %s:\n  %s' % (
-                (await tg_bot.get_tg_user(user_id)).full_name, result)
-
-        tg_bot.send_html(
-            msg.chat_id, _('/restrict_users failed for:\n') + '\n'.join(
-                failed.values()))
-    else:
-        tg_bot.send_html(msg.chat_id, _('/restrict_users finished successful'))
+    return failed
