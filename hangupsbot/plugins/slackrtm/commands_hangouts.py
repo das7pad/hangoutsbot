@@ -149,11 +149,7 @@ async def slack_listsyncs(bot, event, *args):
 
     for slackrtm in SLACKRTMS:
         for sync in slackrtm.syncs:
-            hangoutname = 'unknown'
-            for conv in bot.list_conversations():
-                if conv.id_ == sync.hangoutid:
-                    hangoutname = bot.conversations.get_name(conv)
-                    break
+            hangoutname = bot.conversations.get_name(sync.hangoutid, 'unknown')
             lines.append("{} : {} ({})\n  {} ({})\n  {}".format(
                 slackrtm.name,
                 slackrtm.get_chatname(sync.channelid),
