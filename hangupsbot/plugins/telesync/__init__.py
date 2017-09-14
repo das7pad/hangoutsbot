@@ -52,10 +52,11 @@ async def _initialise(bot):
     setup_config(bot)
 
     plugins.register_aiohttp_session(POOLS['default'])
+    plugins.register_admin_command(['telesync_set_token'])
     if not bot.config.get_by_path(['telesync', 'enabled']):
         return
 
-    plugins.register_admin_command(['telesync', 'telesync_set_token'])
+    plugins.register_admin_command(['telesync'])
 
     bot.tg_bot = TelegramBot(bot)
     if not await bot.tg_bot.is_running(retry=False):
