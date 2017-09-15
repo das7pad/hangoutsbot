@@ -128,6 +128,7 @@ class SlackRTM(object):
         self.conversations = {}
         self.userinfos = {}
         self.my_uid = None
+        self.identifier = None
         self.name = None
         self.team = {}
         self.syncs = []
@@ -235,6 +236,7 @@ class SlackRTM(object):
             logger.warning('no name set in config file, using computed name %s',
                            self.name)
 
+        self.identifier = 'slackrtm:%s' % self.slack_domain
         self.logger = logging.getLogger('plugins.slackrtm.%s'
                                         % self.slack_domain)
 
@@ -410,6 +412,18 @@ class SlackRTM(object):
 
     def get_username(self, user, default=None):
         return self._get_user_data(user, 'name', default)
+
+    def get_user_picture(self, user, default=None):
+        """get the profile picture of the user or return the default value
+
+        Args:
+            user (str): user_id
+            default (unknwon): value for missing user
+
+        Returns:
+            str: the image url or the default value
+        """
+        return self._get_user_data(user, 'image_original', default)
 
     def get_chatname(self, channel, default=None):
         if channel.startswith('D'):
@@ -698,7 +712,7 @@ class SlackRTM(object):
                 continue
 
             if msg.from_ho_id != sync.hangoutid:
-                username = msg.realname4ho if sync.showslackrealnames else msg.username4ho
+                username = msg.user.full_name if sync.showslackrealnames else msg.user.username
                 channel_name = self.get_chatname(msg.channel)
 
                 if msg.file_attachment:

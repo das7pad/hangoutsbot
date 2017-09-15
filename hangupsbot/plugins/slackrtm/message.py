@@ -7,6 +7,7 @@ from .exceptions import (
     IgnoreMessage,
     ParseError,
 )
+from .user import SlackUser
 
 TYPES_TO_SKIP = (
     'file_created', 'file_shared', 'file_public', 'file_change',
@@ -83,19 +84,12 @@ class SlackMessage(object):
         # convert emoji aliases into their unicode counterparts
         text = emoji.emojize(text, use_aliases=True)
 
-
-        if self.user_id is not None:
-            self.username = slackrtm.get_username(self.user_id,
-                                                  self.user_id)
-            realname4ho = slackrtm.get_realname(self.user_id, self.username)
-        else:
-            realname4ho = self.username
-
         self.is_joinleave = self.subtype in TYPES_MEMBERSHIP_CHANGE
 
+        self.user = SlackUser(slackrtm, user_id=self.user_id,
+                              name=self.username, channel=self.channel)
+        self.username = self.user.username
         self.text = text
-        self.username4ho = self.username
-        self.realname4ho = realname4ho
 
     def set_raw_content(self, reply):
         """set the message text and try to fetch a user (id) or set a username
