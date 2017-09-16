@@ -891,6 +891,7 @@ class SlackRTM(object):
         self.logger.debug("closing all bridge instances")
         for sync in self.syncs:
             sync._bridgeinstance.close()
+        self.syncs.clear()
 
     def __del__(self):
         self.close()
