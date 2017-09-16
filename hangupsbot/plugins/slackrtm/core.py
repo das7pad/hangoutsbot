@@ -10,6 +10,7 @@ import hangups
 import emoji
 
 import hangups_shim as hangups
+import plugins
 
 from .bridgeinstance import (
     BridgeInstance,
@@ -200,7 +201,7 @@ class SlackRTM(object):
 
                 await _build_cache(login_data)
                 _set_selfuser_and_id(login_data)
-                self.rebuild_base()
+                await self.rebuild_base()
 
                 await self._process_websocket(login_data['url'])
             except asyncio.CancelledError:
@@ -221,11 +222,32 @@ class SlackRTM(object):
                 hard_reset = 0
             finally:
                 self.close()
+                try:
+                    # cleanup
+                    await plugins.unload(self.bot, self.identifier)
+                except plugins.NotLoaded:
+                    pass
 
         self.logger.critical('ran out of retries, closing the connection')
 
-    def rebuild_base(self):
+    async def rebuild_base(self):
         """reset everything that is based on the sink config or team data"""
+        async def _register_handler():
+            """register the profilesync and the sync handler"""
+            await plugins.tracking.start({'module.path': self.identifier})
+
+            plugins.register_handler(self._handle_ho_rename, 'rename')
+            plugins.register_handler(self._handle_ho_membership, 'membership')
+
+            # save registered items
+            plugins.tracking.end()
+
+        # cleanup
+        try:
+            await plugins.unload(self.bot, self.identifier)
+        except plugins.NotLoaded:
+            pass
+
         bot_username = self.get_username(self.my_uid)
         self.slack_domain = self.team['domain']
 
@@ -239,6 +261,8 @@ class SlackRTM(object):
         self.identifier = 'slackrtm:%s' % self.slack_domain
         self.logger = logging.getLogger('plugins.slackrtm.%s'
                                         % self.slack_domain)
+
+        await _register_handler()
 
         for admin in self.admins:
             if admin not in self.userinfos:
@@ -839,7 +863,7 @@ class SlackRTM(object):
                                     link_names=True,
                                     icon_url=bridge_user["photo_url"])
 
-    async def handle_ho_membership(self, event):
+    async def _handle_ho_membership(self, event):
         # Generate list of added or removed users
         links = []
         for user_id in event.conv_event.participant_ids:
@@ -871,7 +895,7 @@ class SlackRTM(object):
                                     as_user=True,
                                     link_names=True)
 
-    async def handle_ho_rename(self, event):
+    async def _handle_ho_rename(self, event):
         name = self.bot.conversations.get_name(event.conv)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):

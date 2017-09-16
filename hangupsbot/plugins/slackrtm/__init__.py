@@ -40,7 +40,6 @@ the Hangouts side for more help.
 
 """
 
-import asyncio
 import logging
 
 import plugins
@@ -84,9 +83,6 @@ def _initialise(bot):
         SLACKRTMS.append(rtm)
     logger.info("%d SlackRTM started", len(SLACKRTMS))
 
-    plugins.register_handler(_handle_membership_change, type="membership")
-    plugins.register_handler(_handle_rename, type="rename")
-
     plugins.register_admin_command([
         "slacks",
         "slack_channels",
@@ -103,22 +99,3 @@ def _initialise(bot):
     ])
 
     plugins.register_user_command(["slack_identify"])
-
-@asyncio.coroutine
-def _handle_membership_change(bot, event, command):
-    for slackrtm in SLACKRTMS:
-        try:
-            slackrtm.handle_ho_membership(event)
-        except Exception as err:
-            logger.exception('_handle_membership_change threw: %s', repr(err))
-
-
-@asyncio.coroutine
-def _handle_rename(bot, event, command):
-    if not SLACKRTMS:
-        return
-    for slackrtm in SLACKRTMS:
-        try:
-            slackrtm.handle_ho_rename(event)
-        except Exception as err:
-            logger.exception('_handle_rename threw: %s', repr(err))
