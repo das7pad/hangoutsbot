@@ -88,6 +88,8 @@ class SlackMessage(object):
 
         self.user = SlackUser(slackrtm, user_id=self.user_id,
                               name=self.username, channel=self.channel)
+
+        self.title = slackrtm.get_chatname(self.channel, '')
         self.username = self.user.username
         self.text = text
 

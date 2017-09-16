@@ -706,6 +706,7 @@ class SlackRTM(object):
 
         message = REFFMT.sub(self.match_reference, msg.text)
         message = slack_markdown_to_hangups(message)
+        channel_name = msg.title
 
         for sync in syncs:
             if not sync.sync_joins and msg.is_joinleave:
@@ -713,7 +714,6 @@ class SlackRTM(object):
 
             if msg.from_ho_id != sync.hangoutid:
                 username = msg.user.full_name if sync.showslackrealnames else msg.user.username
-                channel_name = self.get_chatname(msg.channel)
 
                 if msg.file_attachment:
                     asyncio.ensure_future(
