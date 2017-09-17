@@ -12,7 +12,7 @@ from .user import SlackUser
 TYPES_TO_SKIP = (
     'file_created', 'file_shared', 'file_public', 'file_change',
     'file_comment_added', 'file_comment_deleted', 'file_comment_edited',
-    'message_deleted', 'presence_change', 'user_typing', 'pong'
+    'message_deleted',
 )
 
 TYPES_MEMBERSHIP_CHANGE = ('channel_join', 'channel_leave',

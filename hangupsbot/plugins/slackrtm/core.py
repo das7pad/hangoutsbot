@@ -47,6 +47,28 @@ emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face
 
 REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
+# Slack RTM event (sub-)types
+_CACHE_UPDATE_USERS = ('team_join', 'user_change')
+_CACHE_UPDATE_GROUPS = ('group_join', 'group_leave', 'group_close',
+                        'group_open', 'group_rename', 'group_name',
+                        'group_archive', 'group_unarchive')
+_CACHE_UPDATE_GROUPS_HIDDEN = ('group_close', 'group_open',
+                               'group_rename', 'group_name',
+                               'group_archive', 'group_unarchive')
+_CACHE_UPDATE_CHANNELS = ('channel_join', 'channel_leave',
+                          'channel_created', 'channel_deleted',
+                          'channel_rename', 'channel_archive',
+                          'channel_unarchive', 'member_joined_channel')
+_CACHE_UPDATE_CHANNELS_HIDDEN = ('channel_created', 'channel_deleted',
+                                 'channel_rename', 'channel_archive',
+                                 'channel_unarchive', 'member_joined_channel')
+_SYSTEM_MESSAGES = ('hello', 'pong', 'reconnect_url', 'goodbye',
+                    'bot_added', 'bot_changed', 'dnd_updated_user',
+                    'emoji_changed', 'desktop_notification',
+                    'presence_change', 'user_typing')
+_CACHE_UPDATE_TEAM = ('team_rename', 'team_domain_changed')
+
+
 class SlackRTMSync(object):
     def __init__(self, slackrtm, channelid, hangoutid, hotag, slacktag, sync_joins=True, showslackrealnames=False, showhorealnames="real"):
         self.channelid = channelid
@@ -243,6 +265,7 @@ class SlackRTM(object):
             plugins.tracking.end()
 
         # cleanup
+        self.close()
         try:
             await plugins.unload(self.bot, self.identifier)
         except plugins.NotLoaded:
@@ -703,6 +726,39 @@ class SlackRTM(object):
 
     async def handle_reply(self, reply):
         """handle incoming replies from slack"""
+        async def _update_cache_on_event(event_type):
+            """update the internal cache based on team changes
+
+            Args:
+                event_type (str): see https://api.slack.com/rtm for details
+
+            Returns:
+                boolean: True if the reply triggered an update only
+            """
+            if event_type in _CACHE_UPDATE_USERS:
+                await self.update_cache('users')
+            elif event_type in _CACHE_UPDATE_CHANNELS:
+                await self.update_cache('channels')
+                return event_type in _CACHE_UPDATE_CHANNELS_HIDDEN
+            elif event_type in _CACHE_UPDATE_GROUPS:
+                await self.update_cache('groups')
+                return event_type in _CACHE_UPDATE_GROUPS_HIDDEN
+            elif event_type in _SYSTEM_MESSAGES:
+                return True
+            elif event_type in _CACHE_UPDATE_TEAM:
+                await self.update_cache('team')
+                await self.rebuild_base()
+            else:
+                return False
+            return True
+
+        if (await _update_cache_on_event(reply['type'])
+                # no message content
+                or await _update_cache_on_event(reply.get('subtype'))
+                # we do not sync this type
+                or reply.get('is_ephemeral') or reply.get('hidden')):
+                # hidden message from slack
+            return
 
         error_message = 'error while parsing a Slack reply\n%s'
         error_is_critical = True
