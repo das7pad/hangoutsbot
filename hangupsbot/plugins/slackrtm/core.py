@@ -257,10 +257,24 @@ class SlackRTM(object):
         """reset everything that is based on the sink config or team data"""
         async def _register_handler():
             """register the profilesync and the sync handler"""
-            await plugins.tracking.start({'module.path': self.identifier})
+            label = 'Slack (%s)' % self.config.get('name', self.team['name'])
+            await plugins.tracking.start({'module.path': self.identifier,
+                                          'identifier': label})
+
+            self.bot.sync.register_profile_sync(
+                self.identifier,
+                cmd='@%s syncprofile' % self.get_username(self.my_uid,
+                                                          self.my_uid),
+                label=label)
 
             plugins.register_handler(self._handle_ho_rename, 'rename')
             plugins.register_handler(self._handle_ho_membership, 'membership')
+
+            sync_handler = (
+                (self._handle_profilesync, 'profilesync'),
+            )
+            for handler, name in sync_handler:
+                plugins.register_sync_handler(handler, name)
 
             # save registered items
             plugins.tracking.end()
@@ -814,6 +828,7 @@ class SlackRTM(object):
                         sync.hangoutid,
                         message,
                         {"sync": sync,
+                         "msg": msg,
                          "source_user": username,
                          "source_uid": msg.user_id,
                          "source_gid": sync.channelid,
@@ -971,6 +986,47 @@ class SlackRTM(object):
                                     text=message,
                                     as_user=True,
                                     link_names=True)
+
+    async def _handle_profilesync(self, platform, remote_user, conv_1on1,
+                                  split_1on1s):
+        """finish profile sync and set a 1on1 sync if requested
+
+        Args:
+            platform (str): sync platform identifier
+            remote_user (str): user who startet the sycn on a given platform
+            conv_1on1 (str): users 1on1 in hangouts
+            split_1on1s (boolean): toggle to sync the private chats
+        """
+        if platform != self.identifier:
+            return
+
+        slack_user_id = remote_user
+        if split_1on1s:
+            # delete an existing sync
+            try:
+                self.config_disconnect(
+                    await self.get_slack1on1(slack_user_id), conv_1on1)
+            except NotSyncingError:
+                pass
+            text = _('*Your profiles are connected and you will not receive my '
+                     'messages in Slack.*')
+
+            private_chat = await self.get_slack1on1(slack_user_id)
+            await self.send_message(channel=private_chat,
+                                    text=text,
+                                    as_user=True,
+                                    link_names=True)
+        else:
+            # setup a chat sync
+            try:
+                self.config_syncto(
+                    await self.get_slack1on1(slack_user_id), conv_1on1, '1on1')
+            except AlreadySyncingError:
+                pass
+            text = _('*Your profiles are connected and you will receive my '
+                     'messages in Slack as well.*')
+
+        await self.bot.coro_send_message(conv_1on1, text)
 
     def close(self):
         self.logger.debug("closing all bridge instances")

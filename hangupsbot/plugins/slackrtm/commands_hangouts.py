@@ -7,9 +7,6 @@ from .exceptions import (
 from .storage import (
     SLACKRTMS,
 )
-from .utils import (
-    _slackrtm_link_profiles,
-)
 
 
 logger = logging.getLogger(__name__)
@@ -26,47 +23,6 @@ async def slacks(bot, event, *args):
         lines.append("* {}".format(slackrtm.name))
 
     await bot.coro_send_message(event.conv_id, "\n".join(lines))
-
-async def slack_identify(bot, event, *args):
-    """link your slack user
-
-    usage: /bot slack_identify <teamname> <username>"""
-
-    parameters = list(args)
-    if len(parameters) < 2:
-        await bot.coro_send_message(event.conv_id, "supply slack team name and user name")
-        return
-
-    remove = False
-    if "remove" in parameters:
-        parameters.remove("remove")
-        remove = True
-
-    slack_teamname = parameters.pop(0)
-    slackrtm = False
-    for _slackrtm in SLACKRTMS:
-        if _slackrtm.name == slack_teamname:
-            slackrtm = _slackrtm
-    if not slackrtm:
-        await bot.coro_send_message(event.conv_id, "slack team does not exist")
-        return
-
-    usersearch = " ".join(parameters).strip()
-    slack_user = False
-    for _slackuid, _slackuser in slackrtm.userinfos.items():
-        if (_slackuser["name"] == usersearch
-                or _slackuid == usersearch
-                or (_slackuser["real_name"]
-                    and _slackuser["real_name"].lower() == usersearch.lower())):
-            slack_user = _slackuser
-            break
-    if not slack_user:
-        await bot.coro_send_message(event.conv_id, "slack user does not exist")
-        return
-
-    message = _slackrtm_link_profiles(bot, event.user_id.chat_id, slack_teamname, slack_user["id"], "hangouts", remove)
-
-    await bot.coro_send_message(event.conv_id, message)
 
 async def slack_channels(bot, event, *args):
     """list all slack channels available in specified slack team

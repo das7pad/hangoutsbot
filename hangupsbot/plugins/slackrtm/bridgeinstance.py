@@ -113,22 +113,13 @@ class BridgeInstance(WebFramework):
         team_name = sync.team_name
         slack_uid = source_uid
 
-        hangups_user = False
-        try:
-            hangouts_uid = self.bot.memory.get_by_path([ "slackrtm", team_name, "identities", "slack", slack_uid ])
+        msg = external_context['msg']
 
-            # security: the mapping must be bi-directional and point to each other
-            mapped_slack_uid = self.bot.memory.get_by_path([ "slackrtm", team_name, "identities", "hangouts", hangouts_uid ])
-            if mapped_slack_uid != slack_uid:
-                return False
-
-            _hangups_user = self.bot.get_hangups_user(hangouts_uid)
-            if not _hangups_user.is_default:
-                hangups_user = _hangups_user
-        except KeyError:
+        if msg.user.id_.chat_id == 'sync':
             logger.info("no hangups user for {} {}".format(team_name, slack_uid))
+            return False
 
-        return hangups_user
+        return msg.user
 
     def start_listening(self, bot):
         """slackrtm does not use web-bridge style listeners"""

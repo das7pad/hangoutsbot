@@ -8,7 +8,6 @@ from .exceptions import (
     NotSyncingError,
     IgnoreMessage,
 )
-from .utils import _slackrtm_link_profiles
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +78,8 @@ COMMANDS_USER = [
     "whois",
     "admins",
     "hangoutmembers",
-    "identify",
+    "syncprofile",
+    "unsyncprofile",
 ]
 
 COMMANDS_ADMIN = [
@@ -194,46 +194,98 @@ async def hangoutmembers(slackbot, msg, args):
         as_user=True,
         link_names=True)
 
-async def identify(slackbot, msg, args):
-    """link your hangouts user"""
+async def syncprofile(slackbot, msg, dummys):
+    """start the process to sync your slack profile with a G+profile
 
-    hangoutsbot = slackbot.bot
+    Args:
+        slackbot (core.SlackRTM): a running instance
+        msg (message.SlackMessage): the currently handled instance
+        dummys (tuple): additional arguments as strings
 
-    parameters = list(args)
-    if len(parameters) < 1:
-        await slackbot.send_message(
-            channel=msg.channel,
-            text="supply hangouts user id",
-            as_user=True,
-            link_names=True)
-        return
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
+    bot = slackbot.bot
+    user_id = msg.user_id
+    path = ['profilesync', slackbot.identifier]
 
-    remove = False
-    if "remove" in parameters:
-        parameters.remove("remove")
-        remove = True
+    if bot.memory.exists(path + ['2ho', user_id]):
+        text = _('Your profile is already linked to a G+Profile, use '
+                 '*<@{name}> unsyncprofile* to unlink your profiles'
+                ).format(name=slackbot.my_uid)
+        return '1on1', text
 
-    _hangouts_uid = parameters.pop(0)
-    hangups_user = hangoutsbot.get_hangups_user(_hangouts_uid)
-    if hangups_user.is_default:
-        await slackbot.send_message(
-            channel=msg.channel,
-            text="{} is not a valid hangouts user id".format(_hangouts_uid),
-            as_user=True,
-            link_names=True)
-        return
+    if bot.memory.exists(path + ['pending_2ho', user_id]):
+        text = _('* [ REMINDER ] *\n')
+        token = bot.memory.get_by_path(
+            path + ['pending_2ho', user_id])
 
-    hangouts_uid = hangups_user.id_.chat_id
-    slack_teamname = slackbot.name
-    slack_uid = msg.user_id
+    else:
+        text = ''
+        token = bot.sync.start_profile_sync(slackbot.identifier, user_id)
 
-    message = _slackrtm_link_profiles(hangoutsbot, hangouts_uid, slack_teamname, slack_uid, "slack", remove)
+    bot_cmd = bot.command_prefix
+    messages = [text + _(
+        '*Please send me one of the messages below* '
+        '<https://hangouts.google.com/chat/person/{bot_id}|in Hangouts>:\n'
+        'Note: The message must start with *{bot_cmd}*, otherwise I do '
+        'not process your message as a command and ignore your message.'
+        '\nOur private Hangout and this chat will be automatically '
+        'synced. You can then receive mentions and other messages I '
+        'only send to private Hangouts. Use _split_  next to the token '
+        'to block this sync.\nUse *<@{uid}> unsyncprofile* to cancel '
+        'the process.').format(bot_cmd=bot_cmd, uid=slackbot.my_uid,
+                               bot_id=slackbot.bot.user_self()['chat_id'])]
 
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
+    text = '{} syncprofile {}'.format(bot_cmd, token)
+    messages.append(text)
+    messages.append(text + ' split')
+
+    conv_1on1 = await slackbot.get_slack1on1(user_id)
+    for message in messages:
+        await slackbot.send_message(channel=conv_1on1,
+                                    text=message, as_user=True, link_names=True)
+
+async def unsyncprofile(slackbot, msg, dummys):
+    """detach the slack profile from a previously attached G+ profile
+
+    Args:
+        slackbot (core.SlackRTM): a running instance
+        msg (message.SlackMessage): the currently handled instance
+        dummys (tuple): additional arguments as strings
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
+    user_id = msg.user_id
+    private_chat = await slackbot.get_slack1on1(user_id)
+    path = ['profilesync', slackbot.identifier]
+    bot = slackbot.bot
+
+    if bot.memory.exists(path + ['2ho', user_id]):
+        chat_id = bot.memory.pop_by_path(path + ['2ho', user_id])
+        bot.memory.pop_by_path(path + ['ho2', chat_id])
+
+        # cleanup the 1on1 sync, if one was set
+        for private_sync in slackbot.get_syncs(channelid=private_chat):
+            conv_1on1 = private_sync.hangoutid
+            slackbot.config_disconnect(private_chat, conv_1on1)
+        bot.memory.save()
+        text = _('Slack and G+Profile are no more linked.')
+
+    elif bot.memory.exists(path + ['pending_2ho', user_id]):
+        token = bot.memory.pop_by_path(path + ['pending_2ho', user_id])
+        bot.memory.pop_by_path(path + ['pending_ho2', token])
+        bot.memory.pop_by_path(['profilesync', '_pending_', token])
+        bot.memory.save()
+        text = _('Profilesync canceled.')
+
+    else:
+        text = _('There is no G+Profile connected to your Slack Profile'
+                 '.\nUse *<@{name}> syncprofile* to connect one'
+                ).format(name=slackbot.my_uid)
+
+    return private_chat, text
 
 async def hangouts(slackbot, msg, args):
     """admin-only: lists all connected hangouts, suggested: use only in direct message"""

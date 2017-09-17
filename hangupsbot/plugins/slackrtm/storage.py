@@ -44,6 +44,7 @@ def _migrate_data(bot):
         bot: HangupsBot instance
     """
     _migrate_20170319(bot)
+    _migrate_20170917(bot)
 
     bot.config.save()
     bot.memory.save()
@@ -70,3 +71,25 @@ def _migrate_20170319(bot):
             migrated_configurations[team_name] = legacy_team_memory
 
     bot.memory.set_by_path([memory_root_key], migrated_configurations)
+
+def _migrate_20170917(bot):
+    """migrate the synced profiles
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+    """
+    for team, data in bot.memory.get_option('slackrtm').items():
+        if data.get('_migrated_', 0) >= 20170917:
+            continue
+        data['_migrated_'] = 20170917
+        if 'identities' not in data:
+            return
+
+        identifier = 'slackrtm:' + team
+        identities = data['identities']
+        if 'slack' in identities:
+            path_2ho = ['profilesync', identifier, '2ho']
+            bot.memory.set_by_path(path_2ho, identities['slack'])
+        if 'hangouts' in identities:
+            path_ho2 = ['profilesync', identifier, 'ho2']
+            bot.memory.set_by_path(path_ho2, identities['hangouts'])

@@ -62,7 +62,6 @@ from .commands_hangouts import (
     slack_setslacktag,
     slack_showslackrealnames,
     slack_showhorealnames,
-    slack_identify,
 )
 from .core import SlackRTM
 from .storage import (
@@ -97,5 +96,3 @@ def _initialise(bot):
         "slack_showslackrealnames",
         "slack_showhorealnames",
     ])
-
-    plugins.register_user_command(["slack_identify"])
