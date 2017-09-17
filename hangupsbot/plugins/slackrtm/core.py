@@ -150,11 +150,12 @@ class SlackRTM(object):
         self.slack_domain = None
         self.conversations = {}
         self.userinfos = {}
-        self.my_uid = None
+        self.my_uid = ''
         self.identifier = None
         self.name = None
         self.team = {}
         self.syncs = []
+        self.command_prefixes = tuple()
         self._session = aiohttp.ClientSession()
 
     @property
@@ -286,6 +287,10 @@ class SlackRTM(object):
                                         % self.slack_domain)
 
         await _register_handler()
+
+        self.command_prefixes = (self.config['command_prefixes']
+                                 if 'command_prefixes' in self.config else
+                                 ('@hobot', '<@%s>' % self.my_uid.lower()))
 
         for admin in self.admins:
             if admin not in self.userinfos:

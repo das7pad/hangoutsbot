@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import sys
@@ -14,35 +15,60 @@ logger = logging.getLogger(__name__)
 
 
 async def slack_command_handler(slackbot, msg):
-    tokens = msg.text.strip().split()
+    """parse themessage text and run the command of a message
+
+    Args:
+        slackbot (core.SlackRTM): a running instance
+        msg (message.SlackMessage): the currently handled instance
+
+    Raises:
+        IgnoreMessage: do not sync the message as it is a slack-only command
+    """
     if not msg.user_id:
         # do not respond to messages that originate from outside slack
         return
 
+    tokens = msg.text.strip().split()
+
     if len(tokens) < 2:
         return
 
-    if tokens.pop(0).lower() in ["@hobot", "<@" + slackbot.my_uid.lower() + ">"]:
-        command = tokens.pop(0).lower()
-        args = tokens
-        if command in COMMANDS_USER:
-            return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
-        elif command in COMMANDS_ADMIN:
-            if msg.user_id in slackbot.admins:
-                return await getattr(sys.modules[__name__], command)(slackbot, msg, args)
-            else:
-                await slackbot.send_message(
-                    channel=msg.channel,
-                    text="@{}: {} is an admin-only command".format(msg.username, command),
-                    as_user=True,
-                    link_names=True)
-        else:
-            await slackbot.send_message(
-                channel=msg.channel,
-                text="@{}: {} is not recognised".format(msg.username, command),
-                as_user=True,
-                link_names=True)
+    if tokens.pop(0).lower() not in slackbot.command_prefixes:
+        # not a command
+        return
+
+    command = tokens.pop(0).lower()
+    args = tokens
+
+    if command not in COMMANDS_USER and command not in COMMANDS_ADMIN:
+        response = '@{}: {} is not recognised'.format(msg.username, command)
+
+    elif command in COMMANDS_ADMIN and msg.user_id not in slackbot.admins:
+        response = '@{}: {} is an admin-only command'.format(msg.username,
+                                                             command)
+
+    else:
+        func = getattr(sys.modules[__name__], command)
+        response = func(slackbot, msg, args)
+        if asyncio.iscoroutinefunction(func):
+            response = await response
+
+    if isinstance(response, str):
+        text = response
+        channel = msg.channel
+
+    elif isinstance(response, tuple):
+        channel, text = response
+        if channel == '1on1':
+            channel = await slackbot.get_slack1on1(msg.user_id)
+
+    else:
+        # response from command that should not be send
         raise IgnoreMessage()
+
+    await slackbot.send_message(channel=channel, text=text, as_user=True,
+                                link_names=True)
+    raise IgnoreMessage()
 
 # command definitions
 
