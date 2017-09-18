@@ -683,6 +683,29 @@ class TelegramBot(telepot.aio.Bot):
             logger.error('%s in message loop: %s', *message)
             return delay
 
+        async def _handle_update(update):
+            """extract and handle a message of an `Update`
+
+            Args:
+                update (dict): see `https://core.telegram.org/bots/api#update`
+
+            Returns:
+                boolean: True in case the extracted message was handled
+                    successful, otherwise False
+            """
+            message = None
+            try:
+                message = _extract_message(update)[1]
+                await asyncio.shield(self._handle(message))
+            except asyncio.CancelledError:
+                raise
+            except:                                 # pylint:disable=bare-except
+                logger.exception('error in handling message %s of update %s',
+                                 repr(message), repr(update))
+                return False
+            else:
+                return True
+
         hard_reset = 0
         delay = 0.
         offset = None
@@ -698,8 +721,8 @@ class TelegramBot(telepot.aio.Bot):
                     self._receive_next_updates = time.time() + 120
                     for update in updates:
                         offset = update['update_id'] + 1
-                        await asyncio.shield(
-                            self._handle(_extract_message(update)[1]))
+                        if not await _handle_update(update):
+                            break
 
                         # valid message received and handled, exit fail-state
                         hard_reset = 0
