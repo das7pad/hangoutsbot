@@ -10,6 +10,10 @@ from reparser import (
     MatchGroup,
 )
 
+from sync.parser import (
+    get_formatted,
+)
+
 
 SLACK_STYLE = {
     (0, 0, 0): '{text}',
@@ -49,27 +53,6 @@ tokens_slack_to_hangups = [
     Token('pre2',       *markdown1(r'```'),    skip=True) ]
 
 parser_slack_to_hangups = Parser(tokens_slack_to_hangups)
-
-
-# hangups to slack
-
-def markdown2(tag):
-    """Return sequence of start and end regex patterns for simple Markdown tag"""
-    return (markdown2_start.format(tag=tag), markdown2_end.format(tag=tag))
-
-boundary2_chars = r'\s!\'".,<>?*_~=' # hangups to slack
-
-b2_left = r'(?:(?<=[' + boundary2_chars + r'])|(?<=^))'
-b2_right = r'(?:(?=[' + boundary2_chars + r'])|(?=$))'
-
-markdown2_start = b2_left + r'(?<!\\){tag}(?!\s)(?!{tag})'
-markdown2_end = r'(?<!{tag})(?<!\s)(?<!\\){tag}' + b2_right
-
-tokens_hangups_to_slack = [
-    Token('b',          *markdown2(r'\*\*'),    bold=True) ]
-
-parser_hangups_to_slack = Parser(tokens_hangups_to_slack)
-
 
 def render_link(link, label):
     if label in link:
@@ -144,38 +127,6 @@ def slack_markdown_to_hangups(text, debug=False):
     return text
 
 
-def hangups_markdown_to_slack(text, debug=False):
-    lines = text.split("\n")
-    nlines = []
-    output = ""
-    for line in lines:
-        single_line = ""
-
-        segments = parser_hangups_to_slack.parse(line)
-        for segment in [ [segment.text,
-                          segment.params] for segment in segments ]:
-
-            if debug: print(segment)
-
-            text = segment[0]
-            definition = segment[1]
-
-            # convert links to slack format
-            text = re.sub(r"\[(.*?)\]\((.*?)\)", r"<\2|\1>", text)
-
-            wrapper = ""
-            if "bold" in definition and definition["bold"]:
-                # bold
-                wrapper = "*"
-
-            segment_to_text = wrapper + text + wrapper
-            single_line += segment_to_text
-
-        nlines.append(single_line)
-    output = "\n".join(nlines)
-    return output
-
-
 if __name__ == '__main__':
     print("***SLACK MARKDOWN TO HANGUPS")
     print("")
@@ -219,7 +170,7 @@ if __name__ == '__main__':
     print(repr(text))
     print("")
 
-    output = hangups_markdown_to_slack(text, debug=True)
+    output = get_formatted(text, SLACK_STYLE)
     print("")
 
     print(repr(output))
