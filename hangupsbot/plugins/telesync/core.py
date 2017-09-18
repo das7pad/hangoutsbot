@@ -18,7 +18,7 @@ from telepot.loop import _extract_message
 import plugins
 
 from sync.parser import get_formatted
-from sync.sending_queue import AsyncQueue, AsyncQueueCache
+from sync.sending_queue import AsyncQueueCache
 
 from .commands_tg import (
     command_whoami,
@@ -142,7 +142,7 @@ class TelegramBot(telepot.aio.Bot):
         except telepot.exception.UnauthorizedError:
             logger.critical('API-Key revoked!')
         finally:
-            await AsyncQueue('telesync').local_stop(5)
+            await self._cache_sending_queue.stop(timeout=5)
 
             # cancel housekeeping tasks
             for task in tasks:
