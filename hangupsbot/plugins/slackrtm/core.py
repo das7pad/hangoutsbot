@@ -12,6 +12,8 @@ import emoji
 import hangups_shim as hangups
 import plugins
 
+from sync.sending_queue import AsyncQueueCache
+
 from .bridgeinstance import (
     BridgeInstance,
     FakeEvent,
@@ -158,6 +160,7 @@ class SlackRTM(object):
         self.syncs = []
         self.command_prefixes = tuple()
         self._session = aiohttp.ClientSession()
+        self._cache_sending_queue = None
 
     @property
     def admins(self):
@@ -272,6 +275,8 @@ class SlackRTM(object):
                 hard_reset = 0
             finally:
                 self.close()
+                if self._cache_sending_queue is not None:
+                    await self._cache_sending_queue.stop(5)
                 try:
                     # cleanup
                     await plugins.unload(self.bot, self.identifier)
@@ -282,6 +287,28 @@ class SlackRTM(object):
 
     async def rebuild_base(self):
         """reset everything that is based on the sink config or team data"""
+        async def _send_message(**kwargs):
+            """send the content to slack
+
+            Args:
+                kwargs (dict): see api documentation for `chat.postMessage`
+
+            Returns:
+                boolean: True in case of a successful api-call, otherwise False
+
+            Raises:
+                SlackAuthError: the api-token got revoked
+            """
+            self.logger.debug("sending to channel/group %s: %s",
+                              kwargs.get('channel'), kwargs.get('text'))
+            try:
+                await self.api_call('chat.postMessage', **kwargs)
+            except SlackAPIError:
+                # already logged
+                return False
+            else:
+                return True
+
         async def _register_handler():
             """register the profilesync and the sync handler"""
             label = 'Slack (%s)' % self.config.get('name', self.team['name'])
@@ -303,11 +330,16 @@ class SlackRTM(object):
             for handler, name in sync_handler:
                 plugins.register_sync_handler(handler, name)
 
+            self._cache_sending_queue.start()
+
             # save registered items
             plugins.tracking.end()
 
         # cleanup
         self.close()
+        if self._cache_sending_queue is not None:
+            # finish all tasks before updating the identifier
+            await self._cache_sending_queue.stop(5)
         try:
             await plugins.unload(self.bot, self.identifier)
         except plugins.NotLoaded:
@@ -326,6 +358,9 @@ class SlackRTM(object):
         self.identifier = 'slackrtm:%s' % self.slack_domain
         self.logger = logging.getLogger('plugins.slackrtm.%s'
                                         % self.slack_domain)
+
+        self._cache_sending_queue = AsyncQueueCache(
+            self.identifier, _send_message, bot=self.bot)
 
         await _register_handler()
 
@@ -397,27 +432,27 @@ class SlackRTM(object):
                 repr(err), method, kwargs, parsed)
         raise SlackAPIError(parsed)
 
-    async def send_message(self, **kwargs):
-        """send the content to slack
+    def send_message(self, **kwargs):
+        """send a message to a channel keeping the sequence
+
+        `await slackrtm.send_message(<...>)`
+        could be split into
+            `sending_status = slackrtm.send_message(<...>)`
+            `await sending_status`
 
         Args:
-            kwargs (dict): see api documentation for `chat.postMessage`
+            kwargs (dict): see api_call with api-method 'chat.postMessage'
 
         Returns:
-            boolean: True in case of a successful api-call, otherwise False
+            sync.sending_queue.Status: tracker for the scheduled task which
+             returns a boolean value when finished: True on success else False.
 
         Raises:
-            SlackAuthError: the api-token got revoked
+            KeyError: no channel specified in the kwargs
         """
-        self.logger.debug("sending to channel/group %s: %s",
-                          kwargs.get('channel'), kwargs.get('text'))
-        try:
-            await self.api_call('chat.postMessage', **kwargs)
-        except SlackAPIError:
-            # already logged
-            return False
-        else:
-            return True
+        queue = self._cache_sending_queue.get(kwargs['channel'])
+        status = queue.schedule(**kwargs)
+        return status
 
     async def get_slack1on1(self, userid):
         if not userid in self.conversations:
