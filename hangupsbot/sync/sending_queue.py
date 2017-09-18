@@ -300,6 +300,14 @@ class QueueCache(Cache):
         #pylint:disable=arguments-differ
         return super().get(identifier, ignore_timeout=True)
 
+    async def stop(self, timeout):
+        """stop scheduling of new items and await the sending of recent tasks
+
+        Args:
+            timeout (int): timeout in sec to wait for scheduled tasks to finish
+        """
+        await self._queue(*self._default_args).local_stop(timeout)
+
 
 class AsyncQueueCache(QueueCache):
     """caches AsyncQueues and recreates one if a cache miss happens
