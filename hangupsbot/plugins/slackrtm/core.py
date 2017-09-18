@@ -1,9 +1,6 @@
 import asyncio
 import logging
-import mimetypes
-import os
 import re
-import urllib.request
 
 import aiohttp
 import hangups
@@ -13,11 +10,8 @@ import hangups_shim as hangups
 import plugins
 
 from sync.sending_queue import AsyncQueueCache
+from sync.utils import get_sync_config_entry
 
-from .bridgeinstance import (
-    BridgeInstance,
-    FakeEvent,
-)
 from .commands_slack import slack_command_handler
 from .exceptions import (
     AlreadySyncingError,
@@ -32,8 +26,8 @@ from .exceptions import (
 )
 from .message import SlackMessage
 from .parsers import (
+    SLACK_STYLE,
     slack_markdown_to_hangups,
-    hangups_markdown_to_slack,
 )
 from .storage import (
     slackrtm_conversations_set,
@@ -82,11 +76,6 @@ class SlackRTMSync(object):
         self.showhorealnames = showhorealnames
         if self.slacktag == 'NOT_IN_CONFIG':
             self.slacktag = slackrtm.get_teamname()
-        self.team_name = slackrtm.name # chatbridge needs this for context
-
-        self._bridgeinstance = BridgeInstance(slackrtm.bot, "slackrtm")
-
-        self._bridgeinstance.set_extra_configuration(hangoutid, channelid)
 
     @staticmethod
     def from_dict(slackrtm, sync_dict):
@@ -326,6 +315,7 @@ class SlackRTM(object):
 
             sync_handler = (
                 (self._handle_profilesync, 'profilesync'),
+                (self._handle_sync_message, 'allmessages'),
             )
             for handler, name in sync_handler:
                 plugins.register_sync_handler(handler, name)
@@ -595,41 +585,6 @@ class SlackRTM(object):
         out = out.replace('`', '%60')
         return out
 
-    @asyncio.coroutine
-    def upload_image(self, image_uri, sync, username, userid, channel_name):
-        token = self.apikey
-        self.logger.info('downloading %s', image_uri)
-        filename = os.path.basename(image_uri)
-        request = urllib.request.Request(image_uri)
-        request.add_header("Authorization", "Bearer %s" % token)
-        image_response = urllib.request.urlopen(request)
-        content_type = image_response.info().get_content_type()
-
-        filename_extension = mimetypes.guess_extension(content_type).lower() # returns with "."
-        physical_extension = "." + filename.rsplit(".", 1).pop().lower()
-
-        if physical_extension == filename_extension:
-            pass
-        elif filename_extension == ".jpe" and physical_extension in [".jpg", ".jpeg", ".jpe", ".jif", ".jfif"]:
-            # account for mimetypes idiosyncrancy to return jpe for valid jpeg
-            pass
-        else:
-            self.logger.warning("unable to determine extension: %s %s", filename_extension, physical_extension)
-            filename += filename_extension
-
-        self.logger.info('uploading as %s', filename)
-        image_id = yield from self.bot._client.upload_image(image_response, filename=filename)
-
-        self.logger.info('sending HO message, image_id: %s', image_id)
-        yield from sync._bridgeinstance._send_to_internal_chat(
-            sync.hangoutid,
-            "shared media from slack",
-            {"sync": sync,
-             "source_user": username,
-             "source_uid": userid,
-             "source_title": channel_name},
-            image_id=image_id)
-
     def config_syncto(self, channel, hangoutid, shortname):
         for sync in self.syncs:
             if sync.channelid == channel and sync.hangoutid == hangoutid:
@@ -649,7 +604,6 @@ class SlackRTM(object):
         for sync in self.syncs:
             if sync.channelid == channel and sync.hangoutid == hangoutid:
                 self.logger.info('removing running sync: %s', sync)
-                sync._bridgeinstance.close()
                 self.syncs.remove(sync)
         if not sync:
             raise NotSyncingError
@@ -794,7 +748,7 @@ class SlackRTM(object):
                         await asyncio.sleep(2**soft_reset)
                         continue
 
-                    await self.handle_reply(reply)
+                    await self._handle_slack_message(reply)
 
                     # valid response handled, leave fail-state
                     soft_reset = 0
@@ -805,8 +759,12 @@ class SlackRTM(object):
         # can not connect or permanent websocket read error
         raise WebsocketFailed()
 
-    async def handle_reply(self, reply):
-        """handle incoming replies from slack"""
+    async def _handle_slack_message(self, reply):
+        """parse and forward a response from slack
+
+        Args:
+            reply (dict): responce from slack
+        """
         async def _update_cache_on_event(event_type):
             """update the internal cache based on team changes
 
@@ -873,133 +831,57 @@ class SlackRTM(object):
         message = REFFMT.sub(self.match_reference, msg.text)
         message = slack_markdown_to_hangups(message)
         channel_name = msg.title
+        channel_tag = '%s:%s' % (self.identifier, msg.channel)
+
+        if msg.file_attachment:
+            image = self.bot.sync.get_sync_image(
+                url=msg.file_attachment,
+                headers={'Authorization': 'Bearer ' + self.apikey})
+        else:
+            image = None
 
         for sync in syncs:
             if not sync.sync_joins and msg.is_joinleave:
                 continue
 
-            username = msg.user.full_name if sync.showslackrealnames else msg.user.username
+            asyncio.ensure_future(self.bot.sync.message(
+                identifier=channel_tag, conv_id=sync.hangoutid,
+                user=msg.user, text=message, image=image,
+                edited=msg.edited, title=channel_name))
 
-            if msg.file_attachment:
-                asyncio.ensure_future(
-                    self.upload_image(
-                        msg.file_attachment,
-                        sync,
-                        username,
-                        msg.user_id,
-                        channel_name))
+    async def _handle_sync_message(self, bot, event):
+        """forward message/media from any platform to slack
 
-            asyncio.ensure_future(
-                sync._bridgeinstance._send_to_internal_chat(
-                    sync.hangoutid,
-                    message,
-                    {"sync": sync,
-                     "msg": msg,
-                     "source_user": username,
-                     "source_uid": msg.user_id,
-                     "source_gid": sync.channelid,
-                     "source_title": channel_name}))
+        Args:
+            bot (hangupsbot.HangupsBot): the running instance
+            event (sync.event.SyncEvent): instance to be handled
+        """
+        photo_url = ('https:' + event.user.photo_url
+                     if isinstance(event.user.photo_url, str) else None)
 
-    async def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url):
-        await self.send_message(channel=sync.channelid,
-                                text=image_link,
-                                username=full_name,
-                                link_names=True,
-                                icon_url=photo_url)
-
-    async def handle_ho_message(self, event, conv_id, channel_id):
-        user = event.passthru["original_request"]["user"]
-        message = event.passthru["original_request"]["message"]
-
-        if not message:
-            message = ""
-
-        message = hangups_markdown_to_slack(message)
-
-        # NOTE:
-        # slackrtm uses an overengineered pseudo SlackRTMSync "structure" to contain individual 1-1 syncs
-        # we rely on the chatbridge to iterate through multiple syncs, and ensure we only have
-        # to deal with a single mapping at this level
-        # XXX: the mapping SHOULD BE single, but let duplicates get through
-
-        active_syncs = []
-        for sync in self.get_syncs(hangoutid=conv_id):
-            if sync.channelid != channel_id:
+        for sync in self.get_syncs(hangoutid=event.conv_id):
+            channel_tag = '%s:%s' % (self.identifier, sync.channelid)
+            if channel_tag in event.previous_targets:
                 continue
-            if sync.hangoutid != conv_id:
-                continue
-            active_syncs.append(sync)
+            event.previous_targets.add(channel_tag)
 
-        for sync in active_syncs:
-            bridge_user = sync._bridgeinstance._get_user_details(user, {"event": event})
+            message = event.get_formated_text(style=SLACK_STYLE,
+                                              conv_id=channel_tag)
 
-            extras = []
-            if sync.showhorealnames == "nick":
-                display_name = bridge_user["nickname"] or bridge_user["full_name"]
-            else:
-                display_name = bridge_user["full_name"]
-                if (sync.showhorealnames == "both" and bridge_user["nickname"] and
-                        not bridge_user["full_name"] == bridge_user["nickname"]):
-                    extras.append(bridge_user["nickname"])
+            image_url = await event.get_image_url(channel_tag)
+            if image_url is not None:
+                message += '\n' + image_url
 
-            if sync.hotag is True:
-                if "chatbridge" in event.passthru and event.passthru["chatbridge"]["source_title"]:
-                    chat_title = event.passthru["chatbridge"]["source_title"]
-                    extras.append(chat_title)
-            elif sync.hotag:
-                extras.append(sync.hotag)
+            displayname = event.user.get_displayname(channel_tag,
+                                                     text_only=True)
+            if (get_sync_config_entry(bot, channel_tag, 'sync_title') and
+                    event.title(channel_tag)):
+                displayname = '%s (%s)' % (displayname,
+                                           event.title(channel_tag))
 
-            if extras:
-                display_name = "{} ({})".format(display_name, ", ".join(extras))
-
-            # XXX: media sending:
-            # * if media link is already available, send it immediately
-            #   * real events from google servers will have the medialink in event.conv_event.attachment
-            #   * media link can also be added as part of the passthru
-            # * for events raised by other external chats, wait for the public link to become available
-
-
-            if "attachments" in event.passthru["original_request"] and event.passthru["original_request"]["attachments"]:
-                # automatically prioritise incoming events with attachments available
-                media_link = event.passthru["original_request"]["attachments"][0]
-                self.logger.info("media link in original request: %s", media_link)
-
-                message = "shared media: {}".format(media_link)
-
-            elif isinstance(event, FakeEvent):
-                if ("image_id" in event.passthru["original_request"]
-                        and event.passthru["original_request"]["image_id"]):
-                    # without media link, create a deferred post until a public media link becomes available
-                    image_id = event.passthru["original_request"]["image_id"]
-                    self.logger.info("wait for media link: %s", image_id)
-
-                    asyncio.ensure_future(
-                        self.bot._handlers.image_uri_from(
-                            image_id,
-                            self._send_deferred_media,
-                            sync,
-                            display_name,
-                            True,
-                            bridge_user["photo_url"],
-                            ))
-
-            elif (hasattr(event, "conv_event")
-                  and hasattr(event.conv_event, "attachments")
-                  and len(event.conv_event.attachments) == 1):
-                # catch actual events with media link  but didn' go through the passthru
-                media_link = event.conv_event.attachments[0]
-                self.logger.info("media link in original event: %s", media_link)
-
-                message = "shared media: {}".format(media_link)
-
-            # standard message relay
-
-            self.logger.info("message %s: %s", sync.channelid, message)
-            await self.send_message(channel=sync.channelid,
-                                    text=message,
-                                    username=display_name,
-                                    link_names=True,
-                                    icon_url=bridge_user["photo_url"])
+            self.send_message(channel=sync.channelid, text=message,
+                              username=displayname, link_names=True,
+                              icon_url=photo_url, as_user=event.user.is_self)
 
     async def _handle_ho_membership(self, event):
         # Generate list of added or removed users
@@ -1089,9 +971,6 @@ class SlackRTM(object):
         await self.bot.coro_send_message(conv_1on1, text)
 
     def close(self):
-        self.logger.debug("closing all bridge instances")
-        for sync in self.syncs:
-            sync._bridgeinstance.close()
         self.syncs.clear()
 
     def __del__(self):

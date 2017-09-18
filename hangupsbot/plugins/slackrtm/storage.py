@@ -8,6 +8,13 @@ logger = logging.getLogger(__name__)
 SLACKRTMS = []
 
 DEFAULT_CONFIG = {
+    'conversations': {
+        'slackrtm': {
+            # the users name is handled separately
+            'sync_format_message': '{reply}{edited}{image_tag}{text}',
+            'sync_format_bot': '{reply}{edited}{image_tag}{text}',
+        },
+    },
     'slackrtm': [],
 }
 

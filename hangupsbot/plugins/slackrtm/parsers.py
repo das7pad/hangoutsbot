@@ -11,6 +11,23 @@ from reparser import (
 )
 
 
+SLACK_STYLE = {
+    (0, 0, 0): '{text}',
+    (1, 0, 0): '*{text}*',
+    (0, 1, 0): '_{text}_',
+    (1, 1, 0): '_*{text}*_',
+    (0, 0, 1): '<{url}|{text}>',
+    (1, 0, 1): '*<{url}|{text}>*',
+    (0, 1, 1): '_<{url}|{text}>_',
+    (1, 1, 1): '_*<{url}|{text}>*_',
+    'line_break': '\n',
+    'ignore_links_matching_text': True,
+    'allow_hidden_url': True,
+    'escape_html': False,
+    'escape_markdown': False,
+}
+
+
 # slack to hangups
 
 def markdown1(tag):
