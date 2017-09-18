@@ -4,8 +4,8 @@ Improved Slack sync plugin using the Slack RTM API instead of webhooks.
 
 async rewrite: das7pad@outlook.com
 
-Create a Slack bot integration (not webhooks!) for each team you want
-to sync into hangouts.
+Create a new user and setup auth for each team you want to sync into hangouts.
+Get an auth-token here: https://api.slack.com/custom-integrations/legacy-tokens
 
 Your config.json should have a slackrtm section that looks something
 like this.  You only need one entry per Slack team, not per channel,

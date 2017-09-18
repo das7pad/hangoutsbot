@@ -151,6 +151,7 @@ class SlackRTM(object):
         self.conversations = {}
         self.userinfos = {}
         self.my_uid = ''
+        self.my_bid = None
         self.identifier = None
         self.name = None
         self.team = {}
@@ -201,17 +202,43 @@ class SlackRTM(object):
             await asyncio.gather(*(self.update_cache(name)
                                    for name in ('users', 'channels', 'groups')))
 
-        def _set_selfuser_and_id(login_data):
-            """set the bot user
+        async def _set_selfuser_and_ids(login_data):
+            """set the bot user and bot id to filter messages
 
             .rebuild_base() requires the self user being present
 
             Args:
                 login_data (dict): slack-api response of `rtm.connect`, which
                     contains the bot user object in the entry `self`
+
+            Raises:
+                SlackAuthError: the auth-token got revoked
             """
             self.my_uid = login_data['self']['id']
             self.userinfos[self.my_uid] = login_data['self']
+
+            # send a message as a different user in the own dm to capture the
+            # used bot id
+            for retry in range(5):
+                try:
+                    response = await self.api_call(
+                        'chat.postMessage',
+                        channel=await self.get_slack1on1(self.my_uid),
+                        text='~', username='~')
+                    self.my_bid = response['message']['bot_id']
+                except (SlackAPIError, KeyError) as err:
+                    self.logger.error(
+                        'Failed fetch the own `bot_id` [retry %s/5]: %s',
+                        retry, repr(err))
+                else:
+                    return
+
+            # NOTE: bot_messages are not handled further the `SlackMessage` in
+            # general - the user may add custom message parsing to enable
+            # forwarding. A bad parsing could result in duplicates.
+            self.logger.critical('Could not fetch the own `bot_id` used to '
+                                 'filter messages. The instance can not work '
+                                 'efficient now or may send duplicates.')
 
 
         hard_reset = 0
@@ -223,7 +250,7 @@ class SlackRTM(object):
                 login_data = await _login()
 
                 await _build_cache(login_data)
-                _set_selfuser_and_id(login_data)
+                await _set_selfuser_and_ids(login_data)
                 await self.rebuild_base()
 
                 await self._process_websocket(login_data['url'])
@@ -777,6 +804,11 @@ class SlackRTM(object):
                 # we do not sync this type
                 or reply.get('is_ephemeral') or reply.get('hidden')):
                 # hidden message from slack
+            return
+
+        if (('user' in reply and reply['user'] == self.my_uid) or
+                ('bot_id' in reply and reply['bot_id'] == self.my_bid)):
+            # message from the bot user, skip it as we already handled it
             return
 
         error_message = 'error while parsing a Slack reply\n%s'
