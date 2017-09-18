@@ -18,9 +18,6 @@ TYPES_TO_SKIP = (
 TYPES_MEMBERSHIP_CHANGE = ('channel_join', 'channel_leave',
                            'group_join', 'group_leave')
 
-HOIDFMT = re.compile(r'^(.*) <ho://([^/]+)/([^|]+)\| >$',
-                     re.MULTILINE | re.DOTALL)
-
 GUCFMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
                     re.MULTILINE | re.DOTALL)
 
@@ -37,7 +34,6 @@ class SlackMessage(object):
         self.user_id = None
         self.username = None
         self.edited = False
-        self.from_ho_id = None
         self.file_attachment = None
 
         self.subtype = (reply.get('subtype')
@@ -59,16 +55,11 @@ class SlackMessage(object):
             # if no title or comment are given, use the default text as fallback
             text = '\n'.join(lines).strip() or text
 
-        # now we check if the message has the hidden ho relay tag, extract and remove it
-        match = HOIDFMT.match(text)
-        if match:
-            text = match.group(1)
-            self.from_ho_id = match.group(2)
-            if 'googleusercontent.com' in text:
-                match = GUCFMT.match(text)
-                if match:
-                    text = match.group(1)
-                    self.file_attachment = match.group(2)
+        if 'googleusercontent.com' in text:
+            match = GUCFMT.match(text)
+            if match:
+                text = match.group(1)
+                self.file_attachment = match.group(2)
 
         # text now contains the real message, but html entities have to be dequoted still
         text = html.unescape(text)

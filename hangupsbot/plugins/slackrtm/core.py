@@ -843,32 +843,31 @@ class SlackRTM(object):
             if not sync.sync_joins and msg.is_joinleave:
                 continue
 
-            if msg.from_ho_id != sync.hangoutid:
-                username = msg.user.full_name if sync.showslackrealnames else msg.user.username
+            username = msg.user.full_name if sync.showslackrealnames else msg.user.username
 
-                if msg.file_attachment:
-                    asyncio.ensure_future(
-                        self.upload_image(
-                            msg.file_attachment,
-                            sync,
-                            username,
-                            msg.user_id,
-                            channel_name))
-
+            if msg.file_attachment:
                 asyncio.ensure_future(
-                    sync._bridgeinstance._send_to_internal_chat(
-                        sync.hangoutid,
-                        message,
-                        {"sync": sync,
-                         "msg": msg,
-                         "source_user": username,
-                         "source_uid": msg.user_id,
-                         "source_gid": sync.channelid,
-                         "source_title": channel_name}))
+                    self.upload_image(
+                        msg.file_attachment,
+                        sync,
+                        username,
+                        msg.user_id,
+                        channel_name))
 
-    async def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url, fragment):
+            asyncio.ensure_future(
+                sync._bridgeinstance._send_to_internal_chat(
+                    sync.hangoutid,
+                    message,
+                    {"sync": sync,
+                     "msg": msg,
+                     "source_user": username,
+                     "source_uid": msg.user_id,
+                     "source_gid": sync.channelid,
+                     "source_title": channel_name}))
+
+    async def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url):
         await self.send_message(channel=sync.channelid,
-                                text="{} {}".format(image_link, fragment),
+                                text=image_link,
                                 username=full_name,
                                 link_names=True,
                                 icon_url=photo_url)
@@ -918,8 +917,6 @@ class SlackRTM(object):
             if extras:
                 display_name = "{} ({})".format(display_name, ", ".join(extras))
 
-            slackrtm_fragment = "<ho://{}/{}| >".format(conv_id, bridge_user["chat_id"] or bridge_user["preferred_name"])
-
             # XXX: media sending:
             # * if media link is already available, send it immediately
             #   * real events from google servers will have the medialink in event.conv_event.attachment
@@ -949,7 +946,7 @@ class SlackRTM(object):
                             display_name,
                             True,
                             bridge_user["photo_url"],
-                            slackrtm_fragment))
+                            ))
 
             elif (hasattr(event, "conv_event")
                   and hasattr(event.conv_event, "attachments")
@@ -961,8 +958,6 @@ class SlackRTM(object):
                 message = "shared media: {}".format(media_link)
 
             # standard message relay
-
-            message = "{} {}".format(message, slackrtm_fragment)
 
             self.logger.info("message %s: %s", sync.channelid, message)
             await self.send_message(channel=sync.channelid,
@@ -996,7 +991,6 @@ class SlackRTM(object):
             # LEAVE
             else:
                 message = u'%s has left _%s_' % (names, honame)
-            message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
             await self.send_message(channel=sync.channelid,
                                     text=message,
@@ -1012,7 +1006,6 @@ class SlackRTM(object):
             if sync.hotag:
                 hotagaddendum = ' _%s_' % sync.hotag
             message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
-            message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
             self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
             await self.send_message(channel=sync.channelid,
                                     text=message,
