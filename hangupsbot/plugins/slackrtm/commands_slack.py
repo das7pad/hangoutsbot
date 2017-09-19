@@ -177,10 +177,10 @@ async def hangoutmembers(slackbot, msg, args):
 
     message = '@%s: the following users are in the synced Hangout(s):\n' % msg.username
     for sync in slackbot.get_syncs(channelid=msg.channel):
-        hangoutname = slackbot.bot.conversations.get_name(sync.hangoutid,
+        hangoutname = slackbot.bot.conversations.get_name(sync['hangoutid'],
                                                           'unknown')
-        message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync.hangoutid)
-        for user in slackbot.bot.get_users_in_conversation(sync.hangoutid):
+        message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync['hangoutid'])
+        for user in slackbot.bot.get_users_in_conversation(sync['hangoutid']):
             message += ' + <https://plus.google.com/%s|%s>\n' % (user.id_.gaia_id, user.full_name)
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.send_message(
@@ -263,7 +263,7 @@ async def unsyncprofile(slackbot, msg, dummys):
 
         # cleanup the 1on1 sync, if one was set
         for private_sync in slackbot.get_syncs(channelid=private_chat):
-            conv_1on1 = private_sync.hangoutid
+            conv_1on1 = private_sync['hangoutid']
             slackbot.config_disconnect(private_chat, conv_1on1)
         bot.memory.save()
         text = _('Slack and G+Profile are no more linked.')
@@ -302,14 +302,13 @@ async def listsyncs(slackbot, msg, args):
 
     message = '@%s: list of current sync connections with this slack team:\n' % msg.username
     for sync in slackbot.syncs:
-        hangoutname = slackbot.bot.conversations.get_name(sync.hangoutid,
+        hangoutname = slackbot.bot.conversations.get_name(sync['hangoutid'],
                                                           'unknown')
-        message += '*%s (%s) : %s (%s)* _%s_\n' % (
-            slackbot.get_chatname(sync.channelid, 'unknown'),
-            sync.channelid,
+        message += '*%s (%s) : %s (%s)*\n' % (
+            slackbot.get_chatname(sync['channelid'], 'unknown'),
+            sync['channelid'],
             hangoutname,
-            sync.hangoutid,
-            sync.get_printable_options()
+            sync['hangoutid'],
             )
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.send_message(

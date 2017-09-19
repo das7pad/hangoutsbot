@@ -29,8 +29,6 @@ from .parsers import (
 )
 from .storage import (
     migrate_on_domain_change,
-    slackrtm_conversations_set,
-    slackrtm_conversations_get,
 )
 
 
@@ -64,27 +62,6 @@ _SYSTEM_MESSAGES = ('hello', 'pong', 'reconnect_url', 'goodbye',
 _CACHE_UPDATE_TEAM = ('team_rename', 'team_domain_changed')
 
 
-class SlackRTMSync(object):
-    def __init__(self, channelid, hangoutid):
-        self.channelid = channelid
-        self.hangoutid = hangoutid
-
-    @staticmethod
-    def from_dict(sync_dict):
-        return SlackRTMSync(sync_dict['channelid'],
-                            sync_dict['hangoutid'])
-
-    def to_dict(self):
-        return {
-            'channelid': self.channelid,
-            'hangoutid': self.hangoutid,
-            }
-
-    @staticmethod
-    def get_printable_options():
-        return '<deprecated>'
-
-
 class SlackRTM(object):
     """hander for a single slack team
 
@@ -108,7 +85,6 @@ class SlackRTM(object):
         self.identifier = None
         self.name = None
         self.team = {}
-        self.syncs = []
         self.command_prefixes = tuple()
         self._session = aiohttp.ClientSession()
         self._cache_sending_queue = None
@@ -121,6 +97,16 @@ class SlackRTM(object):
             list of strings, a list of slack user ids
         """
         return self.config.get('admins', [])
+
+    @property
+    def syncs(self):
+        """access the memory entry with configured syncs of the current team
+
+        Returns:
+            list: a list of dicts, each has two keys `hangoutid`, `channelid`
+        """
+        return self.bot.memory.get_by_path(
+            ['slackrtm', self.slack_domain, 'synced_conversations'])
 
     async def start(self):
         async def _login():
@@ -225,7 +211,6 @@ class SlackRTM(object):
                 self.logger.info('websocket closed gracefully, restarting')
                 hard_reset = 0
             finally:
-                self.close()
                 if self._cache_sending_queue is not None:
                     await self._cache_sending_queue.stop(5)
                 try:
@@ -288,7 +273,6 @@ class SlackRTM(object):
             plugins.tracking.end()
 
         # cleanup
-        self.close()
         if self._cache_sending_queue is not None:
             # finish all tasks before updating the identifier
             await self._cache_sending_queue.stop(5)
@@ -329,12 +313,6 @@ class SlackRTM(object):
                                     admin)
         if not self.admins:
             self.logger.warning('no admins specified in config file')
-
-        syncs = slackrtm_conversations_get(self.bot, self.slack_domain)
-
-        for sync in syncs:
-            sync = SlackRTMSync.from_dict(sync)
-            self.syncs.append(sync)
 
     async def api_call(self, method, **kwargs):
         """perform an api call to slack
@@ -513,9 +491,9 @@ class SlackRTM(object):
     def get_syncs(self, channelid=None, hangoutid=None):
         syncs = []
         for sync in self.syncs:
-            if channelid == sync.channelid:
+            if channelid == sync['channelid']:
                 syncs.append(sync)
-            elif hangoutid == sync.hangoutid:
+            elif hangoutid == sync['hangoutid']:
                 syncs.append(sync)
         return syncs
 
@@ -549,33 +527,25 @@ class SlackRTM(object):
 
     def config_syncto(self, channel, hangoutid):
         for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
+            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
                 raise AlreadySyncingError
 
-        sync = SlackRTMSync(channel, hangoutid)
-        self.logger.info('adding sync: %s', sync.to_dict())
-        self.syncs.append(sync)
-        syncs = slackrtm_conversations_get(self.bot, self.slack_domain)
-        self.logger.info('storing sync: %s', sync.to_dict())
-        syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.slack_domain, syncs)
+        new_sync = {'channelid': channel, 'hangoutid': hangoutid}
+        self.logger.info('adding sync: %s', new_sync)
+        self.syncs.append(new_sync)
+        self.bot.memory.save()
         return
 
     def config_disconnect(self, channel, hangoutid):
         sync = None
         for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
+            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
                 self.logger.info('removing running sync: %s', sync)
                 self.syncs.remove(sync)
         if not sync:
             raise NotSyncingError
 
-        syncs = slackrtm_conversations_get(self.bot, self.slack_domain)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                self.logger.info('removing stored sync: %s', sync)
-                syncs.remove(sync)
-        slackrtm_conversations_set(self.bot, self.slack_domain, syncs)
+        self.bot.memory.save()
         return
 
     async def _process_websocket(self, url):
@@ -705,14 +675,14 @@ class SlackRTM(object):
         for sync in syncs:
             if msg.is_joinleave is not None:
                 asyncio.ensure_future(self.bot.sync.membership(
-                    identifier=channel_tag, conv_id=sync.hangoutid,
+                    identifier=channel_tag, conv_id=sync['hangoutid'],
                     user=msg.user, text=segments, title=channel_name,
                     type_=msg.is_joinleave,
                     participant_user=msg.participant_user))
                 continue
 
             asyncio.ensure_future(self.bot.sync.message(
-                identifier=channel_tag, conv_id=sync.hangoutid,
+                identifier=channel_tag, conv_id=sync['hangoutid'],
                 user=msg.user, text=segments, image=image,
                 edited=msg.edited, title=channel_name))
 
@@ -727,7 +697,7 @@ class SlackRTM(object):
                      if isinstance(event.user.photo_url, str) else None)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):
-            channel_tag = '%s:%s' % (self.identifier, sync.channelid)
+            channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
             if channel_tag in event.previous_targets:
                 continue
             event.previous_targets.add(channel_tag)
@@ -746,7 +716,7 @@ class SlackRTM(object):
                 displayname = '%s (%s)' % (displayname,
                                            event.title(channel_tag))
 
-            self.send_message(channel=sync.channelid, text=message,
+            self.send_message(channel=sync['channelid'], text=message,
                               username=displayname, link_names=True,
                               icon_url=photo_url, as_user=event.user.is_self)
 
@@ -758,7 +728,7 @@ class SlackRTM(object):
             event (sync.event.SyncEventMembership): instance to be handled
         """
         for sync in self.get_syncs(hangoutid=event.conv_id):
-            channel_tag = '%s:%s' % (self.identifier, sync.channelid)
+            channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
             if channel_tag in event.previous_targets:
                 continue
             event.previous_targets.add(channel_tag)
@@ -769,7 +739,7 @@ class SlackRTM(object):
                 # membership change should not be synced to this channel
                 return
 
-            self.send_message(channel=sync.channelid, text=message,
+            self.send_message(channel=sync['channelid'], text=message,
                               as_user=True, link_names=True)
 
     async def _handle_ho_rename(self, event):
@@ -781,8 +751,8 @@ class SlackRTM(object):
             if sync.hotag:
                 hotagaddendum = ' _%s_' % sync.hotag
             message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
-            self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            await self.send_message(channel=sync.channelid,
+            self.logger.debug("sending to channel/group %s: %s", sync['channelid'], message)
+            await self.send_message(channel=sync['channelid'],
                                     text=message,
                                     as_user=True,
                                     link_names=True)
@@ -828,11 +798,6 @@ class SlackRTM(object):
 
         await self.bot.coro_send_message(conv_1on1, text)
 
-    def close(self):
-        self.syncs.clear()
-
     def __del__(self):
-        self.close()
-
         if self._session is not None:
             self._session.close()

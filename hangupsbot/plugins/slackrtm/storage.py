@@ -30,17 +30,6 @@ DEFAULT_TEAM_MEMORY = {
 }
 
 
-def slackrtm_conversations_set(bot, domain, synced_hangouts):
-    bot.memory.set_by_path(["slackrtm", domain, "synced_conversations"],
-                           synced_hangouts)
-    bot.memory.save()
-
-def slackrtm_conversations_get(bot, domain):
-    full_path = ["slackrtm", domain, "synced_conversations"]
-    if bot.memory.exists(full_path):
-        return bot.memory.get_by_path(full_path)
-    return []
-
 def setup_storage(bot):
     """set defaults and run migration
 

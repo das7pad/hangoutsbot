@@ -105,14 +105,14 @@ async def slack_listsyncs(bot, event, *args):
 
     for slackrtm in SLACKRTMS:
         for sync in slackrtm.syncs:
-            hangoutname = bot.conversations.get_name(sync.hangoutid, 'unknown')
-            lines.append("{} : {} ({})\n  {} ({})\n  {}".format(
+            hangoutname = bot.conversations.get_name(sync['hangoutid'], 'unknown')
+            lines.append("{} : {} ({})\n  {} ({})\n".format(
                 slackrtm.name,
-                slackrtm.get_chatname(sync.channelid),
-                sync.channelid,
+                slackrtm.get_chatname(sync['channelid']),
+                sync['channelid'],
                 hangoutname,
-                sync.hangoutid,
-                sync.get_printable_options()))
+                sync['hangoutid'],
+                ))
 
     await bot.coro_send_message(event.conv_id, "\n".join(lines))
 
