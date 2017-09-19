@@ -14,17 +14,21 @@ unlike the legacy code.
     "slackrtm": [
         {
             "name": "SlackTeamNameForLoggingCommandsEtc",
+            "domain": "my-team.slack.com",
             "key": "SLACK_TEAM1_BOT_API_KEY",
             "admins": [ "U01", "U02" ]
         },
         {
             "name": "OptionalSlackOtherTeamNameForLoggingCommandsEtc",
+            "domain": "my-second-team.slack.com",
             "key": "SLACK_TEAM2_BOT_API_KEY",
             "admins": [ "U01", "U02" ]
         }
     ]
 
 name = slack team name
+domain = the team domain at slack, important to track a domain-change performed
+         while the bot is offline - otherwise we loose track of the memory entry
 key = slack bot api key for that team (xoxb-xxxxxxx...)
 admins = user_id from slack (you can use https://api.slack.com/methods/auth.test/test to find it)
 

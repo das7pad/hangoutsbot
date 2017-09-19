@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 SLACKRTMS = []
 
+LAST_MIGRATION = 20170919
+
 DEFAULT_CONFIG = {
     'conversations': {
         'slackrtm': {
@@ -22,14 +24,19 @@ DEFAULT_MEMORY = {
     'slackrtm': {},
 }
 
+DEFAULT_TEAM_MEMORY = {
+    'synced_conversations': [],
+    '_migrated_': LAST_MIGRATION,
+}
 
-def slackrtm_conversations_set(bot, team_name, synced_hangouts):
-    bot.memory.set_by_path(["slackrtm", team_name, "synced_conversations"],
+
+def slackrtm_conversations_set(bot, domain, synced_hangouts):
+    bot.memory.set_by_path(["slackrtm", domain, "synced_conversations"],
                            synced_hangouts)
     bot.memory.save()
 
-def slackrtm_conversations_get(bot, team_name):
-    full_path = ["slackrtm", team_name, "synced_conversations"]
+def slackrtm_conversations_get(bot, domain):
+    full_path = ["slackrtm", domain, "synced_conversations"]
     if bot.memory.exists(full_path):
         return bot.memory.get_by_path(full_path)
     return []
@@ -43,6 +50,66 @@ def setup_storage(bot):
     bot.config.set_defaults(DEFAULT_CONFIG)
     bot.memory.set_defaults(DEFAULT_MEMORY)
     _migrate_data(bot)
+
+def migrate_on_domain_change(slackrtm, old_domain):
+    """migrate the team data in memory
+
+    Args:
+        slackrtm (core.SlackRTM): a running instance
+        old_domain (str): recent slackdomain of the team
+    """
+    new_domain = slackrtm.slack_domain
+    # cover a missing `domain` entry in slackrtm.config
+    old_domain = slackrtm.name if old_domain is None else old_domain
+
+    if old_domain == new_domain:
+        return
+
+    bot = slackrtm.bot
+    new_path = ['slackrtm', new_domain]
+
+    if bot.memory.exists(new_path):
+        logger.warning('Cancelled migration of synced conversations from domain'
+                       '"%s" to "%s" as the new path already exists',
+                       old_domain, new_domain)
+        return
+
+    old_path = ['slackrtm', old_domain]
+
+    if bot.memory.exists(old_path):
+        data = bot.memory.pop_by_path(old_path)
+    else:
+        # first run
+        data = DEFAULT_TEAM_MEMORY.copy()
+
+    bot.memory.set_by_path(new_path, data)
+
+    # migrate per conversation/per-slackrtm config and memory
+    old_identifier = 'slackrtm:' + old_domain
+    new_identifier = 'slackrtm:' + new_domain
+
+    per_chat_data = (
+        bot.config['conversations'],
+        bot.memory['chattitle'],
+        bot.memory['profilesync'],
+    )
+    for data in per_chat_data:
+        for identifier in data.copy():
+            if (old_identifier not in identifier
+                    or not identifier.startswith('slackrtm:')):
+                continue
+            # covers `slackrtm:<team>` and `slackrtm:<team>:<channel>`
+            new_conv_id = identifier.replace(old_identifier, new_identifier)
+            data[new_conv_id] = data.pop(identifier)
+
+    # migrate pending profilesyns
+    pending_profilesyncs = bot.memory['profilesync']['_pending_']
+    for token, platform in pending_profilesyncs.items():
+        if platform == old_identifier:
+            pending_profilesyncs[token] = new_identifier
+
+    bot.config.save()
+    bot.memory.save()
 
 def _migrate_data(bot):
     """run all migration steps

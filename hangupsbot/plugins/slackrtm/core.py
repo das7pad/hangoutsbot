@@ -28,6 +28,7 @@ from .parsers import (
     SlackMessageSegment,
 )
 from .storage import (
+    migrate_on_domain_change,
     slackrtm_conversations_set,
     slackrtm_conversations_get,
 )
@@ -99,7 +100,7 @@ class SlackRTM(object):
         self.bot = bot
         self.config = sink_config
         self.apikey = self.config['key']
-        self.slack_domain = None
+        self.slack_domain = sink_config.get('domain')
         self.conversations = {}
         self.userinfos = {}
         self.my_uid = ''
@@ -297,7 +298,8 @@ class SlackRTM(object):
             pass
 
         bot_username = self.get_username(self.my_uid)
-        self.slack_domain = self.team['domain']
+        old_domain = self.slack_domain
+        self.slack_domain = self.config['domain'] = self.team['domain']
 
         if 'name' in self.config:
             self.name = self.config['name']
@@ -309,6 +311,8 @@ class SlackRTM(object):
         self.identifier = 'slackrtm:%s' % self.slack_domain
         self.logger = logging.getLogger('plugins.slackrtm.%s'
                                         % self.slack_domain)
+
+        migrate_on_domain_change(self, old_domain)
 
         self._cache_sending_queue = AsyncQueueCache(
             self.identifier, _send_message, bot=self.bot)
@@ -326,7 +330,7 @@ class SlackRTM(object):
         if not self.admins:
             self.logger.warning('no admins specified in config file')
 
-        syncs = slackrtm_conversations_get(self.bot, self.name)
+        syncs = slackrtm_conversations_get(self.bot, self.slack_domain)
 
         for sync in syncs:
             sync = SlackRTMSync.from_dict(sync)
@@ -551,10 +555,10 @@ class SlackRTM(object):
         sync = SlackRTMSync(channel, hangoutid)
         self.logger.info('adding sync: %s', sync.to_dict())
         self.syncs.append(sync)
-        syncs = slackrtm_conversations_get(self.bot, self.name)
+        syncs = slackrtm_conversations_get(self.bot, self.slack_domain)
         self.logger.info('storing sync: %s', sync.to_dict())
         syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.name, syncs)
+        slackrtm_conversations_set(self.bot, self.slack_domain, syncs)
         return
 
     def config_disconnect(self, channel, hangoutid):
@@ -566,12 +570,12 @@ class SlackRTM(object):
         if not sync:
             raise NotSyncingError
 
-        syncs = slackrtm_conversations_get(self.bot, self.name)
+        syncs = slackrtm_conversations_get(self.bot, self.slack_domain)
         for sync in syncs:
             if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
                 self.logger.info('removing stored sync: %s', sync)
                 syncs.remove(sync)
-        slackrtm_conversations_set(self.bot, self.name, syncs)
+        slackrtm_conversations_set(self.bot, self.slack_domain, syncs)
         return
 
     async def _process_websocket(self, url):
