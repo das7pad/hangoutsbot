@@ -52,6 +52,7 @@ def _migrate_data(bot):
     """
     _migrate_20170319(bot)
     _migrate_20170917(bot)
+    _migrate_20170919(bot)
 
     bot.config.save()
     bot.memory.save()
@@ -100,3 +101,34 @@ def _migrate_20170917(bot):
         if 'hangouts' in identities:
             path_ho2 = ['profilesync', identifier, 'ho2']
             bot.memory.set_by_path(path_ho2, identities['hangouts'])
+
+def _migrate_20170919(bot):
+    """extract the config entries for sync behaviour
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+    """
+    for team, data in bot.memory.get_option('slackrtm').items():
+        if data.get('_migrated_', 0) >= 20170919:
+            continue
+        data['_migrated_'] = 20170919
+        identifier = 'slackrtm:' + team
+        for sync in data['synced_conversations']:
+            channel_tag = identifier + ':' + sync['channelid']
+            path = ['conversations', channel_tag]
+
+            do_not_show_nicknames = sync.get('showhorealnames')
+            if do_not_show_nicknames is not None:
+                # do_not_show_nicknames may store `real`, `nick` or `both`
+                bot.config.set_by_path(path + ['sync_nicknames'],
+                                       do_not_show_nicknames != 'real')
+
+            channel_title = sync.get('slacktag')
+            if isinstance(channel_title, str):
+                title_path = ['chattitle', channel_tag]
+                bot.memory.set_by_path(title_path, channel_title)
+
+            sync_joins = sync.get('sync_joins')
+            if sync_joins is not None:
+                for key in ('sync_membership_join', 'sync_membership_leave'):
+                    bot.config.set_by_path(path + [key], sync_joins)
