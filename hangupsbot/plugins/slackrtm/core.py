@@ -27,7 +27,7 @@ from .exceptions import (
 from .message import SlackMessage
 from .parsers import (
     SLACK_STYLE,
-    slack_markdown_to_hangups,
+    SlackMessageSegment,
 )
 from .storage import (
     slackrtm_conversations_set,
@@ -577,9 +577,10 @@ class SlackRTM(object):
                                                 'unknown:%s' % match.group(3))
         else:
             linktarget = match.group(1)
-            if linktext == "":
-                linktext = linktarget
-            out = '[{}]({})'.format(linktext, linktarget)
+            # save '<text>'
+            out = ('<%s|%s>' % (linktarget, linktext) if linktext else
+                   '<%s|%s>' % (linktarget, linktarget) if 'http' in linktarget
+                   else '<%s>' % linktarget)
         out = out.replace('_', '%5F')
         out = out.replace('*', '%2A')
         out = out.replace('`', '%60')
@@ -829,7 +830,7 @@ class SlackRTM(object):
             return
 
         message = REFFMT.sub(self.match_reference, msg.text)
-        message = slack_markdown_to_hangups(message)
+        segments = SlackMessageSegment.from_str(message)
         channel_name = msg.title
         channel_tag = '%s:%s' % (self.identifier, msg.channel)
 
@@ -846,7 +847,7 @@ class SlackRTM(object):
 
             asyncio.ensure_future(self.bot.sync.message(
                 identifier=channel_tag, conv_id=sync.hangoutid,
-                user=msg.user, text=message, image=image,
+                user=msg.user, text=segments, image=image,
                 edited=msg.edited, title=channel_name))
 
     async def _handle_sync_message(self, bot, event):
