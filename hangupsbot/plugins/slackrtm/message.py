@@ -15,8 +15,8 @@ TYPES_TO_SKIP = (
     'message_deleted',
 )
 
-TYPES_MEMBERSHIP_CHANGE = ('channel_join', 'channel_leave',
-                           'group_join', 'group_leave')
+TYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
+TYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')
 
 GUCFMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
                     re.MULTILINE | re.DOTALL)
@@ -31,6 +31,7 @@ class SlackMessage(object):
             raise ParseError('no channel found in reply')
 
         self.text = None
+        self.user = None
         self.user_id = None
         self.username = None
         self.edited = False
@@ -75,10 +76,25 @@ class SlackMessage(object):
         # convert emoji aliases into their unicode counterparts
         text = emoji.emojize(text, use_aliases=True)
 
-        self.is_joinleave = self.subtype in TYPES_MEMBERSHIP_CHANGE
+        if self.subtype in TYPES_MEMBERSHIP_JOIN:
+            self.is_joinleave = 1
+            if 'inviter' in reply:
+                self.user = SlackUser(slackrtm, user_id=reply['inviter'],
+                                      channel=self.channel)
+                self.participant_user = [SlackUser(slackrtm,
+                                                   user_id=self.user_id,
+                                                   channel=self.channel)]
 
-        self.user = SlackUser(slackrtm, user_id=self.user_id,
-                              name=self.username, channel=self.channel)
+        elif self.subtype in TYPES_MEMBERSHIP_LEAVE:
+            self.is_joinleave = 2
+
+        else:
+            self.is_joinleave = None
+
+        if self.user is None:
+            self.user = SlackUser(slackrtm, user_id=self.user_id,
+                                  name=self.username, channel=self.channel)
+            self.participant_user = []
 
         self.title = slackrtm.get_chatname(self.channel, '')
         self.username = self.user.username

@@ -311,11 +311,11 @@ class SlackRTM(object):
                 label=label)
 
             plugins.register_handler(self._handle_ho_rename, 'rename')
-            plugins.register_handler(self._handle_ho_membership, 'membership')
 
             sync_handler = (
                 (self._handle_profilesync, 'profilesync'),
                 (self._handle_sync_message, 'allmessages'),
+                (self._handle_sync_membership, 'membership'),
             )
             for handler, name in sync_handler:
                 plugins.register_sync_handler(handler, name)
@@ -842,7 +842,12 @@ class SlackRTM(object):
             image = None
 
         for sync in syncs:
-            if not sync.sync_joins and msg.is_joinleave:
+            if msg.is_joinleave is not None:
+                asyncio.ensure_future(self.bot.sync.membership(
+                    identifier=channel_tag, conv_id=sync.hangoutid,
+                    user=msg.user, text=segments, title=channel_name,
+                    type_=msg.is_joinleave,
+                    participant_user=msg.participant_user))
                 continue
 
             asyncio.ensure_future(self.bot.sync.message(
@@ -884,36 +889,27 @@ class SlackRTM(object):
                               username=displayname, link_names=True,
                               icon_url=photo_url, as_user=event.user.is_self)
 
-    async def _handle_ho_membership(self, event):
-        # Generate list of added or removed users
-        links = []
-        for user_id in event.conv_event.participant_ids:
-            user = event.conv.get_user(user_id)
-            links.append(u'<https://plus.google.com/%s/about|%s>' % (user.id_.chat_id, user.full_name))
-        names = u', '.join(links)
+    def _handle_sync_membership(self, dummy, event):
+        """notify configured slack channels about a membership change
 
+        Args:
+            dummy (hangupsbot.HangupsBot): unused
+            event (sync.event.SyncEventMembership): instance to be handled
+        """
         for sync in self.get_syncs(hangoutid=event.conv_id):
-            if not sync.sync_joins:
+            channel_tag = '%s:%s' % (self.identifier, sync.channelid)
+            if channel_tag in event.previous_targets:
                 continue
-            if sync.hotag:
-                honame = sync.hotag
-            else:
-                honame = self.bot.conversations.get_name(event.conv)
-            # JOIN
-            if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
-                invitee = u'<https://plus.google.com/%s/about|%s>' % (event.user_id.chat_id, event.user.full_name)
-                if invitee == names:
-                    message = u'%s has joined %s' % (invitee, honame)
-                else:
-                    message = u'%s has added %s to %s' % (invitee, names, honame)
-            # LEAVE
-            else:
-                message = u'%s has left _%s_' % (names, honame)
-            self.logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            await self.send_message(channel=sync.channelid,
-                                    text=message,
-                                    as_user=True,
-                                    link_names=True)
+            event.previous_targets.add(channel_tag)
+
+            message = event.get_formated_text(style=SLACK_STYLE,
+                                              conv_id=channel_tag)
+            if message is None:
+                # membership change should not be synced to this channel
+                return
+
+            self.send_message(channel=sync.channelid, text=message,
+                              as_user=True, link_names=True)
 
     async def _handle_ho_rename(self, event):
         name = self.bot.conversations.get_name(event.conv)
