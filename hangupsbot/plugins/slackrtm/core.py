@@ -79,8 +79,7 @@ class SlackRTM(object):
             raise SlackConfigError('API-`key` is missing in config %s'
                                    % repr(sink_config))
         self.bot = bot
-        self.config = sink_config
-        self.apikey = self.config['key']
+        self.apikey = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}
         self.users = {}
@@ -92,6 +91,33 @@ class SlackRTM(object):
         self.command_prefixes = tuple()
         self._session = aiohttp.ClientSession()
         self._cache_sending_queue = None
+
+    @property
+    def config(self):
+        """get the live-config from the bot-config to allow manual changes
+
+        Returns:
+            dict: sink config
+
+        Raises:
+            SlackConfigError: could not find the sink config or `key` is missing
+        """
+        for config in self.bot.config.get_option('slackrtm'):
+            if config.get('key') == self.apikey:
+                return config
+
+        for config in self.bot.config.get_option('slackrtm'):
+            if config.get('domain') != self.slack_domain:
+                continue
+
+            if 'key' in config:
+                # api-key change
+                self.apikey = config['key']
+                asyncio.ensure_future(self.rebuild_base())
+                return config
+            raise SlackConfigError('API-`key` is missing in config %s' % config)
+        raise SlackConfigError('The config for team "%s" got deleted'
+                               % self.slack_domain)
 
     @property
     def admins(self):
@@ -187,6 +213,7 @@ class SlackRTM(object):
 
         hard_reset = 0
         while hard_reset < 5:
+            self.bot.config.on_reload.add_observer(self.rebuild_base)
             try:
                 await asyncio.sleep(hard_reset*10)
                 hard_reset += 1
@@ -215,6 +242,7 @@ class SlackRTM(object):
                 self.logger.info('websocket closed gracefully, restarting')
                 hard_reset = 0
             finally:
+                self.bot.config.on_reload.remove_observer(self.rebuild_base)
                 if self._cache_sending_queue is not None:
                     await self._cache_sending_queue.stop(5)
                 try:
@@ -285,16 +313,23 @@ class SlackRTM(object):
         except plugins.NotLoaded:
             pass
 
+        # cache the config
+        config = self.config
+
         bot_username = self.get_username(self.my_uid)
         old_domain = self.slack_domain
-        self.slack_domain = self.config['domain'] = self.team['domain']
+        self.slack_domain = config['domain'] = self.team['domain']
 
-        if 'name' in self.config:
-            self.name = self.config['name']
+        if 'name' in config:
+            self.name = config['name']
         else:
             self.name = '%s@%s' % (bot_username, self.slack_domain)
             logger.warning('no name set in config file, using computed name %s',
                            self.name)
+
+        self.command_prefixes = (config['command_prefixes']
+                                 if 'command_prefixes' in config else
+                                 ('@hobot', '<@%s>' % self.my_uid.lower()))
 
         self.identifier = 'slackrtm:%s' % self.slack_domain
         self.logger = logging.getLogger('plugins.slackrtm.%s'
@@ -306,10 +341,6 @@ class SlackRTM(object):
             self.identifier, _send_message, bot=self.bot)
 
         await _register_handler()
-
-        self.command_prefixes = (self.config['command_prefixes']
-                                 if 'command_prefixes' in self.config else
-                                 ('@hobot', '<@%s>' % self.my_uid.lower()))
 
         for admin in self.admins:
             if admin not in self.users:
