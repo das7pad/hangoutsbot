@@ -143,8 +143,8 @@ async def whois(slackbot, msg, args):
             user = match.group(1)
         if not user.startswith('U'):
             # username was given as string instead of mention, lookup in db
-            for uid in slackbot.userinfos:
-                if slackbot.userinfos[uid]['name'] == user:
+            for uid in slackbot.users:
+                if slackbot.users[uid]['name'] == user:
                     user = uid
                     break
         if not user.startswith('U'):

@@ -79,7 +79,7 @@ class SlackRTM(object):
         self.apikey = self.config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}
-        self.userinfos = {}
+        self.users = {}
         self.my_uid = ''
         self.my_bid = None
         self.identifier = None
@@ -155,7 +155,7 @@ class SlackRTM(object):
                 SlackAuthError: the auth-token got revoked
             """
             self.my_uid = login_data['self']['id']
-            self.userinfos[self.my_uid] = login_data['self']
+            self.users[self.my_uid] = login_data['self']
 
             # send a message as a different user in the own dm to capture the
             # used bot id
@@ -308,7 +308,7 @@ class SlackRTM(object):
                                  ('@hobot', '<@%s>' % self.my_uid.lower()))
 
         for admin in self.admins:
-            if admin not in self.userinfos:
+            if admin not in self.users:
                 self.logger.warning('admin userid %s not found in user list',
                                     admin)
         if not self.admins:
@@ -412,7 +412,7 @@ class SlackRTM(object):
         if type_ == 'team':
             self.team = data
         else:
-            storage = self.userinfos if type_ == 'users' else self.conversations
+            storage = self.users if type_ == 'users' else self.conversations
             storage.update({item['id']: item for item in data})
 
     async def get_channel_users(self, channelid, default=None):
@@ -440,11 +440,11 @@ class SlackRTM(object):
         Returns:
             any type, or the default value
         """
-        if user not in self.userinfos:
+        if user not in self.users:
             self.logger.debug('user %s not found, reloading users', user)
             asyncio.ensure_future(self.update_cache('users'))
             return default
-        return self.userinfos[user].get(key, default)
+        return self.users[user].get(key, default)
 
     def _get_channel_data(self, channel, key, default=None):
         """fetch channel info from cache or pull all data once
