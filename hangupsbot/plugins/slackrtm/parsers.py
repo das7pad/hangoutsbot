@@ -1,9 +1,12 @@
+"""parser to process slack markdown"""
+
 from reparser import (
     Token,
     MatchGroup,
 )
 
 from hangups.message_parser import Tokens, url_complete
+from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
 
 from sync.parser import (
     MessageSegment,
@@ -90,7 +93,8 @@ class SlackMessageSegment(MessageSegment):
         segments.extend(super().from_str(split[-1]))
         return segments
 
-if __name__ == '__main__':
+def main():
+    """check the parser"""
     print("***SLACK MARKDOWN TO HANGUPS")
     print("")
 
@@ -102,8 +106,9 @@ if __name__ == '__main__':
             '*\n'
             '_\n'
             '*\n'
-            '¯\_(ツ)_/¯\n'
-            '<http://www.google.com.sg|Google Singapore> <http://www.google.com.my|Google Malaysia>\n'
+            r'¯\_(ツ)_/¯'
+            '\n<http://www.google.com.sg|Google Singapore> '
+            '<http://www.google.com.my|Google Malaysia>\n'
             '<http://www.google.com|www.google.com>\n'
             'www.google.com\n'
             '**hello\n'
@@ -122,20 +127,40 @@ if __name__ == '__main__':
     print("***HANGUPS MARKDOWN TO SLACK PARSER")
     print("")
 
-    text = ('**[bot] test markdown**\n'
-            '**[ABCDEF ABCDEF](https://plus.google.com/u/0/1234567890/about)**\n'
-            '... ([ABC@DEF.GHI](mailto:ABC@DEF.GHI))\n'
-            '... 1234567890\n'
-            '**[XYZ XYZ](https://plus.google.com/u/0/1234567890/about)**\n'
-            '... 0123456789\n'
-            '**`_Users: 2_`**\n'
-            '**`ABC (xyz)`**, chat_id = _1234567890_' )
-    print(repr(text))
+    segments = [
+        MessageSegment(text='[bot] test markdown', is_bold=True),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(
+            text='ABCDEF ABCDEF',
+            link_target='https://plus.google.com/u/0/1234567890/about'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='...('),
+        MessageSegment(text='ABC@DEF.GHI', link_target='mailto:ABC@DEF.GHI'),
+        MessageSegment(text=')'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='... 1234567890'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(
+            text='XYZ XYZ',
+            link_target='https://plus.google.com/u/0/1234567890/about',
+            is_bold=True),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='... 0123456789'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='`_Users: 2_`', is_bold=True),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='`ABC (xyz)`', is_bold=True),
+        MessageSegment(text=', chat_id = '),
+        MessageSegment(text='1234567890', is_italic=True),
+    ]
+    print(repr(get_formatted(segments, 'markdown')))
     print("")
 
-    output = get_formatted(text, SLACK_STYLE)
+    output = get_formatted(segments, SLACK_STYLE)
     print("")
 
     print(repr(output))
     print("")
 
+if __name__ == '__main__':
+    main()
