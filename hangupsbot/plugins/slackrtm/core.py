@@ -3,10 +3,8 @@ import logging
 import re
 
 import aiohttp
-import hangups
 import emoji
 
-import hangups_shim as hangups
 import plugins
 
 from sync.sending_queue import AsyncQueueCache
@@ -66,61 +64,24 @@ _CACHE_UPDATE_TEAM = ('team_rename', 'team_domain_changed')
 
 
 class SlackRTMSync(object):
-    def __init__(self, slackrtm, channelid, hangoutid, hotag, slacktag, sync_joins=True, showslackrealnames=False, showhorealnames="real"):
+    def __init__(self, channelid, hangoutid):
         self.channelid = channelid
         self.hangoutid = hangoutid
-        self.hotag = hotag
-        self.sync_joins = sync_joins
-        self.slacktag = slacktag
-        self.showslackrealnames = showslackrealnames
-        self.showhorealnames = showhorealnames
-        if self.slacktag == 'NOT_IN_CONFIG':
-            self.slacktag = slackrtm.get_teamname()
 
     @staticmethod
-    def from_dict(slackrtm, sync_dict):
-        sync_joins = True
-        if 'sync_joins' in sync_dict and not sync_dict['sync_joins']:
-            sync_joins = False
-        slacktag = None
-        if 'slacktag' in sync_dict:
-            slacktag = sync_dict['slacktag']
-        else:
-            slacktag = 'NOT_IN_CONFIG'
-        slackrealnames = True
-        if 'showslackrealnames' in sync_dict and not sync_dict['showslackrealnames']:
-            slackrealnames = False
-        horealnames = 'real'
-        if 'showhorealnames' in sync_dict:
-            horealnames = sync_dict['showhorealnames']
-        return SlackRTMSync(slackrtm,
-                            sync_dict['channelid'],
-                            sync_dict['hangoutid'],
-                            sync_dict['hotag'],
-                            slacktag,
-                            sync_joins,
-                            slackrealnames,
-                            horealnames)
+    def from_dict(sync_dict):
+        return SlackRTMSync(sync_dict['channelid'],
+                            sync_dict['hangoutid'])
 
     def to_dict(self):
         return {
             'channelid': self.channelid,
             'hangoutid': self.hangoutid,
-            'hotag': self.hotag,
-            'sync_joins': self.sync_joins,
-            'slacktag': self.slacktag,
-            'showslackrealnames': self.showslackrealnames,
-            'showhorealnames': self.showhorealnames,
             }
 
-    def get_printable_options(self):
-        return 'hotag=%s, sync_joins=%s, slacktag=%s, showslackrealnames=%s, showhorealnames="%s"' % (
-            '"{}"'.format(self.hotag) if self.hotag else 'NONE',
-            self.sync_joins,
-            '"{}"'.format(self.slacktag) if self.slacktag else 'NONE',
-            self.showslackrealnames,
-            self.showhorealnames,
-            )
+    @staticmethod
+    def get_printable_options():
+        return '<deprecated>'
 
 
 class SlackRTM(object):
@@ -368,7 +329,7 @@ class SlackRTM(object):
         syncs = slackrtm_conversations_get(self.bot, self.name)
 
         for sync in syncs:
-            sync = SlackRTMSync.from_dict(self, sync)
+            sync = SlackRTMSync.from_dict(sync)
             self.syncs.append(sync)
 
     async def api_call(self, method, **kwargs):
@@ -486,10 +447,6 @@ class SlackRTM(object):
 
         return users
 
-    def get_teamname(self):
-        # team info is static, no need to update
-        return self.team['name']
-
     def _get_user_data(self, user, key, default=None):
         """get user info described by the given key
 
@@ -586,12 +543,12 @@ class SlackRTM(object):
         out = out.replace('`', '%60')
         return out
 
-    def config_syncto(self, channel, hangoutid, shortname):
+    def config_syncto(self, channel, hangoutid):
         for sync in self.syncs:
             if sync.channelid == channel and sync.hangoutid == hangoutid:
                 raise AlreadySyncingError
 
-        sync = SlackRTMSync(self, channel, hangoutid, shortname, self.get_teamname())
+        sync = SlackRTMSync(channel, hangoutid)
         self.logger.info('adding sync: %s', sync.to_dict())
         self.syncs.append(sync)
         syncs = slackrtm_conversations_get(self.bot, self.name)
@@ -614,106 +571,6 @@ class SlackRTM(object):
             if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
                 self.logger.info('removing stored sync: %s', sync)
                 syncs.remove(sync)
-        slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
-    def config_setsyncjoinmsgs(self, channel, hangoutid, enable):
-        sync = None
-        for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
-                break
-        if not sync:
-            raise NotSyncingError
-
-        self.logger.info('setting sync_joins=%s for sync=%s', enable, sync.to_dict())
-        sync.sync_joins = enable
-
-        syncs = slackrtm_conversations_get(self.bot, self.name)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                syncs.remove(sync)
-        self.logger.info('storing new sync=%s with changed sync_joins', sync)
-        syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
-    def config_sethotag(self, channel, hangoutid, hotag):
-        sync = None
-        for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
-                break
-        if not sync:
-            raise NotSyncingError
-
-        self.logger.info('setting hotag="%s" for sync=%s', hotag, sync.to_dict())
-        sync.hotag = hotag
-
-        syncs = slackrtm_conversations_get(self.bot, self.name)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                syncs.remove(sync)
-        self.logger.info('storing new sync=%s with changed hotag', sync)
-        syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
-    def config_setslacktag(self, channel, hangoutid, slacktag):
-        sync = None
-        for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
-                break
-        if not sync:
-            raise NotSyncingError
-
-        self.logger.info('setting slacktag="%s" for sync=%s', slacktag, sync.to_dict())
-        sync.slacktag = slacktag
-
-        syncs = slackrtm_conversations_get(self.bot, self.name)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                syncs.remove(sync)
-        self.logger.info('storing new sync=%s with changed slacktag', sync)
-        syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
-    def config_showslackrealnames(self, channel, hangoutid, realnames):
-        sync = None
-        for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
-                break
-        if not sync:
-            raise NotSyncingError
-
-        self.logger.info('setting showslackrealnames=%s for sync=%s', realnames, sync.to_dict())
-        sync.showslackrealnames = realnames
-
-        syncs = slackrtm_conversations_get(self.bot, self.name)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                syncs.remove(sync)
-        self.logger.info('storing new sync=%s with changed hotag', sync)
-        syncs.append(sync.to_dict())
-        slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
-    def config_showhorealnames(self, channel, hangoutid, realnames):
-        sync = None
-        for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
-                break
-        if not sync:
-            raise NotSyncingError
-
-        self.logger.info('setting showhorealnames=%s for sync=%s', realnames, sync.to_dict())
-        sync.showhorealnames = realnames
-
-        syncs = slackrtm_conversations_get(self.bot, self.name)
-        for sync in syncs:
-            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
-                syncs.remove(sync)
-        self.logger.info('storing new sync=%s with changed hotag', sync)
-        syncs.append(sync.to_dict())
         slackrtm_conversations_set(self.bot, self.name, syncs)
         return
 
@@ -959,7 +816,7 @@ class SlackRTM(object):
             # setup a chat sync
             try:
                 self.config_syncto(
-                    await self.get_slack1on1(slack_user_id), conv_1on1, '1on1')
+                    await self.get_slack1on1(slack_user_id), conv_1on1)
             except AlreadySyncingError:
                 pass
             text = _('*Your profiles are connected and you will receive my '

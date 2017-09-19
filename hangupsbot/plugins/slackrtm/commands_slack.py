@@ -87,11 +87,6 @@ COMMANDS_ADMIN = [
     "listsyncs",
     "syncto",
     "disconnect",
-    "setsyncjoinmsgs",
-    "sethotag",
-    "setslacktag",
-    "showslackrealnames",
-    "showhorealnames",
 ]
 
 async def help(slackbot, msg, args):
@@ -326,9 +321,7 @@ async def listsyncs(slackbot, msg, args):
 async def syncto(slackbot, msg, args):
     """admin-only: sync messages from current channel/group to specified hangout, suggested: use only in direct message
 
-    usage: syncto [hangout conversation id] [optional short title/tag]
-
-    if [short title] specified, messages will be tagged with it, instead of hangout title"""
+    usage: syncto [hangout conversation id]"""
 
     message = '@%s: ' % msg.username
     if not args:
@@ -337,9 +330,6 @@ async def syncto(slackbot, msg, args):
         return
 
     hangoutid = args[0]
-    shortname = None
-    if len(args) > 1:
-        shortname = ' '.join(args[1:])
     hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
     if hangoutname is None:
         message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
@@ -350,15 +340,13 @@ async def syncto(slackbot, msg, args):
             link_names=True)
         return
 
-    if not shortname:
-        shortname = hangoutname
     if msg.channel.startswith('D'):
         channelname = 'DM'
     else:
         channelname = '#%s' % slackbot.get_chatname(msg.channel)
 
     try:
-        slackbot.config_syncto(msg.channel, hangoutid, shortname)
+        slackbot.config_syncto(msg.channel, hangoutid)
     except AlreadySyncingError:
         message += u'This channel (%s) is already synced with Hangout _%s_.' % (channelname, hangoutname)
     else:
@@ -397,262 +385,6 @@ async def disconnect(slackbot, msg, args):
         message += u'This channel (%s) is *not* synced with Hangout _%s_.' % (channelname, hangoutid)
     else:
         message += u'OK, I will no longer sync messages in this channel (%s) with Hangout _%s_.' % (channelname, hangoutname)
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def setsyncjoinmsgs(slackbot, msg, args):
-    """admin-only: toggle messages about membership changes in synced hangout conversation, default: enabled
-
-    usage: setsyncjoinmsgs [hangouts conversation id] [true|false]"""
-
-    message = '@%s: ' % msg.username
-    if len(args) != 2:
-        message += u'sorry, but you have to specify a Hangout Id and a `true` or `false` for command `setsyncjoinmsgs`'
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
-
-    hangoutid = args[0]
-    enable = args[1]
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
-
-    if enable.lower() in ['true', 'on', 'y', 'yes']:
-        enable = True
-    elif enable.lower() in ['false', 'off', 'n', 'no']:
-        enable = False
-    else:
-        message += u'sorry, but "%s" is not "true" or "false"' % enable
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
-
-    try:
-        slackbot.config_setsyncjoinmsgs(msg.channel, hangoutid, enable)
-    except NotSyncingError:
-        message += u'This channel (%s) is not synced with Hangout _%s_, not changing syncjoinmsgs.' % (channelname, hangoutname)
-    else:
-        message += u'OK, I will %s sync join/leave messages in this channel (%s) with Hangout _%s_.' % (('now' if enable else 'no longer'), channelname, hangoutname)
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def sethotag(slackbot, msg, args):
-    """admin-only: sets an alternate short title/tag to show on hangouts message (instead of conversation title)
-
-    default: hangouts conversation title
-
-    usage: sethotag [hangouts conversation id] [short title/tag|none]"""
-
-    message = '@%s: ' % msg.username
-    if len(args) < 2:
-        message += u'sorry, but you have to specify a Hangout Id and a tag ("none" for no titles; "true" for chatbridge titles) for command `sethotag`'
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    hangoutid = args[0]
-    hotag = ' '.join(args[1:])
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
-
-    if hotag == "none":
-        hotag = None
-        oktext = '*not* be tagged'
-    elif hotag == "true":
-        hotag = True
-        oktext = 'be tagged with chatbridge-compatible titles'
-    else:
-        oktext = 'be tagged with " (%s)"' % hotag
-
-    try:
-        slackbot.config_sethotag(msg.channel, hangoutid, hotag)
-    except NotSyncingError:
-        message += u'This channel (%s) is not synced with Hangout _%s_, not changing Hangout tag.' % (channelname, hangoutname)
-    else:
-        message += u'OK, messages from Hangout _%s_ will %s in slack channel %s.' % (hangoutname, oktext, channelname)
-
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def setslacktag(slackbot, msg, args):
-    """admin-only: sets an alternate short title/tag to show for slack messages relayed to hangouts (instead of slack team name)
-
-    usage: setslacktag [hangouts conversation id] [short title/tag|none]"""
-
-    message = '@%s: ' % msg.username
-    if len(args) < 2:
-        message += u'sorry, but you have to specify a Hangout Id and a tag ("none" for no titles; "true" for chatbridge titles) for command `setslacktag`'
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
-
-    hangoutid = args[0]
-    slacktag = ' '.join(args[1:])
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
-
-    if slacktag == "none":
-        slacktag = None
-        oktext = '*not* be tagged'
-    elif slacktag == "true":
-        slacktag = True
-        oktext = 'be tagged with chatbridge-compatible titles'
-    else:
-        oktext = 'be tagged with " (%s)"' % slacktag
-
-    try:
-        slackbot.config_setslacktag(msg.channel, hangoutid, slacktag)
-    except NotSyncingError:
-        message += u'This channel (%s) is not synced with Hangout _%s_, not changing Slack tag.' % (channelname, hangoutname)
-    else:
-        message += u'OK, messages in this slack channel (%s) will %s in Hangout _%s_.' % (channelname, oktext, hangoutname)
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def showslackrealnames(slackbot, msg, args):
-    """admin-only: toggle display of real names or usernames in hangouts, default: usernames
-
-    usage: showslackrealnames [hangouts conversation id] [true|false]"""
-
-    message = '@%s: ' % msg.username
-    if len(args) != 2:
-        message += u'sorry, but you have to specify a Hangout Id and a `true` or `false` for command `showslackrealnames`'
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    hangoutid = args[0]
-    realnames = args[1]
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
-
-    if realnames.lower() in ['true', 'on', 'y', 'yes']:
-        realnames = True
-    elif realnames.lower() in ['false', 'off', 'n', 'no']:
-        realnames = False
-    else:
-        message += u'sorry, but "%s" is not "true" or "false"' % realnames
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
-
-    try:
-        slackbot.config_showslackrealnames(msg.channel, hangoutid, realnames)
-    except NotSyncingError:
-        message += u'This channel (%s) is not synced with Hangout _%s_, not changing showslackrealnames.' % (channelname, hangoutname)
-    else:
-        message += u'OK, I will display %s when syncing messages from this channel (%s) with Hangout _%s_.' % (('realnames' if realnames else 'usernames'), channelname, hangoutname)
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def showhorealnames(slackbot, msg, args):
-    """admin-only: show real names and/or usernames for hangouts messages in slack, default: real
-
-    usage: showhorealnames [hangouts conversation id] [real|nick|both]"""
-
-    message = '@%s: ' % msg.username
-    if len(args) != 2:
-        message += u'sorry, but you have to specify a Hangout Id and a `real`/`nick`/`both` for command `showhorealnames`'
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    hangoutid = args[0]
-    realnames = args[1]
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
-
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
-
-    if realnames not in ['real', 'nick', 'both']:
-        message += u'sorry, but "%s" is not one of "real", "nick" or "both"' % realnames
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
-
-    try:
-        slackbot.config_showhorealnames(msg.channel, hangoutid, realnames)
-    except NotSyncingError:
-        message += u'This channel (%s) is not synced with Hangout _%s_, not changing showhorealnames.' % (channelname, hangoutname)
-    else:
-        message += u'OK, I will display %s names when syncing messages from this channel (%s) with Hangout _%s_.' % (realnames, channelname, hangoutname)
     await slackbot.send_message(
         channel=msg.channel,
         text=message,

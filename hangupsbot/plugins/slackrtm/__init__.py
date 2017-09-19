@@ -57,11 +57,6 @@ from .commands_hangouts import (
     slack_listsyncs,
     slack_syncto,
     slack_disconnect,
-    slack_setsyncjoinmsgs,
-    slack_sethotag,
-    slack_setslacktag,
-    slack_showslackrealnames,
-    slack_showhorealnames,
 )
 from .core import SlackRTM
 from .storage import (
@@ -88,11 +83,5 @@ def _initialise(bot):
         "slack_listsyncs",
         "slack_syncto",
         "slack_disconnect",
-        "slack_setsyncjoinmsgs",
-        "slack_setimageupload",
-        "slack_sethotag",
         "slack_users",
-        "slack_setslacktag",
-        "slack_showslackrealnames",
-        "slack_showhorealnames",
     ])
