@@ -63,6 +63,7 @@ from .commands_hangouts import (
     slack_disconnect,
 )
 from .core import SlackRTM
+from .exceptions import SlackConfigError
 from .storage import (
     SLACKRTMS,
     setup_storage,
@@ -76,9 +77,13 @@ def _initialise(bot):
     setup_storage(bot)
 
     for sink_config in bot.get_config_option('slackrtm'):
-        rtm = SlackRTM(bot, sink_config)
-        plugins.start_asyncio_task(rtm.start())
-        SLACKRTMS.append(rtm)
+        try:
+            slackrtm = SlackRTM(bot, sink_config)
+        except SlackConfigError as err:
+            logger.error(repr(err))
+        else:
+            SLACKRTMS.append(slackrtm)
+            plugins.start_asyncio_task(slackrtm.start)
     logger.info("%d SlackRTM started", len(SLACKRTMS))
 
     plugins.register_admin_command([

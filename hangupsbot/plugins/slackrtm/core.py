@@ -21,6 +21,7 @@ from .exceptions import (
     SlackAPIError,
     SlackRateLimited,
     SlackAuthError,
+    SlackConfigError,
 )
 from .message import SlackMessage
 from .parsers import (
@@ -74,6 +75,9 @@ class SlackRTM(object):
     logger = logger
 
     def __init__(self, bot, sink_config):
+        if  not isinstance(sink_config, dict) or 'key' not in sink_config:
+            raise SlackConfigError('API-`key` is missing in config %s'
+                                   % repr(sink_config))
         self.bot = bot
         self.config = sink_config
         self.apikey = self.config['key']

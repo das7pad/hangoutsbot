@@ -34,3 +34,7 @@ class SlackRateLimited(SlackAPIError):
 
 class SlackAuthError(SlackAPIError):
     """error on login"""
+
+
+class SlackConfigError(SlackAuthError):
+    """critical config error: api-key or complete config missing"""
