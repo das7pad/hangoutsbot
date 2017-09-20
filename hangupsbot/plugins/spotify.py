@@ -21,6 +21,7 @@ from spotipy.util import prompt_for_user_token as spotify_get_auth_stdin
 import appdirs
 import soundcloud
 
+import commands                              # pylint:disable=wrong-import-order
 import plugins
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,20 @@ _BLACKLIST_FOLLOWING = (r"official\s+video", r"official\s+music",
                         r"video\s+lyric", r"video\s+lyrics",
                         r"video\s+clip", r"full\s+video")
 
+HELP = {
+    'spotify': _('Commands to manage the Spotify playlist.\n'
+                 '<b>{bot_cmd} spotify</b> Returns whether Spotify is enabled '
+                 'in the current conversation\n'
+                 '<b>{bot_cmd} spotify on/off</b> Turns Spotify on or off.\n'
+                 '<b>{bot_cmd} spotify playlist</b> Returns the chat\'s '
+                 'playlist URL.\n'
+                 '<b>{bot_cmd} spotify <query></b> Directly adds a track to the'
+                 ' playlist.\n'
+                 '<b>{bot_cmd} spotify remove <track></b> Removes the track '
+                 'from the playlist.')
+}
+
+
 class _MissingAuth(Exception):
     """Could not find a token to authenticate an api-call"""
 
@@ -77,8 +92,6 @@ def _initialise(bot):
     logging.getLogger("googleapiclient.discovery").setLevel(logging.WARNING)
 
     # the spotify module stores user data in random locations, set a static one
-    if not bot.config.exists(["spotify", "spotify"]):
-        bot.config.config.setdefault("spotify", {}).setdefault("spotify", {})
     config_path = ["spotify", "spotify", "storage"]
     if not bot.config.exists(config_path):
         bot_id = bot.user_self()["chat_id"]
@@ -88,6 +101,7 @@ def _initialise(bot):
 
     plugins.register_handler(_watch_for_music_link, "message")
     plugins.register_user_command(["spotify"])
+    plugins.register_help(HELP)
 
 async def _watch_for_music_link(bot, event):
     """resolve music links to their titles and add the tracks to spotify
@@ -140,26 +154,26 @@ async def _watch_for_music_link(bot, event):
         await bot.coro_send_message(event.conv.id_, success)
 
 def spotify(bot, event, *args):
-    """Commands to manage the Spotify playlist.
+    """the core command for the plugin
 
-    <b>/bot spotify</b> Returns whether Spotify is on or off.
+    see `HELP['spotify']` for details
 
-    <b>/bot spotify on/off</b> Turns Spotify on or off.
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        event (sync.event.SyncEvent): the currently handled instance
 
-    <b>/bot spotify playlist</b> Returns the chat's playlist URL.
+    Returns:
+        str: the command output
 
-    <b>/bot spotify <query></b> Directly adds a track to the playlist.
-
-    <b>/bot spotify remove <track></b> Removes the track from the playlist.
+    Raises:
+        commands.Help: invalid request or command help requested
     """
     # Start with Spotify off.
     enabled = bot.conversation_memory_get(event.conv_id, "spotify_enabled")
 
     if not args:
         state = "on" if enabled else "off"
-        result = _("<em>Spotify is <b>{}</b>.</em>").format(state)
-        yield from bot.coro_send_message(event.conv_id, result)
-        return
+        return _("<em>Spotify is <b>{}</b>.</em>").format(state)
 
     command = args[0]
 
@@ -172,9 +186,10 @@ def spotify(bot, event, *args):
             event.conv_id, "spotify_enabled", enabled)
     elif not enabled:
         result = _("<em>Spotify is <b>off</b>. To turn it on, "
-                   "use <b>/bot spotify on</b></em>")
+                   "use <b>{bot_cmd} spotify on</b></em>").format(
+                       bot_cmd=bot.command_prefix)
     elif command == "help" and len(args) == 1:
-        result = _("<em>Did you mean <b>/bot help spotify</b>?</em>")
+        raise commands.Help()
     elif command == "playlist" and len(args) == 1:
         try:
             playlist = get_chat_playlist(bot, event)
