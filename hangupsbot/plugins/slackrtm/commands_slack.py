@@ -77,7 +77,6 @@ COMMANDS_USER = [
     "whoami",
     "whois",
     "admins",
-    "hangoutmembers",
     "syncprofile",
     "unsyncprofile",
 ]
@@ -165,23 +164,6 @@ async def admins(slackbot, msg, args):
     message = '@%s: my admins are:\n' % msg.username
     for admin in slackbot.admins:
         message += '@%s: _%s_\n' % (slackbot.get_username(admin), admin)
-    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.send_message(
-        channel=user_1on1,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def hangoutmembers(slackbot, msg, args):
-    """lists the users of the hangouts synced to this channel"""
-
-    message = '@%s: the following users are in the synced Hangout(s):\n' % msg.username
-    for sync in slackbot.get_syncs(channelid=msg.channel):
-        hangoutname = slackbot.bot.conversations.get_name(sync['hangoutid'],
-                                                          'unknown')
-        message += '%s aka %s (%s):\n' % (hangoutname, sync.hotag if sync.hotag else 'untagged', sync['hangoutid'])
-        for user in slackbot.bot.get_users_in_conversation(sync['hangoutid']):
-            message += ' + <https://plus.google.com/%s|%s>\n' % (user.id_.gaia_id, user.full_name)
     user_1on1 = await slackbot.get_slack1on1(msg.user_id)
     await slackbot.send_message(
         channel=user_1on1,
