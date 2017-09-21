@@ -608,8 +608,8 @@ class SlackRTM(object):
                         if 'type' not in reply:
                             raise ValueError('reply has no `type` entry: %s'
                                              % repr(reply))
-                    except ValueError as err:
-                        # covers json-decode errors and replys without a `type`
+                    except (ValueError, TypeError) as err:
+                        # covers invalid json-replys and replys without a `type`
                         self.logger.warning('bad websocket read: %s', repr(err))
                         soft_reset += 1
                         await asyncio.sleep(2**soft_reset)
