@@ -69,7 +69,7 @@ async def slack_command_handler(slackbot, msg):
                                 link_names=True)
     raise IgnoreMessage()
 
-# command definitions
+# command access
 
 COMMANDS_USER = [
     "help",
@@ -80,7 +80,6 @@ COMMANDS_USER = [
     "syncprofile",
     "unsyncprofile",
 ]
-
 COMMANDS_ADMIN = [
     "hangouts",
     "listsyncs",
@@ -88,27 +87,45 @@ COMMANDS_ADMIN = [
     "disconnect",
 ]
 
-async def help(slackbot, msg, args):
+
+# command help
+
+HELP = {
+    'help': _('display command help for all available commands'),
+    'whereami': _('tells you the current channel/group id'),
+    'whoami': _('tells you your own user id'),
+    'whois': _('*whois @username* tells you the user id of @username'),
+    'admins': _('lists the slack users with admin privileges'),
+    'syncprofile': _('start the process to sync your slack profile with a '
+                     'G+ profile'),
+    'unsyncprofile': _('detach the slack profile from a previously attached '
+                       'G+ profile'),
+    'hangouts': _('list all conversation the bot is participant in'),
+    'listsyncs': _('lists all running sync connections'),
+    'syncto': _('sync messages from the current channel/group to a '
+                'specified hangout\n'
+                'usage: syncto <hangout conversation id>'),
+    'disconnect': _('stop syncing messages from the current '
+                    'channel/group to the specified hangout\n'
+                    'usage: disconnect <hangout conversation id>'),
+}
+
+
+# command definitions
+
+def help(slackbot, msg, args):                # pylint:disable=redefined-builtin
     """list help for all available commands"""
-    lines = ["*user commands:*\n"]
+    lines = ['*user commands:*']
 
     for command in COMMANDS_USER:
-        lines.append("* *{}*: {}\n".format(
-            command,
-            getattr(sys.modules[__name__], command).__doc__))
+        lines.append('- *{}*: {}'.format(command, HELP[command]))
 
     if msg.user_id in slackbot.admins:
-        lines.append("*admin commands:*\n")
+        lines.append('*admin commands:*')
         for command in COMMANDS_ADMIN:
-            lines.append("* *{}*: {}\n".format(
-                command,
-                getattr(sys.modules[__name__], command).__doc__))
+            lines.append('- *{}*: {}'.format(command, HELP[command]))
 
-    await slackbot.send_message(
-        channel=await slackbot.get_slack1on1(msg.user_id),
-        text="\n".join(lines),
-        as_user=True,
-        link_names=True)
+    return '1on1', '\n\n'.join(lines)
 
 async def whereami(slackbot, msg, args):
     """tells you the current channel/group id"""

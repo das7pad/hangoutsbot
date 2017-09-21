@@ -55,6 +55,7 @@ for _path_ in ('exceptions', 'parsers', 'message', 'utils', 'storage',
     plugins.load_module('plugins.slackrtm.' + _path_)
 
 from .commands_hangouts import (
+    HELP,
     slacks,
     slack_channels,
     slack_users,
@@ -94,3 +95,4 @@ def _initialise(bot):
         "slack_disconnect",
         "slack_users",
     ])
+    plugins.register_help(HELP)

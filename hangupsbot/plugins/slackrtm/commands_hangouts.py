@@ -9,6 +9,23 @@ from .storage import (
 )
 
 
+HELP = {
+    'slack_syncto': _('start syncing the current hangout to a given slack '
+                      'team/channel\n    '
+                      'usage: {bot_cmd} slack_syncto <teamname> <channelid>'),
+    'slack_disconnect': _('stop syncing the current hangout with a given slack '
+                          'team and channel\n    usage: '
+                          '{bot_cmd} slack_disconnect <teamname> <channelid>'),
+    'slack_listsyncs': _('list current conversations we are syncing\n'
+                         '    usage: {bot_cmd} slack_listsyncs'),
+    'slack_channels': _('list all slack channels available in a specified slack'
+                        'team\n    usage: {bot_cmd} slack_channels <teamname>'),
+    'slacks': _('list all configured slack teams\n'
+                '    usage: {bot_cmd} slacks'),
+    'slack_users': _('list all slack users in a specified slack channel'
+                     'team\n    usage: {bot_cmd} slack_users <team> <channel>'),
+}
+
 logger = logging.getLogger(__name__)
 
 
