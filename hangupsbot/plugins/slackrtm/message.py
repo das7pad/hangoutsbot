@@ -3,11 +3,19 @@ import re
 
 import emoji
 
+from sync.parser import get_formatted
+
 from .exceptions import (
     IgnoreMessage,
     ParseError,
 )
+from .parsers import SlackMessageSegment
 from .user import SlackUser
+
+# fix for simple_smile support
+emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
+emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = (
+    emoji.EMOJI_UNICODE[':smiling_face:'])
 
 TYPES_TO_SKIP = (
     'file_created', 'file_shared', 'file_public', 'file_change',
@@ -21,6 +29,85 @@ TYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')
 GUCFMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
                     re.MULTILINE | re.DOTALL)
 
+REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
+
+def parse_text(slackrtm, text):
+    """clean the text from slack tags/markdown and search for an image
+
+    Args:
+        slackrtm (core.SlackRTM): a running instance
+        text (str): raw message from slack
+
+    Returns:
+        tuple: `(<list>, <str>)`, a list of `parsers.SlackMessageSegment`s - the
+            formatted text; the str: an image url - if present otherwise None
+    """
+    def matchreference(match):
+        """replace slack tags with the full descriptor
+
+        Args:
+            match (_sre.SRE_Match): regex Match Object
+
+        Returns:
+            str: the item to display
+        """
+        out = ""
+        linktext = ""
+        if match.group(5) == '|':
+            linktext = match.group(6)
+        if match.group(2) == '@':
+            if linktext != "":
+                out = linktext
+            else:
+                out = "@%s" % slackrtm.get_username(
+                    match.group(3), 'unknown:%s' % match.group(3))
+        elif match.group(2) == '#':
+            if linktext != "":
+                out = "#%s" % linktext
+            else:
+                out = "#%s" % slackrtm.get_chatname(
+                    match.group(3), 'unknown:%s' % match.group(3))
+        else:
+            linktarget = match.group(1)
+            # save '<text>'
+            out = ('<%s|%s>' % (linktarget, linktext) if linktext else
+                   '<%s|%s>' % (linktarget, linktarget) if 'http' in linktarget
+                   else '<%s>' % linktarget)
+        out = out.replace('_', '%5F')
+        out = out.replace('*', '%2A')
+        out = out.replace('`', '%60')
+        return out
+
+
+    if not text:
+        # performance
+        return [], None
+
+    image_url = None
+    if 'googleusercontent.com' in text:
+        match = GUCFMT.match(text)
+        if match:
+            image_url = match.group(2)
+            text = match.group(1).replace(image_url, '')
+
+    text = html.unescape(text)
+
+    # Note:
+    # strip :skin-tone-<id>:
+    # * depends on the slack users emoji style,
+    #       e.g. hangouts style has no skin tone support
+    # * do it BEFORE emojize() for more reliable detection of sub-pattern
+    #       :some_emoji(::skin-tone-\d:)
+    text = re.sub(r"::skin-tone-\d:", ":", text, flags=re.IGNORECASE)
+
+    # convert emoji aliases into their unicode counterparts
+    text = emoji.emojize(text, use_aliases=True)
+
+    text = REFFMT.sub(matchreference, text)
+    segments = SlackMessageSegment.from_str(text)
+    return segments, image_url
+
+
 class SlackMessage(object):
     def __init__(self, slackrtm, reply):
         if reply['type'] in TYPES_TO_SKIP:
@@ -30,18 +117,18 @@ class SlackMessage(object):
         if self.channel is None:
             raise ParseError('no channel found in reply')
 
-        self.text = None
+        self.text = ''
         self.user = None
         self.user_id = None
         self.username = None
         self.edited = False
+        self.segments = None
         self.file_attachment = None
 
         self.subtype = (reply.get('subtype')
                         if reply['type'] == 'message' else None)
 
         self.set_raw_content(reply)
-        text = self.text
 
         if 'file' in reply:
             if reply.get('upload') is False:
@@ -54,27 +141,11 @@ class SlackMessage(object):
                 ('> ' + reply['file']['initial_comment'].get('comment', ''))
                 if 'initial_comment' in reply['file'] else '')
             # if no title or comment are given, use the default text as fallback
-            text = '\n'.join(lines).strip() or text
+            self.text = '\n'.join(lines).strip() or self.text
 
-        if 'googleusercontent.com' in text:
-            match = GUCFMT.match(text)
-            if match:
-                text = match.group(1)
-                self.file_attachment = match.group(2)
-
-        # text now contains the real message, but html entities have to be dequoted still
-        text = html.unescape(text)
-
-        # Note:
-        # strip :skin-tone-<id>:
-        # * depends on the slack users emoji style,
-        #       e.g. hangouts style has no skin tone support
-        # * do it BEFORE emojize() for more reliable detection of sub-pattern
-        #       :some_emoji(::skin-tone-\d:)
-        text = re.sub(r"::skin-tone-\d:", ":", text, flags=re.IGNORECASE)
-
-        # convert emoji aliases into their unicode counterparts
-        text = emoji.emojize(text, use_aliases=True)
+        if not self.segments:
+            self.segments, image_url = parse_text(slackrtm, self.text)
+            self.file_attachment = image_url or self.file_attachment
 
         if self.subtype in TYPES_MEMBERSHIP_JOIN:
             self.is_joinleave = 1
@@ -98,7 +169,7 @@ class SlackMessage(object):
 
         self.title = slackrtm.get_chatname(self.channel, '')
         self.username = self.user.username
-        self.text = text
+        self.text = get_formatted(self.segments, 'text')
 
     def set_raw_content(self, reply):
         """set the message text and try to fetch a user (id) or set a username

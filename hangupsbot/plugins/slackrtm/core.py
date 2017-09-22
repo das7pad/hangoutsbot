@@ -1,9 +1,7 @@
 import asyncio
 import logging
-import re
 
 import aiohttp
-import emoji
 
 import plugins
 
@@ -26,7 +24,6 @@ from .exceptions import (
 from .message import SlackMessage
 from .parsers import (
     SLACK_STYLE,
-    SlackMessageSegment,
 )
 from .storage import (
     migrate_on_domain_change,
@@ -34,12 +31,6 @@ from .storage import (
 
 
 logger = logging.getLogger(__name__)
-
-# fix for simple_smile support
-emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
-emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
-
-REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
 # Slack RTM event (sub-)types
 _CACHE_UPDATE_USERS = ('team_join', 'user_change')
@@ -329,7 +320,7 @@ class SlackRTM(object):
 
         self.command_prefixes = (config['command_prefixes']
                                  if 'command_prefixes' in config else
-                                 ('@hobot', '<@%s>' % self.my_uid.lower()))
+                                 ('@hobot', '@%s' % bot_username))
 
         self.identifier = 'slackrtm:%s' % self.slack_domain
         self.logger = logging.getLogger('plugins.slackrtm.%s'
@@ -532,34 +523,6 @@ class SlackRTM(object):
                 syncs.append(sync)
         return syncs
 
-    def match_reference(self, match):
-        out = ""
-        linktext = ""
-        if match.group(5) == '|':
-            linktext = match.group(6)
-        if match.group(2) == '@':
-            if linktext != "":
-                out = linktext
-            else:
-                out = "@%s" % self.get_username(match.group(3),
-                                                'unknown:%s' % match.group(3))
-        elif match.group(2) == '#':
-            if linktext != "":
-                out = "#%s" % linktext
-            else:
-                out = "#%s" % self.get_chatname(match.group(3),
-                                                'unknown:%s' % match.group(3))
-        else:
-            linktarget = match.group(1)
-            # save '<text>'
-            out = ('<%s|%s>' % (linktarget, linktext) if linktext else
-                   '<%s|%s>' % (linktarget, linktarget) if 'http' in linktarget
-                   else '<%s>' % linktarget)
-        out = out.replace('_', '%5F')
-        out = out.replace('*', '%2A')
-        out = out.replace('`', '%60')
-        return out
-
     def config_syncto(self, channel, hangoutid):
         for sync in self.syncs:
             if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
@@ -695,8 +658,7 @@ class SlackRTM(object):
             # stop processing replies if no syncs are available (optimisation)
             return
 
-        message = REFFMT.sub(self.match_reference, msg.text)
-        segments = SlackMessageSegment.from_str(message)
+        segments = msg.segments
         channel_name = msg.title
         channel_tag = '%s:%s' % (self.identifier, msg.channel)
 
