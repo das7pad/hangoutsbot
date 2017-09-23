@@ -91,7 +91,8 @@ COMMANDS_ADMIN = [
 # command help
 
 HELP = {
-    'help': _('display command help for all available commands'),
+    'help': _('display command help for a single or all commands\n'
+              'usage: help [command]'),
     'whereami': _('tells you the current channel/group id'),
     'whoami': _('tells you your own user id'),
     'whois': _('*whois @username* tells you the user id of @username'),
@@ -114,7 +115,11 @@ HELP = {
 # command definitions
 
 def help(slackbot, msg, args):                # pylint:disable=redefined-builtin
-    """list help for all available commands"""
+    """list help for all available commands or query a single commands help"""
+    if args and (args[0] in COMMANDS_USER or args[0] in COMMANDS_ADMIN):
+        command = args[0].lower()
+        return '1on1', '*%s*: %s' % (command, HELP[command])
+
     lines = ['*user commands:*']
 
     for command in COMMANDS_USER:
