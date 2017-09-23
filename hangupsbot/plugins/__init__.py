@@ -319,11 +319,12 @@ def start_asyncio_task(function, *args, **kwargs):
         RuntimeError: the function is not a coroutine or coroutine_function
     """
     loop = asyncio.get_event_loop()
-    if asyncio.iscoroutinefunction(function):
-        task = asyncio.ensure_future(function(tracking.bot, *args, **kwargs),
-                                     loop=loop)
-    elif asyncio.iscoroutine(function):
-        task = asyncio.ensure_future(function,
+    if asyncio.iscoroutinefunction(function) or asyncio.iscoroutine(function):
+        expected = inspect.signature(function).parameters
+        if (expected and tuple(expected)[0] == 'bot'
+                and tracking.bot not in args[:1]):
+            args = (tracking.bot, ) + args
+        task = asyncio.ensure_future(function(*args, **kwargs),
                                      loop=loop)
     else:
         raise RuntimeError("coroutine function must be supplied")
