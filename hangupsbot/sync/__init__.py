@@ -587,15 +587,14 @@ async def sync1to1(bot, event, *args):
         raise Help(_('"%s" is not a valid sync platform, choose one of:\n%s')
                    % (args[0], '"%s"' % '", "'.join(platforms)))
 
-    chat_id = event.user_id.chat_id
-    path = ['profilesync', platform, 'ho2', chat_id]
+    path = ['profilesync', platform, 'ho2', event.user_id.chat_id]
     if not bot.memory.exists(path):
         label, cmd, dummy = bot.sync.profilesync_cmds[platform]
         return _('You do not have a profilesync set for <b>%s</b>!\n'
                  'Start one there with <b>%s</b>') % (label, cmd)
     platform_id = bot.memory.get_by_path(path)
 
-    conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
+    conv_1on1 = (await bot.get_1to1(event.user_id.chat_id, force=True)).id_
 
     split = args[-1].lower() == _('off')
     await bot.sync.run_pluggable_omnibus(
