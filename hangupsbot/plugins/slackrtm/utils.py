@@ -1,3 +1,4 @@
+"""utils for the slackrtm plugin"""
 import logging
 
 

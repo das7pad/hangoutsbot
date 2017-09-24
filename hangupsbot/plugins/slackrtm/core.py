@@ -1,3 +1,5 @@
+"""core to handle message syncing and handle base requests from commands"""
+
 import asyncio
 import logging
 
@@ -58,9 +60,12 @@ class SlackRTM(object):
     """hander for a single slack team
 
     Args:
-        bot: HangupsBot instance
-        sink_config: dict, basic configuration including the api `key`, a
+        bot (hangupsbot.HangupsBot): the running instance
+        sink_config (dict): basic configuration including the api `key`, a
             `name` for the team and `admins` a list of slack user ids
+
+    Raises:
+        SlackConfigError: could not find the api-`key` in `sink_config`
     """
     _session = None
     logger = logger
@@ -115,7 +120,7 @@ class SlackRTM(object):
         """get the configured admins
 
         Returns:
-            list of strings, a list of slack user ids
+            list: a list of slack user ids (str)
         """
         return self.config.get('admins', [])
 
@@ -130,6 +135,7 @@ class SlackRTM(object):
             ['slackrtm', self.slack_domain, 'synced_conversations'])
 
     async def start(self):
+        """login, build the cache, register handler and start event polling"""
         async def _login():
             """connect to the slack api and fetch the base data
 
@@ -349,11 +355,11 @@ class SlackRTM(object):
         delay the execution in case of a ratelimit
 
         Args:
-            method: the api-method to call
-            kwargs: optional kwargs passed with api-method
+            method (str): the api-method to call
+            kwargs (dict): optional kwargs passed with api-method
 
         Returns:
-            dict, pre-parsed json response
+            dict: pre-parsed json response
 
         Raises:
             SlackAPIError: invalid request
@@ -414,6 +420,17 @@ class SlackRTM(object):
         return status
 
     async def get_slack1on1(self, userid):
+        """get the private slack channel with a given user from cache or request
+
+        Args:
+            userid (str): slack user_id
+
+        Returns:
+            str: identifier for the direct message channel
+
+        Raises:
+            SlackAPIError: could not create a 1on1
+        """
         if not userid in self.conversations:
             self.conversations[userid] = (await self.api_call('im.open', user=userid))['channel']
         return self.conversations[userid]['id']
@@ -422,7 +439,7 @@ class SlackRTM(object):
         """update the cached data from api-source
 
         Args:
-            type_: string, 'users', 'groups', 'channels', 'team'
+            type_ (str): 'users', 'groups', 'channels', 'team'
         """
         method = ('team.info' if type_ == 'team' else type_ + '.list')
         try:
@@ -442,6 +459,15 @@ class SlackRTM(object):
             storage.update({item['id']: item for item in data})
 
     def get_channel_users(self, channel):
+        """get the usernames and realnames of users attending the given channel
+
+        Args:
+            channel (str): channel or group identifier
+
+        Returns:
+            dict: with keys 'username slackid', realnames as values
+                or the default value if no users can be fetched for the channel
+        """
         channelusers = self._get_channel_data(channel, 'members', None)
         if channelusers is None:
             return {}
@@ -458,12 +484,12 @@ class SlackRTM(object):
         """get user info described by the given key
 
         Args:
-            user: string, user_id
-            key: string, data entry in the user data
-            default: any type, value for missing user
+            user (str): user_id
+            key (str): data entry in the user data
+            default (unknown): value for missing user
 
         Returns:
-            any type, or the default value
+            unknown: or the default value
         """
         if user not in self.users:
             self.logger.debug('user %s not found, reloading users', user)
@@ -475,12 +501,12 @@ class SlackRTM(object):
         """fetch channel info from cache or pull all data once
 
         Args:
-            channel: string, channel or group identifier
-            key: string, data entry in the channel data
-            default: value to return if no data is available for the channel
+            channel (str): channel or group identifier
+            key (str): data entry in the channel data
+            default (unknown): return value if no data is available
 
         Returns:
-            dict with info about the channel or the default value
+            dict: requested channel entry or the default value
         """
         if channel not in self.conversations:
             type_ = 'channels' if channel.startswith('C') else 'groups'
@@ -490,9 +516,27 @@ class SlackRTM(object):
         return self.conversations[channel].get(key, default)
 
     def get_realname(self, user, default=None):
+        """get the users real name or return the default value
+
+        Args:
+            user (str): user_id
+            default (unknwon): value for missing user or no available name
+
+        Returns:
+            str: the realname or the default value in case of a missing user
+        """
         return self._get_user_data(user, 'real_name', default)
 
     def get_username(self, user, default=None):
+        """get the users nickname or return the default value
+
+        Args:
+            user (str): user_id
+            default (unknwon): value for missing user
+
+        Returns:
+            str: the nickname or the default value in case of a missing user
+        """
         return self._get_user_data(user, 'name', default)
 
     def get_user_picture(self, user, default=None):
@@ -503,17 +547,35 @@ class SlackRTM(object):
             default (unknwon): value for missing user
 
         Returns:
-            str: the image url or the default value
+            str: the image url or the default value in case of a missing user
         """
         return self._get_user_data(user, 'image_original', default)
 
     def get_chatname(self, channel, default=None):
+        """get the name of a given channel and use the default as fallback
+
+        Args:
+            channel (str): a slack channel/group/dm
+            default (unknwon): the fallback for a missing channel in the cache
+
+        Returns:
+            str: the chattitle or the default value in case of a missing chat
+        """
         if channel.startswith('D'):
             # dms have no custom name
             return 'DM'
         return self._get_channel_data(channel, 'name', default=default)
 
     def get_syncs(self, channelid=None, hangoutid=None):
+        """search for syncs with mathing channel or hangout identifier
+
+        Args:
+            channelid (str): slack channel identifier
+            hangoutid (str): hangouts conversation identifier
+
+        Returns:
+            list: a list of dicts, each has two keys `channelid`, `hangoutid`
+        """
         syncs = []
         for sync in self.syncs:
             if channelid == sync['channelid']:
@@ -523,6 +585,15 @@ class SlackRTM(object):
         return syncs
 
     def config_syncto(self, channel, hangoutid):
+        """add a new sync to the memory
+
+        Args:
+            channel (str): slack channel identifier
+            hangoutid (str): hangouts conversation identifier
+
+        Raises:
+            AlreadySyncingError: the sync already exists
+        """
         for sync in self.syncs:
             if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
                 raise AlreadySyncingError
@@ -534,6 +605,15 @@ class SlackRTM(object):
         return
 
     def config_disconnect(self, channel, hangoutid):
+        """remove a sync from the memory
+
+        Args:
+            channel (str): slack channel identifier
+            hangoutid (str): hangouts conversation identifier
+
+        Raises:
+            NotSyncingError: the sync does not exists
+        """
         sync = None
         for sync in self.syncs:
             if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
@@ -549,10 +629,10 @@ class SlackRTM(object):
         """read and process events from a slack websocket
 
         Args:
-            url: string, websocket target URI
+            url (str): websocket target URI
 
         Raises:
-            exceptions.WebsocketFailed: websocket connection failed or too many
+            WebsocketFailed: websocket connection failed or too many
                 invalid events received from slack
             any exception that is not covered in `.handle_reply`
         """
@@ -739,6 +819,12 @@ class SlackRTM(object):
                               as_user=True, link_names=True)
 
     async def _handle_ho_rename(self, event):
+        """notify configured slack channels about a changed conversation name
+
+        Args:
+            bot (hangupsbot.HangupsBot): the running instance
+            event (event.ConversationEvent): instance to be handled
+        """
         name = self.bot.conversations.get_name(event.conv)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):

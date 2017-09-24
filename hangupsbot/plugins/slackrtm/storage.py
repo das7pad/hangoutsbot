@@ -34,7 +34,7 @@ def setup_storage(bot):
     """set defaults and run migration
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     bot.config.set_defaults(DEFAULT_CONFIG)
     bot.memory.set_defaults(DEFAULT_MEMORY)
@@ -104,7 +104,7 @@ def _migrate_data(bot):
     """run all migration steps
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     _migrate_20170319(bot)
     _migrate_20170917(bot)
@@ -119,7 +119,7 @@ def _migrate_20170319(bot):
     previously, this plugin abused 'user_data' to store its internal team config
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     memory_root_key = "slackrtm"
     if bot.memory.exists([memory_root_key]):

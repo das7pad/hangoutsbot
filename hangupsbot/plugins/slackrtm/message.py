@@ -1,3 +1,5 @@
+"""Slack RTM response parser"""
+
 import html
 import re
 
@@ -109,6 +111,16 @@ def parse_text(slackrtm, text):
 
 
 class SlackMessage(object):
+    """parse the response from slack to form a message for syncing
+
+    Args:
+        slackrtm (core.SlackRTM): the instance which received the message
+        reply (dict): response from slack
+
+    Raises:
+        IgnoreMessage: the message should not be synced
+        ParseError: the message content could not be parsed
+    """
     def __init__(self, slackrtm, reply):
         if reply['type'] in TYPES_TO_SKIP:
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
@@ -175,7 +187,11 @@ class SlackMessage(object):
         """set the message text and try to fetch a user (id) or set a username
 
         Args:
-            reply: dict, slack response
+            reply (dict): slack response
+
+        Raises:
+            IgnoreMessage: the message should not be synced
+            ParseError: the message content could not be parsed
         """
         subtype = self.subtype
         if subtype == 'message_changed':
@@ -226,7 +242,10 @@ class SlackMessage(object):
         add custom parsing here
 
         Args:
-            reply: dict, slack response
+            reply (dict): slack response
+
+        Raises:
+            IgnoreMessage: the message should not be synced
         """
         # pylint: disable=no-self-use
         raise IgnoreMessage('unknown service: %s' % reply)

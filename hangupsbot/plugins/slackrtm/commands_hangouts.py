@@ -1,3 +1,5 @@
+"""hangouts commands to setup/remove/manage slackrtm syncs"""
+
 from commands import Help
 
 from .exceptions import (
@@ -78,7 +80,12 @@ def _get_slackrtm_and_channel(slackname, channel):
 def slacks(*dummys):
     """list all configured slack teams
 
-       usage: /bot slacks"""
+    Args:
+        dummys (mixed): ignored
+
+    Returns:
+        str: command output
+    """
     lines = ['<b>Configured Slack teams:</b>']
 
     for slackrtm in SLACKRTMS:
@@ -89,7 +96,17 @@ def slacks(*dummys):
 async def slack_channels(dummy0, dummy1, *args):
     """list all slack channels available in specified slack team
 
-    usage: /bot slack_channels <teamname>"""
+    Args:
+        bot  (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): the currently handled instance
+        args (tuple): a tuple of str, the slackrtm name to query channels from
+
+    Returns:
+        str: command output
+
+    Raises:
+        Help: invalid request
+    """
     if len(args) != 1:
         raise Help('specify slack team to get list of channels')
 
@@ -113,7 +130,17 @@ async def slack_channels(dummy0, dummy1, *args):
 def slack_users(dummy0, dummy1, *args):
     """list all slack channels available in specified slack team
 
-        usage: /bot slack_users <team> <channel>"""
+    Args:
+        dummy0  (hangupsbot.HangupsBot): ignored
+        dummy1 (event.ConversationEvent): ignored
+        args (tuple): a tuple of str, slackrtm name and a channel of it
+
+    Returns:
+        str: command output
+
+    Raises:
+        Help: invalid request
+    """
     if len(args) != 2:
         raise Help(_('specify slack team and channel'))
 
@@ -132,7 +159,13 @@ def slack_users(dummy0, dummy1, *args):
 def slack_listsyncs(bot, *dummys):
     """list current conversations we are syncing
 
-    usage: /bot slack_listsyncs"""
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        dummys (mixed): ignored
+
+    Returns:
+        str: command output
+    """
     lines = ['<b>Currently synced:</b>']
 
     for slackrtm in SLACKRTMS:
@@ -151,7 +184,17 @@ def slack_listsyncs(bot, *dummys):
 def slack_syncto(dummy, event, *args):
     """start syncing the current hangout to a given slack team/channel
 
-    usage: /bot slack_syncto <teamname> <channelid>"""
+    Args:
+        dummy  (hangupsbot.HangupsBot): ignored
+        event (event.ConversationEvent): the currently handled instance
+        args (tuple): a tuple of str, slackrtm name and a channel of it
+
+    Returns:
+        str: command output
+
+    Raises:
+        Help: invalid request
+    """
     if len(args) != 2:
         raise Help('specify only slack team and channel')
 
@@ -169,7 +212,17 @@ def slack_syncto(dummy, event, *args):
 def slack_disconnect(dummy, event, *args):
     """stop syncing the current hangout with given slack team and channel
 
-    usage: /bot slack_disconnect <teamname> <channelid>"""
+    Args:
+        dummy  (hangupsbot.HangupsBot): ignored
+        event (event.ConversationEvent): the currently handled instance
+        args (tuple): a tuple of str, slackrtm name and a channel of it
+
+    Returns:
+        str: command output
+
+    Raises:
+        Help: invalid request
+    """
     if len(args) != 2:
         raise Help('specify slack team and channel')
 

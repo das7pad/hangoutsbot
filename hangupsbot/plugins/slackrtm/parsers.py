@@ -36,7 +36,14 @@ SEGMENT_LINE_BREAK = MessageSegment(text='\n',
 
 
 def markdown_slack(tag):
-    """get a sequence of start and end regex patterns for simple Markdown tag"""
+    """get a sequence of start and end regex patterns for a simple Markdown tag
+
+    Args:
+        tag (str): a formatting token
+
+    Returns:
+        tuple: start-regex and end-regex for the formatting token
+    """
     tag_rev = tag[::-1].replace('*\\', r'\*')
     return (MARKDOWN_START_SLACK.format(tag=tag, tag_rev=tag_rev),
             MARKDOWN_END_SLACK.format(tag=tag, tag_rev=tag_rev))
@@ -79,10 +86,10 @@ class SlackMessageSegment(MessageSegment):
         """parse a message to a sequence of MessageSegments
 
         Args:
-            text: str, text to parse
+            text (str): the text to parse
 
         Returns:
-            a list of ChatMessageSegment instances
+            list: a list of `SlackMessageSegment` instances
         """
         segments = []
         split = text.split('\n')

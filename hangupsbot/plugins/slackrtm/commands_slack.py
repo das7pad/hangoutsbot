@@ -1,3 +1,5 @@
+"""commands that can be issued from the slack part of slackrtm"""
+
 import asyncio
 import logging
 import sys
@@ -115,7 +117,16 @@ HELP = {
 # command definitions
 
 def help(slackbot, msg, args):                # pylint:disable=redefined-builtin
-    """list help for all available commands or query a single commands help"""
+    """list help for all available commands or query a single commands help
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        args (tuple): a tuple of string, additional arguments as strings
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
     if args and (args[0] in COMMANDS_USER or args[0] in COMMANDS_ADMIN):
         command = args[0].lower()
         return '1on1', '*%s*: %s' % (command, HELP[command])
@@ -133,15 +144,42 @@ def help(slackbot, msg, args):                # pylint:disable=redefined-builtin
     return '1on1', '\n\n'.join(lines)
 
 def whereami(dummy, msg, dummys):
-    """tells you the current channel/group id"""
+    """tells you the current channel/group id
+
+    Args:
+        dummy (core.SlackRTM): ignored
+        msg (message.SlackMessage): the currently handled message
+        dummys (tuple): a tuple of string, ignored
+
+    Returns:
+        str: command output
+    """
     return _('@%s: you are in channel %s') % (msg.username, msg.channel)
 
 def whoami(dummy, msg, dummys):
-    """tells you your own user id"""
+    """tells you your own user id
+
+    Args:
+        dummy (core.SlackRTM): ignored
+        msg (message.SlackMessage): the currently handled message
+        dummys (tuple): a tuple of string, ignored
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
     return '1on1', _('@%s: your userid is %s') % (msg.username, msg.user_id)
 
 def whois(slackbot, msg, args):
-    """whois @username tells you the user id of @username"""
+    """whois @username tells you the user id of @username
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        args (tuple): a tuple of string, additional arguments as strings
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
     if not args:
         return '1on1', _('%s: sorry, but you have to specify a username for '
                          'command `whois`') % (msg.username)
@@ -158,7 +196,16 @@ def whois(slackbot, msg, args):
     return '1on1', message
 
 def admins(slackbot, msg, dummys):
-    """lists the slack users with admin privileges"""
+    """lists the slack users with admin privileges
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        dummys (tuple): a tuple of string, ignored
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
     message = ['<@%s>: my admins are:' % msg.user_id]
     for admin in slackbot.admins:
         user = SlackUser(slackbot, channel=msg.channel, user_id=admin)
@@ -172,7 +219,7 @@ async def syncprofile(slackbot, msg, dummys):
     Args:
         slackbot (core.SlackRTM): a running instance
         msg (message.SlackMessage): the currently handled instance
-        dummys (tuple): additional arguments as strings
+        dummys (tuple): a tuple of string, ignored
 
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
@@ -224,7 +271,7 @@ async def unsyncprofile(slackbot, msg, dummys):
     Args:
         slackbot (core.SlackRTM): a running instance
         msg (message.SlackMessage): the currently handled instance
-        dummys (tuple): additional arguments as strings
+        dummys (tuple): a tuple of string, ignored
 
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
@@ -260,7 +307,16 @@ async def unsyncprofile(slackbot, msg, dummys):
     return private_chat, text
 
 async def hangouts(slackbot, msg, dummys):
-    """admin-only: lists all connected hangouts, suggested: use only in direct message"""
+    """admin-only: lists all hangouts
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        dummys (tuple): a tuple of string, ignored
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
     lines = []
     lines.append('@%s: list of active hangouts:\n' % msg.username)
     bot = slackbot.bot
@@ -270,7 +326,16 @@ async def hangouts(slackbot, msg, dummys):
     return '1on1', '\n'.join(lines)
 
 def listsyncs(slackbot, msg, dummys):
-    """admin-only: lists all runnging sync connections, suggested: use only in direct message"""
+    """admin-only: lists all running sync connections
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        dummys (tuple): a tuple of string, ignored
+
+    Returns:
+        tuple: a tuple of two strings, the channel target and the command output
+    """
     lines = []
     lines.append('@%s: current syncs with this slack team:' % msg.username)
     for sync in slackbot.syncs:
@@ -296,9 +361,16 @@ def _get_hangout_name(bot, conv_id):
                   ) % (conv_id)
 
 def syncto(slackbot, msg, args):
-    """admin-only: sync messages from current channel/group to specified hangout, suggested: use only in direct message
+    """admin-only: sync messages from current channel/group to specified hangout
 
-    usage: syncto [hangout conversation id]"""
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        args (tuple): a tuple of string, additional arguments as strings
+
+    Returns:
+        str: command output
+    """
     message = '@%s: ' % msg.username
     if not args:
         message += _('sorry, but you have to specify a Hangout ID for `syncto`')
@@ -320,12 +392,20 @@ def syncto(slackbot, msg, args):
     else:
         message += _('OK, I will now sync all messages in this channel with '
                      'Hangout _%s_.') % hangoutname
+
     return message
 
 def disconnect(slackbot, msg, args):
-    """admin-only: stop syncing messages from current channel/group to specified hangout, suggested: use only in direct message
+    """admin-only: stop syncing messages from current channel to a specified ho
 
-    usage: disconnect [hangout conversation id]"""
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        args (tuple): a tuple of string, additional arguments as strings
+
+    Returns:
+        str: command output
+    """
     message = '@%s: ' % msg.username
     if not args:
         message += _('sorry, but you have to specify a Hangout Id for '

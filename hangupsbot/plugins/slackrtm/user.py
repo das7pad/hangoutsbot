@@ -7,7 +7,7 @@ class SlackUser(SyncUser):
     """get a sync user for a given user id from slack
 
     Args:
-        slackrtm: SlackRTM instance of the team, the user is attending
+        slackrtm (core.SlackRTM): instance of the team, the user is attending
         channel (str): slack channel in which the user was found
         user_id (str): user id from slack or username, however only with the id
             a full user can be created

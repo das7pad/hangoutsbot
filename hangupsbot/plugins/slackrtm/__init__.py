@@ -1,5 +1,4 @@
-"""
-Improved Slack sync plugin using the Slack RTM API instead of webhooks.
+"""Improved Slack sync plugin using the Slack RTM API and websockets.
 (c) 2015 Patrick Cernko <errror@gmx.de>
 
 async rewrite: das7pad@outlook.com
@@ -7,41 +6,39 @@ async rewrite: das7pad@outlook.com
 Create a new user and setup auth for each team you want to sync into hangouts.
 Get an auth-token here: https://api.slack.com/custom-integrations/legacy-tokens
 
-Your config.json should have a slackrtm section that looks something
-like this.  You only need one entry per Slack team, not per channel,
-unlike the legacy code.
+Your config.json should have a slackrtm section that looks something like this.
+You only need one entry per Slack team.
 
     "slackrtm": [
         {
-            "name": "SlackTeamNameForLoggingCommandsEtc",
+            "name": "CostomNameToFindTheSlackTeamViaHangoutsCommands",
             "domain": "my-team.slack.com",
             "key": "SLACK_TEAM1_BOT_API_KEY",
             "admins": [ "U01", "U02" ]
         },
         {
-            "name": "OptionalSlackOtherTeamNameForLoggingCommandsEtc",
+            "name": "OptionalSecondTeamWithItsCustomName",
             "domain": "my-second-team.slack.com",
             "key": "SLACK_TEAM2_BOT_API_KEY",
             "admins": [ "U01", "U02" ]
         }
     ]
 
-name = slack team name
-domain = the team domain at slack, important to track a domain-change performed
+  name : a custom slack team name
+domain : the team domain at slack, important to track a domain-change performed
          while the bot is offline - otherwise we loose track of the memory entry
-key = slack bot api key for that team (xoxb-xxxxxxx...)
-admins = user_id from slack (you can use https://api.slack.com/methods/auth.test/test to find it)
+   key : slack bot api key for that team (xoxb-xxxxxxx...)
+admins : user_ids from slack (to find them, you can use
+                              https://api.slack.com/methods/users.list/test)
 
 You can set up as many slack teams per bot as you like by extending the list.
 
-Once the team(s) are configured, and the hangupsbot is restarted, invite
-the newly created Slack bot into any channel or group that you want to sync,
-and then use the command:
-    @botname syncto <hangoutsid>
+Once the team(s) are configured, and the hangupsbot is restarted, invite the
+newly created Slack user into any channel or group that you want to sync, and
+then use the command from any slack channel:
+    @hobot syncto <hangoutsid>
 
-Use "@botname help" for more help on the Slack side and /bot help <command> on
-the Hangouts side for more help.
-
+Use "@hobot help" for more help on the Slack side.
 """
 
 import logging
@@ -75,6 +72,11 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
+    """migrate data, start SlackRTMs and register commands
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+    """
     setup_storage(bot)
 
     for sink_config in bot.get_config_option('slackrtm'):
