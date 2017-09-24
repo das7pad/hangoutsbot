@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 import sys
 
 from .exceptions import (
@@ -8,6 +7,7 @@ from .exceptions import (
     NotSyncingError,
     IgnoreMessage,
 )
+from .user import SlackUser
 
 
 logger = logging.getLogger(__name__)
@@ -65,26 +65,26 @@ async def slack_command_handler(slackbot, msg):
         # response from command that should not be send
         raise IgnoreMessage()
 
-    await slackbot.send_message(channel=channel, text=text, as_user=True,
-                                link_names=True)
+    slackbot.send_message(channel=channel, text=text, as_user=True,
+                          link_names=True)
     raise IgnoreMessage()
 
 # command access
 
 COMMANDS_USER = [
-    "help",
-    "whereami",
-    "whoami",
-    "whois",
-    "admins",
-    "syncprofile",
-    "unsyncprofile",
+    'help',
+    'whereami',
+    'whoami',
+    'whois',
+    'admins',
+    'syncprofile',
+    'unsyncprofile',
 ]
 COMMANDS_ADMIN = [
-    "hangouts",
-    "listsyncs",
-    "syncto",
-    "disconnect",
+    'hangouts',
+    'listsyncs',
+    'syncto',
+    'disconnect',
 ]
 
 
@@ -132,66 +132,39 @@ def help(slackbot, msg, args):                # pylint:disable=redefined-builtin
 
     return '1on1', '\n\n'.join(lines)
 
-async def whereami(slackbot, msg, args):
+def whereami(dummy, msg, dummys):
     """tells you the current channel/group id"""
+    return _('@%s: you are in channel %s') % (msg.username, msg.channel)
 
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=u'@%s: you are in channel %s' % (msg.username, msg.channel),
-        as_user=True,
-        link_names=True)
-
-async def whoami(slackbot, msg, args):
+def whoami(dummy, msg, dummys):
     """tells you your own user id"""
+    return '1on1', _('@%s: your userid is %s') % (msg.username, msg.user_id)
 
-    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.send_message(
-        channel=user_1on1,
-        text=u'@%s: your userid is %s' % (msg.username, msg.user_id),
-        as_user=True,
-        link_names=True)
-
-async def whois(slackbot, msg, args):
+def whois(slackbot, msg, args):
     """whois @username tells you the user id of @username"""
-
     if not args:
-        message = u'%s: sorry, but you have to specify a username for command `whois`' % (msg.username)
+        return '1on1', _('%s: sorry, but you have to specify a username for '
+                         'command `whois`') % (msg.username)
+
+    search = args[0][1:] if args[0][0] == '@' else args[0]
+    for uid in slackbot.users:
+        if slackbot.get_username(uid) == search:
+            message = _('@%s: the user id of _%s_ is %s') % (
+                msg.username, slackbot.get_username(uid), uid)
+            break
     else:
-        user = args[0]
-        userfmt = re.compile(r'^<@(.*)>$')
-        match = userfmt.match(user)
-        if match:
-            user = match.group(1)
-        if not user.startswith('U'):
-            # username was given as string instead of mention, lookup in db
-            for uid in slackbot.users:
-                if slackbot.users[uid]['name'] == user:
-                    user = uid
-                    break
-        if not user.startswith('U'):
-            message = u'%s: sorry, but I could not find user _%s_ in this slack.' % (msg.username, user)
-        else:
-            message = u'@%s: the user id of _%s_ is %s' % (msg.username, slackbot.get_username(user), user)
+        message = _('%s: sorry, but I could not find user _%s_ in this slack.'
+                   ) % (msg.username, search)
+    return '1on1', message
 
-    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.send_message(
-        channel=user_1on1,
-        text=message,
-        as_user=True,
-        link_names=True)
-
-async def admins(slackbot, msg, args):
+def admins(slackbot, msg, dummys):
     """lists the slack users with admin privileges"""
-
-    message = '@%s: my admins are:\n' % msg.username
+    message = ['<@%s>: my admins are:' % msg.user_id]
     for admin in slackbot.admins:
-        message += '@%s: _%s_\n' % (slackbot.get_username(admin), admin)
-    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.send_message(
-        channel=user_1on1,
-        text=message,
-        as_user=True,
-        link_names=True)
+        user = SlackUser(slackbot, channel=msg.channel, user_id=admin)
+        message.append('<@%s> - %s' % (admin, user.full_name))
+
+    return '1on1', '\n'.join(message)
 
 async def syncprofile(slackbot, msg, dummys):
     """start the process to sync your slack profile with a G+profile
@@ -242,8 +215,8 @@ async def syncprofile(slackbot, msg, dummys):
 
     conv_1on1 = await slackbot.get_slack1on1(user_id)
     for message in messages:
-        await slackbot.send_message(channel=conv_1on1,
-                                    text=message, as_user=True, link_names=True)
+        slackbot.send_message(channel=conv_1on1,
+                              text=message, as_user=True, link_names=True)
 
 async def unsyncprofile(slackbot, msg, dummys):
     """detach the slack profile from a previously attached G+ profile
@@ -286,110 +259,92 @@ async def unsyncprofile(slackbot, msg, dummys):
 
     return private_chat, text
 
-async def hangouts(slackbot, msg, args):
+async def hangouts(slackbot, msg, dummys):
     """admin-only: lists all connected hangouts, suggested: use only in direct message"""
-
-    message = '@%s: list of active hangouts:\n' % msg.username
+    lines = []
+    lines.append('@%s: list of active hangouts:\n' % msg.username)
     bot = slackbot.bot
     for conv_id in bot.conversations:
-        message += '*%s:* _%s_\n' % (bot.conversations.get_name(conv_id),
-                                     conv_id)
-    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.send_message(
-        channel=user_1on1,
-        text=message,
-        as_user=True,
-        link_names=True)
+        lines.append('*%s:* _%s_' % (
+            bot.conversations.get_name(conv_id, conv_id), conv_id))
+    return '1on1', '\n'.join(lines)
 
-async def listsyncs(slackbot, msg, args):
+def listsyncs(slackbot, msg, dummys):
     """admin-only: lists all runnging sync connections, suggested: use only in direct message"""
-
-    message = '@%s: list of current sync connections with this slack team:\n' % msg.username
+    lines = []
+    lines.append('@%s: current syncs with this slack team:' % msg.username)
     for sync in slackbot.syncs:
-        hangoutname = slackbot.bot.conversations.get_name(sync['hangoutid'],
-                                                          'unknown')
-        message += '*%s (%s) : %s (%s)*\n' % (
+        conv_id = sync['hangoutid']
+        hangoutname = slackbot.bot.conversations.get_name(conv_id, conv_id)
+        lines.append('*%s (%s) : %s (%s)*' % (
             slackbot.get_chatname(sync['channelid'], 'unknown'),
-            sync['channelid'],
-            hangoutname,
-            sync['hangoutid'],
-            )
-    user_1on1 = await slackbot.get_slack1on1(msg.user_id)
-    await slackbot.send_message(
-        channel=user_1on1,
-        text=message,
-        as_user=True,
-        link_names=True)
+            sync['channelid'], hangoutname, conv_id))
+    return '1on1', '\n'.join(lines)
 
-async def syncto(slackbot, msg, args):
+def _get_hangout_name(bot, conv_id):
+    """get the name of a conversation and a error message with the convs id
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): a possible hangouts conversation identifier
+
+    Returns:
+        tuple: a tuple of two str: the found name or None and a error message
+    """
+    name = bot.conversations.get_name(conv_id, None)
+    return name, _('sorry, but I\'m not a member of a Hangout with Id %s'
+                  ) % (conv_id)
+
+def syncto(slackbot, msg, args):
     """admin-only: sync messages from current channel/group to specified hangout, suggested: use only in direct message
 
     usage: syncto [hangout conversation id]"""
-
     message = '@%s: ' % msg.username
     if not args:
-        message += u'sorry, but you have to specify a Hangout Id for command `syncto`'
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
+        message += _('sorry, but you have to specify a Hangout ID for `syncto`')
+        return message
 
     hangoutid = args[0]
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(
-            channel=msg.channel,
-            text=message,
-            as_user=True,
-            link_names=True)
-        return
 
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
+    hangoutname, text = _get_hangout_name(slackbot.bot, hangoutid)
+
+    if hangoutname is None:
+        message += text
+        return message
 
     try:
         slackbot.config_syncto(msg.channel, hangoutid)
     except AlreadySyncingError:
-        message += u'This channel (%s) is already synced with Hangout _%s_.' % (channelname, hangoutname)
+        message += _('This channel is already synced with Hangout _%s_.') % (
+            hangoutname)
     else:
-        message += u'OK, I will now sync all messages in this channel (%s) with Hangout _%s_.' % (channelname, hangoutname)
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
+        message += _('OK, I will now sync all messages in this channel with '
+                     'Hangout _%s_.') % hangoutname
+    return message
 
-async def disconnect(slackbot, msg, args):
+def disconnect(slackbot, msg, args):
     """admin-only: stop syncing messages from current channel/group to specified hangout, suggested: use only in direct message
 
     usage: disconnect [hangout conversation id]"""
-
     message = '@%s: ' % msg.username
     if not args:
-        message += u'sorry, but you have to specify a Hangout Id for command `disconnect`'
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
+        message += _('sorry, but you have to specify a Hangout Id for '
+                     '`disconnect`')
+        return message
 
     hangoutid = args[0]
-    hangoutname = slackbot.bot.conversations.get_name(hangoutid, None)
-    if hangoutname is None:
-        message += u'sorry, but I\'m not a member of a Hangout with Id %s' % hangoutid
-        await slackbot.send_message(channel=msg.channel, text=message, as_user=True, link_names=True)
-        return
+    hangoutname, text = _get_hangout_name(slackbot.bot, hangoutid)
 
-    if msg.channel.startswith('D'):
-        channelname = 'DM'
-    else:
-        channelname = '#%s' % slackbot.get_chatname(msg.channel)
+    if hangoutname is None:
+        message += text
+        return message
+
     try:
         slackbot.config_disconnect(msg.channel, hangoutid)
     except NotSyncingError:
-        message += u'This channel (%s) is *not* synced with Hangout _%s_.' % (channelname, hangoutid)
+        message += _('This channel is *not* synced with the Hangout _%s_.') % (
+            hangoutid)
     else:
-        message += u'OK, I will no longer sync messages in this channel (%s) with Hangout _%s_.' % (channelname, hangoutname)
-    await slackbot.send_message(
-        channel=msg.channel,
-        text=message,
-        as_user=True,
-        link_names=True)
+        message += _('OK, I will no longer sync messages in this channel with '
+                     'the Hangout _%s_.') % hangoutname
+    return message

@@ -441,18 +441,17 @@ class SlackRTM(object):
             storage = self.users if type_ == 'users' else self.conversations
             storage.update({item['id']: item for item in data})
 
-    async def get_channel_users(self, channelid, default=None):
-        channelusers = self._get_channel_data(channelid, 'members', None)
+    def get_channel_users(self, channel):
+        channelusers = self._get_channel_data(channel, 'members', None)
         if channelusers is None:
-            return default
+            return {}
 
         users = {}
-        for user in channelusers:
-            username = self.get_username(user)
-            realname = self.get_realname(user, "No real name")
+        for user_id in channelusers:
+            username = self.get_username(user_id)
             if username:
-                users[username+" "+user] = realname
-
+                realname = self.get_realname(user_id, "No real name")
+                users[username + " " + user_id] = realname
         return users
 
     def _get_user_data(self, user, key, default=None):

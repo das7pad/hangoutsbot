@@ -1,4 +1,4 @@
-import logging
+from commands import Help
 
 from .exceptions import (
     AlreadySyncingError,
@@ -26,44 +26,78 @@ HELP = {
                      'team\n    usage: {bot_cmd} slack_users <team> <channel>'),
 }
 
-logger = logging.getLogger(__name__)
+
+def _get_slackrtm(slackname):
+    """scan all running slackrtms for a matching name
+
+    Args:
+        slackname (str): user input as a search query
+
+    Returns:
+        core.SlackRTM: the requested team instance
+
+    Raises:
+        Help: no or multiple SlackRTMs match the seach query
+    """
+    matches = []
+    for slackrtm in SLACKRTMS:
+        if slackname in slackrtm.name:
+            matches.append(slackrtm)
+    if len(matches) == 1:
+        return matches[0]
+    elif matches:
+        raise Help(_('these slack teams match "%s", be more specific!') %
+                   (slackname, ', '.join([slackrtm.name
+                                          for slackrtm in matches])))
+    raise Help(_('there is no slack team with name "%s", use <i>{bot_cmd} '
+                 'slacks</i> to list all teams') % slackname)
+
+def _get_slackrtm_and_channel(slackname, channel):
+    """scan all running slackrtms and their channel for a match
+
+    Args:
+        slackname (str): seach query for a slack team/SlackRTM
+        channel (str): channel id of the team specified with slackname
+
+    Returns:
+        tuple: `(<core.SlackRTM>, <str>)`, requested team instance and channel
+
+    Raises:
+        Help: no matching slackrtm or channel is not in slackrtm
+    """
+    slackrtm = _get_slackrtm(slackname)
+    channelname = slackrtm.get_chatname(channel)
+    if channelname is not None:
+        return slackrtm, channelname
+
+    raise Help(_('there is no channel with name "%s" in "%s", use '
+                 '<i>{bot_cmd} slack_channels %s</i> to list all channels') %
+               (channel, slackname, slackname))
 
 
-async def slacks(bot, event, *args):
+def slacks(*dummys):
     """list all configured slack teams
 
        usage: /bot slacks"""
-
-    lines = ["**Configured Slack teams:**"]
+    lines = ['<b>Configured Slack teams:</b>']
 
     for slackrtm in SLACKRTMS:
-        lines.append("* {}".format(slackrtm.name))
+        lines.append('- {}'.format(slackrtm.name))
 
-    await bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return '\n'.join(lines)
 
-async def slack_channels(bot, event, *args):
+async def slack_channels(dummy0, dummy1, *args):
     """list all slack channels available in specified slack team
 
     usage: /bot slack_channels <teamname>"""
-
     if len(args) != 1:
-        await bot.coro_send_message(event.conv_id, "specify slack team to get list of channels")
-        return
+        raise Help('specify slack team to get list of channels')
 
-    slackname = args[0]
-    slackrtm = None
-    for slackrtm in SLACKRTMS:
-        if slackrtm.name == slackname:
-            break
-    if not slackrtm:
-        await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
-        return
-
+    slackrtm = _get_slackrtm(args[0])
     await slackrtm.update_cache('channels')
     await slackrtm.update_cache('groups')
 
     lines = ['<b>Channels:</b>', '<b>Private groups</b>']
-
     for channel in slackrtm.conversations:
         if slackrtm.conversations[channel].get('is_archived', True):
             # filter dms and archived channels/groups
@@ -74,131 +108,79 @@ async def slack_channels(bot, event, *args):
         else:
             lines.append(line)
 
-    await bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return '\n'.join(lines)
 
-
-async def slack_users(bot, event, *args):
+def slack_users(dummy0, dummy1, *args):
     """list all slack channels available in specified slack team
 
         usage: /bot slack_users <team> <channel>"""
-
     if len(args) != 2:
-        await bot.coro_send_message(event.conv_id, "specify slack team and channel")
-        return
+        raise Help(_('specify slack team and channel'))
 
     slackname = args[0]
-    slackrtm = None
-    for slackrtm in SLACKRTMS:
-        if slackrtm.name == slackname:
-            break
-    if not slackrtm:
-        await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
-        return
+    channel = args[1]
+    slackrtm, channelname = _get_slackrtm_and_channel(slackname, channel)
 
-    await slackrtm.update_cache('channels')
-    channelid = args[1]
-    channelname = slackrtm.get_chatname(channelid)
-    if not channelname:
-        await bot.coro_send_message(
-            event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
-        return
+    lines = ['<b>Slack users in channel {}</b>:'.format(channelname)]
 
-    lines = ["**Slack users in channel {}**:".format(channelname)]
-
-    users = await slackrtm.get_channel_users(channelid)
+    users = slackrtm.get_channel_users(channel)
     for username, realname in sorted(users.items()):
-        lines.append("* {} {}".format(username, realname))
+        lines.append('- @{}: {}'.format(username, realname))
 
-    await bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return '\n'.join(lines)
 
-
-async def slack_listsyncs(bot, event, *args):
+def slack_listsyncs(bot, *dummys):
     """list current conversations we are syncing
 
     usage: /bot slack_listsyncs"""
-
-    lines = ["**Currently synced:**"]
+    lines = ['<b>Currently synced:</b>']
 
     for slackrtm in SLACKRTMS:
         for sync in slackrtm.syncs:
-            hangoutname = bot.conversations.get_name(sync['hangoutid'], 'unknown')
-            lines.append("{} : {} ({})\n  {} ({})\n".format(
+            hangoutname = bot.conversations.get_name(sync['hangoutid'],
+                                                     'unknown')
+            lines.append('{} : {} ({})\n  {} ({})\n'.format(
                 slackrtm.name,
                 slackrtm.get_chatname(sync['channelid']),
                 sync['channelid'],
                 hangoutname,
-                sync['hangoutid'],
-                ))
+                sync['hangoutid']))
 
-    await bot.coro_send_message(event.conv_id, "\n".join(lines))
+    return '\n'.join(lines)
 
-
-async def slack_syncto(bot, event, *args):
+def slack_syncto(dummy, event, *args):
     """start syncing the current hangout to a given slack team/channel
 
     usage: /bot slack_syncto <teamname> <channelid>"""
-
     if len(args) != 2:
-        await bot.coro_send_message(event.conv_id, "specify slack team and channel")
-        return
+        raise Help('specify only slack team and channel')
 
     slackname = args[0]
-    slackrtm = None
-    for slackrtm in SLACKRTMS:
-        if slackrtm.name == slackname:
-            break
-    if not slackrtm:
-        await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
-        return
-
-    channelid = args[1]
-    channelname = slackrtm.get_chatname(channelid)
-    if not channelname:
-        await bot.coro_send_message(
-            event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
-        return
+    channel = args[1]
+    slackrtm, channelname = _get_slackrtm_and_channel(slackname, channel)
 
     try:
-        slackrtm.config_syncto(channelid, event.conv_id)
+        slackrtm.config_syncto(channel, event.conv_id)
     except AlreadySyncingError:
-        await bot.coro_send_message(event.conv_id, "hangout already synced with {} : {}".format(slackname, channelname))
-        return
+        return _('hangout already synced with %s:%s') % (slackname, channelname)
 
-    await bot.coro_send_message(event.conv_id, "this hangout synced with {} : {}".format(slackname, channelname))
+    return 'this hangout synced with {}:{}'.format(slackname, channelname)
 
-
-async def slack_disconnect(bot, event, *args):
+def slack_disconnect(dummy, event, *args):
     """stop syncing the current hangout with given slack team and channel
 
     usage: /bot slack_disconnect <teamname> <channelid>"""
-
     if len(args) != 2:
-        await bot.coro_send_message(event.conv_id, "specify slack team and channel")
-        return
+        raise Help('specify slack team and channel')
 
     slackname = args[0]
-    slackrtm = None
-    for slackrtm in SLACKRTMS:
-        if slackrtm.name == slackname:
-            break
-    if not slackrtm:
-        await bot.coro_send_message(event.conv_id, "there is no slack team with name **{}**, use _/bot slacks_ to list all teams".format(slackname))
-        return
-
-    channelid = args[1]
-    channelname = slackrtm.get_chatname(channelid)
-    if not channelname:
-        await bot.coro_send_message(
-            event.conv_id,
-            "there is no channel with name **{0}** in **{1}**, use _/bot slack_channels {1}_ to list all channels".format(channelid, slackname))
-        return
+    channel = args[1]
+    slackrtm, channelname = _get_slackrtm_and_channel(slackname, channel)
 
     try:
-        slackrtm.config_disconnect(channelid, event.conv.id_)
+        slackrtm.config_disconnect(channel, event.conv_id)
     except NotSyncingError:
-        await bot.coro_send_message(event.conv_id, "current hangout not previously synced with {} : {}".format(slackname, channelname))
-        return
+        return _('current hangout not previously synced with {}:{}').format(
+            slackname, channelname)
 
-    await bot.coro_send_message(event.conv_id, "this hangout disconnected from {} : {}".format(slackname, channelname))
+    return 'this hangout disconnected from {}:{}'.format(slackname, channelname)
