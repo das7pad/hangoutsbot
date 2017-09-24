@@ -166,8 +166,8 @@ class SlackRTM(object):
                     contains the team data in the entry `team`
             """
             self.team = login_data['team']
-            await asyncio.gather(*(self.update_cache(name)
-                                   for name in ('users', 'channels', 'groups')))
+            await asyncio.gather(*(self.update_cache(name) for name in
+                                   ('users', 'channels', 'groups', 'ims')))
 
         async def _set_selfuser_and_ids(login_data):
             """set the bot user and bot id to filter messages
@@ -431,17 +431,21 @@ class SlackRTM(object):
         Raises:
             SlackAPIError: could not create a 1on1
         """
-        if not userid in self.conversations:
-            self.conversations[userid] = (await self.api_call('im.open', user=userid))['channel']
-        return self.conversations[userid]['id']
+        if userid not in self.users:
+            self.users[userid] = {}
+        if '1on1' not in self.users[userid]:
+            channel = (await self.api_call('im.open', user=userid))['channel']
+            self.users[userid]['1on1'] = channel['id']
+        return self.users[userid]['1on1']
 
     async def update_cache(self, type_):
         """update the cached data from api-source
 
         Args:
-            type_ (str): 'users', 'groups', 'channels', 'team'
+            type_ (str): 'users', 'groups', 'channels', 'team', 'ims'
         """
-        method = ('team.info' if type_ == 'team' else type_ + '.list')
+        method = ('team.info' if type_ == 'team' else
+                  'im.list' if type_ == 'ims' else type_ + '.list')
         try:
             response = await self.api_call(method)
         except SlackAPIError:
@@ -454,9 +458,19 @@ class SlackRTM(object):
 
         if type_ == 'team':
             self.team = data
+        elif type_ == 'ims':
+            for item in data:
+                if item['user'] in self.users:
+                    self.users[item['user']]['1on1'] = item['id']
+                else:
+                    self.users[item['user']] = {'1on1': item['id']}
         else:
             storage = self.users if type_ == 'users' else self.conversations
-            storage.update({item['id']: item for item in data})
+            for item in data:
+                if item['id'] in storage:
+                    storage[item['id']].update(item)
+                else:
+                    storage[item['id']] = item
 
     def get_channel_users(self, channel):
         """get the usernames and realnames of users attending the given channel
