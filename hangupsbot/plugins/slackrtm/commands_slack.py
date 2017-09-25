@@ -67,8 +67,7 @@ async def slack_command_handler(slackbot, msg):
         # response from command that should not be send
         raise IgnoreMessage()
 
-    slackbot.send_message(channel=channel, text=text, as_user=True,
-                          link_names=True)
+    slackbot.send_message(channel=channel, text=text)
     raise IgnoreMessage()
 
 # command access
@@ -262,8 +261,7 @@ async def syncprofile(slackbot, msg, dummys):
 
     conv_1on1 = await slackbot.get_slack1on1(user_id)
     for message in messages:
-        slackbot.send_message(channel=conv_1on1,
-                              text=message, as_user=True, link_names=True)
+        slackbot.send_message(channel=conv_1on1, text=message)
 
 async def unsyncprofile(slackbot, msg, dummys):
     """detach the slack profile from a previously attached G+ profile

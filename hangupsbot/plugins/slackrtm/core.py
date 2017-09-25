@@ -264,8 +264,8 @@ class SlackRTM(object):
             Raises:
                 SlackAuthError: the api-token got revoked
             """
-            self.logger.debug("sending to channel/group %s: %s",
-                              kwargs.get('channel'), kwargs.get('text'))
+            self.logger.debug('sending into channel %s: %s',
+                              kwargs['channel'], kwargs['text'])
             try:
                 await self.api_call('chat.postMessage', **kwargs)
             except SlackAPIError:
@@ -397,7 +397,8 @@ class SlackRTM(object):
                 repr(err), method, kwargs, parsed)
         raise SlackAPIError(parsed)
 
-    def send_message(self, **kwargs):
+    def send_message(self, *, channel, text, as_user=True, attachments=None,
+                     link_names=True, username=None, icon_url=None):
         """send a message to a channel keeping the sequence
 
         `await slackrtm.send_message(<...>)`
@@ -406,17 +407,29 @@ class SlackRTM(object):
             `await sending_status`
 
         Args:
-            kwargs (dict): see api_call with api-method 'chat.postMessage'
+            channel (str): channel, group or direct message identifier
+            text (str): message content
+            as_user (bool): send a message as the bot user
+            attachments (list): see `api.slack.com/docs/message-formatting`
+            link_names (bool): create links from @username mentions
+            username (bool): use a custom sender name
+            icon_url (str): a custom profile picture of the sender
 
         Returns:
             sync.sending_queue.Status: tracker for the scheduled task which
              returns a boolean value when finished: True on success else False.
-
-        Raises:
-            KeyError: no channel specified in the kwargs
         """
-        queue = self._cache_sending_queue.get(kwargs['channel'])
-        status = queue.schedule(**kwargs)
+        queue = self._cache_sending_queue.get(channel)
+
+        kwargs = dict(channel=channel, as_user=as_user, link_names=link_names,
+                      username=username, icon_url=icon_url)
+
+        while len(text) > 3999:
+            first_part = text[:3999].rsplit('\n', 1)[0]
+            queue.schedule(text=first_part, **kwargs)
+            text = text[len(first_part):]
+
+        status = queue.schedule(text=text, attachments=attachments, **kwargs)
         return status
 
     async def get_slack1on1(self, userid):
@@ -807,8 +820,8 @@ class SlackRTM(object):
                                            event.title(channel_tag))
 
             self.send_message(channel=sync['channelid'], text=message,
-                              username=displayname, link_names=True,
-                              icon_url=photo_url, as_user=event.user.is_self)
+                              username=displayname, icon_url=photo_url,
+                              as_user=event.user.is_self)
 
     def _handle_sync_membership(self, dummy, event):
         """notify configured slack channels about a membership change
@@ -829,8 +842,7 @@ class SlackRTM(object):
                 # membership change should not be synced to this channel
                 return
 
-            self.send_message(channel=sync['channelid'], text=message,
-                              as_user=True, link_names=True)
+            self.send_message(channel=sync['channelid'], text=message)
 
     async def _handle_ho_rename(self, event):
         """notify configured slack channels about a changed conversation name
@@ -848,10 +860,7 @@ class SlackRTM(object):
                 hotagaddendum = ' _%s_' % sync.hotag
             message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
             self.logger.debug("sending to channel/group %s: %s", sync['channelid'], message)
-            await self.send_message(channel=sync['channelid'],
-                                    text=message,
-                                    as_user=True,
-                                    link_names=True)
+            self.send_message(channel=sync['channelid'], text=message)
 
     async def _handle_profilesync(self, platform, remote_user, conv_1on1,
                                   split_1on1s):
@@ -878,10 +887,7 @@ class SlackRTM(object):
                      'messages in Slack.*')
 
             private_chat = await self.get_slack1on1(slack_user_id)
-            await self.send_message(channel=private_chat,
-                                    text=text,
-                                    as_user=True,
-                                    link_names=True)
+            self.send_message(channel=private_chat, text=text)
         else:
             # setup a chat sync
             try:
