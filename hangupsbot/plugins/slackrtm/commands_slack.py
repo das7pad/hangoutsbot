@@ -12,6 +12,8 @@ from .exceptions import (
 from .user import SlackUser
 
 
+_IGNORE_COMMAND_MESSAGE = IgnoreMessage('message is command')
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,11 +33,9 @@ async def slack_command_handler(slackbot, msg):
 
     tokens = msg.text.strip().split()
 
-    if len(tokens) < 2:
-        return
-
-    if tokens.pop(0).lower() not in slackbot.command_prefixes:
-        # not a command
+    if (len(tokens) < 2
+            or tokens.pop(0).lower() not in slackbot.command_prefixes):
+        logger.debug('message is not a command')
         return
 
     command = tokens.pop(0).lower()
@@ -53,6 +53,8 @@ async def slack_command_handler(slackbot, msg):
         response = func(slackbot, msg, args)
         if asyncio.iscoroutinefunction(func):
             response = await response
+        logger.debug('command %s returned %s',
+                     repr(command), repr(response))
 
     if isinstance(response, str):
         text = response
@@ -65,10 +67,10 @@ async def slack_command_handler(slackbot, msg):
 
     else:
         # response from command that should not be send
-        raise IgnoreMessage()
+        raise _IGNORE_COMMAND_MESSAGE
 
     slackbot.send_message(channel=channel, text=text)
-    raise IgnoreMessage()
+    raise _IGNORE_COMMAND_MESSAGE
 
 # command access
 

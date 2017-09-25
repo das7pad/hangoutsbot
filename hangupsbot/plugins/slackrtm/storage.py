@@ -58,10 +58,12 @@ def migrate_on_domain_change(slackrtm, old_domain):
     new_path = ['slackrtm', new_domain]
 
     if bot.memory.exists(new_path):
-        logger.warning('Cancelled migration of synced conversations from domain'
-                       '"%s" to "%s" as the new path already exists',
-                       old_domain, new_domain)
+        logger.warning('Cancelled migration from domain %(old)s to %(new)s as '
+                       'there is already data present for the domain %(new)s',
+                       dict(old=repr(old_domain), new=repr(new_domain)))
         return
+    logger.info('Migrating data from domain %s to %s',
+                repr(old_domain), repr(new_domain))
 
     old_path = ['slackrtm', old_domain]
 

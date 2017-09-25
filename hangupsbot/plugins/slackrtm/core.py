@@ -70,6 +70,9 @@ class SlackRTM(object):
     _session = None
     logger = logger
 
+    # tracker for concurrent api_calls, unique per instance
+    _tracker = 0
+
     def __init__(self, bot, sink_config):
         if  not isinstance(sink_config, dict) or 'key' not in sink_config:
             raise SlackConfigError('API-`key` is missing in config %s'
@@ -156,6 +159,8 @@ class SlackRTM(object):
 
             if any(key not in login_data for key in ('self', 'team', 'url')):
                 raise IncompleteLoginError()
+            self.logger = logging.getLogger('plugins.slackrtm.%s'
+                                            % login_data['team']['domain'])
             return login_data
 
         async def _build_cache(login_data):
@@ -239,6 +244,7 @@ class SlackRTM(object):
                 self.logger.info('websocket closed gracefully, restarting')
                 hard_reset = 0
             finally:
+                self.logger.debug('unloading')
                 self.bot.config.on_reload.remove_observer(self.rebuild_base)
                 if self._cache_sending_queue is not None:
                     await self._cache_sending_queue.stop(5)
@@ -365,8 +371,14 @@ class SlackRTM(object):
             SlackAPIError: invalid request
             SlackAuthError: the token got revoked
         """
-        delay = kwargs.pop('delay', 0)
-        await asyncio.sleep(delay)
+        tracker = self._tracker
+        self._tracker += 1
+        self.logger.debug('api_call %s: (%s, %s)',
+                          tracker, repr(method), repr(kwargs))
+        if 'delay' in kwargs:
+            delay = kwargs.pop('delay')
+            self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
+            await asyncio.sleep(delay)
         parsed = None
         try:
             async with await asyncio.shield(self._session.post(
@@ -374,6 +386,7 @@ class SlackRTM(object):
                 data={'token': self.apikey, **kwargs})) as resp:
 
                 parsed = await resp.json()
+                self.logger.debug('api_call %s: %s', tracker, repr(parsed))
                 if parsed.get('ok'):
                     return parsed
                 if 'rate_limited' in parsed:
@@ -383,7 +396,7 @@ class SlackRTM(object):
 
                 raise RuntimeError('invalid request')
         except SlackRateLimited:
-            self.logger.warning('ratelimit reached\n%s', parsed)
+            self.logger.warning('api_call %s: ratelimit hit', tracker)
             delay += parsed.get('Retry-After', 30)
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
@@ -393,8 +406,8 @@ class SlackRTM(object):
                 pass
 
             self.logger.error(
-                'api_call failed: %s, method=%s, kwargs=%s, parsed=%s',
-                repr(err), method, kwargs, parsed)
+                'api_call %s: failed with %s, method=%s, kwargs=%s, parsed=%s',
+                tracker, repr(err), method, kwargs, parsed)
         raise SlackAPIError(parsed)
 
     def send_message(self, *, channel, text, as_user=True, attachments=None,
@@ -727,20 +740,24 @@ class SlackRTM(object):
                 return False
             return True
 
+        self.logger.debug('received reply %s', repr(reply))
+
         if (await _update_cache_on_event(reply['type'])
                 # no message content
                 or await _update_cache_on_event(reply.get('subtype'))
                 # we do not sync this type
                 or reply.get('is_ephemeral') or reply.get('hidden')):
                 # hidden message from slack
+            self.logger.debug('reply is system event')
             return
 
         if (('user' in reply and reply['user'] == self.my_uid) or
                 ('bot_id' in reply and reply['bot_id'] == self.my_bid)):
             # message from the bot user, skip it as we already handled it
+            self.logger.debug('reply content already seen')
             return
 
-        error_message = 'error while parsing a Slack reply\n%s'
+        error_message = 'error while parsing a Slack reply\nreply=%s'
         error_is_critical = True
         try:
             msg = SlackMessage(self, reply)
