@@ -744,9 +744,10 @@ class TelegramBot(telepot.aio.Bot):
                 if err.error_code == 409:
                     logger.critical(
                         'The API-KEY is in use of another service! '
-                        'Telegram allows only one longpolling instance. '
-                        'Cancelling this message loop now.')
-                    return
+                        'Telegram allows only one longpolling instance.')
+                    await asyncio.sleep(120)
+                    continue
+
                 delay = _log_http_error(delay,
                                         (err, err.error_code, err.description))
 
