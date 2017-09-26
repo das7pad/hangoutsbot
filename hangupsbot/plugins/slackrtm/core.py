@@ -786,15 +786,8 @@ class SlackRTM(object):
             return
 
         segments = msg.segments
-        channel_name = msg.title
+        channel_name = self.get_chatname(msg.channel, '')
         channel_tag = '%s:%s' % (self.identifier, msg.channel)
-
-        if msg.file_attachment:
-            image = self.bot.sync.get_sync_image(
-                url=msg.file_attachment,
-                headers={'Authorization': 'Bearer ' + self.apikey})
-        else:
-            image = None
 
         for sync in syncs:
             if msg.is_joinleave is not None:
@@ -807,7 +800,7 @@ class SlackRTM(object):
 
             asyncio.ensure_future(self.bot.sync.message(
                 identifier=channel_tag, conv_id=sync['hangoutid'],
-                user=msg.user, text=segments, image=image,
+                user=msg.user, text=segments, image=msg.image,
                 edited=msg.edited, title=channel_name))
 
     async def _handle_sync_message(self, bot, event):

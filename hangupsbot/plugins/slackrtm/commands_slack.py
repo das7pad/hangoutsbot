@@ -27,7 +27,7 @@ async def slack_command_handler(slackbot, msg):
     Raises:
         IgnoreMessage: do not sync the message as it is a slack-only command
     """
-    if not msg.user_id:
+    if not msg.user.usr_id:
         # do not respond to messages that originate from outside slack
         return
 
@@ -42,10 +42,11 @@ async def slack_command_handler(slackbot, msg):
     args = tokens
 
     if command not in COMMANDS_USER and command not in COMMANDS_ADMIN:
-        response = '@{}: {} is not recognised'.format(msg.username, command)
+        response = '@{}: {} is not recognised'.format(msg.user.username,
+                                                      command)
 
-    elif command in COMMANDS_ADMIN and msg.user_id not in slackbot.admins:
-        response = '@{}: {} is an admin-only command'.format(msg.username,
+    elif command in COMMANDS_ADMIN and msg.user.usr_id not in slackbot.admins:
+        response = '@{}: {} is an admin-only command'.format(msg.user.username,
                                                              command)
 
     else:
@@ -63,7 +64,7 @@ async def slack_command_handler(slackbot, msg):
     elif isinstance(response, tuple):
         channel, text = response
         if channel == '1on1':
-            channel = await slackbot.get_slack1on1(msg.user_id)
+            channel = await slackbot.get_slack1on1(msg.user.usr_id)
 
     else:
         # response from command that should not be send
@@ -137,7 +138,7 @@ def help(slackbot, msg, args):                # pylint:disable=redefined-builtin
     for command in COMMANDS_USER:
         lines.append('- *{}*: {}'.format(command, HELP[command]))
 
-    if msg.user_id in slackbot.admins:
+    if msg.user.usr_id in slackbot.admins:
         lines.append('*admin commands:*')
         for command in COMMANDS_ADMIN:
             lines.append('- *{}*: {}'.format(command, HELP[command]))
@@ -155,7 +156,7 @@ def whereami(dummy, msg, dummys):
     Returns:
         str: command output
     """
-    return _('@%s: you are in channel %s') % (msg.username, msg.channel)
+    return _('@%s: you are in channel %s') % (msg.user.username, msg.channel)
 
 def whoami(dummy, msg, dummys):
     """tells you your own user id
@@ -168,7 +169,8 @@ def whoami(dummy, msg, dummys):
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
     """
-    return '1on1', _('@%s: your userid is %s') % (msg.username, msg.user_id)
+    return '1on1', _('@%s: your userid is %s') % (msg.user.username,
+                                                  msg.user.usr_id)
 
 def whois(slackbot, msg, args):
     """whois @username tells you the user id of @username
@@ -183,17 +185,17 @@ def whois(slackbot, msg, args):
     """
     if not args:
         return '1on1', _('%s: sorry, but you have to specify a username for '
-                         'command `whois`') % (msg.username)
+                         'command `whois`') % (msg.user.username)
 
     search = args[0][1:] if args[0][0] == '@' else args[0]
     for uid in slackbot.users:
         if slackbot.get_username(uid) == search:
             message = _('@%s: the user id of _%s_ is %s') % (
-                msg.username, slackbot.get_username(uid), uid)
+                msg.user.username, slackbot.get_username(uid), uid)
             break
     else:
         message = _('%s: sorry, but I could not find user _%s_ in this slack.'
-                   ) % (msg.username, search)
+                   ) % (msg.user.username, search)
     return '1on1', message
 
 def admins(slackbot, msg, dummys):
@@ -207,7 +209,7 @@ def admins(slackbot, msg, dummys):
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
     """
-    message = ['<@%s>: my admins are:' % msg.user_id]
+    message = ['<@%s>: my admins are:' % msg.user.usr_id]
     for admin in slackbot.admins:
         user = SlackUser(slackbot, channel=msg.channel, user_id=admin)
         message.append('<@%s> - %s' % (admin, user.full_name))
@@ -226,7 +228,7 @@ async def syncprofile(slackbot, msg, dummys):
         tuple: a tuple of two strings, the channel target and the command output
     """
     bot = slackbot.bot
-    user_id = msg.user_id
+    user_id = msg.user.usr_id
     path = ['profilesync', slackbot.identifier]
 
     if bot.memory.exists(path + ['2ho', user_id]):
@@ -276,7 +278,7 @@ async def unsyncprofile(slackbot, msg, dummys):
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
     """
-    user_id = msg.user_id
+    user_id = msg.user.usr_id
     private_chat = await slackbot.get_slack1on1(user_id)
     path = ['profilesync', slackbot.identifier]
     bot = slackbot.bot
@@ -318,7 +320,7 @@ async def hangouts(slackbot, msg, dummys):
         tuple: a tuple of two strings, the channel target and the command output
     """
     lines = []
-    lines.append('@%s: list of active hangouts:\n' % msg.username)
+    lines.append('@%s: list of active hangouts:\n' % msg.user.username)
     bot = slackbot.bot
     for conv_id in bot.conversations:
         lines.append('*%s:* _%s_' % (
@@ -337,7 +339,7 @@ def listsyncs(slackbot, msg, dummys):
         tuple: a tuple of two strings, the channel target and the command output
     """
     lines = []
-    lines.append('@%s: current syncs with this slack team:' % msg.username)
+    lines.append('@%s: current syncs with this slack team:' % msg.user.username)
     for sync in slackbot.syncs:
         conv_id = sync['hangoutid']
         hangoutname = slackbot.bot.conversations.get_name(conv_id, conv_id)
@@ -371,7 +373,7 @@ def syncto(slackbot, msg, args):
     Returns:
         str: command output
     """
-    message = '@%s: ' % msg.username
+    message = '@%s: ' % msg.user.username
     if not args:
         message += _('sorry, but you have to specify a Hangout ID for `syncto`')
         return message
@@ -406,7 +408,7 @@ def disconnect(slackbot, msg, args):
     Returns:
         str: command output
     """
-    message = '@%s: ' % msg.username
+    message = '@%s: ' % msg.user.username
     if not args:
         message += _('sorry, but you have to specify a Hangout Id for '
                      '`disconnect`')

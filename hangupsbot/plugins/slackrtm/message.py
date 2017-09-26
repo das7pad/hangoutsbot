@@ -129,84 +129,77 @@ class SlackMessage(object):
         if self.channel is None:
             raise ParseError('no channel found in reply')
 
-        self.text = ''
         self.user = None
-        self.user_id = None
-        self.username = None
         self.edited = False
-        self.segments = None
-        self.file_attachment = None
+        self.segments = []
+        self.image = None
 
-        self.subtype = (reply.get('subtype')
-                        if reply['type'] == 'message' else None)
+        subtype = reply.get('subtype')
 
-        self.set_raw_content(reply)
+        self.set_base(slackrtm, reply)
 
-        if not self.segments:
-            self.segments, image_url = parse_text(slackrtm, self.text)
-            self.file_attachment = image_url or self.file_attachment
-
-        if self.subtype in TYPES_MEMBERSHIP_JOIN:
+        # membership part
+        self.participant_user = []
+        if subtype in TYPES_MEMBERSHIP_JOIN:
             self.is_joinleave = 1
             if 'inviter' in reply:
+                self.participant_user.append(self.user)
                 self.user = SlackUser(slackrtm, user_id=reply['inviter'],
                                       channel=self.channel)
-                self.participant_user = [SlackUser(slackrtm,
-                                                   user_id=self.user_id,
-                                                   channel=self.channel)]
-
-        elif self.subtype in TYPES_MEMBERSHIP_LEAVE:
+        elif subtype in TYPES_MEMBERSHIP_LEAVE:
             self.is_joinleave = 2
-
         else:
             self.is_joinleave = None
 
-        if self.user is None:
-            self.user = SlackUser(slackrtm, user_id=self.user_id,
-                                  name=self.username, channel=self.channel)
-            self.participant_user = []
+    @property
+    def text(self):
+        """get the raw text without formatting
 
-        self.title = slackrtm.get_chatname(self.channel, '')
-        self.username = self.user.username
-        self.text = get_formatted(self.segments, 'text')
+        Returns:
+            str: the raw message content
+        """
+        return get_formatted(self.segments, 'text')
 
-    def set_raw_content(self, reply):
-        """set the message text and try to fetch a user (id) or set a username
+    def set_base(self, slackrtm, reply):
+        """set the message text, user and media
 
         Args:
+            slackrtm (core.SlackRTM): the instance which received the `reply`
             reply (dict): slack response
 
         Raises:
             IgnoreMessage: the message should not be synced
             ParseError: the message content could not be parsed
         """
-        subtype = self.subtype
+        subtype = reply.get('subtype')
+        text = None
+        file_attachment = None
         if subtype == 'message_changed':
             if 'edited' not in reply['message']:
                 raise IgnoreMessage('not a user message')
 
             self.edited = True
-            self.user_id = reply['message']['edited'].get('user')
-            self.text = str(reply['message'].get('text'))
+            user_id = reply['message']['edited'].get('user')
+            text = str(reply['message'].get('text'))
 
         elif subtype == 'file_comment':
-            self.user_id = reply['comment']['user']
-            self.text = reply['text']
+            user_id = reply['comment']['user']
+            text = reply['text']
 
         elif reply['type'] == 'file_comment_added':
-            self.user_id = reply['comment']['user']
-            self.text = reply['comment']['comment']
+            user_id = reply['comment']['user']
+            text = reply['comment']['comment']
 
         elif subtype == 'bot_message':
-            self.parse_bot_message(reply)
+            self.parse_bot_message(slackrtm, reply)
+            return
 
         else:
             # set user
-            if 'user' not in reply and 'username' not in reply:
+            if 'user' not in reply:
                 raise IgnoreMessage('not a user message')
 
-            self.username = reply.get('username')
-            self.user_id = reply.get('user')
+            user_id = reply['user']
 
             # set text
             if 'file' in reply:
@@ -214,38 +207,53 @@ class SlackMessage(object):
                     raise IgnoreMessage('already seen this image')
 
                 file = reply['file']
-                self.file_attachment = file['url_private_download']
+                file_attachment = file['url_private_download']
                 text = file.get('title', '')
                 text += ('\n> ' + file['initial_comment']['comment']
                          if ('initial_comment' in file
                              and 'comment' in file['initial_comment']) else '')
                 # no title and no comment -> use the default text as fallback
-                self.text = text.strip() or reply.get('text')
+                text = text.strip() or reply.get('text')
 
             elif 'text' in reply and reply['text']:
-                self.text = reply['text']
+                text = reply['text']
 
             elif 'attachments' in reply:
                 attachment = reply['attachments'][0]
-                if 'text' not in attachment:
-                    raise ParseError('message without text in attachment')
-                lines = [attachment['text']]
-                if 'fields' in attachment:
-                    for field in attachment['fields']:
-                        lines.append('*%s*' % field['title'])
-                        lines.append('%s' % field['value'])
-                self.text = '\n'.join(lines)
+                lines = [attachment['text']] if 'text' in attachment else []
+                for field in attachment.get('fields', ()):
+                    lines.append('*%s*' % field['title'])
+                    lines.append('%s' % field['value'])
+                text = '\n'.join(lines)
 
-    def parse_bot_message(self, reply):
+        self.user = SlackUser(slackrtm, user_id=user_id,
+                              name=reply.get('username'),
+                              channel=self.channel)
+        self.segments, image_url = parse_text(slackrtm, text)
+
+        # set media
+        image_url = image_url or file_attachment
+        self.image = slackrtm.bot.sync.get_sync_image(
+            url=image_url,
+            headers={'Authorization': 'Bearer ' + slackrtm.apikey})
+
+    def parse_bot_message(self, slackrtm, reply):
         """parse bot messages from various services
 
-        add custom parsing here
+        add custom parsing here:
+        - required:
+            `self.segments` (list), a list of `parsers.SlackMessageSegment`
+            `self.user` (user.SlackUser), the sender
+        - optional:
+            `self.image` (sync.image.SyncImage), attached media
+            `self.edited` (bool), edited version of a previous message
 
         Args:
+            slackrtm (core.SlackRTM): the instance which received the `reply`
             reply (dict): slack response
 
         Raises:
             IgnoreMessage: the message should not be synced
         """
-        # pylint: disable=no-self-use
-        raise IgnoreMessage('unknown service: %s' % reply)
+        # pylint: disable=no-self-use, unused-argument
+        raise IgnoreMessage('unknown service')
