@@ -8,6 +8,7 @@ import aiohttp
 import plugins
 
 from sync.sending_queue import AsyncQueueCache
+from sync.user import SyncUser
 from sync.utils import get_sync_config_entry
 
 from .commands_slack import slack_command_handler
@@ -33,6 +34,9 @@ from .storage import (
 
 
 logger = logging.getLogger(__name__)
+
+_RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '
+                     'the Hangout to *{new_name}*_')
 
 # Slack RTM event (sub-)types
 _CACHE_UPDATE_USERS = ('team_join', 'user_change')
@@ -861,22 +865,22 @@ class SlackRTM(object):
 
             self.send_message(channel=sync['channelid'], text=message)
 
-    async def _handle_ho_rename(self, event):
+    def _handle_ho_rename(self, bot, event):
         """notify configured slack channels about a changed conversation name
 
         Args:
             bot (hangupsbot.HangupsBot): the running instance
             event (event.ConversationEvent): instance to be handled
         """
-        name = self.bot.conversations.get_name(event.conv)
+        name = bot.conversations.get_name(event.conv)
+        user = SyncUser(bot, user_id=event.user_id.chat_id)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):
-            invitee = u'<https://plus.google.com/%s/about|%s>' % (event.user_id.chat_id, event.user.full_name)
-            hotagaddendum = ''
-            if sync.hotag:
-                hotagaddendum = ' _%s_' % sync.hotag
-            message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
-            self.logger.debug("sending to channel/group %s: %s", sync['channelid'], message)
+            channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
+            message = _RENAME_TEMPLATE.format(
+                chat_id=user.id_.chat_id,
+                name=user.get_displayname(channel_tag, text_only=True),
+                new_name=name)
             self.send_message(channel=sync['channelid'], text=message)
 
     async def _handle_profilesync(self, platform, remote_user, conv_1on1,
