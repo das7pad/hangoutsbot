@@ -142,19 +142,6 @@ class SlackMessage(object):
 
         self.set_raw_content(reply)
 
-        if 'file' in reply:
-            if reply.get('upload') is False:
-                raise IgnoreMessage('already seen this image')
-
-            self.file_attachment = reply['file']['url_private_download']
-            lines = []
-            lines.append(reply['file'].get('title', ''))
-            lines.append(
-                ('> ' + reply['file']['initial_comment'].get('comment', ''))
-                if 'initial_comment' in reply['file'] else '')
-            # if no title or comment are given, use the default text as fallback
-            self.text = '\n'.join(lines).strip() or self.text
-
         if not self.segments:
             self.segments, image_url = parse_text(slackrtm, self.text)
             self.file_attachment = image_url or self.file_attachment
@@ -222,7 +209,20 @@ class SlackMessage(object):
             self.user_id = reply.get('user')
 
             # set text
-            if 'text' in reply and reply['text']:
+            if 'file' in reply:
+                if reply.get('upload') is False:
+                    raise IgnoreMessage('already seen this image')
+
+                file = reply['file']
+                self.file_attachment = file['url_private_download']
+                text = file.get('title', '')
+                text += ('\n> ' + file['initial_comment']['comment']
+                         if ('initial_comment' in file
+                             and 'comment' in file['initial_comment']) else '')
+                # no title and no comment -> use the default text as fallback
+                self.text = text.strip() or reply.get('text')
+
+            elif 'text' in reply and reply['text']:
                 self.text = reply['text']
 
             elif 'attachments' in reply:
