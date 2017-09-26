@@ -90,6 +90,7 @@ COMMANDS_ADMIN = [
     'syncto',
     'disconnect',
     'chattitle',
+    'sync_config',
 ]
 
 
@@ -116,6 +117,7 @@ HELP = {
                     'usage: disconnect <hangout conversation id>'),
     'chattitle': _('update the synced chattitle for the current or specified '
                    'channel'),
+    'sync_config': _('update a config entry for the current or given channel'),
 }
 
 
@@ -448,3 +450,37 @@ def chattitle(slackbot, msg, args):
     return slackbot.bot.call_shared(
         'setchattitle', args=args, platform=slackbot.identifier,
         fallback=msg.channel, source=slackbot.conversations)
+
+def sync_config(slackbot, msg, args):
+    """update a config entry for the current or given channel
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        args (tuple): a tuple of string, additional arguments as strings
+
+    Returns:
+        str: command output
+    """
+    if len(args) < 2:
+        return _("specify the config key and it's new value")
+
+    if args[0] in slackbot.conversations and len(args) > 2:
+        channel = args[0]
+        key = args[1]
+        value = ' '.join(args[2:])
+    else:
+        channel = msg.channel
+        key = args[0]
+        value = ' '.join(args[1:])
+
+    channel_tag = slackbot.identifier + ':' + channel
+
+    try:
+        last_value, new_value = slackbot.bot.call_shared(
+            'sync_config', channel_tag, key, value)
+    except (KeyError, TypeError) as err:
+        return str(err)
+    else:
+        return _('%s updated for channel "%s" from "%s" to "%s"') % (
+            key, channel, last_value, new_value)
