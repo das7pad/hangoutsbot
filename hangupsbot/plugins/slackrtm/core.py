@@ -71,6 +71,7 @@ class SlackRTM(object):
     Raises:
         SlackConfigError: could not find the api-`key` in `sink_config`
     """
+    # pylint:disable=too-many-instance-attributes
     _session = None
     logger = logger
 
@@ -775,7 +776,7 @@ class SlackRTM(object):
         except SlackAuthError as err:
             self.logger.critical(repr(err))
             # continue with message handling
-        except:
+        except:         # capture all Exceptions   # pylint: disable=bare-except
             self.logger.exception(error_message, repr(reply))
             if error_is_critical:
                 return
