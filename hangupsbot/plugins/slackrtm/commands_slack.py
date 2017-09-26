@@ -89,6 +89,7 @@ COMMANDS_ADMIN = [
     'listsyncs',
     'syncto',
     'disconnect',
+    'chattitle',
 ]
 
 
@@ -113,6 +114,8 @@ HELP = {
     'disconnect': _('stop syncing messages from the current '
                     'channel/group to the specified hangout\n'
                     'usage: disconnect <hangout conversation id>'),
+    'chattitle': _('update the synced chattitle for the current or specified '
+                   'channel'),
 }
 
 
@@ -430,3 +433,18 @@ def disconnect(slackbot, msg, args):
         message += _('OK, I will no longer sync messages in this channel with '
                      'the Hangout _%s_.') % hangoutname
     return message
+
+def chattitle(slackbot, msg, args):
+    """update the synced chattitle for the current or specified channel
+
+    Args:
+        slackbot (core.SlackRTM): the instance which received the message
+        msg (message.SlackMessage): the currently handled message
+        args (tuple): a tuple of string, additional arguments as strings
+
+    Returns:
+        str: command output
+    """
+    return slackbot.bot.call_shared(
+        'setchattitle', args=args, platform=slackbot.identifier,
+        fallback=msg.channel, source=slackbot.conversations)
