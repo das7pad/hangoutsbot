@@ -23,6 +23,7 @@ from sync.sending_queue import AsyncQueueCache
 from .commands_tg import (
     command_whoami,
     command_whereami,
+    command_whois,
     command_set_sync_ho,
     command_clear_sync_ho,
     command_add_admin,
@@ -82,6 +83,7 @@ class TelegramBot(telepot.aio.Bot):
 
         self._commands = {'/whoami': command_whoami,
                           '/whereami': command_whereami,
+                          '/whois': command_whois,
                           '/setsyncho': command_set_sync_ho,
                           '/clearsyncho': command_clear_sync_ho,
                           '/addadmin': command_add_admin,

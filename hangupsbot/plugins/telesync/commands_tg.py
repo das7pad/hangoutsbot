@@ -155,6 +155,29 @@ async def command_whereami(tg_bot, msg, *dummys):
         tg_bot.send_html(msg.chat_id,
                          _("This chat has the id '{}'").format(msg.chat_id))
 
+async def command_whois(tg_bot, msg, *args):
+    """get the Telegram user id of a given user
+
+    Args:
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a received message
+        args (tuple): a tuple of args, including the search term
+    """
+    if not ensure_args(tg_bot, msg.chat_id, args):
+        return
+
+    term = ' '.join(args).lower()
+    users = tg_bot.bot.memory.get_by_path(['telesync', 'user_data'])
+    for user_id, data in users.items():
+        user = await tg_bot.get_tg_user(user_id, msg.chat_id)
+        if term in repr(data).lower() or term in str(user).lower():
+            name = user.get_displayname(user.identifier)
+            text = _('User <i>%s</i> has the id "%s"') % (name, user_id)
+            break
+    else:
+        text = _('Could not find a user matching "%s"') % term
+    tg_bot.send_html(msg.chat_id, text)
+
 async def command_set_sync_ho(tg_bot, msg, *args):
     """set sync with given hoid if not already set
 
