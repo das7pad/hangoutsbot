@@ -300,6 +300,7 @@ class SlackRTM(object):
 
             sync_handler = (
                 (self._handle_conv_user, 'conv_user'),
+                (self._handle_user_kick, 'user_kick'),
                 (self._handle_profilesync, 'profilesync'),
                 (self._handle_sync_message, 'allmessages'),
                 (self._handle_sync_membership, 'membership'),
@@ -907,6 +908,49 @@ class SlackRTM(object):
                     continue
                 users.append(sync_user)
         return users
+
+    async def _handle_user_kick(self, dummy, conv_id, user):
+        """kick a user from all syned channels for a given conversation
+
+        Args:
+            dummy (hangupsbot.HangupsBot): the running instance
+            conv_id (str): conversation identifier
+            user (sync.user.SyncUser): user that should get kicked
+
+        Returns:
+            mixed: None: ignored, False: failed, True: kicked, 'whitelisted'
+        """
+        slackrtm_identifier = user.identifier.rsplit(':', 1)[0]
+        if slackrtm_identifier != self.identifier:
+            return None
+
+        if user.is_self or user.usr_id in self.admins:
+            # exclude the bot user and admins
+            return 'whitelisted'
+
+        syncs = self.get_syncs(hangoutid=conv_id)
+        kicked = None
+        for sync in syncs:
+            channel = sync['channelid']
+            users = self._get_channel_data(channel, 'members', ())
+            if user.usr_id not in users:
+                # covers ims and users that left already
+                continue
+            method = 'groups.kick' if channel[0] == 'G' else 'channels.kick'
+            self.logger.info('kick "%s" from "%s"', user.usr_id, channel)
+            try:
+                await self.api_call(method, channel=channel, user=user.usr_id)
+            except SlackAPIError as err:
+                kicked = False
+                self.logger.warning('failed to kick user "%s" from "%s": %s',
+                                    user.usr_id, channel, repr(err))
+            else:
+                # do not overwrite an error state
+                kicked = True if kicked is not False else False
+
+        await self.update_cache('groups')
+        await self.update_cache('channels')
+        return kicked
 
     async def _handle_profilesync(self, platform, remote_user, conv_1on1,
                                   split_1on1s):
