@@ -28,6 +28,7 @@ from .message import SlackMessage
 from .parsers import (
     SLACK_STYLE,
 )
+from .user import SlackUser
 from .storage import (
     migrate_on_domain_change,
 )
@@ -298,6 +299,7 @@ class SlackRTM(object):
             plugins.register_handler(self._handle_ho_rename, 'rename')
 
             sync_handler = (
+                (self._handle_conv_user, 'conv_user'),
                 (self._handle_profilesync, 'profilesync'),
                 (self._handle_sync_message, 'allmessages'),
                 (self._handle_sync_membership, 'membership'),
@@ -487,19 +489,22 @@ class SlackRTM(object):
 
         if type_ == 'team':
             self.team = data
-        elif type_ == 'ims':
+            return
+
+        if type_ == 'ims':
+            # store ims bidirectional for faster lookups in `get_slack1on1`
             for item in data:
                 if item['user'] in self.users:
                     self.users[item['user']]['1on1'] = item['id']
                 else:
                     self.users[item['user']] = {'1on1': item['id']}
-        else:
-            storage = self.users if type_ == 'users' else self.conversations
-            for item in data:
-                if item['id'] in storage:
-                    storage[item['id']].update(item)
-                else:
-                    storage[item['id']] = item
+
+        storage = self.users if type_ == 'users' else self.conversations
+        for item in data:
+            if item['id'] in storage:
+                storage[item['id']].update(item)
+            else:
+                storage[item['id']] = item
 
     def get_channel_users(self, channel):
         """get the usernames and realnames of users attending the given channel
@@ -874,6 +879,34 @@ class SlackRTM(object):
                 name=user.get_displayname(channel_tag, text_only=True),
                 new_name=name)
             self.send_message(channel=sync['channelid'], text=message)
+
+    async def _handle_conv_user(self, dummy, conv_id, profilesync_only):
+        """get all slack user participating in a synced conversation
+
+        Args:
+            dummy (hangupsbot.HangupsBot): the running instance
+            conv_id (str): conversation identifier
+            profilesync_only (bool): only include users synced to a G+ profile
+
+        Returns:
+            list: a list of `user.SlackUser`s
+        """
+        users = []
+        for sync in self.get_syncs(hangoutid=conv_id):
+            channel = sync['channelid']
+            channel_users = ((self._get_channel_data(channel, 'user'),)
+                             if channel[0] == 'D' else
+                             self._get_channel_data(channel, 'members'))
+
+            for user_id in channel_users:
+                sync_user = SlackUser(self, user_id=user_id, channel=channel)
+                if sync_user.is_self:
+                    # exclude the bot user
+                    continue
+                if profilesync_only and sync_user.id_.chat_id == 'sync':
+                    continue
+                users.append(sync_user)
+        return users
 
     async def _handle_profilesync(self, platform, remote_user, conv_1on1,
                                   split_1on1s):
