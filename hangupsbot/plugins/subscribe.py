@@ -150,6 +150,9 @@ def _handle_once(bot, event):
             matches[conv_id] = keyword
 
     user = bot.sync.get_sync_user(user_id=bot.user_self()['chat_id'])
+    kwargs = dict(identifier='hangouts:%s' % event.conv_id, user=user, title='',
+                  notified_users=event.notified_users,
+                  previous_targets=previous_targets)
     for conv_id, keyword in matches.items():
         user_name = event.user.get_displayname(conv_id, text_only=True)
         title = event.title(conv_id)
@@ -157,10 +160,8 @@ def _handle_once(bot, event):
             title = ' in <i>%s</i> ' % title
         text = _('<b>{}</b> mentioned "{}"{}:\n{}').format(
             user_name, keyword, title, event.text)
-        asyncio.ensure_future(
-            bot.sync.message(identifier='hangouts:%s' % event.conv_id,
-                             conv_id=conv_id, user=user, text=text, title='',
-                             previous_targets=previous_targets))
+        asyncio.ensure_future(bot.sync.message(conv_id=conv_id, text=text,
+                                               **kwargs))
 
 async def _send_notification(bot, event, matches, user):
     """Alert a user that a keyword that they subscribed to has been used
