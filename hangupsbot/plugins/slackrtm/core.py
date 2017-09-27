@@ -33,8 +33,6 @@ from .storage import (
 )
 
 
-logger = logging.getLogger(__name__)
-
 _RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '
                      'the Hangout to *{new_name}*_')
 
@@ -73,7 +71,7 @@ class SlackRTM(object):
     """
     # pylint:disable=too-many-instance-attributes
     _session = None
-    logger = logger
+    logger = logging.getLogger(__name__)
 
     # tracker for concurrent api_calls, unique per instance
     _tracker = 0
@@ -332,8 +330,8 @@ class SlackRTM(object):
             self.name = config['name']
         else:
             self.name = '%s@%s' % (bot_username, self.slack_domain)
-            logger.warning('no name set in config file, using computed name %s',
-                           self.name)
+            self.logger.warning(
+                'no name set in config file, using computed name %s', self.name)
 
         self.command_prefixes = (config['command_prefixes']
                                  if 'command_prefixes' in config else
