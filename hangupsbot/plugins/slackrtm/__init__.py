@@ -87,14 +87,14 @@ def _initialise(bot):
         else:
             SLACKRTMS.append(slackrtm)
             plugins.start_asyncio_task(slackrtm.start)
-    logger.info("%d SlackRTM started", len(SLACKRTMS))
+    logger.info('%d SlackRTM started', len(SLACKRTMS))
 
     plugins.register_admin_command([
-        "slacks",
-        "slack_channels",
-        "slack_listsyncs",
-        "slack_syncto",
-        "slack_disconnect",
-        "slack_users",
+        'slacks',
+        'slack_channels',
+        'slack_listsyncs',
+        'slack_syncto',
+        'slack_disconnect',
+        'slack_users',
     ])
     plugins.register_help(HELP)

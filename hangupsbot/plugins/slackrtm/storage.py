@@ -123,14 +123,14 @@ def _migrate_20170319(bot):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
     """
-    memory_root_key = "slackrtm"
+    memory_root_key = 'slackrtm'
     if bot.memory.exists([memory_root_key]):
         return
 
     configurations = bot.get_config_option('slackrtm')
     migrated_configurations = {}
     for configuration in configurations:
-        team_name = configuration["name"]
+        team_name = configuration['name']
         broken_path = ['user_data', team_name]
         if bot.memory.exists(broken_path):
             legacy_team_memory = bot.memory.get_by_path(broken_path).copy()

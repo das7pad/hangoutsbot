@@ -102,8 +102,8 @@ class SlackMessageSegment(MessageSegment):
 
 def main():
     """check the parser"""
-    print("***SLACK MARKDOWN TO HANGUPS")
-    print("")
+    print('***SLACK MARKDOWN TO HANGUPS')
+    print('')
 
     text = ('Hello *bold* world!\n'
             'You can *try _this_ awesome* [link](www.eff.org).\n'
@@ -123,16 +123,16 @@ def main():
             '********\n'
             '_ xya kskdks')
     print(repr(text))
-    print("")
+    print('')
 
     output = get_formatted(SlackMessageSegment.from_str(text), 'markdown')
-    print("")
+    print('')
 
     print(repr(output))
-    print("")
+    print('')
 
-    print("***HANGUPS MARKDOWN TO SLACK PARSER")
-    print("")
+    print('***HANGUPS MARKDOWN TO SLACK PARSER')
+    print('')
 
     segments = [
         MessageSegment(text='[bot] test markdown', is_bold=True),
@@ -161,13 +161,13 @@ def main():
         MessageSegment(text='1234567890', is_italic=True),
     ]
     print(repr(get_formatted(segments, 'markdown')))
-    print("")
+    print('')
 
     output = get_formatted(segments, SLACK_STYLE)
-    print("")
+    print('')
 
     print(repr(output))
-    print("")
+    print('')
 
 if __name__ == '__main__':
     main()

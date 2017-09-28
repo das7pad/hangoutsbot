@@ -53,21 +53,21 @@ def parse_text(slackrtm, text):
         Returns:
             str: the item to display
         """
-        out = ""
-        linktext = ""
+        out = ''
+        linktext = ''
         if match.group(5) == '|':
             linktext = match.group(6)
         if match.group(2) == '@':
-            if linktext != "":
+            if linktext != '':
                 out = linktext
             else:
-                out = "@%s" % slackrtm.get_username(
+                out = '@%s' % slackrtm.get_username(
                     match.group(3), 'unknown:%s' % match.group(3))
         elif match.group(2) == '#':
-            if linktext != "":
-                out = "#%s" % linktext
+            if linktext != '':
+                out = '#%s' % linktext
             else:
-                out = "#%s" % slackrtm.get_chatname(
+                out = '#%s' % slackrtm.get_chatname(
                     match.group(3), 'unknown:%s' % match.group(3))
         else:
             linktarget = match.group(1)
@@ -100,7 +100,7 @@ def parse_text(slackrtm, text):
     #       e.g. hangouts style has no skin tone support
     # * do it BEFORE emojize() for more reliable detection of sub-pattern
     #       :some_emoji(::skin-tone-\d:)
-    text = re.sub(r"::skin-tone-\d:", ":", text, flags=re.IGNORECASE)
+    text = re.sub(r'::skin-tone-\d:', ':', text, flags=re.IGNORECASE)
 
     # convert emoji aliases into their unicode counterparts
     text = emoji.emojize(text, use_aliases=True)

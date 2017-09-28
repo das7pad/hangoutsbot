@@ -526,8 +526,8 @@ class SlackRTM(object):
         for user_id in channelusers:
             username = self.get_username(user_id)
             if username:
-                realname = self.get_realname(user_id, "No real name")
-                users[username + " " + user_id] = realname
+                realname = self.get_realname(user_id, 'No real name')
+                users[username + ' ' + user_id] = realname
         return users
 
     def _get_user_data(self, user, key, default=None):
