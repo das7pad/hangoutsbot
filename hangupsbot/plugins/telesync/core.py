@@ -18,11 +18,12 @@ from telepot.loop import _extract_message
 import plugins
 
 from sync.parser import get_formatted
-from sync.sending_queue import AsyncQueue, AsyncQueueCache
+from sync.sending_queue import AsyncQueueCache
 
 from .commands_tg import (
     command_whoami,
     command_whereami,
+    command_whois,
     command_set_sync_ho,
     command_clear_sync_ho,
     command_add_admin,
@@ -82,6 +83,7 @@ class TelegramBot(telepot.aio.Bot):
 
         self._commands = {'/whoami': command_whoami,
                           '/whereami': command_whereami,
+                          '/whois': command_whois,
                           '/setsyncho': command_set_sync_ho,
                           '/clearsyncho': command_clear_sync_ho,
                           '/addadmin': command_add_admin,
@@ -142,7 +144,7 @@ class TelegramBot(telepot.aio.Bot):
         except telepot.exception.UnauthorizedError:
             logger.critical('API-Key revoked!')
         finally:
-            await AsyncQueue('telesync').local_stop(5)
+            await self._cache_sending_queue.stop(timeout=5)
 
             # cancel housekeeping tasks
             for task in tasks:
@@ -683,6 +685,29 @@ class TelegramBot(telepot.aio.Bot):
             logger.error('%s in message loop: %s', *message)
             return delay
 
+        async def _handle_update(update):
+            """extract and handle a message of an `Update`
+
+            Args:
+                update (dict): see `https://core.telegram.org/bots/api#update`
+
+            Returns:
+                boolean: True in case the extracted message was handled
+                    successful, otherwise False
+            """
+            message = None
+            try:
+                message = _extract_message(update)[1]
+                await asyncio.shield(self._handle(message))
+            except asyncio.CancelledError:
+                raise
+            except:                                 # pylint:disable=bare-except
+                logger.exception('error in handling message %s of update %s',
+                                 repr(message), repr(update))
+                return False
+            else:
+                return True
+
         hard_reset = 0
         delay = 0.
         offset = None
@@ -698,8 +723,8 @@ class TelegramBot(telepot.aio.Bot):
                     self._receive_next_updates = time.time() + 120
                     for update in updates:
                         offset = update['update_id'] + 1
-                        await asyncio.shield(
-                            self._handle(_extract_message(update)[1]))
+                        if not await _handle_update(update):
+                            break
 
                         # valid message received and handled, exit fail-state
                         hard_reset = 0
@@ -721,9 +746,10 @@ class TelegramBot(telepot.aio.Bot):
                 if err.error_code == 409:
                     logger.critical(
                         'The API-KEY is in use of another service! '
-                        'Telegram allows only one longpolling instance. '
-                        'Cancelling this message loop now.')
-                    return
+                        'Telegram allows only one longpolling instance.')
+                    await asyncio.sleep(120)
+                    continue
+
                 delay = _log_http_error(delay,
                                         (err, err.error_code, err.description))
 

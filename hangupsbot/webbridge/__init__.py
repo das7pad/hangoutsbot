@@ -70,7 +70,7 @@ class WebFramework:
         """deregister the handlers to send and receive messages"""
         if self._closed:
             return
-        asyncio.ensure_future(plugins.unload(self.uid))
+        asyncio.ensure_future(plugins.unload(self.bot, self.uid))
         self._closed = True
 
     def load_configuration(self, configkey):

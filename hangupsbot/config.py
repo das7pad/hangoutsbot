@@ -37,7 +37,7 @@ class Config(collections.MutableMapping):
 
     @property
     def _changed(self):
-        """return weather the config changed since the last dump
+        """return whether the config changed since the last dump
 
         Returns:
             boolean, True if config matches with the last dump, otherwise False

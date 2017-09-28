@@ -27,6 +27,18 @@ def recursive_tag_format(array, **kwargs):
         else:
             array[index] = array[index].format(**kwargs)
 
+
+class AlreadyLoaded(utils.FormatBaseException):
+    """Tried to load a plugin which is already loaded"""
+    _template = 'Tried to load the plugin "%s" that is already loaded'
+
+
+class NotLoaded(utils.FormatBaseException):
+    """Tried to unload a plugin which is not loaded or already got unloaded"""
+    _template = ('Tried to unload the plugin "%s" which is not loaded or '
+                 'already got unloaded')
+
+
 class Tracker(object):
     """used by the plugin loader to keep track of loaded commands
     designed to accommodate the dual command registration model (via function or
@@ -307,11 +319,12 @@ def start_asyncio_task(function, *args, **kwargs):
         RuntimeError: the function is not a coroutine or coroutine_function
     """
     loop = asyncio.get_event_loop()
-    if asyncio.iscoroutinefunction(function):
-        task = asyncio.ensure_future(function(tracking.bot, *args, **kwargs),
-                                     loop=loop)
-    elif asyncio.iscoroutine(function):
-        task = asyncio.ensure_future(function,
+    if asyncio.iscoroutinefunction(function) or asyncio.iscoroutine(function):
+        expected = inspect.signature(function).parameters
+        if (expected and tuple(expected)[0] == 'bot'
+                and tracking.bot not in args[:1]):
+            args = (tracking.bot, ) + args
+        task = asyncio.ensure_future(function(*args, **kwargs),
                                      loop=loop)
     else:
         raise RuntimeError("coroutine function must be supplied")
@@ -500,10 +513,13 @@ async def unload_all(bot):
 
     for module in all_plugins:
         result = done.pop(0)
+        if isinstance(result, NotLoaded):
+            logger.info(repr(result))
+            continue
         if not isinstance(result, Exception):
             continue
-        logger.info("unloading of %s failed\nunload() exited with Exception %s",
-                    module, repr(result))
+        logger.error('`unload("%s")` failed with Exception %s',
+                     module, repr(result))
 
 async def load(bot, module_path, module_name=None):
     """loads a single plugin-like object as identified by module_path
@@ -517,11 +533,12 @@ async def load(bot, module_path, module_name=None):
         boolean, True if the plugin was loaded successfully
 
     Raises:
-        AssertionError: the plugin is already loaded
+        AlreadyLoaded: the plugin is already loaded
     """
-    module_name = module_name or module_path.split(".")[-1]
+    if module_path in tracking.list:
+        raise AlreadyLoaded(module_path)
 
-    assert module_path not in tracking.list
+    module_name = module_name or module_path.split(".")[-1]
 
     await tracking.start({"module": module_name, "module.path": module_path})
 
@@ -630,12 +647,18 @@ async def unload(bot, module_path):
         module_path: string, plugin path on disk relative to the main script
 
     Returns:
-        boolean, True if the plugin was fully unloaded, otherwise None
+        boolean, True if the plugin was fully unloaded
 
     Raises:
         RuntimeError: the plugin has registered threads
+        NotLoaded: the plugin was not loaded or is already unloaded
     """
-    plugin = tracking.list.pop(module_path)
+    try:
+        plugin = tracking.list.pop(module_path)
+    except KeyError:
+        logger.debug('Duplicate call on `plugins.unload(bot, "%s")`',
+                     module_path)
+        raise NotLoaded(module_path) from None
 
     if plugin["threads"]:
         raise RuntimeError("%s has %s thread(s)" % (module_path,

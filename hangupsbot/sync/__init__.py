@@ -176,6 +176,9 @@ HELP = {
                    '  to include only users with a synced G+ profile\n\n'
                    '{bot_cmd} syncusers flat unique\n{bot_cmd} syncusers '
                    'profilesync'),
+    'finduser': _('Search for a user in a given conversation or search in all '
+                  'conversations\n<b>Usage:</b>\n'
+                  '{bot_cmd} finduser <term> [conv_id] [unique]'),
 
     # needs to be updated as more profilesyncs are registered during plugin load
     'sync_profile': '',
@@ -202,7 +205,7 @@ HELP = {
                      '012345678910111213141 123456789101112131415 kick_only\n'
                      '~ reset the user list of "UgyiJIGTDLfz6d5cLVp4AaABAQ" to '
                      'the two specified G+IDs and check all relays of the given'
-                     ' conv_id weather users not matching these two user IDs '
+                     ' conv_id whether users not matching these two user IDs '
                      'are attending and kick those'),
 
     'sync_config': _('Change a per conversation config entry for the current '
@@ -238,7 +241,7 @@ def _initialise(bot):
     bot.memory.validate(DEFAULT_MEMORY)
     plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
     plugins.register_admin_command(['chattitle', 'sync_config', 'check_users',
-                                    'autokick'])
+                                    'autokick', 'finduser'])
     plugins.register_sync_handler(_autokick, 'membership')
     plugins.register_help(HELP)
 
@@ -506,6 +509,54 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
 
     return '\n'.join(lines)
 
+async def finduser(bot, event, *args):
+    """search for a user in a given conversation or search in all conversations
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a currently handled instance
+        args (tuple): a tuple of str, the search term and optional a conv_id
+
+    Returns:
+        str: the command output
+
+    Raises:
+        Help: search term is missing
+    """
+    conv_id, params = _convid_from_args(bot, args)
+    unique = 'unique' in params
+    params = set(params) - set(('unique',))
+    if not params:
+        raise Help('search term is missing!')
+
+    term = ' '.join(params)
+    users = await bot.sync.find_user(term, conv_id=conv_id)
+
+    if not users:
+        return _('No users match "%s".') % term
+
+    entrys = set()
+    chat_ids = set()
+    for platform, users in users.items():
+        for user in users:
+            chat_id = user.id_.chat_id
+            if unique and chat_id != 'sync':
+                # filter duplicates
+                if chat_id in chat_ids:
+                    continue
+                chat_ids.add(chat_id)
+            entry = ' - <b>%s</b> [ <i>%s</i> ]' % (
+                user.get_displayname(event.conv_id, text_only=True), platform)
+            if chat_id != 'sync' and chat_id not in user.user_link:
+                entry += '\n   https://plus.google.com/%s' % chat_id
+            if user.user_link:
+                entry += '\n   %s' % (user.user_link)
+            entrys.add(entry)
+    lines = []
+    lines.append(_('Users matching "%s":') % term)
+    lines.extend(sorted(entrys))
+    return '\n'.join(lines)
+
 async def syncprofile(bot, event, *args):
     """syncs ho-user with platform-user-profile and syncs pHO <-> platform 1on1
 
@@ -587,15 +638,14 @@ async def sync1to1(bot, event, *args):
         raise Help(_('"%s" is not a valid sync platform, choose one of:\n%s')
                    % (args[0], '"%s"' % '", "'.join(platforms)))
 
-    chat_id = event.user_id.chat_id
-    path = ['profilesync', platform, 'ho2', chat_id]
+    path = ['profilesync', platform, 'ho2', event.user_id.chat_id]
     if not bot.memory.exists(path):
         label, cmd, dummy = bot.sync.profilesync_cmds[platform]
         return _('You do not have a profilesync set for <b>%s</b>!\n'
                  'Start one there with <b>%s</b>') % (label, cmd)
     platform_id = bot.memory.get_by_path(path)
 
-    conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
+    conv_1on1 = (await bot.get_1to1(event.user_id.chat_id, force=True)).id_
 
     split = args[-1].lower() == _('off')
     await bot.sync.run_pluggable_omnibus(

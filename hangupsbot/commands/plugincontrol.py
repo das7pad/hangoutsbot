@@ -127,10 +127,8 @@ async def pluginunload(bot, event, *args):
 
         try:
             await plugins.unload(bot, module_path)
-
-        except KeyError:
+        except plugins.NotLoaded:
             result = _("not previously loaded")
-
         else:
             result = _("unloaded")
 
@@ -155,7 +153,7 @@ async def pluginload(bot, event, *args):
             else:
                 result = _("failed")
 
-        except AssertionError:
+        except plugins.AlreadyLoaded:
             result = _("already loaded")
 
         message = _compose_load_message(module_path, result)
@@ -175,7 +173,7 @@ async def pluginreload(bot, event, *args):
 
         try:
             await plugins.unload(bot, module_path)
-        except KeyError:
+        except plugins.NotLoaded:
             result = _("not previously loaded")
         else:
             if await plugins.load(bot, module_path):

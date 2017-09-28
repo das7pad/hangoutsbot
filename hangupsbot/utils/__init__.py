@@ -50,3 +50,19 @@ def class_from_name(module_name, class_name):
     """
     module = importlib.import_module(module_name)
     return getattr(module, class_name)
+
+
+class FormatBaseException(Exception):
+    """A base Exception which uses %s formatting for the string representation
+
+    requires a `._template` member to pass the provided arguments into it
+    """
+    _template = 'Template is missing'
+    def __str__(self):
+        base = '%s: %s' % (self.__class__.__name__, self._template)
+        required_args = base.count('%s')
+        args = self.args + ('<missing>',) * (required_args - len(self.args))
+        return base % args[:required_args]
+
+    def __repr__(self):
+        return self.__str__()

@@ -210,10 +210,12 @@ async def mention(bot, event, *args):
     exact_fragment_matches = []
     mention_list = []
 
-    nickname_user_id = _nicks_inverse.get(username_lower)
-    if (nickname_user_id is not None and
-            nickname_user_id != event.user_id.chat_id):
-        exact_nickname_matches.append(bot.get_hangups_user(nickname_user_id))
+    nickname_chat_id = _nicks_inverse.get(username_lower)
+    if (nickname_chat_id is not None
+            and nickname_chat_id not in event.notified_users
+            and any(user.id_.chat_id == nickname_chat_id
+                    for user in users_in_chat)):
+        exact_nickname_matches.append(bot.get_hangups_user(nickname_chat_id))
         # skip the handling of the user list as we got an exact match
         users_in_chat = []
 

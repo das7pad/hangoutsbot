@@ -126,6 +126,11 @@ def _handle_once(bot, event):
         bot: HangupsBot instance
         event: sync.event.SyncEvent instance
     """
+    # ignore marked HOs
+    if any(bot.get_config_suboption(conv_id, 'ignore_hosubscribe')
+           for conv_id in event.targets):
+        return
+
     if _is_ignored_command(event):
         return
 
@@ -372,5 +377,5 @@ def global_unsubscribe(bot, event, *args):
 
     bot.memory['hosubscribe'] = _global_keywords
     bot.memory.save()
-    return _('The conversation "%s" will not longer receive messages '
+    return _('The conversation "%s" will no longer receive messages '
              'containing "%s"') % (alias, keyword)
