@@ -794,25 +794,20 @@ class SlackRTM(object):
                 return
 
         syncs = self.get_syncs(channelid=msg.channel)
-        if not syncs:
-            # stop processing replies if no syncs are available (optimisation)
-            return
-
-        segments = msg.segments
         channel_name = self.get_chatname(msg.channel, '')
 
         for sync in syncs:
             if msg.is_joinleave is not None:
                 asyncio.ensure_future(self.bot.sync.membership(
                     identifier=channel_tag, conv_id=sync['hangoutid'],
-                    user=msg.user, text=segments, title=channel_name,
+                    user=msg.user, text=msg.segments, title=channel_name,
                     type_=msg.is_joinleave,
                     participant_user=msg.participant_user))
                 continue
 
             asyncio.ensure_future(self.bot.sync.message(
                 identifier=channel_tag, conv_id=sync['hangoutid'],
-                user=msg.user, text=segments, image=msg.image,
+                user=msg.user, text=msg.segments, image=msg.image,
                 edited=msg.edited, title=channel_name, reply=sync_reply))
 
     async def _handle_sync_message(self, bot, event):
