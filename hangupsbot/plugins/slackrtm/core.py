@@ -395,9 +395,10 @@ class SlackRTM(object):
                 self.logger.debug('api_call %s: %s', tracker, repr(parsed))
                 if parsed.get('ok'):
                     return parsed
-                if 'rate_limited' in parsed:
+                error = parsed.get('error', '')
+                if 'rate_limited' in error:
                     raise SlackRateLimited()
-                if 'auth' in parsed.get('error', ''):
+                if 'auth' in error:
                     raise SlackAuthError(parsed)
 
                 raise RuntimeError('invalid request')
