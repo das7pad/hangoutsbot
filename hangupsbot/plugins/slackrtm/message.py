@@ -123,6 +123,9 @@ class SlackMessage(object):
         IgnoreMessage: the message should not be synced
         ParseError: the message content could not be parsed
     """
+    bot = None
+    _last_messages = {}
+
     def __init__(self, slackrtm, reply):
         if reply['type'] in TYPES_TO_SKIP:
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
@@ -232,6 +235,23 @@ class SlackMessage(object):
             url=image_url,
             headers={'Authorization': 'Bearer ' + slackrtm.apikey})
 
+    @classmethod
+    def track_message(cls, channel_tag, reply):
+        """add a message id to the last message and delete old items
+
+        Args:
+            channel_tag (str): identifier for a channel of a slack team
+            reply (dict): message response from slack
+        """
+        timestamp = reply.get('ts') or 0
+        messages = cls._last_messages.setdefault(channel_tag, [])
+
+        messages.append(int(float(timestamp)))
+        messages.sort(reverse=True)
+        for i in range(2 * cls.bot.config['sync_reply_spam_offset'],
+                       len(messages)):
+            messages.pop(i)
+
     async def get_sync_reply(self, slackrtm, reply):
         """get the 'real' reply to a message or thread
 
@@ -247,6 +267,8 @@ class SlackMessage(object):
                 and reply.get('attachments')    # covers missing/empty
                 and reply['attachments'][0].get('is_share')
                 and 'text' in reply['attachments'][0]):
+
+            timestamp = reply['attachments'][0].get('ts') or 0
 
             segments, image_url = parse_text(slackrtm,
                                              reply['attachments'][0]['text'])
@@ -268,8 +290,10 @@ class SlackMessage(object):
             if 'file' in reply:
                 r_text = reply['file'].get('title',
                                            reply['file'].get('name', ''))
+                timestamp = reply['file'].get('created') or 0
             else:
                 r_text = ''
+                timestamp = 0
 
             self.segments = parse_text(slackrtm,
                                        reply['comment'].get('comment', '~'))[0]
@@ -308,8 +332,15 @@ class SlackMessage(object):
             return None
 
         channel_tag = '%s:%s' % (slackrtm.identifier, self.channel)
+        messages = self._last_messages.get(channel_tag)
+        try:
+            offset = messages.index(int(float(timestamp)))
+        except ValueError:
+            messages.append(int(float(timestamp)))
+            offset = None
+
         return SyncReply(identifier=channel_tag, user=r_user, text=r_text,
-                         image=image)
+                         image=image, offset=offset)
 
     def parse_bot_message(self, slackrtm, reply):
         """parse bot messages from various services

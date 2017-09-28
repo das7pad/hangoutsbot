@@ -81,7 +81,7 @@ class SlackRTM(object):
         if  not isinstance(sink_config, dict) or 'key' not in sink_config:
             raise SlackConfigError('API-`key` is missing in config %s'
                                    % repr(sink_config))
-        self.bot = bot
+        self.bot = SlackMessage.bot = bot
         self.apikey = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}
@@ -277,12 +277,13 @@ class SlackRTM(object):
             self.logger.debug('sending into channel %s: %s',
                               kwargs['channel'], kwargs['text'])
             try:
-                await self.api_call('chat.postMessage', **kwargs)
+                reply = await self.api_call('chat.postMessage', **kwargs)
             except SlackAPIError:
                 # already logged
                 return False
-            else:
-                return True
+            channel_tag = self.identifier + ':' + kwargs['channel']
+            SlackMessage.track_message(channel_tag, reply)
+            return True
 
         async def _register_handler():
             """register the profilesync and the sync handler"""
@@ -772,6 +773,8 @@ class SlackRTM(object):
         sync_reply = None
         try:
             msg = SlackMessage(self, reply)
+            channel_tag = '%s:%s' % (self.identifier, msg.channel)
+            SlackMessage.track_message(channel_tag, reply)
 
             error_message = 'error in command handling\nreply=%s'
             error_is_critical = False
@@ -797,7 +800,6 @@ class SlackRTM(object):
 
         segments = msg.segments
         channel_name = self.get_chatname(msg.channel, '')
-        channel_tag = '%s:%s' % (self.identifier, msg.channel)
 
         for sync in syncs:
             if msg.is_joinleave is not None:
