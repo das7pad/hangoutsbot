@@ -256,8 +256,8 @@ class TelegramBot(telepot.aio.Bot):
                         # the user is likely a former member, remove him
                         try:
                             self.bot.memory.pop_by_path(
-                                ['telesync', 'chat_data',
-                                 str(chat_id), str(user_id)])
+                                ['telesync', 'chat_data', str(chat_id),
+                                 'users', str(user_id)])
                         except KeyError:
                             logger.warning(
                                 'failed to remove user %s from chat %s',
