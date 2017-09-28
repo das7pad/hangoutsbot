@@ -769,12 +769,16 @@ class SlackRTM(object):
 
         error_message = 'error while parsing a Slack reply\nreply=%s'
         error_is_critical = True
+        sync_reply = None
         try:
             msg = SlackMessage(self, reply)
 
             error_message = 'error in command handling\nreply=%s'
             error_is_critical = False
             await slack_command_handler(self, msg)
+
+            error_message = 'error while parsing the SyncReply\nreply=%s'
+            sync_reply = await msg.get_sync_reply(self, reply)
         except (ParseError, IgnoreMessage) as err:
             self.logger.debug(repr(err))
             return
@@ -807,7 +811,7 @@ class SlackRTM(object):
             asyncio.ensure_future(self.bot.sync.message(
                 identifier=channel_tag, conv_id=sync['hangoutid'],
                 user=msg.user, text=segments, image=msg.image,
-                edited=msg.edited, title=channel_name))
+                edited=msg.edited, title=channel_name, reply=sync_reply))
 
     async def _handle_sync_message(self, bot, event):
         """forward message/media from any platform to slack

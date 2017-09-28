@@ -5,11 +5,13 @@ import re
 
 import emoji
 
+from sync.event import SyncReply
 from sync.parser import get_formatted
 
 from .exceptions import (
     IgnoreMessage,
     ParseError,
+    SlackAPIError,
 )
 from .parsers import SlackMessageSegment
 from .user import SlackUser
@@ -182,24 +184,17 @@ class SlackMessage(object):
             user_id = reply['message']['edited'].get('user')
             text = str(reply['message'].get('text'))
 
-        elif subtype == 'file_comment':
-            user_id = reply['comment']['user']
-            text = reply['text']
-
-        elif reply['type'] == 'file_comment_added':
-            user_id = reply['comment']['user']
-            text = reply['comment']['comment']
-
         elif subtype == 'bot_message':
             self.parse_bot_message(slackrtm, reply)
             return
 
         else:
             # set user
-            if 'user' not in reply:
+            if 'user' not in reply and 'comment' not in reply:
                 raise IgnoreMessage('not a user message')
 
-            user_id = reply['user']
+            user_id = (reply['user'] if 'user' in reply
+                       else reply['comment']['user'])
 
             # set text
             if 'file' in reply:
@@ -236,6 +231,85 @@ class SlackMessage(object):
         self.image = slackrtm.bot.sync.get_sync_image(
             url=image_url,
             headers={'Authorization': 'Bearer ' + slackrtm.apikey})
+
+    async def get_sync_reply(self, slackrtm, reply):
+        """get the 'real' reply to a message or thread
+
+        Args:
+            slackrtm (core.SlackRTM): the instance which received the `reply`
+            reply (dict): message response from slack
+            messages (list): last messages of the current channel, sorted asc
+
+        Return:
+            sync.SyncReply: the wrapped reply content or `None`
+        """
+        if (reply['type'] == 'message' and 'text' in reply
+                and reply.get('attachments')    # covers missing/empty
+                and reply['attachments'][0].get('is_share')
+                and 'text' in reply['attachments'][0]):
+
+            segments, image_url = parse_text(slackrtm,
+                                             reply['attachments'][0]['text'])
+            r_text = get_formatted(segments, 'text')
+
+            if image_url is None:
+                image = None
+            else:
+                image = slackrtm.bot.sync.get_sync_image(url=image_url)
+
+            # the `author_subname` could include the synced source title
+            r_user = SlackUser(
+                slackrtm, channel=self.channel,
+                name=reply['attachments'][0].get('author_name'),
+                nickname=reply['attachments'][0].get('author_subname'))
+
+        elif reply.get('subtype') == 'file_comment' and 'comment' in reply:
+            r_user = self.user
+            if 'file' in reply:
+                r_text = reply['file'].get('title',
+                                           reply['file'].get('name', ''))
+            else:
+                r_text = ''
+
+            self.segments = parse_text(slackrtm,
+                                       reply['comment'].get('comment', '~'))[0]
+
+            self.user = SlackUser(slackrtm, channel=self.channel,
+                                  user_id=reply['comment'].get('user'))
+            image = self.image
+            self.image = None
+
+        elif ('attachments' in reply and reply['attachments'][0].get('is_share')
+              and 'from_url' in reply['attachments'][0]):
+            # query needed
+            timestamp = reply['attachments'][0]['from_url'].rsplit('p', 1)[-1]
+            method = ('channels.history' if self.channel[0] == 'C' else
+                      'groups.history' if self.channel[0] == 'G' else
+                      'im.history')
+            try:
+                resp = await slackrtm.api_call(
+                    method,
+                    channel=self.channel,
+                    latest=float(timestamp) / 1000000,
+                    inclusive=True, count=1)
+            except SlackAPIError:
+                return None
+
+            if not resp.get('messages'):
+                return None
+            # Slack does not send the `channel` again
+            resp['messages'][0]['channel'] = self.channel
+
+            old_msg = SlackMessage(slackrtm, resp['messages'][0])
+            image = old_msg.image
+            r_text = old_msg.text
+            r_user = old_msg.user
+        else:
+            return None
+
+        channel_tag = '%s:%s' % (slackrtm.identifier, self.channel)
+        return SyncReply(identifier=channel_tag, user=r_user, text=r_text,
+                         image=image)
 
     def parse_bot_message(self, slackrtm, reply):
         """parse bot messages from various services
