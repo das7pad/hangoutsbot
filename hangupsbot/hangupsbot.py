@@ -797,7 +797,7 @@ class HangupsBot(object):
 
     def __del__(self):
         """help the gc with cleanup"""
-        for attr in dir(self):
+        for attr in self.__dict__:
             setattr(self, attr, None)
 
 
