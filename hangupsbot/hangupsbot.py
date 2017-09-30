@@ -20,14 +20,14 @@ import hangups
 gettext.install("hangupsbot", localedir=os.path.join(os.path.dirname(__file__),
                                                      "locale"))
 
+from commands import command
 from exceptions import HangupsBotExceptions
+from hangups_conversation import HangupsConversation
 
 import config
 import handlers
 import permamem
 import plugins
-from commands import command    # import sequence is important here
-from hangups_conversation import HangupsConversation
 import tagging
 import sinks
 import utils
