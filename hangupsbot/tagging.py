@@ -6,7 +6,7 @@ from commands import command
 logger = logging.getLogger(__name__)
 
 
-class tags:
+class Tags(object):
     regex_allowed = r"a-z0-9._\-" # +command.deny_prefix
 
     wildcard = { "conversation": "*",

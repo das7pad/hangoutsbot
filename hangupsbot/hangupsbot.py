@@ -78,7 +78,7 @@ class HangupsBot(object):
         self._conv_list = None # hangups.ConversationList
         self._user_list = None # hangups.UserList
         self._handlers = None # handlers.py::EventHandler
-        self.tags = None # tagging.tags
+        self.tags = None # tagging.Tags
         self.conversations = None # permamem.ConversationMemory
         self.sync = None # sync.handler.SyncHandler
 
@@ -574,7 +574,7 @@ class HangupsBot(object):
         logger.debug("connected")
 
         self.shared = {}
-        self.tags = tagging.tags(self)
+        self.tags = tagging.Tags(self)
         self._handlers = handlers.EventHandler(self)
         handlers.handler.set_bot(self) # shim for handler decorator
 
