@@ -8,7 +8,6 @@ import unicodedata
 import traceback
 
 from parsers import simple_parse_to_segments, segment_to_html
-from permamem import name_from_hangups_conversation
 
 BASE_PATH = os.path.dirname(os.path.dirname(__file__)) + '/'
 
