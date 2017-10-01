@@ -324,7 +324,15 @@ class Config(collections.MutableMapping):
         """
         if base is None:
             base = self.config
-        created = not self.exists(path)
+        try:
+            self._get_by_path(base, path)
+        except (KeyError, TypeError):
+            # the path does not exist
+            pass
+        else:
+            # the path exists, no need to create it again
+            return False
+
         last_key = None
         try:
             for level in path:
@@ -333,7 +341,7 @@ class Config(collections.MutableMapping):
         except AttributeError:
             raise AttributeError('%s has no dict at "%s" in the path %s' %
                                  (self.logger.name, last_key, path)) from None
-        return created
+        return True
 
     def set_defaults(self, source, path=None):
         """ensure that the dict, path points to, has the structure of the source
