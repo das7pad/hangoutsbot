@@ -37,8 +37,8 @@ def tldrecho(bot, event, *args):
     else:
         # No path was found. Is this your first setup?
         new_tldr = 0
-    
-    if tldr_echo_options[new_tldr] is not "GLOBAL":
+
+    if tldr_echo_options[new_tldr] == "GLOBAL":
         # Update the tldr_echo setting
         bot.memory.set_by_path(['conversations', event.conv_id, 'tldr_echo'], new_tldr)
     else:
@@ -79,7 +79,7 @@ async def tldr(bot, event, *args):
 
     message, display = tldr_base(bot, event.conv_id, list(args))
 
-    if display is True and tldr_echo_options[tldr_echo] is 'PM':
+    if display is True and tldr_echo_options[tldr_echo] == 'PM':
         await bot.coro_send_to_user_and_conversation(
             event.user.id_.chat_id, event.conv_id, message,
             _("<i>{}, I've sent you the info in a PM</i>").format(

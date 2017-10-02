@@ -117,7 +117,7 @@ async def image_upload_single(image_uri):
 
                 if image_handling:
                     raw = await res.read()
-                    if image_handling is not "standard":
+                    if image_handling != "standard":
                         try:
                             results = await getattr(sys.modules[__name__], image_handling)(raw)
                             if results:

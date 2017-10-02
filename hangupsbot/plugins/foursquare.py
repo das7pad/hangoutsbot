@@ -39,7 +39,7 @@ def getplaces(location, clid, secret, section=None):
   types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
   if section in types:
     url = url + "&section={}".format(section)
-  elif section == None:
+  elif section is None:
     pass
   else:
     return None

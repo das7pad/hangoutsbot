@@ -92,7 +92,7 @@ class APIRequestHandler(AsyncRequestHandler):
         if allowed_origins is None:
             raise web.HTTPForbidden()
 
-        if "*" == allowed_origins or "*" in allowed_origins:
+        if allowed_origins == "*" or "*" in allowed_origins:
             return web.Response(headers={
                 "Access-Control-Allow-Origin": origin,
                 "Access-Control-Allow-Headers": "content-type",
