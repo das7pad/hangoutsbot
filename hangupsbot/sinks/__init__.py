@@ -1,4 +1,3 @@
-#TODO(das7pad) refactor of aiohttp_start needed, it uses asyncio.async
 #TODO(das7pad) add documentation
 import asyncio
 import functools
@@ -188,7 +187,7 @@ def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
     loop = asyncio.get_event_loop()
     server = loop.create_server(handler, name, port, ssl=sslcontext)
 
-    asyncio.async(server).add_done_callback(
+    asyncio.ensure_future(server).add_done_callback(
         functools.partial(aiohttp_started, handler=handler, app=app,
                           group=group, callback=callback))
 

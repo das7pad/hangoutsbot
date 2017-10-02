@@ -51,7 +51,6 @@ disable=
     multiple-imports,
     multiple-statements,
     no-else-return,
-    no-member,
     no-self-use,
     pointless-string-statement,
     protected-access,
