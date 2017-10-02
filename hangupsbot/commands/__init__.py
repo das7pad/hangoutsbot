@@ -135,7 +135,7 @@ class CommandDispatcher(object):
         return "|".join(subtokens)
 
     def preprocess_arguments(self, args, internal_context, force_trigger="",
-                             force_groups=[]):
+                             force_groups=()):
         """custom preprocessing for use by other plugins, specify:
         * force_trigger word to override config, default
           prevents confusion if botmin has overridden this for their own usage
