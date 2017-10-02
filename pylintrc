@@ -69,7 +69,6 @@ disable=
     trailing-whitespace,
     undefined-loop-variable,
     ungrouped-imports,
-    unidiomatic-typecheck,
     unnecessary-pass,
     unnecessary-semicolon,
     unneeded-not,
