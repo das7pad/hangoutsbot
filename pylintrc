@@ -30,7 +30,6 @@ profile=no
 # multiple time.
 # TODO(das7pad): remove all.
 disable=
-    abstract-method,
     anomalous-backslash-in-string,
     bad-continuation,
     bad-indentation,

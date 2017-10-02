@@ -4,12 +4,14 @@ Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
 """
 #TODO(das7pad) move to aiohttp for the requests
 
+import logging
 from urllib.request import urlopen
 from urllib.parse import quote as urlquote
 from html.parser import HTMLParser
 
 import plugins
 
+logger = logging.getLogger(__name__)
 
 class UrbanDictParser(HTMLParser):
 
@@ -47,6 +49,8 @@ class UrbanDictParser(HTMLParser):
 
         self.translations[-1][self._section] += normalize_newlines(data)
 
+    def error(self, message):
+        logger.error(message)
 
 def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
