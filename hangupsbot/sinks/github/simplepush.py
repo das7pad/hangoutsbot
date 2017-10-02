@@ -1,4 +1,5 @@
-import asyncio, json, logging
+import json
+import logging
 
 from sinks.base_bot_request_handler import AsyncRequestHandler
 

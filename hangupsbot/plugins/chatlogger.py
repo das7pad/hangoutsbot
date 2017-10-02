@@ -1,4 +1,5 @@
-import os, logging
+import os
+import logging
 
 import hangups
 

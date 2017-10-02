@@ -1,4 +1,5 @@
-import asyncio, logging, re
+import logging
+import re
 
 from random import shuffle
 

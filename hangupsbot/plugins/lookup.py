@@ -1,5 +1,4 @@
 import logging
-import hangups
 
 from utils import unicode_to_ascii
 import urllib.request

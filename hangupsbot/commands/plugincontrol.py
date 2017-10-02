@@ -2,7 +2,6 @@
 import logging
 
 import plugins
-import handlers
 
 from commands import command
 

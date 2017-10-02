@@ -1,5 +1,9 @@
-import aiohttp, logging, os, random, urllib.request
+import logging
+import os
+import random
+import urllib.request
 
+import aiohttp
 import hangups
 
 import plugins

@@ -13,13 +13,15 @@ to be able to run admin commands externally
 
 More info: https://github.com/hangoutsbot/hangoutsbot/wiki/API-Plugin
 """
-import asyncio, functools, json, logging, time
+import asyncio
+import functools
+import json
+import logging
+import time
 
 from urllib.parse import unquote
 
 from aiohttp import web
-
-import plugins
 
 from sinks import aiohttp_start
 from sinks.base_bot_request_handler import AsyncRequestHandler

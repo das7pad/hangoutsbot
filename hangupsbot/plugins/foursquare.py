@@ -1,8 +1,9 @@
-import hangups, plugins, asyncio, logging, datetime
-import urllib.request, urllib.parse
 import json
-import aiohttp, os, io
+import logging
+import urllib.parse
+import urllib.request
 
+import plugins
 from commands import Help
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@
 example plugin which watches join and leave events
 """
 
-import asyncio, logging
+import logging
 
 import hangups
 

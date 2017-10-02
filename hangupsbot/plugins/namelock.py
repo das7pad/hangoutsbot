@@ -1,9 +1,7 @@
 """Allows the user to configure the bot to watch for hangout renames
 and change the name back to a default name accordingly"""
 
-import asyncio, logging
-
-import hangups
+import logging
 
 import plugins
 

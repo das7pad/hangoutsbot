@@ -1,4 +1,7 @@
-import asyncio, logging, logging.handlers, sys
+import asyncio
+import logging
+import logging.handlers
+import sys
 
 import plugins
 

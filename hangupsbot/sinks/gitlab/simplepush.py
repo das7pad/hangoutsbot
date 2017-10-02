@@ -2,7 +2,6 @@
 GitLab webhook receiver - see http://doc.gitlab.com/ee/web_hooks/web_hooks.html
 """
 
-import asyncio
 import json
 import logging
 

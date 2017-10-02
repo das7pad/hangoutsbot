@@ -1,12 +1,12 @@
 # TODO(das7pad) refactor needed
 
-import logging, shlex
+import logging
+import shlex
 
 import hangups
 
 import plugins
 
-from utils import simple_parse_to_segments
 from commands import Help
 
 
