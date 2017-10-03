@@ -12,7 +12,7 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-_externals = { "running": False }
+_externals = {"running": False}
 
 
 def _initialise(bot):

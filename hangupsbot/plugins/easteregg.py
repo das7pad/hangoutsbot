@@ -19,11 +19,11 @@ async def easteregg(bot, event, easteregg_name, eggcount=1, period=0.5, *args):
     for i in range(int(eggcount)):
         await bot._client.easter_egg(
             hangups.hangouts_pb2.EasterEggRequest(
-                request_header = bot._client.get_request_header(),
-                conversation_id = hangups.hangouts_pb2.ConversationId(
-                    id = event.conv_id ),
-                easter_egg = hangups.hangouts_pb2.EasterEgg(
-                    message = easteregg_name)))
+                request_header=bot._client.get_request_header(),
+                conversation_id=hangups.hangouts_pb2.ConversationId(
+                    id=event.conv_id),
+                easter_egg=hangups.hangouts_pb2.EasterEgg(
+                    message=easteregg_name)))
 
         if int(eggcount) > 1:
             await asyncio.sleep(float(period) + random.uniform(-0.1, 0.1))

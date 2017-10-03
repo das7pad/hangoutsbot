@@ -58,10 +58,10 @@ class CommandDispatcher(object):
         disable implicit argument preprocessors on some commands
         these are special use-cases that should be rare with supplied functionality
         """
-        self.preprocessors_explicit = [ "plugins.mentions.mention",
-                                        "plugins.subscribe.subscribe",
-                                        "plugins.subscribe.unsubscribe",
-                                        "plugins.subscribe.testsubscribe" ]
+        self.preprocessors_explicit = ["plugins.mentions.mention",
+                                       "plugins.subscribe.subscribe",
+                                       "plugins.subscribe.unsubscribe",
+                                       "plugins.subscribe.testsubscribe"]
 
     def one_chat_id(self, token, internal_context, all_users=False):
         subtokens = token.split("|", 1)
@@ -327,8 +327,9 @@ class CommandDispatcher(object):
         commands_tagged = bot.get_config_suboption(conv_id, 'commands_tagged') or {}
 
         # convert commands_tagged tag list into a set of (frozen)sets
-        commands_tagged = { key: set([ frozenset(value if isinstance(value, list) else [value])
-            for value in values ]) for key, values in commands_tagged.items() }
+        commands_tagged = {key: set([frozenset(value if isinstance(value, list) else [value])
+                                     for value in values])
+                           for key, values in commands_tagged.items()}
         # combine any plugin-determined tags with the config.json defined ones
         if self.command_tagsets:
             for command_name, tagsets in self.command_tagsets.items():
@@ -393,7 +394,7 @@ class CommandDispatcher(object):
                         tags = commands_tagged[command_name]
                         for _match in tags:
                             _set_allow = set([_match] if isinstance(_match, str) else _match)
-                            _set_deny = { config_tags_deny_prefix + x for x in _set_allow }
+                            _set_deny = {config_tags_deny_prefix + x for x in _set_allow}
                             if _set_deny <= _set_user_tags:
                                 _denied.update([command_name])
                                 break
@@ -492,8 +493,8 @@ class CommandDispatcher(object):
             else:
                 # just register and return the same function
                 self.tracking.register_command("admin" if admin else "user",
-                                                  [func_name],
-                                                  tags=tags)
+                                               [func_name],
+                                               tags=tags)
 
             return func
 

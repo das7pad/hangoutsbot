@@ -139,7 +139,7 @@ class WebFramework:
             message = passthru["original_request"]["message"]
             image_id = passthru["original_request"]["image_id"]
             if "user" in passthru["original_request"]:
-                if(isinstance(passthru["original_request"]["user"], str)):
+                if (isinstance(passthru["original_request"]["user"], str)):
                     user = FakeUser( full_name = str,
                                      id_ = FakeUserID( chat_id = chat_id,
                                                        gaia_id = chat_id ))

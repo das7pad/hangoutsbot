@@ -28,9 +28,9 @@ def tldrecho(bot, event, *args):
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
-        bot.memory.set_by_path(['conversations'],{})
-    if not bot.memory.exists(['conversations',event.conv_id]):
-        bot.memory.set_by_path(['conversations',event.conv_id],{})
+        bot.memory.set_by_path(['conversations'], {})
+    if not bot.memory.exists(['conversations', event.conv_id]):
+        bot.memory.set_by_path(['conversations', event.conv_id], {})
 
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):
         new_tldr = (bot.memory.get_by_path(['conversations', event.conv_id, 'tldr_echo']) + 1)%3
@@ -67,9 +67,9 @@ async def tldr(bot, event, *args):
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
-        bot.memory.set_by_path(['conversations'],{})
-    if not bot.memory.exists(['conversations',event.conv_id]):
-        bot.memory.set_by_path(['conversations',event.conv_id],{})
+        bot.memory.set_by_path(['conversations'], {})
+    if not bot.memory.exists(['conversations', event.conv_id]):
+        bot.memory.set_by_path(['conversations', event.conv_id], {})
 
     # Retrieve the current tldr echo status for the hangout.
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):

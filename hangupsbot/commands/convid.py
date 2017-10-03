@@ -50,7 +50,7 @@ async def convecho(bot, event, *args):
     """echo back text into filtered conversations"""
     posix_args = get_posix_args(args)
 
-    if(len(posix_args) > 1):
+    if (len(posix_args) > 1):
         if not posix_args[0]:
             """block spamming ALL conversations"""
             return _("<em>sending to ALL conversations not allowed</em>")
@@ -85,12 +85,12 @@ async def convrename(bot, event, *args):
 
         await bot._client.rename_conversation(
             hangups.hangouts_pb2.RenameConversationRequest(
-                request_header = bot._client.get_request_header(),
-                new_name = title,
-                event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                    conversation_id = hangups.hangouts_pb2.ConversationId(
-                        id = list(convlist.keys())[0] ),
-                    client_generated_id = bot._client.get_client_generated_id() )))
+                request_header=bot._client.get_request_header(),
+                new_name=title,
+                event_request_header=hangups.hangouts_pb2.EventRequestHeader(
+                    conversation_id=hangups.hangouts_pb2.ConversationId(
+                        id=list(convlist.keys())[0]),
+                    client_generated_id=bot._client.get_client_generated_id())))
 
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
         """specialised error message for /bot rename (implied convid: <event.conv_id>)"""
@@ -142,7 +142,7 @@ async def convleave(bot, event, *args):
     """leave specified conversation(s)"""
     posix_args = get_posix_args(args)
 
-    if(len(posix_args) >= 1):
+    if (len(posix_args) >= 1):
         if not posix_args[0]:
             """block leaving ALL conversations"""
             return _("<em>cannot leave ALL conversations</em>")
@@ -159,11 +159,11 @@ async def convleave(bot, event, *args):
             try:
                 await bot._client.remove_user(
                     hangups.hangouts_pb2.RemoveUserRequest(
-                        request_header = bot._client.get_request_header(),
-                        event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                            conversation_id = hangups.hangouts_pb2.ConversationId(
-                                id = convid ),
-                            client_generated_id = bot._client.get_client_generated_id() )))
+                        request_header=bot._client.get_request_header(),
+                        event_request_header=hangups.hangouts_pb2.EventRequestHeader(
+                            conversation_id=hangups.hangouts_pb2.ConversationId(
+                                id=convid),
+                            client_generated_id=bot._client.get_client_generated_id())))
 
                 if convid in bot._conv_list._conv_dict:
                     # replicate hangups behaviour - remove conversation from internal dict

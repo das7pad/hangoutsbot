@@ -109,18 +109,18 @@ class APIRequestHandler(AsyncRequestHandler):
         })
 
     async def adapter_do_GET(self, request):
-        payload = { "sendto": request.match_info["id"],
-                    "key": request.match_info["api_key"],
-                    "content": unquote(request.match_info["message"]) }
+        payload = {"sendto": request.match_info["id"],
+                   "key": request.match_info["api_key"],
+                   "content": unquote(request.match_info["message"])}
 
         results = await self.process_request('', # IGNORED
                                              '', # IGNORED
                                              payload)
         if results:
-            content_type="text/html"
+            content_type = "text/html"
             results = results.encode("ascii", "xmlcharrefreplace")
         else:
-            content_type="text/plain"
+            content_type = "text/plain"
             results = "OK".encode('utf-8')
 
         return web.Response(body=results, content_type=content_type)
@@ -153,14 +153,14 @@ class APIRequestHandler(AsyncRequestHandler):
             results = await self._bot.coro_send_message(
                 target,
                 content,
-                context = { "reprocessor": reprocessor_context })
+                context={"reprocessor": reprocessor_context})
 
         else:
             # attempt to send to a user id
             results = await self._bot.coro_send_to_user(
                 target,
                 content,
-                context = { "reprocessor": reprocessor_context })
+                context={"reprocessor": reprocessor_context})
 
         start_time = time.time()
         while time.time() - start_time < 3:

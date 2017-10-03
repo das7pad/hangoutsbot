@@ -50,11 +50,11 @@ def plugininfo(bot, event, *args):
             """handlers"""
             if plugin["handlers"]:
                 lines.append("<b>handlers:</b>")
-                lines.append("\n".join([ "... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
+                lines.append("\n".join(["... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
 
             """shared"""
             if plugin["shared"]:
-                lines.append("<b>shared:</b> " + ", ".join([ "<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
+                lines.append("<b>shared:</b> " + ", ".join(["<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
 
             """threads"""
             if plugin["threads"]:
@@ -91,8 +91,8 @@ def plugininfo(bot, event, *args):
 
             """command: argument preprocessors"""
             if plugin["commands"]["argument.preprocessors"]:
-                lines.append( "<b>command preprocessor groups:</b> "
-                              ", ".join(plugin["commands"]["argument.preprocessors"]) )
+                lines.append("<b>command preprocessor groups:</b> ")
+                lines.append(", ".join(plugin["commands"]["argument.preprocessors"]))
 
         if lines:
             text_plugins.append("\n".join(lines))
@@ -261,7 +261,7 @@ async def removeplugin(bot, event, plugin, *args):
         lines.append('* not in config.json')
 
     if len(lines) == 1:
-        lines = [ "no action was taken for {}".format(plugin.replace("_", "\\_")) ]
+        lines = ["no action was taken for {}".format(plugin.replace("_", "\\_"))]
 
     return "\n".join(lines)
 

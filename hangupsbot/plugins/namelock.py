@@ -48,11 +48,11 @@ async def _watch_rename(bot, event):
             hangups_user = bot.get_hangups_user(event.user_id.chat_id)
             logger.warning(
                 "unauthorised topic change by {} ({}) in {}, resetting: {} to: {}"
-                    .format( hangups_user.full_name,
-                             event.user_id.chat_id,
-                             event.conv_id,
-                             event.conv_event.new_name,
-                             old_name ))
+                .format(hangups_user.full_name,
+                        event.user_id.chat_id,
+                        event.conv_id,
+                        event.conv_event.new_name,
+                        old_name))
 
             await command.run(bot, event, *["convrename", "id:" + event.conv_id, old_name])
 
@@ -65,7 +65,7 @@ async def topic(bot, event, *args):
     bot.memory.set_by_path(["conv_data", event.conv_id, "topic"], name)
     bot.memory.save()
 
-    if(topic == ''):
+    if (topic == ''):
         message = _("Removing topic")
         logger.info("topic cleared from {}".format(event.conv_id))
 

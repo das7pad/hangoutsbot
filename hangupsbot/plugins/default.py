@@ -232,11 +232,11 @@ def user(bot, event, *args):
         unspaced_lower = re.sub(r'\s+', '', fullname_lower)
         unspaced_upper = re.sub(r'\s+', '', u.full_name.upper())
 
-        if( search_lower in fullname_lower
-            or search_lower in unspaced_lower
-            # XXX: turkish alphabet special case: converstion works better when uppercase
-            or search_upper in remove_accents(fullname_upper)
-            or search_upper in remove_accents(unspaced_upper) ):
+        if (search_lower in fullname_lower
+                or search_lower in unspaced_lower
+                # XXX: turkish alphabet special case: converstion works better when uppercase
+                or search_upper in remove_accents(fullname_upper)
+                or search_upper in remove_accents(unspaced_upper)):
 
             link = 'https://plus.google.com/u/0/{}/about'.format(u.id_.chat_id)
             segments.append(hangups.ChatMessageSegment(u.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,

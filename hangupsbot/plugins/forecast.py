@@ -70,17 +70,17 @@ def _format_current_weather(weather_data):
     """
     weatherStrings = []
     if 'temperature' in weather_data:
-        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'],2),weather_data['units']['temperature']))
+        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'], 2), weather_data['units']['temperature']))
     if 'summary' in weather_data:
         weatherStrings.append("<i>{0}</i>".format(weather_data['summary']))
     if 'feelsLike' in weather_data:
-        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'],2),weather_data['units']['temperature']))
+        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'], 2), weather_data['units']['temperature']))
     if 'windspeed' in weather_data:
-        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'],2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
+        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'], 2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
     if 'humidity' in weather_data:
         weatherStrings.append("Humidity: {0}%".format(weather_data['humidity']))
     if 'pressure' in weather_data:
-        weatherStrings.append("Pressure: {0} {1}".format(round(weather_data['pressure'],2), weather_data['units']['pressure']))
+        weatherStrings.append("Pressure: {0} {1}".format(round(weather_data['pressure'], 2), weather_data['units']['pressure']))
 
     return "\n".join(weatherStrings)
 
@@ -125,7 +125,7 @@ def _lookup_weather(coords):
     Limit of 1,000 requests a day
     """
 
-    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_internal['forecast_api_key'],coords['lat'], coords['lng'])
+    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_internal['forecast_api_key'], coords['lat'], coords['lng'])
     r = requests.get(forecast_io_url)
 
     try:
@@ -158,7 +158,7 @@ def _lookup_weather(coords):
 
     return current
 
-def _get_weather(bot,event,params):
+def _get_weather(bot, event, params):
     """
     Checks memory for a default location set for the current hangout.
     If one is not found and parameters were specified attempts to look up a location.
@@ -169,7 +169,7 @@ def _get_weather(bot,event,params):
 
     if not parameters:
         if bot.memory.exists(["conv_data", event.conv.id_]):
-            if(bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"])):
+            if (bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"])):
                 location = bot.memory.get_by_path(["conv_data", event.conv.id_, "default_weather_location"])
     else:
         address = ''.join(parameters).strip()

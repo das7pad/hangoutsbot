@@ -9,83 +9,83 @@ from commands import Help
 logger = logging.getLogger(__name__)
 
 def _initialise(bot):
-  plugins.register_admin_command(["foursquareid", "foursquaresecret"])
-  plugins.register_user_command(['foursquare'])
+    plugins.register_admin_command(["foursquareid", "foursquaresecret"])
+    plugins.register_user_command(['foursquare'])
 
 def foursquareid(bot, event, clid):
-  '''Set the Foursquare API key for the bot - get one from https://foursquare.com/oauth'''
-  if not bot.memory.exists(["foursquare"]):
-    bot.memory.set_by_path(["foursquare"],{})
+    '''Set the Foursquare API key for the bot - get one from https://foursquare.com/oauth'''
+    if not bot.memory.exists(["foursquare"]):
+        bot.memory.set_by_path(["foursquare"], {})
 
-  if not bot.memory.exists(["foursquare"]):
-    bot.memory.set_by_path(["foursquare","id"],{})
+    if not bot.memory.exists(["foursquare"]):
+        bot.memory.set_by_path(["foursquare", "id"], {})
 
-  bot.memory.set_by_path(["foursquare", "id"], clid)
-  return "Foursquare client id set to {}".format(clid)
+    bot.memory.set_by_path(["foursquare", "id"], clid)
+    return "Foursquare client id set to {}".format(clid)
 
 def foursquaresecret(bot, event, secret):
-  '''Set the Foursquare client secret for your bot - get it from https://foursquare.com/oauth'''
-  if not bot.memory.exists(["foursquare"]):
-    bot.memory.set_by_path(["foursquare"],{})
+    '''Set the Foursquare client secret for your bot - get it from https://foursquare.com/oauth'''
+    if not bot.memory.exists(["foursquare"]):
+        bot.memory.set_by_path(["foursquare"], {})
 
-  if not bot.memory.exists(["foursquare"]):
-    bot.memory.set_by_path(["foursquare", "secret"],{})
+    if not bot.memory.exists(["foursquare"]):
+        bot.memory.set_by_path(["foursquare", "secret"], {})
 
-  bot.memory.set_by_path(["foursquare","secret"],secret)
-  return "Foursquare client secret set to {}".format(secret)
+    bot.memory.set_by_path(["foursquare", "secret"], secret)
+    return "Foursquare client secret set to {}".format(secret)
 
 def getplaces(location, clid, secret, section=None):
-  url = "https://api.foursquare.com/v2/venues/explore?client_id={}&client_secret={}&limit=10&v=20160503&near={}".format(clid, secret, location)
-  types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
-  if section in types:
-    url = url + "&section={}".format(section)
-  elif section is None:
-    pass
-  else:
-    return None
+    url = "https://api.foursquare.com/v2/venues/explore?client_id={}&client_secret={}&limit=10&v=20160503&near={}".format(clid, secret, location)
+    types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
+    if section in types:
+        url = url + "&section={}".format(section)
+    elif section is None:
+        pass
+    else:
+        return None
 
-  try:
-    req = urllib.request.urlopen(url)
-  except urllib.error.URLError as e:
-    logger.info(e.reason)
-    logger.info("URL: {}".format(url))
-    logger.info("CLIENT_ID: {}".format(clid))
-    logger.info("CLIENT_SECRET: {}".format(secret))
-    return "<i><b>Foursquare Error</b>: {}</i>".format(e.reason)
-  data = json.loads(req.read().decode("utf-8"))
+    try:
+        req = urllib.request.urlopen(url)
+    except urllib.error.URLError as e:
+        logger.info(e.reason)
+        logger.info("URL: {}".format(url))
+        logger.info("CLIENT_ID: {}".format(clid))
+        logger.info("CLIENT_SECRET: {}".format(secret))
+        return "<i><b>Foursquare Error</b>: {}</i>".format(e.reason)
+    data = json.loads(req.read().decode("utf-8"))
 
-  if section in types:
-    places = ["Showing {} places near {}.<br>".format(section, data['response']['geocode']['displayString'])]
-  else:
-    places = ["Showing places near {}.<br>".format(data['response']['geocode']['displayString'])]
-  for item in data['response']['groups'][0]['items']:
-    mapsurl = "http://maps.google.com/maps?q={},{}".format(item['venue']['location']['lat'], item['venue']['location']['lng'])
-    places.append("<b><u><a href='{}'>{}</a></b></u> (<a href='{}'>maps</a>)<br>Score: {}/10 ({})".format(mapsurl, item['venue']["name"], "http://foursquare.com/v/{}".format(item['venue']['id']), item['venue']['rating'], item['venue']['ratingSignals']))
+    if section in types:
+        places = ["Showing {} places near {}.<br>".format(section, data['response']['geocode']['displayString'])]
+    else:
+        places = ["Showing places near {}.<br>".format(data['response']['geocode']['displayString'])]
+    for item in data['response']['groups'][0]['items']:
+        mapsurl = "http://maps.google.com/maps?q={}, {}".format(item['venue']['location']['lat'], item['venue']['location']['lng'])
+        places.append("<b><u><a href='{}'>{}</a></b></u> (<a href='{}'>maps</a>)<br>Score: {}/10 ({})".format(mapsurl, item['venue']["name"], "http://foursquare.com/v/{}".format(item['venue']['id']), item['venue']['rating'], item['venue']['ratingSignals']))
 
-  response = "<br>".join(places)
-  return response
+    response = "<br>".join(places)
+    return response
 
 
-async def foursquare(bot, event,*args):
-  '''Explore places near you with Foursquare!
+async def foursquare(bot, event, *args):
+    '''Explore places near you with Foursquare!
 <b>/bot foursquare <location></b>: Display up to 10 of the recommended places near the specified location.
 <b>/bot foursquare [type] <location></b>: Display up to 10 places near the provided location of the type specified. <i>Valid types: food, drinks, coffee, shops, arts, outdoors, sights, trending, specials</i>'''
-  if not args:
-    raise Help()
+    if not args:
+        raise Help()
 
-  try:
-    clid = bot.memory.get_by_path(["foursquare", "id"])
-    secret = bot.memory.get_by_path(["foursquare", "secret"])
-  except:
-    return _("Something went wrong - make sure the Foursquare plugin is correctly configured.")
+    try:
+        clid = bot.memory.get_by_path(["foursquare", "id"])
+        secret = bot.memory.get_by_path(["foursquare", "secret"])
+    except:
+        return _("Something went wrong - make sure the Foursquare plugin is correctly configured.")
 
-  types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
-  if args[0] in types:
-    places = getplaces(urllib.parse.quote(" ".join(args[1:])), clid, secret, args[0])
-  else:
-    places = getplaces(urllib.parse.quote(" ".join(args)), clid, secret)
+    types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
+    if args[0] in types:
+        places = getplaces(urllib.parse.quote(" ".join(args[1:])), clid, secret, args[0])
+    else:
+        places = getplaces(urllib.parse.quote(" ".join(args)), clid, secret)
 
-  if places:
-    return places
-  else:
-    return _("Something went wrong.")
+    if places:
+        return places
+    else:
+        return _("Something went wrong.")

@@ -31,9 +31,6 @@ profile=no
 # TODO(das7pad): remove all.
 disable=
     anomalous-backslash-in-string,
-    bad-continuation,
-    bad-indentation,
-    bad-whitespace,
     bare-except,
     broad-except,
     deprecated-module,
@@ -61,8 +58,6 @@ disable=
     too-many-public-methods,
     too-many-return-statements,
     too-many-statements,
-    trailing-newlines,
-    trailing-whitespace,
     undefined-loop-variable,
     ungrouped-imports,
     unnecessary-pass,

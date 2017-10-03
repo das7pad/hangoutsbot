@@ -56,8 +56,8 @@ async def _scan_for_triggers(bot, event, command):
                 if re.match(r'^https?://gfycat.com', image_link):
                     image_link = re.sub(r'^https?://gfycat.com/', 'https://thumbs.gfycat.com/', image_link) + '-size_restricted.gif'
                 elif "imgur.com" in image_link:
-                    image_link = image_link.replace(".gifv",".gif")
-                    image_link = image_link.replace(".webm",".gif")
+                    image_link = image_link.replace(".gifv", ".gif")
+                    image_link = image_link.replace(".webm", ".gif")
                 filename = os.path.basename(image_link)
                 async with aiohttp.ClientSession() as session:
                     async with session.request('get', image_link) as res:

@@ -35,4 +35,3 @@ def _initialise(bot):
 
     """
     BridgeInstance(bot, "samplebridge", IncomingMessages)
-

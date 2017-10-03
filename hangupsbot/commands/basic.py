@@ -176,7 +176,7 @@ def optout(bot, event, *args):
             optout_state = True
         elif target_conv in bot.conversations:
             # convert bool optout_state to list optout_state
-            optout_state = [ target_conv ]
+            optout_state = [target_conv]
         else:
             raise Help(_('no conversation was matched: %s') % target_conv)
     else:
@@ -193,8 +193,8 @@ def optout(bot, event, *args):
     elif isinstance(optout_state, list) and optout_state:
         message = _('<i>{}, you are <b>opted-out</b> from the following conversations:\n{}</i>').format(
             event.user.full_name,
-            "\n".join([ "* {}".format(bot.conversations.get_name(conv_id))
-                        for conv_id in optout_state ]))
+            "\n".join(["* {}".format(bot.conversations.get_name(conv_id))
+                       for conv_id in optout_state]))
 
     return message
 
@@ -250,8 +250,8 @@ async def unknown_command(bot, event, *args):
     tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
     if not (config_silent or tagged_silent):
 
-        await bot.coro_send_message( event.conv,
-                                      _('{}: Unknown Command').format(event.user.full_name) )
+        await bot.coro_send_message(event.conv,
+                                    _('{}: Unknown Command').format(event.user.full_name))
 
 
 @command.register_blocked

@@ -106,11 +106,11 @@ async def _claim_invite(bot, invite_code, user_id):
 
             await bot._client.add_user(
                 hangups.hangouts_pb2.AddUserRequest(
-                    request_header = bot._client.get_request_header(),
-                    invitee_id = [ hangups.hangouts_pb2.InviteeID(gaia_id = user_id) ],
-                    event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                        conversation_id = hangups.hangouts_pb2.ConversationId(id = invitation["group_id"]),
-                        client_generated_id = bot._client.get_client_generated_id() )))
+                    request_header=bot._client.get_request_header(),
+                    invitee_id=[hangups.hangouts_pb2.InviteeID(gaia_id=user_id)],
+                    event_request_header=hangups.hangouts_pb2.EventRequestHeader(
+                        conversation_id=hangups.hangouts_pb2.ConversationId(id=invitation["group_id"]),
+                        client_generated_id=bot._client.get_client_generated_id())))
 
         except hangups.NetworkError as e:
             # trying to add a user to a group where the user is already a member raises this
@@ -147,10 +147,10 @@ def _issue_invite_on_exit(bot, event):
 async def _new_group_conversation(bot, initiator_id):
     _response = await bot._client.create_conversation(
         hangups.hangouts_pb2.CreateConversationRequest(
-            request_header = bot._client.get_request_header(),
-            type = hangups.hangouts_pb2.CONVERSATION_TYPE_GROUP,
-            client_generated_id = bot._client.get_client_generated_id(),
-            invitee_id = [ hangups.hangouts_pb2.InviteeID(gaia_id = initiator_id) ]))
+            request_header=bot._client.get_request_header(),
+            type=hangups.hangouts_pb2.CONVERSATION_TYPE_GROUP,
+            client_generated_id=bot._client.get_client_generated_id(),
+            invitee_id=[hangups.hangouts_pb2.InviteeID(gaia_id=initiator_id)]))
     new_conversation_id = _response.conversation.conversation_id.id
 
     await bot.coro_send_message(new_conversation_id, _("<i>group created</i>"))
@@ -352,7 +352,7 @@ async def invite(bot, event, *args):
         """wildcards can be used by any user to enter a targetconv"""
         invitations.append({
             "user_id": "*",
-            "uses": wildcards })
+            "uses": wildcards})
 
         invitation_log.append("wildcard invites: {}".format(wildcards))
         logger.info("convtools_invitations: {} wildcard invite for {}".format(wildcards, targetconv))
@@ -375,12 +375,12 @@ async def invite(bot, event, *args):
 
             invitation_log.append("direct list: {}".format(len(shortlisted)))
             logger.info("%s convtools_invitations: shortlisted %s",
-                len(shortlisted), sourceconv)
+                        len(shortlisted), sourceconv)
 
         """exclude users who are already in the target conversation"""
         if targetconv == "NEW_GROUP":
             # fake user list - _new_group_conversation() always creates group with bot and initiator
-            targetconv_users = [ event.user.id_.chat_id, bot.user_self()["chat_id"] ]
+            targetconv_users = [event.user.id_.chat_id, bot.user_self()["chat_id"]]
         else:
             targetconv_users = _get_user_list(bot, targetconv)
         invited_users = []
@@ -397,7 +397,7 @@ async def invite(bot, event, *args):
         for uid in invited_users:
             invitations.append({
                 "user_id": uid,
-                "uses": 1 })
+                "uses": 1})
 
     """beyond this point, start doing irreversible things (like create groups)"""
 
@@ -427,13 +427,13 @@ async def invite(bot, event, *args):
                     _issue_invite(bot, new_invite["user_id"], targetconv, new_invite["uses"]))
 
         if invitation_ids:
-            await bot.coro_send_message(event.conv_id,
+            await bot.coro_send_message(
+                event.conv_id,
                 _("<em>invite: {} invitations created</em>").format(len(invitation_ids)))
 
     if test:
         invitation_log.insert(0, "<b>Invite Test Mode</b>")
-        await bot.coro_send_message(event.conv_id,
-                                         "\n".join(invitation_log))
+        await bot.coro_send_message(event.conv_id, "\n".join(invitation_log))
 
 
 async def rsvp(bot, event, *args):

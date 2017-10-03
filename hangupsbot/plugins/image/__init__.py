@@ -76,8 +76,8 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
             image_uri = "https://i.imgur.com/" + os.path.basename(image_uri)
 
             """imgur wraps animations in player, force the actual image resource"""
-            image_uri = image_uri.replace(".webm",".gif")
-            image_uri = image_uri.replace(".gifv",".gif")
+            image_uri = image_uri.replace(".webm", ".gif")
+            image_uri = image_uri.replace(".gifv", ".gif")
 
         elif re.match(r'^https?://gfycat.com', image_uri):
             image_uri = re.sub(r'^https?://gfycat.com/', 'https://thumbs.gfycat.com/', image_uri) + '-size_restricted.gif'
@@ -162,9 +162,9 @@ async def image_convert_to_png(image):
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin = PIPE,
-            stdout = PIPE,
-            stderr = PIPE )
+            stdin=PIPE,
+            stdout=PIPE,
+            stderr=PIPE)
 
         (stdout_data, stderr_data) = await proc.communicate(input=image)
 

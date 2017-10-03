@@ -72,11 +72,13 @@ async def _handle_autoreply(bot, event):
         autoreplies_list_global = bot.config.get_option('autoreplies')
 
         # If the global settings loaded from get_config_suboption then we now have them twice and don't need them, so can be ignored.
-        if autoreplies_list_global and (set([ frozenset([
-                frozenset(x) if isinstance(x, list) else x,
-                frozenset(y) if isinstance(y, list) else y ]) for x, y in autoreplies_list_global ])
-                != set([ frozenset([ frozenset(x) if isinstance(x, list) else x,
-                         frozenset(y) if isinstance(y, list) else y ]) for x, y in autoreplies_list ])):
+        if (autoreplies_list_global
+                and (set([frozenset([frozenset(x) if isinstance(x, list) else x,
+                                     frozenset(y) if isinstance(y, list) else y])
+                          for x, y in autoreplies_list_global])
+                     != set([frozenset([frozenset(x) if isinstance(x, list) else x,
+                                        frozenset(y) if isinstance(y, list) else y])
+                             for x, y in autoreplies_list]))):
 
             add_to_autoreplies = []
 
@@ -93,10 +95,10 @@ async def _handle_autoreply(bot, event):
                         overlap = True
                         break
                 if not overlap:
-                    add_to_autoreplies.extend( [[kwds_gbl, sentences_gbl]] )
+                    add_to_autoreplies.extend([[kwds_gbl, sentences_gbl]])
 
             # Extend original list with non-disgarded entries.
-            autoreplies_list.extend( add_to_autoreplies )
+            autoreplies_list.extend(add_to_autoreplies)
 
     if autoreplies_list:
         for kwds, sentences in autoreplies_list:
@@ -127,9 +129,9 @@ async def send_reply(bot, event, message):
                   event.conv_id, _("Unidentified Conversation"))}
 
     if "participant_ids" in dir(event.conv_event):
-        values["participants"] = [ event.conv.get_user(user_id)
-                                   for user_id in event.conv_event.participant_ids ]
-        values["participants_namelist"] = ", ".join([ u.full_name for u in values["participants"] ])
+        values["participants"] = [event.conv.get_user(user_id)
+                                  for user_id in event.conv_event.participant_ids]
+        values["participants_namelist"] = ", ".join([u.full_name for u in values["participants"]])
 
     # tldr plugin integration: inject current conversation tldr text into auto-reply
     if '{tldr}' in message:
@@ -147,8 +149,8 @@ async def send_reply(bot, event, message):
         message = message.split(':', 1)[-1]
         target_conv = await bot.get_1to1(event.user.id_.chat_id)
         if not target_conv:
-            logger.error("1-to-1 unavailable for {} ({})".format( event.user.full_name,
-                                                                  event.user.id_.chat_id ))
+            logger.error("1-to-1 unavailable for {} ({})".format(event.user.full_name,
+                                                                 event.user.id_.chat_id))
             return False
         envelopes.append((target_conv, message.format(**values)))
 
@@ -157,8 +159,8 @@ async def send_reply(bot, event, message):
         for guest in values["participants"]:
             target_conv = await bot.get_1to1(guest.id_.chat_id)
             if not target_conv:
-                logger.error("1-to-1 unavailable for {} ({})".format( guest.full_name,
-                                                                      guest.id_.chat_id ))
+                logger.error("1-to-1 unavailable for {} ({})".format(guest.full_name,
+                                                                     guest.id_.chat_id))
                 return False
             values["guest"] = guest # add the guest as extra info
             envelopes.append((target_conv, message.format(**values)))

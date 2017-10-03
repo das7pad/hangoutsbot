@@ -166,7 +166,7 @@ async def _spawn(bot, event, *args):
     environment.update(dict(os.environ))
 
     proc = await asyncio.create_subprocess_exec(*executable, stdout=PIPE, stderr=PIPE,
-                                                     env=environment)
+                                                env=environment)
 
     (stdout_data, stderr_data) = await proc.communicate()
     stdout_str = stdout_data.decode().rstrip()

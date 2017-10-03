@@ -201,10 +201,10 @@ class BridgeInstance(WebFramework):
         an image id that this handler sees
         """
 
-        if( "image_id" in event.passthru["original_request"]
+        if ( "image_id" in event.passthru["original_request"]
                 and event.passthru["original_request"]["image_id"] ):
 
-            if( "conv_event" in event
+            if ( "conv_event" in event
                     and "attachments" in event.conv_event
                     and len(event.conv_event.attachments) == 1 ):
 

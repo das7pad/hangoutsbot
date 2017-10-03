@@ -125,7 +125,7 @@ class AsyncRequestHandler:
 
     def __init__(self, *args):
         self.sinkname = self.__class__.__name__
-        if(args[0]):
+        if (args[0]):
             self.bot = args[0]
             self._bot = self.bot # backward-compatibility
 

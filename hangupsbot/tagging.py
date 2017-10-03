@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 class Tags(object):
     regex_allowed = r"a-z0-9._\-" # +command.deny_prefix
 
-    wildcard = { "conversation": "*",
-                 "user": "*",
-                 "group": "GROUP",
-                 "one2one": "ONE_TO_ONE" }
+    wildcard = {"conversation": "*",
+                "user": "*",
+                "group": "GROUP",
+                "one2one": "ONE_TO_ONE"}
 
     bot = None
     indices = {}
@@ -30,7 +30,7 @@ class Tags(object):
                         self.add_to_index(tag_type, tag, id_)
 
     def refresh_indices(self):
-        self.indices = { "user-tags": {}, "tag-users":{}, "conv-tags": {}, "tag-convs": {} }
+        self.indices = {"user-tags": {}, "tag-users":{}, "conv-tags": {}, "tag-convs": {}}
 
         self._load_from_memory("user_data", "user")
         self._load_from_memory("conv_data", "conv")
@@ -84,10 +84,10 @@ class Tags(object):
         if tag_type == "conv":
             index_type = "conv"
 
-            if( id_ not in self.bot.conversations and
-                  id_ not in ( self.wildcard["group"],
-                              self.wildcard["one2one"],
-                              self.wildcard["conversation"]) ):
+            if (id_ not in self.bot.conversations and
+                    id_ not in (self.wildcard["group"],
+                                self.wildcard["one2one"],
+                                self.wildcard["conversation"])):
 
                 raise ValueError("conversation {} does not exist".format(id_))
 
@@ -96,8 +96,8 @@ class Tags(object):
         elif tag_type == "user":
             index_type = "user"
 
-            if( not self.bot.memory.exists(["user_data", id_]) and
-                  id_ != self.wildcard["user"] ):
+            if (not self.bot.memory.exists(["user_data", id_]) and
+                    id_ != self.wildcard["user"]):
 
                 raise ValueError("user {} is invalid".format(id_))
 
@@ -107,13 +107,13 @@ class Tags(object):
             index_type = "user"
             [conv_id, chat_id] = id_.split("|", maxsplit=1)
 
-            if( conv_id not in self.bot.conversations and
-                  conv_id not in (self.wildcard["group"], self.wildcard["one2one"]) ):
+            if (conv_id not in self.bot.conversations and
+                    conv_id not in (self.wildcard["group"], self.wildcard["one2one"])):
 
                 raise ValueError("conversation {} is invalid".format(conv_id))
 
-            if( not self.bot.memory.exists(["user_data", chat_id]) and
-                  chat_id != self.wildcard["user"] ):
+            if (not self.bot.memory.exists(["user_data", chat_id]) and
+                    chat_id != self.wildcard["user"]):
 
                 raise ValueError("user {} is invalid".format(chat_id))
 
@@ -192,9 +192,9 @@ class Tags(object):
         if tag_type == "user" or tag_type == "convuser":
             for key in self.indices["user-tags"]:
 
-                match_user = (tag_type == "user" and (key == id_ or id_=="ALL"))
+                match_user = (tag_type == "user" and (key == id_ or id_ == "ALL"))
                     # runs if tag_type=="user"
-                match_convuser = (key.endswith("|" + id_) or (id_=="ALL" and "|" in key))
+                match_convuser = (key.endswith("|" + id_) or (id_ == "ALL" and "|" in key))
                     # runs if tag_type=="user" or tag_type=="convuser"
 
                 if match_user or match_convuser:
@@ -242,14 +242,14 @@ class Tags(object):
         check_keys = []
 
         if conv_id in self.bot.conversations:
-            check_keys.extend([ conv_id ])
+            check_keys.extend([conv_id])
             # additional overrides based on type of conversation
             conv_type = self.bot.conversations[conv_id]["type"]
             if conv_type == "GROUP":
-                check_keys.extend([ self.wildcard["group"] ])
-            elif conv_type == "ONE_TO_ONE" :
-                check_keys.extend([ self.wildcard["one2one"] ])
-            check_keys.extend([ self.wildcard["conversation"] ])
+                check_keys.extend([self.wildcard["group"]])
+            elif conv_type == "ONE_TO_ONE":
+                check_keys.extend([self.wildcard["one2one"]])
+            check_keys.extend([self.wildcard["conversation"]])
         else:
             logger.warning("convactive: conversation {} does not exist".format(conv_id))
 

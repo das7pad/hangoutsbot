@@ -61,7 +61,7 @@ async def _watch_new_adds(bot, event, command):
 def addmod(bot, event, *args):
     """add user id(s) to the whitelist of who can add to a hangout"""
     mod_ids = list(args)
-    if(bot.get_config_suboption(event.conv_id, 'mods') != None):
+    if (bot.get_config_suboption(event.conv_id, 'mods') != None):
         for mod in bot.get_config_suboption(event.conv_id, 'mods'):
             mod_ids.append(mod)
         bot.config.set_by_path(["mods"], mod_ids)

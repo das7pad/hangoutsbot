@@ -131,4 +131,3 @@ async def _search_comic(bot, event, terms):
 
     await bot.coro_send_message(event.conv.id_, msg)
     await _print_comic(bot, event, num)
-

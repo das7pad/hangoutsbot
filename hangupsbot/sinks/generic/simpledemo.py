@@ -37,7 +37,7 @@ class webhookReceiver(BaseHTTPRequestHandler):
                 image_data = io.BytesIO(raw)
                 image_type = imghdr.what('ignore', raw)
                 if not image_type:
-                  image_type = 'error'
+                    image_type = 'error'
             if "filename" in payload["image"]:
                 image_filename = payload["image"]["filename"]
             else:

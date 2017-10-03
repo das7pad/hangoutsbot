@@ -30,11 +30,11 @@ def logconfig(bot, event, loggername, level):
     if loggername in sys.modules:
         config_logging = bot.get_config_option("logging") or {}
 
-        mapping = { "critical": 50,
-                    "error": 40,
-                    "warning": 30,
-                    "info": 20,
-                    "debug": 10 }
+        mapping = {"critical": 50,
+                   "error": 40,
+                   "warning": 30,
+                   "info": 20,
+                   "debug": 10}
 
         effective_level = 0
         if level.isdigit():
@@ -53,7 +53,7 @@ def logconfig(bot, event, loggername, level):
             if loggername in config_logging:
                 current = config_logging[loggername]
             else:
-                current = { "level": 0 }
+                current = {"level": 0}
 
             current["level"] = effective_level
 
