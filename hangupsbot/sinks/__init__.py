@@ -10,7 +10,6 @@ import threadmanager
 
 from aiohttp import web
 
-import plugins
 from utils import class_from_name
 
 # pylint: disable=unused-import
@@ -18,7 +17,27 @@ from .base_bot_request_handler import AsyncRequestHandler, BaseBotRequestHandler
 
 logger = logging.getLogger(__name__)
 
-aiohttp_servers = []
+class ServerStorage(list):
+    """storage for running aiohttp servers"""
+    tracking = None
+
+    def set_tracking(self, tracking):
+        """store the plugin tracking
+
+        Args:
+            thracking (plugins.Tracker): the current instance
+        """
+        self.tracking = tracking
+
+    def register_aiohttp_web(self, group):
+        """add a single group to the plugin tracking
+
+        Args:
+            group (str): a new group
+        """
+        self.tracking.register_aiohttp_web(group)
+
+aiohttp_servers = ServerStorage()
 
 
 def start(bot):
@@ -173,7 +192,7 @@ def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
         functools.partial(aiohttp_started, handler=handler, app=app,
                           group=group, callback=callback))
 
-    plugins.tracking.register_aiohttp_web(group)
+    aiohttp_servers.register_aiohttp_web(group)
 
 def aiohttp_started(future, handler, app, group, callback=None):
     server = future.result()

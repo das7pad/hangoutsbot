@@ -12,9 +12,9 @@ import sys
 
 from inspect import getmembers, isfunction
 
-from commands import command
 import utils
-from sinks import aiohttp_terminate
+from commands import command
+from sinks import aiohttp_servers, aiohttp_terminate
 
 
 logger = logging.getLogger(__name__)
@@ -236,6 +236,7 @@ class Tracker(object):
 
 
 tracking = Tracker()
+aiohttp_servers.set_tracking(tracking)
 command.set_tracking(tracking)
 
 
