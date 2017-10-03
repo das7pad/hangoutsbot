@@ -1,1034 +1,997 @@
+"""core to handle message syncing and handle base requests from commands"""
+
 import asyncio
-import json
-import html
 import logging
-import mimetypes
-import os
-import pprint
-import re
-import threading
-import time
-import urllib.request
-import hangups
-import emoji
 
-import hangups_shim as hangups
+import aiohttp
 
-from slackclient import SlackClient
-from websocket import WebSocketConnectionClosedException
+import plugins
 
-from .bridgeinstance import ( BridgeInstance,
-                              FakeEvent )
-from .commands_slack import slackCommandHandler
-from .exceptions import ( AlreadySyncingError,
-                          ConnectionFailedError,
-                          NotSyncingError,
-                          ParseError,
-                          IncompleteLoginError )
-from .parsers import ( slack_markdown_to_hangups,
-                       hangups_markdown_to_slack )
-from .utils import  ( _slackrtms,
-                      _slackrtm_conversations_set,
-                      _slackrtm_conversations_get )
+from sync.sending_queue import AsyncQueueCache
+from sync.user import SyncUser
+from sync.utils import get_sync_config_entry
 
-
-logger = logging.getLogger(__name__)
-
-
-# fix for simple_smile support
-emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
-emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
+from .commands_slack import slack_command_handler
+from .exceptions import (
+    AlreadySyncingError,
+    NotSyncingError,
+    IgnoreMessage,
+    ParseError,
+    IncompleteLoginError,
+    WebsocketFailed,
+    SlackAPIError,
+    SlackRateLimited,
+    SlackAuthError,
+    SlackConfigError,
+)
+from .message import SlackMessage
+from .parsers import (
+    SLACK_STYLE,
+)
+from .user import SlackUser
+from .storage import (
+    migrate_on_domain_change,
+)
 
 
-class SlackMessage(object):
-    def __init__(self, slackrtm, reply):
-        self.text = None
-        self.user = None
-        self.username = None
-        self.username4ho = None
-        self.realname4ho = None
-        self.tag_from_slack = None
-        self.edited = None
-        self.from_ho_id = None
-        self.sender_id = None
-        self.channel = None
-        self.file_attachment = None
+_RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '
+                     'the Hangout to *{new_name}*_')
 
-        if 'type' not in reply:
-            raise ParseError('no "type" in reply: %s' % str(reply))
-
-        if reply['type'] in [ 'pong', 'presence_change', 'user_typing', 'file_shared', 'file_public',
-                              'file_comment_added', 'file_comment_deleted', 'message_deleted', 'file_created' ]:
-
-            raise ParseError('not a "message" type reply: type=%s' % reply['type'])
-
-        text = u''
-        username = ''
-        edited = ''
-        from_ho_id = ''
-        sender_id = ''
-        channel = None
-        is_joinleave = False
-        # only used during parsing
-        user = ''
-        is_bot = False
-
-        if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'message_changed':
-            if 'edited' in reply['message']:
-                edited = '(Edited)'
-                user = reply['message']['edited']['user']
-                text = reply['message']['text']
-            else:
-                # sent images from HO got an additional message_changed subtype without an 'edited' when slack renders the preview
-                if 'username' in reply['message']:
-                    # we ignore them as we already got the (unedited) message
-                    raise ParseError('ignore "edited" message from bot, possibly slack-added preview')
-                else:
-                    raise ParseError('strange edited message without "edited" member:\n%s' % str(reply))
-
-        elif reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'file_comment':
-            user = reply['comment']['user']
-            text = reply['text']
-
-        elif reply['type'] == 'file_comment_added':
-            user = reply['comment']['user']
-            text = reply['comment']['comment']
-
-        else:
-            if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] == 'bot_message' and 'user' not in reply:
-                is_bot = True
-                # this might be a HO relayed message, check if username is set and use it as username
-                username = reply['username']
-
-            elif 'text' not in reply or 'user' not in reply:
-                raise ParseError('no text/user in reply:\n%s' % str(reply))
-
-            else:
-                user = reply['user']
-
-            if 'text' not in reply or not len(reply['text']):
-                # IFTTT?
-                if 'attachments' in reply:
-                    if 'text' in reply['attachments'][0]:
-                        text = reply['attachments'][0]['text']
-                    else:
-                        raise ParseError('strange message without text in attachments:\n%s' % pprint.pformat(reply))
-                    if 'fields' in reply['attachments'][0]:
-                        for field in reply['attachments'][0]['fields']:
-                            text += "\n*%s*\n%s" % (field['title'], field['value'])
-                else:
-                    raise ParseError('strange message without text and without attachments:\n%s' % pprint.pformat(reply))
-
-            else:
-                # dev: normal messages that are entered by a slack user usually go this route
-                text = reply['text']
-
-        file_attachment = None
-        if 'file' in reply:
-            if 'url_private_download' in reply['file']:
-                file_attachment = reply['file']['url_private_download']
-
-        # now we check if the message has the hidden ho relay tag, extract and remove it
-        hoidfmt = re.compile(r'^(.*) <ho://([^/]+)/([^|]+)\| >$', re.MULTILINE | re.DOTALL)
-        match = hoidfmt.match(text)
-        if match:
-            text = match.group(1)
-            from_ho_id = match.group(2)
-            sender_id = match.group(3)
-            if 'googleusercontent.com' in text:
-                gucfmt = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$', re.MULTILINE | re.DOTALL)
-                match = gucfmt.match(text)
-                if match:
-                    text = match.group(1)
-                    file_attachment = match.group(2)
-
-        # text now contains the real message, but html entities have to be dequoted still
-        text = html.unescape(text)
-
-        """
-        strip :skin-tone-<id>: if present and apparently combined with an actual emoji alias
-        * depends on the slack users emoji style, e.g. hangouts style has no skin tone support
-        * do it BEFORE emojize() for more reliable detection of sub-pattern :some_emoji(::skin-tone-\d:)
-        """
-        text = re.sub(r"::skin-tone-\d:", ":", text, flags=re.IGNORECASE)
-
-        # convert emoji aliases into their unicode counterparts
-        text = emoji.emojize(text, use_aliases=True)
-
-        username4ho = username
-        realname4ho = username
-        tag_from_slack = False # XXX: prevents key not defined on unmonitored channels
-        if not is_bot:
-            domain = slackrtm.get_slack_domain()
-            username = slackrtm.get_username(user, user)
-            realname = slackrtm.get_realname(user,username)
-
-            username4ho = u'{}'.format(username)
-            realname4ho = u'{}'.format(realname)
-            tag_from_slack = True
-        elif sender_id != '':
-            username4ho = u'{}'.format(username)
-            realname4ho = u'{}'.format(username)
-            tag_from_slack = False
-
-        if 'channel' in reply:
-            channel = reply['channel']
-        elif 'group' in reply:
-            channel = reply['group']
-        if not channel:
-            raise ParseError('no channel found in reply:\n%s' % pprint.pformat(reply))
-
-        if reply['type'] == 'message' and 'subtype' in reply and reply['subtype'] in ['channel_join', 'channel_leave', 'group_join', 'group_leave']:
-            is_joinleave = True
-
-        self.text = text
-        self.user = user
-        self.username = username
-        self.username4ho = username4ho
-        self.realname4ho = realname4ho
-        self.tag_from_slack = tag_from_slack
-        self.edited = edited
-        self.from_ho_id = from_ho_id
-        self.sender_id = sender_id
-        self.channel = channel
-        self.file_attachment = file_attachment
-        self.is_joinleave = is_joinleave
-
-
-class SlackRTMSync(object):
-    def __init__(self, hangoutsbot, channelid, hangoutid, hotag, slacktag, sync_joins=True, image_upload=True, showslackrealnames=False, showhorealnames="real"):
-        self.channelid = channelid
-        self.hangoutid = hangoutid
-        self.hotag = hotag
-        self.sync_joins = sync_joins
-        self.image_upload = image_upload
-        self.slacktag = slacktag
-        self.showslackrealnames = showslackrealnames
-        self.showhorealnames = showhorealnames
-
-        self._bridgeinstance = BridgeInstance(hangoutsbot, "slackrtm")
-
-        self._bridgeinstance.set_extra_configuration(hangoutid, channelid)
-
-    @staticmethod
-    def fromDict(hangoutsbot, sync_dict):
-        sync_joins = True
-        if 'sync_joins' in sync_dict and not sync_dict['sync_joins']:
-            sync_joins = False
-        image_upload = True
-        if 'image_upload' in sync_dict and not sync_dict['image_upload']:
-            image_upload = False
-        slacktag = None
-        if 'slacktag' in sync_dict:
-            slacktag = sync_dict['slacktag']
-        else:
-            slacktag = 'NOT_IN_CONFIG'
-        slackrealnames = True
-        if 'showslackrealnames' in sync_dict and not sync_dict['showslackrealnames']:
-            slackrealnames = False
-        horealnames = 'real'
-        if 'showhorealnames' in sync_dict:
-            horealnames = sync_dict['showhorealnames']
-        return SlackRTMSync( hangoutsbot,
-                             sync_dict['channelid'],
-                             sync_dict['hangoutid'],
-                             sync_dict['hotag'],
-                             slacktag,
-                             sync_joins,
-                             image_upload,
-                             slackrealnames,
-                             horealnames)
-
-    def toDict(self):
-        return {
-            'channelid': self.channelid,
-            'hangoutid': self.hangoutid,
-            'hotag': self.hotag,
-            'sync_joins': self.sync_joins,
-            'image_upload': self.image_upload,
-            'slacktag': self.slacktag,
-            'showslackrealnames': self.showslackrealnames,
-            'showhorealnames': self.showhorealnames,
-            }
-
-    def getPrintableOptions(self):
-        return 'hotag=%s, sync_joins=%s, image_upload=%s, slacktag=%s, showslackrealnames=%s, showhorealnames="%s"' % (
-            '"{}"'.format(self.hotag) if self.hotag else 'NONE',
-            self.sync_joins,
-            self.image_upload,
-            '"{}"'.format(self.slacktag) if self.slacktag else 'NONE',
-            self.showslackrealnames,
-            self.showhorealnames,
-            )
+# Slack RTM event (sub-)types
+_CACHE_UPDATE_USERS = ('team_join', 'user_change')
+_CACHE_UPDATE_GROUPS = ('group_join', 'group_leave', 'group_close',
+                        'group_open', 'group_rename', 'group_name',
+                        'group_archive', 'group_unarchive')
+_CACHE_UPDATE_GROUPS_HIDDEN = ('group_close', 'group_open',
+                               'group_rename', 'group_name',
+                               'group_archive', 'group_unarchive')
+_CACHE_UPDATE_CHANNELS = ('channel_join', 'channel_leave',
+                          'channel_created', 'channel_deleted',
+                          'channel_rename', 'channel_archive',
+                          'channel_unarchive', 'member_joined_channel')
+_CACHE_UPDATE_CHANNELS_HIDDEN = ('channel_created', 'channel_deleted',
+                                 'channel_rename', 'channel_archive',
+                                 'channel_unarchive', 'member_joined_channel')
+_SYSTEM_MESSAGES = ('hello', 'pong', 'reconnect_url', 'goodbye',
+                    'bot_added', 'bot_changed', 'dnd_updated_user',
+                    'emoji_changed', 'desktop_notification',
+                    'presence_change', 'user_typing')
+_CACHE_UPDATE_TEAM = ('team_rename', 'team_domain_changed')
 
 
 class SlackRTM(object):
-    def __init__(self, sink_config, bot, loop, threaded=False):
-        self.bot = bot
-        self.loop = loop
-        self.config = sink_config
-        self.apikey = self.config['key']
-        self.threadname = None
-        self.lastimg = ''
+    """hander for a single slack team
 
-        self.slack = SlackClient(self.apikey)
-        if not self.slack.rtm_connect():
-            raise ConnectionFailedError
-        for key in ['self', 'team', 'users', 'channels', 'groups']:
-            if key not in self.slack.server.login_data:
-                raise IncompleteLoginError
-        if threaded:
-            if 'name' in self.config:
-                self.name = self.config['name']
-            else:
-                self.name = '%s@%s' % (self.slack.server.login_data['self']['name'], self.slack.server.login_data['team']['domain'])
-                logger.warning('no name set in config file, using computed name %s', self.name)
-            self.threadname = 'SlackRTM:' + self.name
-            threading.current_thread().name = self.threadname
-            logger.info('started RTM connection for SlackRTM thread %s', pprint.pformat(threading.current_thread()))
-            for t in threading.enumerate():
-                if t.name == self.threadname and t != threading.current_thread():
-                    logger.info('old thread found: %s - killing it', pprint.pformat(t))
-                    t.stop()
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        sink_config (dict): basic configuration including the api `key`, a
+            `name` for the team and `admins` a list of slack user ids
 
-        self.update_userinfos(self.slack.server.login_data['users'])
-        self.update_channelinfos(self.slack.server.login_data['channels'])
-        self.update_groupinfos(self.slack.server.login_data['groups'])
-        self.update_teaminfos(self.slack.server.login_data['team'])
-        self.dminfos = {}
-        self.my_uid = self.slack.server.login_data['self']['id']
+    Raises:
+        SlackConfigError: could not find the api-`key` in `sink_config`
+    """
+    # pylint:disable=too-many-instance-attributes
+    _session = None
+    logger = logging.getLogger(__name__)
 
-        self.admins = []
-        if 'admins' in self.config:
-            for a in self.config['admins']:
-                if a not in self.userinfos:
-                    logger.warning('userid %s not found in user list, ignoring', a)
-                else:
-                    self.admins.append(a)
-        if not len(self.admins):
-            logger.warning('no admins specified in config file')
+    # tracker for concurrent api_calls, unique per instance
+    _tracker = 0
 
-        self.hangoutids = {}
-        self.hangoutnames = {}
-        for c in self.bot.list_conversations():
-            name = self.bot.conversations.get_name(c)
-            self.hangoutids[name] = c.id_
-            self.hangoutnames[c.id_] = name
+    def __init__(self, bot, sink_config):
+        if  not isinstance(sink_config, dict) or 'key' not in sink_config:
+            raise SlackConfigError('API-`key` is missing in config %s'
+                                   % repr(sink_config))
+        self.bot = SlackMessage.bot = bot
+        self.apikey = sink_config['key']
+        self.slack_domain = sink_config.get('domain')
+        self.conversations = {}
+        self.users = {}
+        self.my_uid = ''
+        self.my_bid = None
+        self.identifier = None
+        self.name = None
+        self.team = {}
+        self.command_prefixes = tuple()
+        self._session = aiohttp.ClientSession()
+        self._cache_sending_queue = None
 
-        self.syncs = []
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
+    @property
+    def config(self):
+        """get the live-config from the bot-config to allow manual changes
 
-        for s in syncs:
-            sync = SlackRTMSync.fromDict(self.bot, s)
-            if sync.slacktag == 'NOT_IN_CONFIG':
-                sync.slacktag = self.get_teamname()
-            sync.team_name = self.name # chatbridge needs this for context
-            self.syncs.append(sync)
+        Returns:
+            dict: sink config
 
-        if 'synced_conversations' in self.config and len(self.config['synced_conversations']):
-            logger.warning('defining synced_conversations in config is deprecated')
-            for conv in self.config['synced_conversations']:
-                if len(conv) == 3:
-                    hotag = conv[2]
-                else:
-                    if conv[1] not in self.hangoutnames:
-                        logger.error("could not find conv %s in bot's conversations, but used in (deprecated) synced_conversations in config!", conv[1])
-                        hotag = conv[1]
-                    else:
-                        hotag = self.hangoutnames[conv[1]]
-                _new_sync = SlackRTMSync(self.bot, conv[0], conv[1], hotag, self.get_teamname())
-                _new_sync.team_name = self.name # chatbridge needs this for context
-                self.syncs.append(_new_sync)
+        Raises:
+            SlackConfigError: could not find the sink config or `key` is missing
+        """
+        for config in self.bot.config.get_option('slackrtm'):
+            if config.get('key') == self.apikey:
+                return config
 
-    # As of https://github.com/slackhq/python-slackclient/commit/ac343caf6a3fd8f4b16a79246264a05a7d257760
-    # SlackClient.api_call returns a pre-parsed json object (a dict).
-    # Wrap this call in a compatibility duck-hunt.
-    def api_call(self, *args, **kwargs):
-        response = self.slack.api_call(*args, **kwargs)
-        if isinstance(response, str):
+        for config in self.bot.config.get_option('slackrtm'):
+            if config.get('domain') != self.slack_domain:
+                continue
+
+            if 'key' in config:
+                # api-key change
+                self.apikey = config['key']
+                asyncio.ensure_future(self.rebuild_base())
+                return config
+            raise SlackConfigError('API-`key` is missing in config %s' % config)
+        raise SlackConfigError('The config for team "%s" got deleted'
+                               % self.slack_domain)
+
+    @property
+    def admins(self):
+        """get the configured admins
+
+        Returns:
+            list: a list of slack user ids (str)
+        """
+        return self.config.get('admins', [])
+
+    @property
+    def syncs(self):
+        """access the memory entry with configured syncs of the current team
+
+        Returns:
+            list: a list of dicts, each has two keys `hangoutid`, `channelid`
+        """
+        return self.bot.memory.get_by_path(
+            ['slackrtm', self.slack_domain, 'synced_conversations'])
+
+    async def start(self):
+        """login, build the cache, register handler and start event polling"""
+        async def _login():
+            """connect to the slack api and fetch the base data
+
+            Returns:
+                dict: `team`: team data, `self`: bot user, `url`: websocket-url
+
+            Raises:
+                IncompleteLoginError:
+                    connection error
+                    or incomplete api-response received from `rtm.connect`
+                SlackAuthError:
+                    the auth-token got revoked
+            """
             try:
-                response = response.decode('utf-8')
-            except:
-                pass
-            response = json.loads(response)
+                login_data = await self.api_call('rtm.connect')
+            except SlackAPIError:
+                raise IncompleteLoginError() from None
 
-        return response
+            if any(key not in login_data for key in ('self', 'team', 'url')):
+                raise IncompleteLoginError()
+            self.logger = logging.getLogger('plugins.slackrtm.%s'
+                                            % login_data['team']['domain'])
+            return login_data
 
-    def get_slackDM(self, userid):
-        if not userid in self.dminfos:
-            self.dminfos[userid] = self.api_call('im.open', user = userid)['channel']
-        return self.dminfos[userid]['id']
+        async def _build_cache(login_data):
+            """set the team; fetch users, channels and groups
 
-    def update_userinfos(self, users=None):
-        if users is None:
-            response = self.api_call('users.list')
-            users = response['members']
-        userinfos = {}
-        for u in users:
-            userinfos[u['id']] = u
-        self.userinfos = userinfos
+            Args:
+                login_data (dict): slack-api response of `rtm.connect`, which
+                    contains the team data in the entry `team`
+            """
+            self.team = login_data['team']
+            await asyncio.gather(*(self.update_cache(name) for name in
+                                   ('users', 'channels', 'groups', 'ims')))
 
-    def get_channel_users(self, channelid, default=None):
-        channelinfo = None
-        if channelid.startswith('C'):
-            if not channelid in self.channelinfos:
-                self.update_channelinfos()
-            if not channelid in self.channelinfos:
-                logger.error('get_channel_users: Failed to find channel %s' % channelid)
-                return None
+        async def _set_selfuser_and_ids(login_data):
+            """set the bot user and bot id to filter messages
+
+            .rebuild_base() requires the self user being present
+
+            Args:
+                login_data (dict): slack-api response of `rtm.connect`, which
+                    contains the bot user object in the entry `self`
+
+            Raises:
+                SlackAuthError: the auth-token got revoked
+            """
+            self.my_uid = login_data['self']['id']
+            self.users[self.my_uid] = login_data['self']
+
+            # send a message as a different user in the own dm to capture the
+            # used bot id
+            for retry in range(5):
+                try:
+                    response = await self.api_call(
+                        'chat.postMessage',
+                        channel=await self.get_slack1on1(self.my_uid),
+                        text='~', username='~')
+                    self.my_bid = response['message']['bot_id']
+                except (SlackAPIError, KeyError) as err:
+                    self.logger.error(
+                        'Failed fetch the own `bot_id` [retry %s/5]: %s',
+                        retry, repr(err))
+                else:
+                    return
+
+            # NOTE: bot_messages are not handled further the `SlackMessage` in
+            # general - the user may add custom message parsing to enable
+            # forwarding. A bad parsing could result in duplicates.
+            self.logger.critical('Could not fetch the own `bot_id` used to '
+                                 'filter messages. The instance can not work '
+                                 'efficient now or may send duplicates.')
+
+
+        hard_reset = 0
+        while hard_reset < 5:
+            self.bot.config.on_reload.add_observer(self.rebuild_base)
+            try:
+                await asyncio.sleep(hard_reset*10)
+                hard_reset += 1
+
+                login_data = await _login()
+
+                await _build_cache(login_data)
+                await _set_selfuser_and_ids(login_data)
+                await self.rebuild_base()
+
+                await self._process_websocket(login_data['url'])
+            except asyncio.CancelledError:
+                return
+            except IncompleteLoginError:
+                self.logger.error('Incomplete Login, restarting')
+            except WebsocketFailed:
+                self.logger.warning('Connection failed, waiting %s sec',
+                                    hard_reset * 10)
+            except SlackAuthError as err:
+                self._session.close()           # do not allow further api-calls
+                self.logger.critical('closing SlackRTM: %s', repr(err))
+                return
+            except:                                 # pylint:disable=bare-except
+                self.logger.exception('core error')
             else:
-                channelinfo = self.channelinfos[channelid]
+                self.logger.info('websocket closed gracefully, restarting')
+                hard_reset = 0
+            finally:
+                self.logger.debug('unloading')
+                self.bot.config.on_reload.remove_observer(self.rebuild_base)
+                if self._cache_sending_queue is not None:
+                    await self._cache_sending_queue.stop(5)
+                try:
+                    # cleanup
+                    await plugins.unload(self.bot, self.identifier)
+                except plugins.NotLoaded:
+                    pass
+
+        self.logger.critical('ran out of retries, closing the connection')
+
+    async def rebuild_base(self):
+        """reset everything that is based on the sink config or team data"""
+        async def _send_message(**kwargs):
+            """send the content to slack
+
+            Args:
+                kwargs (dict): see api documentation for `chat.postMessage`
+
+            Returns:
+                boolean: True in case of a successful api-call, otherwise False
+
+            Raises:
+                SlackAuthError: the api-token got revoked
+            """
+            self.logger.debug('sending into channel %s: %s',
+                              kwargs['channel'], kwargs['text'])
+            try:
+                reply = await self.api_call('chat.postMessage', **kwargs)
+            except SlackAPIError:
+                # already logged
+                return False
+            channel_tag = self.identifier + ':' + kwargs['channel']
+            SlackMessage.track_message(channel_tag, reply)
+            return True
+
+        async def _register_handler():
+            """register the profilesync and the sync handler"""
+            label = 'Slack (%s)' % self.config.get('name', self.team['name'])
+            await plugins.tracking.start({'module.path': self.identifier,
+                                          'identifier': label})
+
+            self.bot.sync.register_profile_sync(
+                self.identifier,
+                cmd='@%s syncprofile' % self.get_username(self.my_uid,
+                                                          self.my_uid),
+                label=label)
+
+            plugins.register_handler(self._handle_ho_rename, 'rename')
+
+            sync_handler = (
+                (self._handle_conv_user, 'conv_user'),
+                (self._handle_user_kick, 'user_kick'),
+                (self._handle_profilesync, 'profilesync'),
+                (self._handle_sync_message, 'allmessages'),
+                (self._handle_sync_membership, 'membership'),
+            )
+            for handler, name in sync_handler:
+                plugins.register_sync_handler(handler, name)
+
+            self._cache_sending_queue.start()
+
+            # save registered items
+            plugins.tracking.end()
+
+        # cleanup
+        if self._cache_sending_queue is not None:
+            # finish all tasks before updating the identifier
+            await self._cache_sending_queue.stop(5)
+        try:
+            await plugins.unload(self.bot, self.identifier)
+        except plugins.NotLoaded:
+            pass
+
+        # cache the config
+        config = self.config
+
+        bot_username = self.get_username(self.my_uid)
+        old_domain = self.slack_domain
+        self.slack_domain = config['domain'] = self.team['domain']
+
+        if 'name' in config:
+            self.name = config['name']
         else:
-            if not channelid in self.groupinfos:
-                self.update_groupinfos()
-            if not channelid in self.groupinfos:
-                logger.error('get_channel_users: Failed to find private group %s' % channelid)
-                return None
+            self.name = '%s@%s' % (bot_username, self.slack_domain)
+            self.logger.warning(
+                'no name set in config file, using computed name %s', self.name)
+
+        self.command_prefixes = (config['command_prefixes']
+                                 if 'command_prefixes' in config else
+                                 ('@hobot', '@%s' % bot_username))
+
+        self.identifier = 'slackrtm:%s' % self.slack_domain
+        self.logger = logging.getLogger('plugins.slackrtm.%s'
+                                        % self.slack_domain)
+
+        migrate_on_domain_change(self, old_domain)
+
+        self._cache_sending_queue = AsyncQueueCache(
+            self.identifier, _send_message, bot=self.bot)
+
+        await _register_handler()
+
+        for admin in self.admins:
+            if admin not in self.users:
+                self.logger.warning('admin userid %s not found in user list',
+                                    admin)
+        if not self.admins:
+            self.logger.warning('no admins specified in config file')
+
+    async def api_call(self, method, **kwargs):
+        """perform an api call to slack
+
+        more documentation on the api call: https://api.slack.com/web
+        more documentation on methods: https://api.slack.com/methods
+
+        delay the execution in case of a ratelimit
+
+        Args:
+            method (str): the api-method to call
+            kwargs (dict): optional kwargs passed with api-method
+
+        Returns:
+            dict: pre-parsed json response
+
+        Raises:
+            SlackAPIError: invalid request
+            SlackAuthError: the token got revoked
+        """
+        tracker = self._tracker
+        self._tracker += 1
+        self.logger.debug('api_call %s: (%s, %s)',
+                          tracker, repr(method), repr(kwargs))
+        if 'delay' in kwargs:
+            delay = kwargs.pop('delay')
+            self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
+            await asyncio.sleep(delay)
+        parsed = None
+        try:
+            async with await asyncio.shield(self._session.post(
+                'https://slack.com/api/' + method,
+                data={'token': self.apikey, **kwargs})) as resp:
+
+                parsed = await resp.json()
+                self.logger.debug('api_call %s: %s', tracker, repr(parsed))
+                if parsed.get('ok'):
+                    return parsed
+                error = parsed.get('error', '')
+                if 'rate_limited' in error:
+                    raise SlackRateLimited()
+                if 'auth' in error:
+                    raise SlackAuthError(parsed)
+
+                raise RuntimeError('invalid request')
+        except SlackRateLimited:
+            self.logger.warning('api_call %s: ratelimit hit', tracker)
+            delay += parsed.get('Retry-After', 30)
+            return await self.api_call(method, delay=delay, **kwargs)
+        except (aiohttp.ClientError, ValueError, RuntimeError) as err:
+            try:
+                parsed = parsed or (await resp.text())
+            except (NameError, aiohttp.ClientError):
+                pass
+
+            self.logger.error(
+                'api_call %s: failed with %s, method=%s, kwargs=%s, parsed=%s',
+                tracker, repr(err), method, kwargs, parsed)
+        raise SlackAPIError(parsed)
+
+    def send_message(self, *, channel, text, as_user=True, attachments=None,
+                     link_names=True, username=None, icon_url=None):
+        """send a message to a channel keeping the sequence
+
+        `await slackrtm.send_message(<...>)`
+        could be split into
+            `sending_status = slackrtm.send_message(<...>)`
+            `await sending_status`
+
+        Args:
+            channel (str): channel, group or direct message identifier
+            text (str): message content
+            as_user (bool): send a message as the bot user
+            attachments (list): see `api.slack.com/docs/message-formatting`
+            link_names (bool): create links from @username mentions
+            username (bool): use a custom sender name
+            icon_url (str): a custom profile picture of the sender
+
+        Returns:
+            sync.sending_queue.Status: tracker for the scheduled task which
+             returns a boolean value when finished: True on success else False.
+        """
+        queue = self._cache_sending_queue.get(channel)
+
+        kwargs = dict(channel=channel, as_user=as_user, link_names=link_names,
+                      username=username, icon_url=icon_url)
+
+        while len(text) > 3999:
+            first_part = text[:3999].rsplit('\n', 1)[0]
+            queue.schedule(text=first_part, **kwargs)
+            text = text[len(first_part):]
+
+        status = queue.schedule(text=text, attachments=attachments, **kwargs)
+        return status
+
+    async def get_slack1on1(self, userid):
+        """get the private slack channel with a given user from cache or request
+
+        Args:
+            userid (str): slack user_id
+
+        Returns:
+            str: identifier for the direct message channel
+
+        Raises:
+            SlackAPIError: could not create a 1on1
+        """
+        if userid not in self.users:
+            self.users[userid] = {}
+        if '1on1' not in self.users[userid]:
+            channel = (await self.api_call('im.open', user=userid))['channel']
+            self.users[userid]['1on1'] = channel['id']
+        return self.users[userid]['1on1']
+
+    async def update_cache(self, type_):
+        """update the cached data from api-source
+
+        Args:
+            type_ (str): 'users', 'groups', 'channels', 'team', 'ims'
+        """
+        method = ('team.info' if type_ == 'team' else
+                  'im.list' if type_ == 'ims' else type_ + '.list')
+        try:
+            response = await self.api_call(method)
+        except SlackAPIError:
+            # the raw exception with more details is already logged
+            self.logger.info('cache update for %s failed', type_)
+            return
+
+        data_key = 'members' if type_ == 'users' else type_
+        data = response[data_key]
+
+        if type_ == 'team':
+            self.team = data
+            return
+
+        if type_ == 'ims':
+            # store ims bidirectional for faster lookups in `get_slack1on1`
+            for item in data:
+                if item['user'] in self.users:
+                    self.users[item['user']]['1on1'] = item['id']
+                else:
+                    self.users[item['user']] = {'1on1': item['id']}
+
+        storage = self.users if type_ == 'users' else self.conversations
+        for item in data:
+            if item['id'] in storage:
+                storage[item['id']].update(item)
             else:
-                channelinfo = self.groupinfos[channelid]
+                storage[item['id']] = item
 
-        channelusers = channelinfo['members']
+    def get_channel_users(self, channel):
+        """get the usernames and realnames of users attending the given channel
+
+        Args:
+            channel (str): channel or group identifier
+
+        Returns:
+            dict: with keys 'username slackid', realnames as values
+                or the default value if no users can be fetched for the channel
+        """
+        channelusers = self._get_channel_data(channel, 'members', None)
+        if channelusers is None:
+            return {}
+
         users = {}
-        for u in channelusers:
-            username = self.get_username(u)
-            realname = self.get_realname(u, "No real name")
+        for user_id in channelusers:
+            username = self.get_username(user_id)
             if username:
-                users[username+" "+u] = realname
-
+                realname = self.get_realname(user_id, 'No real name')
+                users[username + ' ' + user_id] = realname
         return users
 
-    def update_teaminfos(self, team=None):
-        if team is None:
-            response = self.api_call('team.info')
-            team = response['team']
-        self.team = team
+    def _get_user_data(self, user, key, default=None):
+        """get user info described by the given key
 
-    def get_teamname(self):
-        # team info is static, no need to update
-        return self.team['name']
+        Args:
+            user (str): user_id
+            key (str): data entry in the user data
+            default (unknown): value for missing user
 
-    def get_slack_domain(self):
-        # team info is static, no need to update
-        return self.team['domain']
+        Returns:
+            unknown: or the default value
+        """
+        if user not in self.users:
+            self.logger.debug('user %s not found, reloading users', user)
+            asyncio.ensure_future(self.update_cache('users'))
+            return default
+        return self.users[user].get(key, default)
+
+    def _get_channel_data(self, channel, key, default=None):
+        """fetch channel info from cache or pull all data once
+
+        Args:
+            channel (str): channel or group identifier
+            key (str): data entry in the channel data
+            default (unknown): return value if no data is available
+
+        Returns:
+            dict: requested channel entry or the default value
+        """
+        if channel not in self.conversations:
+            type_ = 'channels' if channel.startswith('C') else 'groups'
+            self.logger.debug('%s not found, reloading %s', channel, type_)
+            asyncio.ensure_future(self.update_cache(type_))
+            return default
+        return self.conversations[channel].get(key, default)
 
     def get_realname(self, user, default=None):
-        if user not in self.userinfos:
-            logger.debug('user not found, reloading users')
-            self.update_userinfos()
-            if user not in self.userinfos:
-                logger.warning('could not find user "%s" although reloaded', user)
-                return default
-        if not self.userinfos[user]['real_name']:
-            return default
-        return self.userinfos[user]['real_name']
+        """get the users real name or return the default value
 
+        Args:
+            user (str): user_id
+            default (unknwon): value for missing user or no available name
+
+        Returns:
+            str: the realname or the default value in case of a missing user
+        """
+        return self._get_user_data(user, 'real_name', default)
 
     def get_username(self, user, default=None):
-        if user not in self.userinfos:
-            logger.debug('user not found, reloading users')
-            self.update_userinfos()
-            if user not in self.userinfos:
-                logger.warning('could not find user "%s" although reloaded', user)
-                return default
-        return self.userinfos[user]['name']
+        """get the users nickname or return the default value
 
-    def update_channelinfos(self, channels=None):
-        if channels is None:
-            response = self.api_call('channels.list')
-            channels = response['channels']
-        channelinfos = {}
-        for c in channels:
-            channelinfos[c['id']] = c
-        self.channelinfos = channelinfos
+        Args:
+            user (str): user_id
+            default (unknwon): value for missing user
 
-    def get_channelgroupname(self, channel, default=None):
-        if channel.startswith('C'):
-            return self.get_channelname(channel, default)
-        if channel.startswith('G'):
-            return self.get_groupname(channel, default)
+        Returns:
+            str: the nickname or the default value in case of a missing user
+        """
+        return self._get_user_data(user, 'name', default)
+
+    def get_user_picture(self, user, default=None):
+        """get the profile picture of the user or return the default value
+
+        Args:
+            user (str): user_id
+            default (unknwon): value for missing user
+
+        Returns:
+            str: the image url or the default value in case of a missing user
+        """
+        return self._get_user_data(user, 'image_original', default)
+
+    def get_chatname(self, channel, default=None):
+        """get the name of a given channel and use the default as fallback
+
+        Args:
+            channel (str): a slack channel/group/dm
+            default (unknwon): the fallback for a missing channel in the cache
+
+        Returns:
+            str: the chattitle or the default value in case of a missing chat
+        """
         if channel.startswith('D'):
+            # dms have no custom name
             return 'DM'
-        return default
-
-    def get_channelname(self, channel, default=None):
-        if channel not in self.channelinfos:
-            logger.debug('channel not found, reloading channels')
-            self.update_channelinfos()
-            if channel not in self.channelinfos:
-                logger.warning('could not find channel "%s" although reloaded', channel)
-                return default
-        return self.channelinfos[channel]['name']
-
-    def update_groupinfos(self, groups=None):
-        if groups is None:
-            response = self.api_call('groups.list')
-            groups = response['groups']
-        groupinfos = {}
-        for c in groups:
-            groupinfos[c['id']] = c
-        self.groupinfos = groupinfos
-
-    def get_groupname(self, group, default=None):
-        if group not in self.groupinfos:
-            logger.debug('group not found, reloading groups')
-            self.update_groupinfos()
-            if group not in self.groupinfos:
-                logger.warning('could not find group "%s" although reloaded', group)
-                return default
-        return self.groupinfos[group]['name']
+        return self._get_channel_data(channel, 'name', default=default)
 
     def get_syncs(self, channelid=None, hangoutid=None):
+        """search for syncs with mathing channel or hangout identifier
+
+        Args:
+            channelid (str): slack channel identifier
+            hangoutid (str): hangouts conversation identifier
+
+        Returns:
+            list: a list of dicts, each has two keys `channelid`, `hangoutid`
+        """
         syncs = []
         for sync in self.syncs:
-            if channelid == sync.channelid:
+            if channelid == sync['channelid']:
                 syncs.append(sync)
-            elif hangoutid == sync.hangoutid:
+            elif hangoutid == sync['hangoutid']:
                 syncs.append(sync)
         return syncs
 
-    def rtm_read(self):
-        return self.slack.rtm_read()
+    def config_syncto(self, channel, hangoutid):
+        """add a new sync to the memory
 
-    def ping(self):
-        return self.slack.server.ping()
+        Args:
+            channel (str): slack channel identifier
+            hangoutid (str): hangouts conversation identifier
 
-    def matchReference(self, match):
-        out = ""
-        linktext = ""
-        if match.group(5) == '|':
-            linktext = match.group(6)
-        if match.group(2) == '@':
-            if linktext != "":
-                out = linktext
-            else:
-                out = "@%s" % self.get_username(match.group(3), 'unknown:%s' % match.group(3))
-        elif match.group(2) == '#':
-            if linktext != "":
-                out = "#%s" % linktext
-            else:
-                out = "#%s" % self.get_channelgroupname(match.group(3),
-                                                        'unknown:%s' % match.group(3))
-        else:
-            linktarget = match.group(1)
-            if linktext == "":
-                linktext = linktarget
-            out = '[{}]({})'.format(linktext, linktarget)
-        out = out.replace('_', '%5F')
-        out = out.replace('*', '%2A')
-        out = out.replace('`', '%60')
-        return out
-
-    @asyncio.coroutine
-    def upload_image(self, image_uri, sync, username, userid, channel_name):
-        token = self.apikey
-        logger.info('downloading %s', image_uri)
-        filename = os.path.basename(image_uri)
-        request = urllib.request.Request(image_uri)
-        request.add_header("Authorization", "Bearer %s" % token)
-        image_response = urllib.request.urlopen(request)
-        content_type = image_response.info().get_content_type()
-
-        filename_extension = mimetypes.guess_extension(content_type).lower() # returns with "."
-        physical_extension = "." + filename.rsplit(".", 1).pop().lower()
-
-        if physical_extension == filename_extension:
-            pass
-        elif filename_extension == ".jpe" and physical_extension in [ ".jpg", ".jpeg", ".jpe", ".jif", ".jfif" ]:
-            # account for mimetypes idiosyncrancy to return jpe for valid jpeg
-            pass
-        else:
-            logger.warning("unable to determine extension: {} {}".format(filename_extension, physical_extension))
-            filename += filename_extension
-
-        logger.info('uploading as %s', filename)
-        image_id = yield from self.bot._client.upload_image(image_response, filename=filename)
-
-        logger.info('sending HO message, image_id: %s', image_id)
-        yield from sync._bridgeinstance._send_to_internal_chat(
-            sync.hangoutid,
-            "shared media from slack",
-            {   "sync": sync,
-                "source_user": username,
-                "source_uid": userid,
-                "source_title": channel_name },
-            image_id=image_id )
-
-    def config_syncto(self, channel, hangoutid, shortname):
+        Raises:
+            AlreadySyncingError: the sync already exists
+        """
         for sync in self.syncs:
-            if sync.channelid == channel and sync.hangoutid == hangoutid:
+            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
                 raise AlreadySyncingError
 
-        sync = SlackRTMSync(self.bot, channel, hangoutid, shortname, self.get_teamname())
-        sync.team_name = self.name # chatbridge needs this for context
-        logger.info('adding sync: %s', sync.toDict())
-        self.syncs.append(sync)
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        logger.info('storing sync: %s', sync.toDict())
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
+        new_sync = {'channelid': channel, 'hangoutid': hangoutid}
+        self.logger.info('adding sync: %s', new_sync)
+        self.syncs.append(new_sync)
+        self.bot.memory.save()
         return
 
     def config_disconnect(self, channel, hangoutid):
+        """remove a sync from the memory
+
+        Args:
+            channel (str): slack channel identifier
+            hangoutid (str): hangouts conversation identifier
+
+        Raises:
+            NotSyncingError: the sync does not exists
+        """
         sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-                logger.info('removing running sync: %s', s)
-                s._bridgeinstance.close()
-                self.syncs.remove(s)
+        for sync in self.syncs:
+            if sync['channelid'] == channel and sync['hangoutid'] == hangoutid:
+                self.logger.info('removing running sync: %s', sync)
+                self.syncs.remove(sync)
         if not sync:
             raise NotSyncingError
 
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                logger.info('removing stored sync: %s', s)
-                syncs.remove(s)
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
+        self.bot.memory.save()
         return
 
-    def config_setsyncjoinmsgs(self, channel, hangoutid, enable):
-        sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-        if not sync:
-            raise NotSyncingError
+    async def _process_websocket(self, url):
+        """read and process events from a slack websocket
 
-        logger.info('setting sync_joins=%s for sync=%s', enable, sync.toDict())
-        sync.sync_joins = enable
+        Args:
+            url (str): websocket target URI
 
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                syncs.remove(s)
-        logger.info('storing new sync=%s with changed sync_joins', s)
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
+        Raises:
+            WebsocketFailed: websocket connection failed or too many
+                invalid events received from slack
+            any exception that is not covered in `.handle_reply`
+        """
+        try:
+            async with self._session.ws_connect(url, heartbeat=30) as websocket:
+                self.logger.info('started new SlackRTM connection')
 
-    def config_sethotag(self, channel, hangoutid, hotag):
-        sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-        if not sync:
-            raise NotSyncingError
+                soft_reset = 0
+                while soft_reset < 5:
+                    try:
+                        reply = await websocket.receive_json()
+                        if not reply:
+                            # gracefully stopped
+                            return
+                        if 'type' not in reply:
+                            raise ValueError('reply has no `type` entry: %s'
+                                             % repr(reply))
+                    except (ValueError, TypeError) as err:
+                        # covers invalid json-replys and replys without a `type`
+                        self.logger.warning('bad websocket read: %s', repr(err))
+                        soft_reset += 1
+                        await asyncio.sleep(2**soft_reset)
+                        continue
 
-        logger.info('setting hotag="%s" for sync=%s', hotag, sync.toDict())
-        sync.hotag = hotag
+                    await self._handle_slack_message(reply)
 
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                syncs.remove(s)
-        logger.info('storing new sync=%s with changed hotag', s)
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
+                    # valid response handled, leave fail-state
+                    soft_reset = 0
 
-    def config_setimageupload(self, channel, hangoutid, upload):
-        sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-        if not sync:
-            raise NotSyncingError
+        except aiohttp.ClientError as err:
+            self.logger.error('websocket connection failed: %s', repr(err))
 
-        logger.info('setting image_upload=%s for sync=%s', upload, sync.toDict())
-        sync.image_upload = upload
+        # can not connect or permanent websocket read error
+        raise WebsocketFailed()
 
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                syncs.remove(s)
-        logger.info('storing new sync=%s with changed hotag', s)
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
+    async def _handle_slack_message(self, reply):
+        """parse and forward a response from slack
 
-    def config_setslacktag(self, channel, hangoutid, slacktag):
-        sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-        if not sync:
-            raise NotSyncingError
+        Args:
+            reply (dict): responce from slack
+        """
+        async def _update_cache_on_event(event_type):
+            """update the internal cache based on team changes
 
-        logger.info('setting slacktag="%s" for sync=%s', slacktag, sync.toDict())
-        sync.slacktag = slacktag
+            Args:
+                event_type (str): see https://api.slack.com/rtm for details
 
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                syncs.remove(s)
-        logger.info('storing new sync=%s with changed slacktag', s)
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
+            Returns:
+                boolean: True if the reply triggered an update only
+            """
+            if event_type in _CACHE_UPDATE_USERS:
+                await self.update_cache('users')
+            elif event_type in _CACHE_UPDATE_CHANNELS:
+                await self.update_cache('channels')
+                return event_type in _CACHE_UPDATE_CHANNELS_HIDDEN
+            elif event_type in _CACHE_UPDATE_GROUPS:
+                await self.update_cache('groups')
+                return event_type in _CACHE_UPDATE_GROUPS_HIDDEN
+            elif event_type in _SYSTEM_MESSAGES:
+                return True
+            elif event_type in _CACHE_UPDATE_TEAM:
+                await self.update_cache('team')
+                await self.rebuild_base()
+            else:
+                return False
+            return True
 
-    def config_showslackrealnames(self, channel, hangoutid, realnames):
-        sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-        if not sync:
-            raise NotSyncingError
+        self.logger.debug('received reply %s', repr(reply))
 
-        logger.info('setting showslackrealnames=%s for sync=%s', realnames, sync.toDict())
-        sync.showslackrealnames = realnames
+        if (await _update_cache_on_event(reply['type'])
+                # no message content
+                or await _update_cache_on_event(reply.get('subtype'))
+                # we do not sync this type
+                or reply.get('is_ephemeral') or reply.get('hidden')):
+                # hidden message from slack
+            self.logger.debug('reply is system event')
+            return
 
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                syncs.remove(s)
-        logger.info('storing new sync=%s with changed hotag', s)
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
+        if (('user' in reply and reply['user'] == self.my_uid) or
+                ('bot_id' in reply and reply['bot_id'] == self.my_bid)):
+            # message from the bot user, skip it as we already handled it
+            self.logger.debug('reply content already seen')
+            return
 
-    def config_showhorealnames(self, channel, hangoutid, realnames):
-        sync = None
-        for s in self.syncs:
-            if s.channelid == channel and s.hangoutid == hangoutid:
-                sync = s
-        if not sync:
-            raise NotSyncingError
-
-        logger.info('setting showhorealnames=%s for sync=%s', realnames, sync.toDict())
-        sync.showhorealnames = realnames
-
-        syncs = _slackrtm_conversations_get(self.bot, self.name)
-        if not syncs:
-            syncs = []
-        for s in syncs:
-            if s['channelid'] == channel and s['hangoutid'] == hangoutid:
-                syncs.remove(s)
-        logger.info('storing new sync=%s with changed hotag', s)
-        syncs.append(sync.toDict())
-        _slackrtm_conversations_set(self.bot, self.name, syncs)
-        return
-
-    def handle_reply(self, reply):
-        """handle incoming replies from slack"""
-
+        error_message = 'error while parsing a Slack reply\nreply=%s'
+        error_is_critical = True
+        sync_reply = None
         try:
             msg = SlackMessage(self, reply)
-        except ParseError as e:
-            return
-        except Exception as e:
-            logger.exception('error parsing Slack reply: %s(%s)', type(e), str(e))
-            return
+            channel_tag = '%s:%s' % (self.identifier, msg.channel)
+            SlackMessage.track_message(channel_tag, reply)
 
-        # commands can be processed even from unsynced channels
-        try:
-            slackCommandHandler(self, msg)
-        except Exception as e:
-            logger.exception('error in handleCommands: %s(%s)', type(e), str(e))
+            error_message = 'error in command handling\nreply=%s'
+            error_is_critical = False
+            await slack_command_handler(self, msg)
+
+            error_message = 'error while parsing the SyncReply\nreply=%s'
+            sync_reply = await msg.get_sync_reply(self, reply)
+        except (ParseError, IgnoreMessage) as err:
+            self.logger.debug(repr(err))
+            return
+        except SlackAuthError as err:
+            self.logger.critical(repr(err))
+            # continue with message handling
+        except:         # capture all Exceptions   # pylint: disable=bare-except
+            self.logger.exception(error_message, repr(reply))
+            if error_is_critical:
+                return
 
         syncs = self.get_syncs(channelid=msg.channel)
-        if not syncs:
-            # stop processing replies if no syncs are available (optimisation)
-            return
-
-        reffmt = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
-        message = reffmt.sub(self.matchReference, msg.text)
-        message = slack_markdown_to_hangups(message)
+        channel_name = self.get_chatname(msg.channel, '')
 
         for sync in syncs:
-            if not sync.sync_joins and msg.is_joinleave:
+            if msg.is_joinleave is not None:
+                asyncio.ensure_future(self.bot.sync.membership(
+                    identifier=channel_tag, conv_id=sync['hangoutid'],
+                    user=msg.user, text=msg.segments, title=channel_name,
+                    type_=msg.is_joinleave,
+                    participant_user=msg.participant_user))
                 continue
 
-            if msg.from_ho_id != sync.hangoutid:
-                username = msg.realname4ho if sync.showslackrealnames else msg.username4ho
-                channel_name = self.get_channelgroupname(msg.channel)
+            asyncio.ensure_future(self.bot.sync.message(
+                identifier=channel_tag, conv_id=sync['hangoutid'],
+                user=msg.user, text=msg.segments, image=msg.image,
+                edited=msg.edited, title=channel_name, reply=sync_reply))
 
-                if msg.file_attachment:
-                    if sync.image_upload:
+    async def _handle_sync_message(self, bot, event):
+        """forward message/media from any platform to slack
 
-                        self.loop.call_soon_threadsafe(
-                            asyncio.ensure_future,
-                            self.upload_image(
-                                msg.file_attachment,
-                                sync,
-                                username,
-                                msg.user,
-                                channel_name ))
+        Args:
+            bot (hangupsbot.HangupsBot): the running instance
+            event (sync.event.SyncEvent): instance to be handled
+        """
+        photo_url = ('https:' + event.user.photo_url
+                     if isinstance(event.user.photo_url, str) else None)
 
-                        self.lastimg = os.path.basename(msg.file_attachment)
-                    else:
-                        # we should not upload the images, so we have to send the url instead
-                        message += msg.file_attachment
+        for sync in self.get_syncs(hangoutid=event.conv_id):
+            channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
+            if channel_tag in event.previous_targets:
+                continue
+            event.previous_targets.add(channel_tag)
 
-                self.loop.call_soon_threadsafe(
-                    asyncio.ensure_future,
-                    sync._bridgeinstance._send_to_internal_chat(
-                        sync.hangoutid,
-                        message,
-                        {   "sync": sync,
-                            "source_user": username,
-                            "source_uid": msg.user,
-                            "source_gid": sync.channelid,
-                            "source_title": channel_name }))
+            message = event.get_formated_text(style=SLACK_STYLE,
+                                              conv_id=channel_tag)
 
-    @asyncio.coroutine
-    def _send_deferred_media(self, image_link, sync, full_name, link_names, photo_url, fragment):
-        self.api_call('chat.postMessage',
-                      channel = sync.channelid,
-                      text = "{} {}".format(image_link, fragment),
-                      username = full_name,
-                      link_names = True,
-                      icon_url = photo_url)
+            image_url = await event.get_image_url(channel_tag)
+            if image_url is not None:
+                message += '\n' + image_url
 
-    @asyncio.coroutine
-    def handle_ho_message(self, event, conv_id, channel_id):
-        user = event.passthru["original_request"]["user"]
-        message = event.passthru["original_request"]["message"]
+            displayname = event.user.get_displayname(channel_tag,
+                                                     text_only=True)
+            if (get_sync_config_entry(bot, channel_tag, 'sync_title') and
+                    event.title(channel_tag)):
+                displayname = '%s (%s)' % (displayname,
+                                           event.title(channel_tag))
 
-        if not message:
-            message = ""
+            self.send_message(channel=sync['channelid'], text=message,
+                              username=displayname, icon_url=photo_url,
+                              as_user=event.user.is_self)
 
-        message = hangups_markdown_to_slack(message)
+    def _handle_sync_membership(self, dummy, event):
+        """notify configured slack channels about a membership change
 
-        """slackrtm uses an overengineered pseudo SlackRTMSync "structure" to contain individual 1-1 syncs
-            we rely on the chatbridge to iterate through multiple syncs, and ensure we only have
-            to deal with a single mapping at this level
+        Args:
+            dummy (hangupsbot.HangupsBot): unused
+            event (sync.event.SyncEventMembership): instance to be handled
+        """
+        for sync in self.get_syncs(hangoutid=event.conv_id):
+            channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
+            if channel_tag in event.previous_targets:
+                continue
+            event.previous_targets.add(channel_tag)
 
-            XXX: the mapping SHOULD BE single, but let duplicates get through"""
+            message = event.get_formated_text(style=SLACK_STYLE,
+                                              conv_id=channel_tag)
+            if message is None:
+                # membership change should not be synced to this channel
+                return
 
-        active_syncs = []
+            self.send_message(channel=sync['channelid'], text=message)
+
+    def _handle_ho_rename(self, bot, event):
+        """notify configured slack channels about a changed conversation name
+
+        Args:
+            bot (hangupsbot.HangupsBot): the running instance
+            event (event.ConversationEvent): instance to be handled
+        """
+        name = bot.conversations.get_name(event.conv)
+        user = SyncUser(bot, user_id=event.user_id.chat_id)
+
+        for sync in self.get_syncs(hangoutid=event.conv_id):
+            channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
+            message = _RENAME_TEMPLATE.format(
+                chat_id=user.id_.chat_id,
+                name=user.get_displayname(channel_tag, text_only=True),
+                new_name=name)
+            self.send_message(channel=sync['channelid'], text=message)
+
+    async def _handle_conv_user(self, dummy, conv_id, profilesync_only):
+        """get all slack user participating in a synced conversation
+
+        Args:
+            dummy (hangupsbot.HangupsBot): the running instance
+            conv_id (str): conversation identifier
+            profilesync_only (bool): only include users synced to a G+ profile
+
+        Returns:
+            list: a list of `user.SlackUser`s
+        """
+        users = []
         for sync in self.get_syncs(hangoutid=conv_id):
-            if sync.channelid != channel_id:
+            channel = sync['channelid']
+            channel_users = ((self._get_channel_data(channel, 'user'),)
+                             if channel[0] == 'D' else
+                             self._get_channel_data(channel, 'members'))
+
+            for user_id in channel_users:
+                sync_user = SlackUser(self, user_id=user_id, channel=channel)
+                if sync_user.is_self:
+                    # exclude the bot user
+                    continue
+                if profilesync_only and sync_user.id_.chat_id == 'sync':
+                    continue
+                users.append(sync_user)
+        return users
+
+    async def _handle_user_kick(self, dummy, conv_id, user):
+        """kick a user from all syned channels for a given conversation
+
+        Args:
+            dummy (hangupsbot.HangupsBot): the running instance
+            conv_id (str): conversation identifier
+            user (sync.user.SyncUser): user that should get kicked
+
+        Returns:
+            mixed: None: ignored, False: failed, True: kicked, 'whitelisted'
+        """
+        slackrtm_identifier = user.identifier.rsplit(':', 1)[0]
+        if slackrtm_identifier != self.identifier:
+            return None
+
+        if user.is_self or user.usr_id in self.admins:
+            # exclude the bot user and admins
+            return 'whitelisted'
+
+        syncs = self.get_syncs(hangoutid=conv_id)
+        kicked = None
+        for sync in syncs:
+            channel = sync['channelid']
+            users = self._get_channel_data(channel, 'members', ())
+            if user.usr_id not in users:
+                # covers ims and users that left already
                 continue
-            if sync.hangoutid != conv_id:
-                continue
-            active_syncs.append(sync)
-
-        for sync in active_syncs:
-            bridge_user = sync._bridgeinstance._get_user_details(user, { "event": event })
-
-            extras = []
-            if sync.showhorealnames == "nick":
-                display_name = bridge_user["nickname"] or bridge_user["full_name"]
+            method = 'groups.kick' if channel[0] == 'G' else 'channels.kick'
+            self.logger.info('kick "%s" from "%s"', user.usr_id, channel)
+            try:
+                await self.api_call(method, channel=channel, user=user.usr_id)
+            except SlackAPIError as err:
+                kicked = False
+                self.logger.warning('failed to kick user "%s" from "%s": %s',
+                                    user.usr_id, channel, repr(err))
             else:
-                display_name = bridge_user["full_name"]
-                if (sync.showhorealnames == "both" and bridge_user["nickname"] and
-                        not bridge_user["full_name"] == bridge_user["nickname"]):
-                    extras.append(bridge_user["nickname"])
+                # do not overwrite an error state
+                kicked = True if kicked is not False else False
 
-            if sync.hotag is True:
-                if "chatbridge" in event.passthru and event.passthru["chatbridge"]["source_title"]:
-                    chat_title = event.passthru["chatbridge"]["source_title"]
-                    extras.append(chat_title)
-            elif sync.hotag:
-                extras.append(sync.hotag)
+        await self.update_cache('groups')
+        await self.update_cache('channels')
+        return kicked
 
-            if extras:
-                display_name = "{} ({})".format(display_name, ", ".join(extras))
+    async def _handle_profilesync(self, platform, remote_user, conv_1on1,
+                                  split_1on1s):
+        """finish profile sync and set a 1on1 sync if requested
 
-            slackrtm_fragment = "<ho://{}/{}| >".format(conv_id, bridge_user["chat_id"] or bridge_user["preferred_name"])
-
-            """XXX: media sending:
-
-            * if media link is already available, send it immediately
-              * real events from google servers will have the medialink in event.conv_event.attachment
-              * media link can also be added as part of the passthru
-            * for events raised by other external chats, wait for the public link to become available
-            """
-
-
-            if "attachments" in event.passthru["original_request"] and event.passthru["original_request"]["attachments"]:
-                # automatically prioritise incoming events with attachments available
-                media_link = event.passthru["original_request"]["attachments"][0]
-                logger.info("media link in original request: {}".format(media_link))
-
-                message = "shared media: {}".format(media_link)
-
-            elif isinstance(event, FakeEvent):
-                if( "image_id" in event.passthru["original_request"]
-                        and event.passthru["original_request"]["image_id"] ):
-                    # without media link, create a deferred post until a public media link becomes available
-                    image_id = event.passthru["original_request"]["image_id"]
-                    logger.info("wait for media link: {}".format(image_id))
-
-                    loop = asyncio.get_event_loop()
-                    task = loop.create_task(
-                        self.bot._handlers.image_uri_from(
-                            image_id,
-                            self._send_deferred_media,
-                            sync,
-                            display_name,
-                            True,
-                            bridge_user["photo_url"],
-                            slackrtm_fragment ))
-
-            elif( hasattr(event, "conv_event")
-                    and hasattr(event.conv_event, "attachments")
-                    and len(event.conv_event.attachments) == 1 ):
-                # catch actual events with media link  but didn' go through the passthru
-                media_link = event.conv_event.attachments[0]
-                logger.info("media link in original event: {}".format(media_link))
-
-                message = "shared media: {}".format(media_link)
-
-            """standard message relay"""
-
-            message = "{} {}".format(message, slackrtm_fragment)
-
-            logger.info("message {}: {}".format(sync.channelid, message))
-            self.api_call('chat.postMessage',
-                          channel = sync.channelid,
-                          text = message,
-                          username = display_name,
-                          link_names = True,
-                          icon_url = bridge_user["photo_url"])
-
-    def handle_ho_membership(self, event):
-        # Generate list of added or removed users
-        links = []
-        for user_id in event.conv_event.participant_ids:
-            user = event.conv.get_user(user_id)
-            links.append(u'<https://plus.google.com/%s/about|%s>' % (user.id_.chat_id, user.full_name))
-        names = u', '.join(links)
-
-        for sync in self.get_syncs(hangoutid=event.conv_id):
-            if not sync.sync_joins:
-                continue
-            if sync.hotag:
-                honame = sync.hotag
-            else:
-                honame = self.bot.conversations.get_name(event.conv)
-            # JOIN
-            if event.conv_event.type_ == hangups.MembershipChangeType.JOIN:
-                invitee = u'<https://plus.google.com/%s/about|%s>' % (event.user_id.chat_id, event.user.full_name)
-                if invitee == names:
-                    message = u'%s has joined %s' % (invitee, honame)
-                else:
-                    message = u'%s has added %s to %s' % (invitee, names, honame)
-            # LEAVE
-            else:
-                message = u'%s has left _%s_' % (names, honame)
-            message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
-            logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            self.api_call('chat.postMessage',
-                          channel=sync.channelid,
-                          text=message,
-                          as_user=True,
-                          link_names=True)
-
-    def handle_ho_rename(self, event):
-        name = self.bot.conversations.get_name(event.conv)
-
-        for sync in self.get_syncs(hangoutid=event.conv_id):
-            invitee = u'<https://plus.google.com/%s/about|%s>' % (event.user_id.chat_id, event.user.full_name)
-            hotagaddendum = ''
-            if sync.hotag:
-                hotagaddendum = ' _%s_' % sync.hotag
-            message = u'%s has renamed the Hangout%s to _%s_' % (invitee, hotagaddendum, name)
-            message = u'%s <ho://%s/%s| >' % (message, event.conv_id, event.user_id.chat_id)
-            logger.debug("sending to channel/group %s: %s", sync.channelid, message)
-            self.api_call('chat.postMessage',
-                          channel=sync.channelid,
-                          text=message,
-                          as_user=True,
-                          link_names=True)
-
-    def close(self):
-        logger.debug("closing all bridge instances")
-        for s in self.syncs:
-            s._bridgeinstance.close()
-
-
-class SlackRTMThread(threading.Thread):
-    def __init__(self, bot, loop, config):
-        super(SlackRTMThread, self).__init__()
-        self._stop = threading.Event()
-        self._bot = bot
-        self._loop = loop
-        self._config = config
-        self._listener = None
-        self.isFullyLoaded = threading.Event()
-
-    def run(self):
-        logger.debug('SlackRTMThread.run()')
-        asyncio.set_event_loop(self._loop)
-
-        start_ts = time.time()
-        try:
-            if self._listener and self._listener in _slackrtms:
-                self._listener.close()
-                _slackrtms.remove(self._listener)
-            self._listener = SlackRTM(self._config, self._bot, self._loop, threaded=True)
-            _slackrtms.append(self._listener)
-            last_ping = int(time.time())
-            self.isFullyLoaded.set()
-            while True:
-                if self.stopped():
-                    return
-                replies = self._listener.rtm_read()
-                if replies:
-                    for reply in replies:
-                        if "type" not in reply:
-                            logger.warning("no type available for {}".format(reply))
-                            continue
-                        if reply["type"] == "hello":
-                            # discard the initial api reply
-                            continue
-                        if reply["type"] == "message" and float(reply["ts"]) < start_ts:
-                            # discard messages in the queue older than the thread start timestamp
-                            continue
-                        try:
-                            self._listener.handle_reply(reply)
-                        except Exception as e:
-                            logger.exception('error during handle_reply(): %s\n%s', str(e), pprint.pformat(reply))
-                now = int(time.time())
-                if now > last_ping + 30:
-                    self._listener.ping()
-                    last_ping = now
-                time.sleep(.1)
-        except KeyboardInterrupt:
-            # close, nothing to do
+        Args:
+            platform (str): sync platform identifier
+            remote_user (str): user who startet the sycn on a given platform
+            conv_1on1 (str): users 1on1 in hangouts
+            split_1on1s (boolean): toggle to sync the private chats
+        """
+        if platform != self.identifier:
             return
-        except WebSocketConnectionClosedException as e:
-            logger.exception('WebSocketConnectionClosedException(%s)', str(e))
-            return self.run()
-        except IncompleteLoginError:
-            logger.exception('IncompleteLoginError, restarting')
-            time.sleep(1)
-            return self.run()
-        except (ConnectionFailedError, TimeoutError):
-            logger.exception('Connection failed or Timeout, waiting 10 sec trying to restart')
-            time.sleep(10)
-            return self.run()
-        except ConnectionResetError:
-            logger.exception('ConnectionResetError, attempting to restart')
-            time.sleep(1)
-            return self.run()
-        except Exception as e:
-            logger.exception('SlackRTMThread: unhandled exception: %s', str(e))
-        return
 
-    def stop(self):
-        if self._listener and self._listener in _slackrtms:
-            self._listener.close()
-            _slackrtms.remove(self._listener)
-        self._stop.set()
+        slack_user_id = remote_user
+        if split_1on1s:
+            # delete an existing sync
+            try:
+                self.config_disconnect(
+                    await self.get_slack1on1(slack_user_id), conv_1on1)
+            except NotSyncingError:
+                pass
+            text = _('*Your profiles are connected and you will not receive my '
+                     'messages in Slack.*')
 
-    def stopped(self):
-        return self._stop.isSet()
+            private_chat = await self.get_slack1on1(slack_user_id)
+            self.send_message(channel=private_chat, text=text)
+        else:
+            # setup a chat sync
+            try:
+                self.config_syncto(
+                    await self.get_slack1on1(slack_user_id), conv_1on1)
+            except AlreadySyncingError:
+                pass
+            text = _('*Your profiles are connected and you will receive my '
+                     'messages in Slack as well.*')
+
+        await self.bot.coro_send_message(conv_1on1, text)
+
+    def __del__(self):
+        if self._session is not None:
+            self._session.close()

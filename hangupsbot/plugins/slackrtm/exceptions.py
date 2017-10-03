@@ -1,18 +1,40 @@
+"""exceptions for slackrtm"""
+
+class IgnoreMessage(Exception):
+    """do not sync a given message"""
+
+
 class ParseError(Exception):
-    pass
+    """critical slack-message part is missing - api-change"""
 
 
 class AlreadySyncingError(Exception):
-    pass
+    """attemted to create a duplicate sync"""
 
 
 class NotSyncingError(Exception):
-    pass
-
-
-class ConnectionFailedError(Exception):
-    pass
+    """attemted to access/remove a non-existing sync"""
 
 
 class IncompleteLoginError(Exception):
-    pass
+    """did not receive a full rtm.connect response on login"""
+
+
+class WebsocketFailed(Exception):
+    """can not establish a connection or reading failed permanent"""
+
+
+class SlackAPIError(Exception):
+    """invalid request or missing permissions"""
+
+
+class SlackRateLimited(SlackAPIError):
+    """too many requests performed in a short timespan"""
+
+
+class SlackAuthError(SlackAPIError):
+    """error on login"""
+
+
+class SlackConfigError(SlackAuthError):
+    """critical config error: api-key or complete config missing"""

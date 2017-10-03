@@ -14,7 +14,6 @@ pushbullet.py                                   # plugins: mentions
 wikipedia                                       # plugins: simplewikipedia
 wolframalpha                                    # plugins: wolframalpha
 git+https://github.com/carpedm20/emoji          # plugins: slackrtm
-slackclient >=0.16                              # plugins: slackrtm
 selenium                                        # plugins: image_screenshot
 telepot==12.3                                   # plugins: telesync
 cleverwrap                                      # plugins: cleverbot

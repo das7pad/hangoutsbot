@@ -1,148 +1,100 @@
-"""
-Improved Slack sync plugin using the Slack RTM API instead of webhooks.
+"""Improved Slack sync plugin using the Slack RTM API and websockets.
 (c) 2015 Patrick Cernko <errror@gmx.de>
 
+async rewrite: das7pad@outlook.com
 
-Create a Slack bot integration (not webhooks!) for each team you want
-to sync into hangouts.
+Create a new user and setup auth for each team you want to sync into hangouts.
+Get an auth-token here: https://api.slack.com/custom-integrations/legacy-tokens
 
-Your config.json should have a slackrtm section that looks something
-like this.  You only need one entry per Slack team, not per channel,
-unlike the legacy code.
+Your config.json should have a slackrtm section that looks something like this.
+You only need one entry per Slack team.
 
     "slackrtm": [
         {
-            "name": "SlackTeamNameForLoggingCommandsEtc",
+            "name": "CostomNameToFindTheSlackTeamViaHangoutsCommands",
+            "domain": "my-team.slack.com",
             "key": "SLACK_TEAM1_BOT_API_KEY",
             "admins": [ "U01", "U02" ]
         },
         {
-            "name": "OptionalSlackOtherTeamNameForLoggingCommandsEtc",
+            "name": "OptionalSecondTeamWithItsCustomName",
+            "domain": "my-second-team.slack.com",
             "key": "SLACK_TEAM2_BOT_API_KEY",
             "admins": [ "U01", "U02" ]
         }
     ]
 
-name = slack team name
-key = slack bot api key for that team (xoxb-xxxxxxx...)
-admins = user_id from slack (you can use https://api.slack.com/methods/auth.test/test to find it)
+  name : a custom slack team name
+domain : the team domain at slack, important to track a domain-change performed
+         while the bot is offline - otherwise we loose track of the memory entry
+   key : slack bot api key for that team (xoxb-xxxxxxx...)
+admins : user_ids from slack (to find them, you can use
+                              https://api.slack.com/methods/users.list/test)
 
 You can set up as many slack teams per bot as you like by extending the list.
 
-Once the team(s) are configured, and the hangupsbot is restarted, invite
-the newly created Slack bot into any channel or group that you want to sync,
-and then use the command:
-    @botname syncto <hangoutsid>
+Once the team(s) are configured, and the hangupsbot is restarted, invite the
+newly created Slack user into any channel or group that you want to sync, and
+then use the command from any slack channel:
+    @hobot syncto <hangoutsid>
 
-Use "@botname help" for more help on the Slack side and /bot help <command> on
-the Hangouts side for more help.
-
+Use "@hobot help" for more help on the Slack side.
 """
 
-import asyncio
 import logging
 
 import plugins
 
-from .commands_hangouts import ( slacks,
-                                 slack_channels,
-                                 slack_users,
-                                 slack_listsyncs,
-                                 slack_syncto,
-                                 slack_disconnect,
-                                 slack_setsyncjoinmsgs,
-                                 slack_setimageupload,
-                                 slack_sethotag,
-                                 slack_setslacktag,
-                                 slack_showslackrealnames,
-                                 slack_showhorealnames,
-                                 slack_identify )
-from .core import SlackRTMThread
-from .utils import _slackrtms
+# reload the other modules
+# pylint: disable=wrong-import-position,unused-import
+for _path_ in ('exceptions', 'parsers', 'message', 'storage',
+               'commands_hangouts', 'commands_slack', 'core'):
+    plugins.load_module('plugins.slackrtm.' + _path_)
+
+from .commands_hangouts import (
+    HELP,
+    slacks,
+    slack_channels,
+    slack_users,
+    slack_listsyncs,
+    slack_syncto,
+    slack_disconnect,
+)
+from .core import SlackRTM
+from .exceptions import SlackConfigError
+from .storage import (
+    SLACKRTMS,
+    setup_storage,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    # unbreak slackrtm memory.json usage
-    #   previously, this plugin wrote into "user_data" key to store its internal team settings
-    _slackrtm_conversations_migrate_20170319(bot)
+    """migrate data, start SlackRTMs and register commands
 
-    # Start and asyncio event loop
-    loop = asyncio.get_event_loop()
-    slack_sink = bot.get_config_option('slackrtm')
-    threads = []
-    if isinstance(slack_sink, list):
-        for sinkConfig in slack_sink:
-            # start up slack listener in a separate thread
-            t = SlackRTMThread(bot, loop, sinkConfig)
-            t.daemon = True
-            t.start()
-            t.isFullyLoaded.wait()
-            threads.append(t)
-    logger.info("%d sink thread(s) started", len(threads))
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+    """
+    setup_storage(bot)
 
-    plugins.register_handler(_handle_membership_change, type="membership")
-    plugins.register_handler(_handle_rename, type="rename")
-
-    plugins.register_admin_command([ "slacks",
-                                     "slack_channels",
-                                     "slack_listsyncs",
-                                     "slack_syncto",
-                                     "slack_disconnect",
-                                     "slack_setsyncjoinmsgs",
-                                     "slack_setimageupload",
-                                     "slack_sethotag",
-                                     "slack_users",
-                                     "slack_setslacktag",
-                                     "slack_showslackrealnames",
-                                     "slack_showhorealnames" ])
-
-    plugins.register_user_command([ "slack_identify" ])
-
-    plugins.start_asyncio_task(_wait_until_unloaded).add_done_callback(_plugin_unloaded)
-
-def _slackrtm_conversations_migrate_20170319(bot):
-    memory_root_key = "slackrtm"
-    if bot.memory.exists([ memory_root_key ]):
-        return
-
-    configurations = bot.get_config_option('slackrtm') or []
-    migrated_configurations = {}
-    for configuration in configurations:
-        team_name = configuration["name"]
-        broken_path = [ 'user_data', team_name ]
-        if bot.memory.exists(broken_path):
-            legacy_team_memory = dict(bot.memory.get_by_path(broken_path))
-            migrated_configurations[ team_name ] = legacy_team_memory
-
-    bot.memory.set_by_path([ memory_root_key ], migrated_configurations)
-    bot.memory.save()
-
-@asyncio.coroutine
-def _wait_until_unloaded(bot):
-    while True:
-        yield from asyncio.sleep(60)
-
-def _plugin_unloaded(future):
-    pass
-
-@asyncio.coroutine
-def _handle_membership_change(bot, event, command):
-    for slackrtm in _slackrtms:
+    for sink_config in bot.get_config_option('slackrtm'):
         try:
-            slackrtm.handle_ho_membership(event)
-        except Exception as e:
-            logger.exception('_handle_membership_change threw: %s', str(e))
+            slackrtm = SlackRTM(bot, sink_config)
+        except SlackConfigError as err:
+            logger.error(repr(err))
+        else:
+            SLACKRTMS.append(slackrtm)
+            plugins.start_asyncio_task(slackrtm.start)
+    logger.info('%d SlackRTM started', len(SLACKRTMS))
 
-
-@asyncio.coroutine
-def _handle_rename(bot, event, command):
-    if not _slackrtms:
-        return
-    for slackrtm in _slackrtms:
-        try:
-            slackrtm.handle_ho_rename(event)
-        except Exception as e:
-            logger.exception('_handle_rename threw: %s', str(e))
+    plugins.register_admin_command([
+        'slacks',
+        'slack_channels',
+        'slack_listsyncs',
+        'slack_syncto',
+        'slack_disconnect',
+        'slack_users',
+    ])
+    plugins.register_help(HELP)

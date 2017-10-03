@@ -1,163 +1,109 @@
-# -*- coding: utf-8 -*-
-# pylint: skip-file
+"""parser to process slack markdown"""
 
-import re
-import uuid
+from reparser import (
+    Token,
+    MatchGroup,
+)
 
-from reparser import Parser, Token, MatchGroup
+from hangups.message_parser import Tokens, url_complete
+from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
 
-
-# slack to hangups
-
-def markdown1(tag):
-    """Return sequence of start and end regex patterns for simple Markdown tag"""
-    return (markdown1_start.format(tag=tag), markdown1_end.format(tag=tag))
-
-boundary1_chars = r'\s`!\'".,<>?*_~=' # slack to hangups
-
-b1_left = r'(?:(?<=[' + boundary1_chars + r'])|(?<=^))'
-b1_right = r'(?:(?=[' + boundary1_chars + r'])|(?=$))'
-
-markdown1_start = b1_left + r'(?<!\\){tag}(?!\s)(?!{tag})'
-markdown1_end = r'(?<!{tag})(?<!\s)(?<!\\){tag}' + b1_right
-
-tokens_slack_to_hangups = [
-    Token('b',          *markdown1(r'\*'),     is_bold=True),
-    Token('i',          *markdown1(r'_'),      is_italic=True),
-    Token('pre1',       *markdown1(r'`'),      skip=True),
-    Token('pre2',       *markdown1(r'```'),    skip=True) ]
-
-parser_slack_to_hangups = Parser(tokens_slack_to_hangups)
+from sync.parser import (
+    MessageSegment,
+    MessageParser,
+    get_formatted,
+)
 
 
-# hangups to slack
+SLACK_STYLE = {
+    (0, 0, 0): '{text}',
+    (1, 0, 0): '*{text}*',
+    (0, 1, 0): '_{text}_',
+    (1, 1, 0): '_*{text}*_',
+    (0, 0, 1): '<{url}|{text}>',
+    (1, 0, 1): '*<{url}|{text}>*',
+    (0, 1, 1): '_<{url}|{text}>_',
+    (1, 1, 1): '_*<{url}|{text}>*_',
+    'line_break': '\n',
+    'ignore_links_matching_text': True,
+    'allow_hidden_url': True,
+    'escape_html': False,
+    'escape_markdown': False,
+}
 
-def markdown2(tag):
-    """Return sequence of start and end regex patterns for simple Markdown tag"""
-    return (markdown2_start.format(tag=tag), markdown2_end.format(tag=tag))
-
-boundary2_chars = r'\s!\'".,<>?*_~=' # hangups to slack
-
-b2_left = r'(?:(?<=[' + boundary2_chars + r'])|(?<=^))'
-b2_right = r'(?:(?=[' + boundary2_chars + r'])|(?=$))'
-
-markdown2_start = b2_left + r'(?<!\\){tag}(?!\s)(?!{tag})'
-markdown2_end = r'(?<!{tag})(?<!\s)(?<!\\){tag}' + b2_right
-
-tokens_hangups_to_slack = [
-    Token('b',          *markdown2(r'\*\*'),    bold=True) ]
-
-parser_hangups_to_slack = Parser(tokens_hangups_to_slack)
-
-
-def render_link(link, label):
-    if label in link:
-        return link
-    else:
-        return link + " (" + label + ")"
-
-def convert_slack_links(text):
-    text = re.sub(r"<(.*?)\|(.*?)>",  lambda m: render_link(m.group(1), m.group(2)), text)
-    return text
-
-def slack_markdown_to_hangups(text, debug=False):
-    lines = text.split("\n")
-    nlines = []
-    for line in lines:
-        # workaround: for single char lines
-        if len(line) < 2:
-            line = line.replace("*", "\\*")
-            line = line.replace("_", "\\_")
-            nlines.append(line)
-            continue
-
-        # workaround: common pattern *<text>
-        if re.match("^\*[^* ]", line) and line.count("*") % 2:
-            line = line.replace("*", "* ", 1)
-
-        # workaround: accidental consumption of * in "**test"
-        replacement_token = "[2star:" + str(uuid.uuid4()) + "]"
-        line = line.replace("**", replacement_token)
-
-        segments = parser_slack_to_hangups.parse(line)
-
-        nline=""
-        for segment in [ (segment.text,
-                          segment.params) for segment in segments ]:
-
-            if debug: print(segment)
-
-            text = segment[0]
-            definition = segment[1]
-
-            lspace = ""
-            rspace = ""
-            text = text.replace(replacement_token, "**")
-            if text[0:1] == " ":
-                lspace = " "
-                text = text[1:]
-            if text[-1:] == " ":
-                rspace = " "
-                text = text[:-1]
-
-            # manually escape to prevent hangups markdown processing
-            if "http" not in text:
-                text = text.replace("*", "\\*")
-                text = text.replace("_", "\\_")
-            text = convert_slack_links(text)
-
-            markdown = []
-            if "is_bold" in definition and definition["is_bold"]:
-                markdown.append("**")
-            if "is_italic" in definition and definition["is_italic"]:
-                markdown.append("_")
-
-            nline += lspace
-            nline += "".join(markdown)
-            nline += text
-            nline += "".join(markdown[::-1])
-            nline += rspace
-
-        nlines.append(nline)
-    text = "\n".join(nlines)
-    return text
+SEGMENT_LINE_BREAK = MessageSegment(text='\n',
+                                    segment_type=SEGMENT_TYPE_LINE_BREAK)
 
 
-def hangups_markdown_to_slack(text, debug=False):
-    lines = text.split("\n")
-    nlines = []
-    output = ""
-    for line in lines:
-        single_line = ""
+def markdown_slack(tag):
+    """get a sequence of start and end regex patterns for a simple Markdown tag
 
-        segments = parser_hangups_to_slack.parse(line)
-        for segment in [ [segment.text,
-                          segment.params] for segment in segments ]:
+    Args:
+        tag (str): a formatting token
 
-            if debug: print(segment)
+    Returns:
+        tuple: start-regex and end-regex for the formatting token
+    """
+    tag_rev = tag[::-1].replace('*\\', r'\*')
+    return (MARKDOWN_START_SLACK.format(tag=tag, tag_rev=tag_rev),
+            MARKDOWN_END_SLACK.format(tag=tag, tag_rev=tag_rev))
 
-            text = segment[0]
-            definition = segment[1]
+BOUNDARY_CHARS_SLACK = r'\s`!\'".,<>?*_~='
 
-            # convert links to slack format
-            text = re.sub(r"\[(.*?)\]\((.*?)\)", r"<\2|\1>", text)
+B_LEFT_SLACK = r'(?:(?<=[' + BOUNDARY_CHARS_SLACK + r'])|(?<=^))'
+B_RIGHT_SLACK = r'(?:(?=[' + BOUNDARY_CHARS_SLACK + r'])|(?=$))'
 
-            wrapper = ""
-            if "bold" in definition and definition["bold"]:
-                # bold
-                wrapper = "*"
+MARKDOWN_START_SLACK = B_LEFT_SLACK + r'(?<!\\){tag}(?!{tag})'
+MARKDOWN_END_SLACK = r'(?<!{tag_rev})(?<!\\){tag_rev}' + B_RIGHT_SLACK
+MARKDOWN_LINK_SLACK = r'<(?P<url>.*?)\|(?P<text>.*?)>'
 
-            segment_to_text = wrapper + text + wrapper
-            single_line += segment_to_text
+TOKENS_SLACK = [
+    Token('slack_b', *markdown_slack(r'\*'), is_bold=True),
+    Token('slack_i', *markdown_slack(r'_'), is_italic=True),
+    Token('slack_pre1', *markdown_slack(r'`'), skip=True),
+    Token('slack_pre2', *markdown_slack(r'```'), skip=True),
+    Token('slack_strike', *markdown_slack(r'~'), is_strikethrough=True),
+    Token('slack_link', MARKDOWN_LINK_SLACK, text=MatchGroup('text'),
+          link_target=MatchGroup('url', func=url_complete))
+    ]
 
-        nlines.append(single_line)
-    output = "\n".join(nlines)
-    return output
+
+class SlackMessageParser(MessageParser):
+    """message parser for slack markdown"""
+    def __init__(self):
+        super().__init__(TOKENS_SLACK + Tokens.basic)
+
+    def unescape_markdown(self, text):
+        return text
 
 
-if __name__ == '__main__':
-    print("***SLACK MARKDOWN TO HANGUPS")
-    print("")
+class SlackMessageSegment(MessageSegment):
+    """messae segment for text with slack markdown formatting"""
+    _parser = SlackMessageParser()
+
+    @classmethod
+    def from_str(cls, text):
+        """parse a message to a sequence of MessageSegments
+
+        Args:
+            text (str): the text to parse
+
+        Returns:
+            list: a list of `SlackMessageSegment` instances
+        """
+        segments = []
+        split = text.split('\n')
+        # formatting is only valid per line
+        for line in split[:-1]:
+            segments.extend(super().from_str(line))
+            segments.append(SEGMENT_LINE_BREAK)
+        segments.extend(super().from_str(split[-1]))
+        return segments
+
+def main():
+    """check the parser"""
+    print('***SLACK MARKDOWN TO HANGUPS')
+    print('')
 
     text = ('Hello *bold* world!\n'
             'You can *try _this_ awesome* [link](www.eff.org).\n'
@@ -167,8 +113,9 @@ if __name__ == '__main__':
             '*\n'
             '_\n'
             '*\n'
-            '¯\_(ツ)_/¯\n'
-            '<http://www.google.com.sg|Google Singapore> <http://www.google.com.my|Google Malaysia>\n'
+            r'¯\_(ツ)_/¯'
+            '\n<http://www.google.com.sg|Google Singapore> '
+            '<http://www.google.com.my|Google Malaysia>\n'
             '<http://www.google.com|www.google.com>\n'
             'www.google.com\n'
             '**hello\n'
@@ -176,31 +123,51 @@ if __name__ == '__main__':
             '********\n'
             '_ xya kskdks')
     print(repr(text))
-    print("")
+    print('')
 
-    output = slack_markdown_to_hangups(text, debug=True)
-    print("")
-
-    print(repr(output))
-    print("")
-
-    print("***HANGUPS MARKDOWN TO SLACK PARSER")
-    print("")
-
-    text = ('**[bot] test markdown**\n'
-            '**[ABCDEF ABCDEF](https://plus.google.com/u/0/1234567890/about)**\n'
-            '... ([ABC@DEF.GHI](mailto:ABC@DEF.GHI))\n'
-            '... 1234567890\n'
-            '**[XYZ XYZ](https://plus.google.com/u/0/1234567890/about)**\n'
-            '... 0123456789\n'
-            '**`_Users: 2_`**\n'
-            '**`ABC (xyz)`**, chat_id = _1234567890_' )
-    print(repr(text))
-    print("")
-
-    output = hangups_markdown_to_slack(text, debug=True)
-    print("")
+    output = get_formatted(SlackMessageSegment.from_str(text), 'markdown')
+    print('')
 
     print(repr(output))
-    print("")
+    print('')
 
+    print('***HANGUPS MARKDOWN TO SLACK PARSER')
+    print('')
+
+    segments = [
+        MessageSegment(text='[bot] test markdown', is_bold=True),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(
+            text='ABCDEF ABCDEF',
+            link_target='https://plus.google.com/u/0/1234567890/about'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='...('),
+        MessageSegment(text='ABC@DEF.GHI', link_target='mailto:ABC@DEF.GHI'),
+        MessageSegment(text=')'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='... 1234567890'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(
+            text='XYZ XYZ',
+            link_target='https://plus.google.com/u/0/1234567890/about',
+            is_bold=True),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='... 0123456789'),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='`_Users: 2_`', is_bold=True),
+        SEGMENT_LINE_BREAK,
+        MessageSegment(text='`ABC (xyz)`', is_bold=True),
+        MessageSegment(text=', chat_id = '),
+        MessageSegment(text='1234567890', is_italic=True),
+    ]
+    print(repr(get_formatted(segments, 'markdown')))
+    print('')
+
+    output = get_formatted(segments, SLACK_STYLE)
+    print('')
+
+    print(repr(output))
+    print('')
+
+if __name__ == '__main__':
+    main()
