@@ -321,10 +321,16 @@ class SlackMessage(object):
 
             if not resp.get('messages'):
                 return None
-            # Slack does not send the `channel` again
-            resp['messages'][0]['channel'] = self.channel
+            try:
+                # Slack does not send the `channel` again
+                resp['messages'][0]['channel'] = self.channel
 
-            old_msg = SlackMessage(slackrtm, resp['messages'][0])
+                old_msg = SlackMessage(slackrtm, resp['messages'][0])
+            except (KeyError, IndexError, IgnoreMessage, ParseError):
+                # covers invalid api-responses and intended Exceptions
+                slackrtm.logger.debug('discard reply: %s',
+                                      repr(resp['messages'][0]), exc_info=True)
+                return None
             image = old_msg.image
             r_text = old_msg.text
             r_user = old_msg.user
