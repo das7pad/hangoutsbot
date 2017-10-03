@@ -1,17 +1,31 @@
 from threading import Thread
 
-import plugins
+class ThreadManager(list):
+    """storage for started threads"""
+    tracking = None
 
+    def set_tracking(self, tracking):
+        """store the plugin tracking
 
-threads = []
+        Args:
+            thracking (plugins.Tracker): the current instance
+        """
+        self.tracking = tracking
 
+    def register_thread(self, thread):
+        """add a single Thread to the plugin tracking
+
+        Args:
+            thread (threading.Thread): a new thread
+        """
+        self.append(thread)
+        self.tracking.register_thread(thread)
+
+thread_manager = ThreadManager()
 
 def start_thread(target, args):
-    t = Thread(target=target, args=args)
+    thread = Thread(target=target, args=args)
 
-    t.daemon = True
-    t.start()
-
-    threads.append(t)
-
-    plugins.tracking.register_thread(t)
+    thread.daemon = True
+    thread.start()
+    thread_manager.register_thread(thread)
