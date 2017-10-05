@@ -5,7 +5,7 @@ from reparser import (
     MatchGroup,
 )
 
-from hangups.message_parser import Tokens, url_complete
+from hangups.message_parser import markdown, Tokens, url_complete
 from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
 
 from sync.parser import (
@@ -35,37 +35,17 @@ SEGMENT_LINE_BREAK = MessageSegment(text='\n',
                                     segment_type=SEGMENT_TYPE_LINE_BREAK)
 
 
-def markdown_slack(tag):
-    """get a sequence of start and end regex patterns for a simple Markdown tag
-
-    Args:
-        tag (str): a formatting token
-
-    Returns:
-        tuple: start-regex and end-regex for the formatting token
-    """
-    tag_rev = tag[::-1].replace('*\\', r'\*')
-    return (MARKDOWN_START_SLACK.format(tag=tag, tag_rev=tag_rev),
-            MARKDOWN_END_SLACK.format(tag=tag, tag_rev=tag_rev))
-
-BOUNDARY_CHARS_SLACK = r'\s`!\'".,<>?*_~='
-
-B_LEFT_SLACK = r'(?:(?<=[' + BOUNDARY_CHARS_SLACK + r'])|(?<=^))'
-B_RIGHT_SLACK = r'(?:(?=[' + BOUNDARY_CHARS_SLACK + r'])|(?=$))'
-
-MARKDOWN_START_SLACK = B_LEFT_SLACK + r'(?<!\\){tag}(?!{tag})'
-MARKDOWN_END_SLACK = r'(?<!{tag_rev})(?<!\\){tag_rev}' + B_RIGHT_SLACK
-MARKDOWN_LINK_SLACK = r'<(?P<url>.*?)\|(?P<text>.*?)>'
+MRKDWN_LINK = r'<(?P<url>.*?)\|(?P<text>.*?)>'
 
 TOKENS_SLACK = [
-    Token('slack_b', *markdown_slack(r'\*'), is_bold=True),
-    Token('slack_i', *markdown_slack(r'_'), is_italic=True),
-    Token('slack_pre1', *markdown_slack(r'`'), skip=True),
-    Token('slack_pre2', *markdown_slack(r'```'), skip=True),
-    Token('slack_strike', *markdown_slack(r'~'), is_strikethrough=True),
-    Token('slack_link', MARKDOWN_LINK_SLACK, text=MatchGroup('text'),
-          link_target=MatchGroup('url', func=url_complete))
-    ]
+    Token('slack_b', *markdown(r'\*'), is_bold=True),
+    Token('slack_i', *markdown(r'_'), is_italic=True),
+    Token('slack_pre1', *markdown(r'`'), skip=True),
+    Token('slack_pre2', *markdown(r'```'), skip=True),
+    Token('slack_strike', *markdown(r'~'), is_strikethrough=True),
+    Token('slack_link', MRKDWN_LINK, text=MatchGroup('text'),
+          link_target=MatchGroup('url', func=url_complete)),
+]
 
 
 class SlackMessageParser(MessageParser):
