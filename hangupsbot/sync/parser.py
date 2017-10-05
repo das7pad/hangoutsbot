@@ -124,16 +124,15 @@ STYLE_MAPPING = {
     }
 }
 
-MARKDOWN_START_CHAR = '*_~`='
-MARKDOWN_CHAR = MARKDOWN_START_CHAR + '\\'
+MARKDOWN_START_CHAR = r'*_~`=\\['
+MARKDOWN_START_CHAR_POOL = re.compile(r'[%s]' % MARKDOWN_START_CHAR)
 MARKDOWN_ESCAPE = re.compile(r'([%s])' % MARKDOWN_START_CHAR)
 MARKDOWN_UNESCAPE = re.compile(r'\\([%s])' % MARKDOWN_START_CHAR)
 
 
-class MessageParserInternal(ChatMessageParser):
-    """message parser for internal messages
+class MessageParser(ChatMessageParser):
+    """parser for markdown and html environments
 
-    does not escape or replace markdown
     unescapes markdown in parsed segments with .unescape_markdown
 
     Args:
@@ -177,36 +176,6 @@ class MessageParserInternal(ChatMessageParser):
         """
         return MARKDOWN_UNESCAPE.sub(r'\1', text)
 
-
-class MessageParser(MessageParserInternal):
-    """parser for markdown and html environments
-
-    url-escapes invalid markdown formatting with .replace_bad_markdown
-
-    Args:
-        tokens: list of reparser.Token instances
-    """
-    def preprocess(self, text):
-        return super().preprocess(self.replace_bad_markdown(text))
-
-    @classmethod
-    def replace_bad_markdown(cls, text):
-        """escape bad markdown formatting
-
-        saves urls with markdown chars
-
-        Args:
-            text: string, text with mixed formatting
-
-        Returns:
-            string, text with valid markdown per line
-        """
-        lines = (cls.replace_markdown(line,
-                                      char=[char for char in MARKDOWN_START_CHAR
-                                            if line.count(char) % 2])
-                 for line in text.split('\n'))
-        return '\n'.join(lines)
-
     @staticmethod
     def escape_markdown(text):
         """escape markdown formatting
@@ -220,66 +189,45 @@ class MessageParser(MessageParserInternal):
         return MARKDOWN_ESCAPE.sub(r'\\\1', text)
 
     @classmethod
-    def replace_markdown(cls, text, char=MARKDOWN_CHAR):
-        """escape markdown formatting character
-
-        saves urls with markdown chars
+    def replace_markdown(cls, text):
+        """url-escape markdown formatting character
 
         Args:
-            text: string, text with markdown formatting symbols
-            char: string, character to escape
+            text (str): text with markdown formatting symbols
 
         Returns:
-            string, escaped markdown text
+            str: escaped markdown text
         """
-        def _single_replace(part, replace_char):
+        def _single_replace(match):
             """url encode markdown char
 
             Args:
-                part: string, text part to escape
-                replace_char: char to replace in part
+                match (_sre.SRE_Match): regex Match Object
 
             Returns:
-                string, escaped text
+                str: escaped text
             """
-            if not replace_char:
-                # performace
-                return part
-            if '_' in replace_char:
-                part = part.replace('_', '%5F').replace('\\_', '%5F')
-            if '*' in replace_char:
-                part = part.replace('*', '%2A').replace('\\*', '%2A')
-            if '~' in replace_char:
-                part = part.replace('~', '%7E').replace('\\~', '%7E')
-            if '=' in replace_char:
-                part = part.replace('=', '%3D').replace('\\=', '%3D')
-            if '[' in replace_char:
-                part = part.replace('[', '%5B').replace('\\[', '%5B')
-            if '`' in replace_char:
-                part = part.replace('`', '%60').replace('\\`', '%60')
-            if '\\' in replace_char:
-                part = part.replace('\\', '%5C')
-            return part
+            char = match.group()
+            return ('%5F' if char == '_' else
+                    '%2A' if char == '*' else
+                    '%7E' if char == '~' else
+                    '%3D' if char == '=' else
+                    '%5B' if char == '[' else
+                    '%60' if char == '`' else
+                    '%5C')
 
-        if 'http' not in text:
-            # performace
-            return _single_replace(text, char)
-
-        # replace all markdown char in a url
-        return ' '.join(_single_replace(word, MARKDOWN_CHAR)
-                        if 'http' in word else _single_replace(word, char)
-                        for word in text.split(' '))
+        return MARKDOWN_START_CHAR_POOL.sub(_single_replace, text)
 
 
-class MessageSegmentInternal(hangups.ChatMessageSegment):
-    """message segment that stores text and formatting from internal formatting
+class MessageSegmentHangups(hangups.ChatMessageSegment):
+    """message segment that stores raw text and formatting
 
-    parses html only
+    parses html and markdown
 
     Args:
         see hangups.ChatMessageSegment
     """
-    _parser = MessageParserInternal(Tokens.basic + Tokens.html)
+    _parser = MessageParser()
 
     @classmethod
     def from_str(cls, text):
@@ -295,19 +243,19 @@ class MessageSegmentInternal(hangups.ChatMessageSegment):
                 for segment in cls._parser.parse(text)]
 
 
-class MessageSegmentHangups(MessageSegmentInternal):
-    """message segment that stores raw text and formatting
+class MessageSegmentInternal(MessageSegmentHangups):
+    """message segment that stores text and formatting from internal formatting
 
-    parses html and markdown
+    parses html only
 
     Args:
         text: string, message part without formatting
         kwargs: see MessageSegmentInternal
     """
-    _parser = MessageParserInternal()
+    _parser = MessageParser(Tokens.basic + Tokens.html)
 
 
-class MessageSegment(MessageSegmentInternal):
+class MessageSegment(MessageSegmentHangups):
     """message segment that stores raw text and formatting
 
     parses html and markdown
@@ -317,8 +265,6 @@ class MessageSegment(MessageSegmentInternal):
         text: string, message part without formatting
         kwargs: see MessageSegmentInternal
     """
-    _parser = MessageParser()
-
     def __init__(self, text, **kwargs):
         super().__init__(self._parser.replace_markdown(text),
                          **kwargs)
