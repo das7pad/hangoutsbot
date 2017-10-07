@@ -130,15 +130,18 @@ A full list of commands supported by the base framework is available at the
 
 # Updating
 
-* Navigate to the repository directory (eg. `cd ~/hangupsbot`)
-* Change to the latest stable branch using `git checkout master`
-* `git pull` to pull the latest version of hangupsbot
-* `./venv/bin/pip3 install -r requirements.txt --upgrade`
-* Restart the bot
+1. Navigate to the repository directory (eg. `cd ~/hangupsbot`)
+2. Change to the latest stable branch using `git checkout master`
+3. `git pull` to pull the latest version of hangupsbot
+4. `make update-requirements`
+5. Restart the bot
 
 # Debugging
 
-* Run the bot with the `-d` parameter e.g. `./venv/bin/python3 hangupsbot.py -d`
+* Run the bot with the `-d` parameter e.g.
+  ```
+  ./venv/bin/python3 hangupsbot/hangupsbot.py -d
+  ```
   - this lowers the log level to `DEBUG` for a more verbose and informative log
   file.
 * `tail -F` the log file, which is probably located at

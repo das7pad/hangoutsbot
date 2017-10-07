@@ -26,26 +26,20 @@ and get it up and running.
     ```
 
 3.  Create a Virtual Environment to ensure that no other packages change the
-    versions of packages we require:
+    versions of packages we require and install the dependencies:
 
     ```
-    python3 -m venv venv
+    make venv
     ```
 
-3.  Install the Python module dependencies that Hangoutsbot requires:
-
-    ```
-    ./venv/bin/pip3 install -r requirements.txt
-    ```
-
-4.  Run the program interactively for the first time - this topic is covered in
+3.  Run the program interactively for the first time - this topic is covered in
     the next section, so please go through it carefully.
 
-5.  Set up the bot to be run as a daemon/service so that it can run unattended
+4.  Set up the bot to be run as a daemon/service so that it can run unattended
     and survive system reboots. This is an opiniated topic with plenty of
     different implementation methods. When you're ready, some scripts are
     available at the following links:
-    * [/examples](/examples)
+    * [examples](/examples)
     * https://github.com/hangoutsbot/hangoutsbot/issues/69
 
 # First-Run
