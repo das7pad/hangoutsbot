@@ -11,7 +11,7 @@ pp = pprint.PrettyPrinter(indent=2)
 
 def _initialise(bot):
     plugins.register_admin_command(["testcontext"])
-    plugins.register_handler(_handle_incoming_message, type="allmessages")
+    plugins.register_handler(_handle_incoming_message, "allmessages")
 
 
 def testcontext(bot, event, *args):

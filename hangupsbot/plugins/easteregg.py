@@ -10,7 +10,7 @@ def _initialise(bot):
     plugins.register_admin_command(["easteregg"])
 
 
-async def easteregg(bot, event, easteregg, eggcount=1, period=0.5, *args):
+async def easteregg(bot, event, easteregg_name, eggcount=1, period=0.5, *args):
     """starts hangouts easter egg combos.
     supply three parameters: easter egg trigger name, number of times, period (in seconds).
     supported easter egg trigger name: ponies , pitchforks , bikeshed , shydino
@@ -23,7 +23,7 @@ async def easteregg(bot, event, easteregg, eggcount=1, period=0.5, *args):
                 conversation_id = hangups.hangouts_pb2.ConversationId(
                     id = event.conv_id ),
                 easter_egg = hangups.hangouts_pb2.EasterEgg(
-                    message = easteregg )))
+                    message = easteregg_name)))
 
         if int(eggcount) > 1:
             await asyncio.sleep(float(period) + random.uniform(-0.1, 0.1))

@@ -108,7 +108,7 @@ def _initialize(bot):
     if get_location:
         global _MAP_MATCH
         _MAP_MATCH = re.compile(config.get("map_regex", _MAP_REGEX), re.IGNORECASE|re.MULTILINE)
-        plugins.register_handler(_location_handler, type="message")
+        plugins.register_handler(_location_handler, "message")
 
 
 def _expire_old_pins():

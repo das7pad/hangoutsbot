@@ -32,9 +32,9 @@ class webhookReceiver(AsyncRequestHandler):
         await self.send_actionable_message(conv_or_user_id, payload["message"])
 
 
-    async def send_actionable_message(self, id, content):
-        if id in self._bot.conversations:
-            await self._bot.coro_send_message(id, content)
+    async def send_actionable_message(self, target, content):
+        if target in self._bot.conversations:
+            await self._bot.coro_send_message(target, content)
         else:
             # attempt to send to a user id
-            await self._bot.coro_send_to_user(id, content)
+            await self._bot.coro_send_to_user(target, content)

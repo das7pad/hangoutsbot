@@ -36,7 +36,7 @@ def _initialise(bot):
 reprocessor_queue = {}
 
 
-def response_received(bot, event, id, results, original_id):
+def response_received(bot, event, dummy, results, original_id):
     if results:
         if isinstance(results, dict) and "api.response" in results:
             output = results["api.response"]
@@ -45,14 +45,15 @@ def response_received(bot, event, id, results, original_id):
         reprocessor_queue[original_id] = output
 
 
-def handle_as_command(bot, event, id):
+def handle_as_command(bot, event, original_id):
     event.from_bot = False
     event._syncroom_no_repeat = True
 
     if "acknowledge" not in dir(event):
         event.acknowledge = []
 
-    handle_response = functools.partial(response_received, original_id=id)
+    handle_response = functools.partial(response_received,
+                                        original_id=original_id)
     event.acknowledge.append(bot._handlers.register_reprocessor(handle_response))
 
 
@@ -142,22 +143,22 @@ class APIRequestHandler(AsyncRequestHandler):
 
         return results
 
-    async def send_actionable_message(self, id, content):
+    async def send_actionable_message(self, target, content):
         """reprocessor: allow message to be intepreted as a command"""
         reprocessor_context = self._bot.call_shared(
             "reprocessor.attach_reprocessor", handle_as_command)
         reprocessor_id = reprocessor_context["id"]
 
-        if id in self._bot.conversations:
+        if target in self._bot.conversations:
             results = await self._bot.coro_send_message(
-                id,
+                target,
                 content,
                 context = { "reprocessor": reprocessor_context })
 
         else:
             # attempt to send to a user id
             results = await self._bot.coro_send_to_user(
-                id,
+                target,
                 content,
                 context = { "reprocessor": reprocessor_context })
 

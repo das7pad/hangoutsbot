@@ -37,11 +37,11 @@ def _botkeeper_list(bot, conv_id):
 
     # legacy: memory.allowbotadd are explicitly defined as botkeepers
     if bot.memory.exists(["allowbotadd"]):
-        allowbotadd = bot.memory.get("allowbotadd")
+        allowbotadd_ids = bot.memory.get("allowbotadd")
     else:
-        allowbotadd = []
+        allowbotadd_ids = []
 
-    botkeepers = tagged_botkeeper + admins_list + allowbotadd
+    botkeepers = tagged_botkeeper + admins_list + allowbotadd_ids
 
     botkeepers = list(set(botkeepers) - set([ bot.user_self()["chat_id"] ]))
 
@@ -134,9 +134,8 @@ def allowbotadd(bot, event, user_id, *args):
     if not bot.memory.exists(["allowbotadd"]):
         bot.memory["allowbotadd"] = []
 
-    allowbotadd = bot.memory.get("allowbotadd")
-    allowbotadd.append(user_id)
-    bot.memory["allowbotadd"] = allowbotadd
+    allowbotadd_ids = bot.memory["allowbotadd"]
+    allowbotadd_ids.append(user_id)
     bot.memory.save()
 
     _internal.last_verified = {} # force checks everywhere
@@ -153,10 +152,9 @@ def removebotadd(bot, event, user_id, *args):
     if not bot.memory.exists(["allowbotadd"]):
         bot.memory["allowbotadd"] = []
 
-    allowbotadd = bot.memory.get("allowbotadd")
-    if user_id in allowbotadd:
-        allowbotadd.remove(user_id)
-        bot.memory["allowbotadd"] = allowbotadd
+    allowbotadd_ids = bot.memory["allowbotadd"]
+    if user_id in allowbotadd_ids:
+        allowbotadd_ids.remove(user_id)
         bot.memory.save()
 
         _internal.last_verified = {} # force checks everywhere

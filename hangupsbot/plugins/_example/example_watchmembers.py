@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    plugins.register_handler(_watch_membership_change, type="membership")
+    plugins.register_handler(_watch_membership_change, "membership")
 
 
 async def _watch_membership_change(bot, event, command):

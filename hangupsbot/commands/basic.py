@@ -18,7 +18,7 @@ def _initialise(bot):
 
 
 @command.register
-async def help(bot, event, cmd=None, *args):
+async def help(bot, event, cmd=None, *args):  # pylint:disable=redefined-builtin
     """list supported commands, /bot help <command> will show additional details"""
     help_lines = []
     link_to_guide = bot.get_config_suboption(event.conv_id, 'link_to_guide')
@@ -124,7 +124,7 @@ def optout(bot, event, *args):
 
     chat_id = event.user.id_.chat_id
 
-    optout = bot.user_memory_get(chat_id, "optout") or False
+    optout_state = bot.user_memory_get(chat_id, "optout") or False
 
     target_conv = False
     if args:
@@ -149,52 +149,52 @@ def optout(bot, event, *args):
                     return _("<i>{}, search did not match a single group "
                              "conversation</i>").format(event.user.full_name)
 
-    if isinstance(optout, list):
+    if isinstance(optout_state, list):
         if not target_conv:
-            if not optout:
+            if not optout_state:
                 # force global optout
-                optout = True
+                optout_state = True
             else:
                 # user will receive list of opted-out conversations
                 pass
         elif target_conv.lower() == 'all':
-            # convert list optout to bool optout
-            optout = True
-        elif target_conv in optout:         # pylint: disable=E1135
+            # convert list optout_state to bool optout_state
+            optout_state = True
+        elif target_conv in optout_state:         # pylint: disable=E1135
             # remove existing conversation optout
-            optout.remove(target_conv)
+            optout_state.remove(target_conv)
         elif target_conv in bot.conversations:
             # optout from a specific conversation
-            optout.append(target_conv)
-            optout = list(set(optout))
-    elif isinstance(optout, bool):
+            optout_state.append(target_conv)
+            optout_state = list(set(optout_state))
+    elif isinstance(optout_state, bool):
         if not target_conv:
             # toggle global optout
-            optout = not optout
+            optout_state = not optout_state
         elif target_conv.lower() == 'all':
             # force global optout
-            optout = True
+            optout_state = True
         elif target_conv in bot.conversations:
-            # convert bool optout to list optout
-            optout = [ target_conv ]
+            # convert bool optout_state to list optout_state
+            optout_state = [ target_conv ]
         else:
             raise Help(_('no conversation was matched: %s') % target_conv)
     else:
         raise Help(_('unrecognised {} for optout, value={}').format(
-            type(optout), optout))
+            type(optout_state), optout_state))
 
-    bot.memory.set_by_path(["user_data", chat_id, "optout"], optout)
+    bot.memory.set_by_path(["user_data", chat_id, "optout"], optout_state)
     bot.memory.save()
 
     message = _('<i>{}, you <b>opted-in</b> for bot private messages</i>').format(event.user.full_name)
 
-    if isinstance(optout, bool) and optout:
+    if isinstance(optout_state, bool) and optout_state:
         message = _('<i>{}, you <b>opted-out</b> from bot private messages</i>').format(event.user.full_name)
-    elif isinstance(optout, list) and optout:
+    elif isinstance(optout_state, list) and optout_state:
         message = _('<i>{}, you are <b>opted-out</b> from the following conversations:\n{}</i>').format(
             event.user.full_name,
             "\n".join([ "* {}".format(bot.conversations.get_name(conv_id))
-                        for conv_id in optout ]))
+                        for conv_id in optout_state ]))
 
     return message
 

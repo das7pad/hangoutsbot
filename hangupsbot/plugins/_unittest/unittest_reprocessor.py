@@ -28,11 +28,11 @@ async def testnoncoroutinecontext(bot, event, *args):
                                            reprocess_the_event)})
 
 
-async def coro_reprocess_the_event(bot, event, id):
+async def coro_reprocess_the_event(bot, event, id_):
     await bot.coro_send_message(
         event.conv_id,
         """<em>coroutine responding to message with uuid: {}</em>\n"""
-        """VISIBLE CONTENT WAS: {}""".format(id, event.text))
+        """VISIBLE CONTENT WAS: {}""".format(id_, event.text))
 
 
 def reprocess_the_event(bot, event, id_):

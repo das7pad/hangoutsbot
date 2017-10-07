@@ -131,7 +131,7 @@ async def _claim_invite(bot, invite_code, user_id):
         logger.debug("_claim_invite: invalid")
 
 
-def _issue_invite_on_exit(bot, event, command):
+def _issue_invite_on_exit(bot, event):
     # Check if issue_invite_on_exit is disabled
     if bot.get_config_suboption(event.conv_id, 'disable_invites_on_exit'):
         return
@@ -246,22 +246,22 @@ async def invite(bot, event, *args):
         active_invites = _get_invites(bot, filter_active=_active_only)
 
         if active_invites:
-            for _id, invite in active_invites.items():
+            for _id, data in active_invites.items():
                 try:
-                    conversation_name = bot.conversations.get_name(invite["group_id"])
+                    conversation_name = bot.conversations.get_name(data["group_id"])
                 except ValueError:
-                    conversation_name = "? ({})".format(invite["group_id"])
+                    conversation_name = "? ({})".format(data["group_id"])
 
-                user_id = invite["user_id"]
+                user_id = data["user_id"]
                 if user_id == "*":
                     user_id = "anyone"
 
                 if not test and _mode == "purge":
-                    _remove_invite(bot, invite["id"])
+                    _remove_invite(bot, data["id"])
 
-                expiry_in_days = round((invite["expiry"] - time.time()) / 86400, 1)
+                expiry_in_days = round((data["expiry"] - time.time()) / 86400, 1)
                 lines.append("<i><pre>{}</pre></i> to <b><pre>{}</pre></b> ... {} ({} days left)".format(
-                    user_id, conversation_name, invite["id"], expiry_in_days))
+                    user_id, conversation_name, data["id"], expiry_in_days))
 
         else:
             lines.append(_("<em>no invites found</em>"))
@@ -418,13 +418,13 @@ async def invite(bot, event, *args):
         """issue the invites"""
 
         invitation_ids = []
-        for invite in invitations:
+        for new_invite in invitations:
             invitation_log.append("invite {} to {}, uses: {}".format(
-                invite["user_id"], targetconv, invite["uses"]))
+                new_invite["user_id"], targetconv, new_invite["uses"]))
             if not test:
                 # invites are not created in test mode
                 invitation_ids.append(
-                    _issue_invite(bot, invite["user_id"], targetconv, invite["uses"]))
+                    _issue_invite(bot, new_invite["user_id"], targetconv, new_invite["uses"]))
 
         if invitation_ids:
             await bot.coro_send_message(event.conv_id,

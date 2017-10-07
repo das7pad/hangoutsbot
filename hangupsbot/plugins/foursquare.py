@@ -58,9 +58,9 @@ def getplaces(location, clid, secret, section=None):
     places = ["Showing {} places near {}.<br>".format(section, data['response']['geocode']['displayString'])]
   else:
     places = ["Showing places near {}.<br>".format(data['response']['geocode']['displayString'])]
-  for location in data['response']['groups'][0]['items']:
-    mapsurl = "http://maps.google.com/maps?q={},{}".format(location['venue']['location']['lat'], location['venue']['location']['lng'])
-    places.append("<b><u><a href='{}'>{}</a></b></u> (<a href='{}'>maps</a>)<br>Score: {}/10 ({})".format(mapsurl, location['venue']["name"], "http://foursquare.com/v/{}".format(location['venue']['id']), location['venue']['rating'], location['venue']['ratingSignals']))
+  for item in data['response']['groups'][0]['items']:
+    mapsurl = "http://maps.google.com/maps?q={},{}".format(item['venue']['location']['lat'], item['venue']['location']['lng'])
+    places.append("<b><u><a href='{}'>{}</a></b></u> (<a href='{}'>maps</a>)<br>Score: {}/10 ({})".format(mapsurl, item['venue']["name"], "http://foursquare.com/v/{}".format(item['venue']['id']), item['venue']['rating'], item['venue']['ratingSignals']))
 
   response = "<br>".join(places)
   return response

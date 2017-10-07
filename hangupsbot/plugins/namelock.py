@@ -12,19 +12,19 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    plugins.register_handler(_watch_rename, type="rename")
+    plugins.register_handler(_watch_rename, "rename")
     plugins.register_admin_command(["topic"])
 
 
-async def _watch_rename(bot, event, command):
+async def _watch_rename(bot, event):
 
     memory_topic_path = ["conv_data", event.conv_id, "topic"]
 
-    topic = False
+    old_name = None
     if bot.memory.exists(memory_topic_path):
-        topic = bot.memory.get_by_path(memory_topic_path)
+        old_name = bot.memory.get_by_path(memory_topic_path)
 
-    if topic:
+    if old_name:
         # seems to be a valid topic set for the current conversation
 
         authorised_topic_change = False
@@ -42,9 +42,9 @@ async def _watch_rename(bot, event, command):
         if authorised_topic_change:
             bot.memory.set_by_path(memory_topic_path, event.conv_event.new_name)
             bot.memory.save()
-            topic = event.conv_event.new_name
+            old_name = event.conv_event.new_name
 
-        if event.conv_event.new_name != topic:
+        else:
             hangups_user = bot.get_hangups_user(event.user_id.chat_id)
             logger.warning(
                 "unauthorised topic change by {} ({}) in {}, resetting: {} to: {}"
@@ -52,17 +52,17 @@ async def _watch_rename(bot, event, command):
                              event.user_id.chat_id,
                              event.conv_id,
                              event.conv_event.new_name,
-                             topic ))
+                             old_name ))
 
-            await command.run(bot, event, *["convrename", "id:" + event.conv_id, topic])
+            await command.run(bot, event, *["convrename", "id:" + event.conv_id, old_name])
 
 
 async def topic(bot, event, *args):
     """locks a conversation title. if no parameters supplied, clear and unlock the title"""
 
-    topic = ' '.join(args).strip()
+    name = ' '.join(args).strip()
 
-    bot.memory.set_by_path(["conv_data", event.conv_id, "topic"], topic)
+    bot.memory.set_by_path(["conv_data", event.conv_id, "topic"], name)
     bot.memory.save()
 
     if(topic == ''):
@@ -70,10 +70,10 @@ async def topic(bot, event, *args):
         logger.info("topic cleared from {}".format(event.conv_id))
 
     else:
-        message = _("Setting topic to '{}'").format(topic)
+        message = _("Setting topic to '{}'").format(name)
         logger.info("topic for {} set to: {}".format(event.conv_id, topic))
 
     """Rename Hangout"""
-    await command.run(bot, event, *["convrename", "id:" + event.conv_id, topic])
+    await command.run(bot, event, *["convrename", "id:" + event.conv_id, name])
 
     return message

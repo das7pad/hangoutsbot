@@ -337,7 +337,7 @@ async def reload(bot, event, *dummys):
     bot.memory.load()
 
 
-def quit(bot, event, *dummys):
+def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
     """kill the bot
 
     Args:

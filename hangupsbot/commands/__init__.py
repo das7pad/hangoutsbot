@@ -290,14 +290,14 @@ class CommandDispatcher(object):
         """
         self.tracking = tracking
 
-    def register_tags(self, command, tagsets):
-        if command not in self.command_tagsets:
-            self.command_tagsets[command] = set()
+    def register_tags(self, command_name, tagsets):
+        if command_name not in self.command_tagsets:
+            self.command_tagsets[command_name] = set()
 
         if isinstance(tagsets, str):
             tagsets = set([tagsets])
 
-        self.command_tagsets[command] = self.command_tagsets[command] | tagsets
+        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tagsets
 
     @property
     def deny_prefix(self):
@@ -331,10 +331,10 @@ class CommandDispatcher(object):
             for value in values ]) for key, values in commands_tagged.items() }
         # combine any plugin-determined tags with the config.json defined ones
         if self.command_tagsets:
-            for command, tagsets in self.command_tagsets.items():
-                if command not in commands_tagged:
-                    commands_tagged[command] = set()
-                commands_tagged[command] = commands_tagged[command] | tagsets
+            for command_name, tagsets in self.command_tagsets.items():
+                if command_name not in commands_tagged:
+                    commands_tagged[command_name] = set()
+                commands_tagged[command_name] = commands_tagged[command_name] | tagsets
 
         all_commands = set(self.commands)
 
@@ -366,36 +366,36 @@ class CommandDispatcher(object):
         if commands_tagged:
             _set_user_tags = set(bot.tags.useractive(chat_id, conv_id))
 
-            for command, tags in commands_tagged.items():
-                if command not in all_commands:
+            for command_name, tags in commands_tagged.items():
+                if command_name not in all_commands:
                     # optimisation: don't check commands that aren't loaded into framework
                     continue
 
                 # raise tagged command access level if escalation required
-                if config_tags_escalate and command in user_commands:
-                    user_commands.remove(command)
+                if config_tags_escalate and command_name in user_commands:
+                    user_commands.remove(command_name)
 
                 # is tagged command generally available (in user_commands)?
                 # admins always get access, other users need appropriate tag(s)
                 # XXX: optimisation: check admin_commands to avoid unnecessary scanning
-                if command not in user_commands|admin_commands:
+                if command_name not in user_commands|admin_commands:
                     for _match in tags:
                         _set_allow = set([_match] if isinstance(_match, str) else _match)
                         if is_admin or _set_allow <= _set_user_tags:
-                            admin_commands.update([command])
+                            admin_commands.update([command_name])
                             break
 
             if not is_admin:
                 # tagged commands can be explicitly denied
                 _denied = set()
-                for command in user_commands|admin_commands:
-                    if command in commands_tagged:
-                        tags = commands_tagged[command]
+                for command_name in user_commands|admin_commands:
+                    if command_name in commands_tagged:
+                        tags = commands_tagged[command_name]
                         for _match in tags:
                             _set_allow = set([_match] if isinstance(_match, str) else _match)
                             _set_deny = { config_tags_deny_prefix + x for x in _set_allow }
                             if _set_deny <= _set_user_tags:
-                                _denied.update([command])
+                                _denied.update([command_name])
                                 break
                 admin_commands = admin_commands - _denied
                 user_commands = user_commands - _denied

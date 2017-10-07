@@ -94,14 +94,14 @@ def prepare(bot, event, *args):
     elif re.match(r"\d+-\d+", listdef):
         # sequential range: <integer> to <integer>
         _range = listdef.split("-")
-        min = int(_range[0])
-        max = int(_range[1])
-        if min == max:
-            raise Help(_("prepare: min and max are the same ({})").format(min))
-        if max < min:
-            min, max = max, min
-        max = max + 1 # inclusive
-        draw_lists[global_draw_name]["box"] = list(range(min, max))
+        min_ = int(_range[0])
+        max_ = int(_range[1])
+        if min_ == max_:
+            raise Help(_("prepare: min and max are the same ({})").format(min_))
+        if max_ < min_:
+            min_, max_ = max_, min_
+        max_ = max_ + 1 # inclusive
+        draw_lists[global_draw_name]["box"] = list(range(min_, max_))
 
     else:
         # numberTokens: <integer><name>

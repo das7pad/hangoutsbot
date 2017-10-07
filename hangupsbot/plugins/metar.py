@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 def _initialize():
     plugins.register_user_command(['metar', 'taf'])
 
-def _api_lookup(type, iaco):
-    api_url = "http://aviationweather.gov/adds/dataserver_current/httpparam?dataSource={0}s&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString={1}".format(type, iaco)
+def _api_lookup(target, iaco):
+    api_url = "http://aviationweather.gov/adds/dataserver_current/httpparam?dataSource={0}s&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString={1}".format(target, iaco)
     r= requests.get(api_url)
     try:
         root = ElementTree.fromstring(r.content)
-        raw = root.findall('data/{}/raw_text'.format(type))
+        raw = root.findall('data/{}/raw_text'.format(target))
     except ElementTree.ParseError as err:
         logger.info("METAR Error: %s", err)
         return None

@@ -47,9 +47,9 @@ def weather(bot, event, *args):
     <b>/bot weather <location></b> Get location's current weather.
     <b>/bot weather</b> Get the hangouts default location's current weather. If the default location is not set talk to a hangout admin.
     """
-    weather = _get_weather(bot, event, args)
-    if weather:
-        return _format_current_weather(weather)
+    weather_data = _get_weather(bot, event, args)
+    if weather_data:
+        return _format_current_weather(weather_data)
     else:
         return _('There was an error retrieving the weather, guess you need to look outside.')
 
@@ -58,41 +58,41 @@ def forecast(bot, event, *args):
     <b>/bot weather <location></b> Get location's current forecast.
     <b>/bot weather</b> Get the hangouts default location's forecast. If default location is not set talk to a hangout admin.
     """
-    weather = _get_weather(bot, event, args)
-    if weather:
-        return _format_forecast_weather(weather)
+    weather_data = _get_weather(bot, event, args)
+    if weather_data:
+        return _format_forecast_weather(weather_data)
     else:
         return _('There was an error retrieving the weather, guess you need to look outside.')
 
-def _format_current_weather(weather):
+def _format_current_weather(weather_data):
     """
     Formats the current weather data for the user.
     """
     weatherStrings = []
-    if 'temperature' in weather:
-        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather['temperature'],2),weather['units']['temperature']))
-    if 'summary' in weather:
-        weatherStrings.append("<i>{0}</i>".format(weather['summary']))
-    if 'feelsLike' in weather:
-        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather['feelsLike'],2),weather['units']['temperature']))
-    if 'windspeed' in weather:
-        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather['windspeed'],2), weather['units']['windSpeed'], _get_wind_direction(weather['windbearing'])))
-    if 'humidity' in weather:
-        weatherStrings.append("Humidity: {0}%".format(weather['humidity']))
-    if 'pressure' in weather:
-        weatherStrings.append("Pressure: {0} {1}".format(round(weather['pressure'],2), weather['units']['pressure']))
+    if 'temperature' in weather_data:
+        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'],2),weather_data['units']['temperature']))
+    if 'summary' in weather_data:
+        weatherStrings.append("<i>{0}</i>".format(weather_data['summary']))
+    if 'feelsLike' in weather_data:
+        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'],2),weather_data['units']['temperature']))
+    if 'windspeed' in weather_data:
+        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'],2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
+    if 'humidity' in weather_data:
+        weatherStrings.append("Humidity: {0}%".format(weather_data['humidity']))
+    if 'pressure' in weather_data:
+        weatherStrings.append("Pressure: {0} {1}".format(round(weather_data['pressure'],2), weather_data['units']['pressure']))
 
     return "\n".join(weatherStrings)
 
-def _format_forecast_weather(weather):
+def _format_forecast_weather(weather_data):
     """
     Formats the forecast data for the user.
     """
     weatherStrings = []
-    if 'hourly' in weather:
-        weatherStrings.append("<b>Next 24 Hours</b>\n{}". format(weather['hourly']))
-    if 'daily' in weather:
-        weatherStrings.append("<b>Next 7 Days</b>\n{}". format(weather['daily']))
+    if 'hourly' in weather_data:
+        weatherStrings.append("<b>Next 24 Hours</b>\n{}". format(weather_data['hourly']))
+    if 'daily' in weather_data:
+        weatherStrings.append("<b>Next 7 Days</b>\n{}". format(weather_data['daily']))
 
     return "\n".join(weatherStrings)
 

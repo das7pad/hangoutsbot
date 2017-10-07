@@ -13,9 +13,9 @@ def _initialise(bot):
     fileWriter = file_writer(bot)
 
     if fileWriter.initialised:
-        plugins.register_handler(fileWriter.on_membership_change, type="membership")
-        plugins.register_handler(fileWriter.on_rename, type="rename")
-        plugins.register_handler(fileWriter.on_chat_message, type="allmessages")
+        plugins.register_handler(fileWriter.on_membership_change, "membership")
+        plugins.register_handler(fileWriter.on_rename, "rename")
+        plugins.register_handler(fileWriter.on_chat_message, "allmessages")
 
 
 class file_writer():

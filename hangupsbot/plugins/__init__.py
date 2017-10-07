@@ -274,16 +274,16 @@ def register_help(source, name=None):
         raise ValueError('check args')
     tracking.bot.memory.set_defaults(source, ['command_help'])
 
-def register_handler(function, type="message", priority=50):
+def register_handler(function, pluggable="message", priority=50):
     """register external message handler
 
     Args:
         function: callable, with signature: function(bot, event, command)
-        name: string, key in handler.EventHandler.pluggables, event type
+        pluggable: string, key in handler.EventHandler.pluggables, handler type
         priority: int, change the sequence of handling the event
     """
     bot_handlers = tracking.bot._handlers
-    bot_handlers.register_handler(function, type, priority)
+    bot_handlers.register_handler(function, pluggable, priority)
 
 def register_sync_handler(function, name="message", priority=50):
     """register external sync handler

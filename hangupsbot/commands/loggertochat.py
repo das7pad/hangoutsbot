@@ -90,14 +90,14 @@ class PluginFilter(logging.Filter):
         logging.Filter.__init__(self)
 
     def filter(self, record):
-        logging = self.bot.get_config_option("logging") or {}
-        if not logging:
+        logging_cfg = self.bot.get_config_option("logging") or {}
+        if not logging_cfg:
             return False
 
-        if record.name not in logging:
+        if record.name not in logging_cfg:
             return False
 
-        if record.levelno < logging[record.name]["level"]:
+        if record.levelno < logging_cfg[record.name]["level"]:
             return False
 
         return True

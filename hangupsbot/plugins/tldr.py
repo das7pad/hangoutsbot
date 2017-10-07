@@ -194,8 +194,8 @@ def tldr_base(bot, conv_id, parameters):
                 message = _("TL;DR #{} not found.").format(parameters[1])
             else:
                 edited_tldr = conv_tldr[sorted_keys[key_index]]
-                tldr = ' '.join(parameters[2:len(parameters)])
-                conv_tldr[sorted_keys[key_index]] = tldr
+                text = ' '.join(parameters[2:len(parameters)])
+                conv_tldr[sorted_keys[key_index]] = text
                 for conv in conv_id_list:
                     bot.memory.set_by_path(['tldr', conv], conv_tldr)
                 bot.memory.save()
@@ -206,10 +206,10 @@ def tldr_base(bot, conv_id, parameters):
         return message, display
 
     elif parameters[0]:  ## need a better looking solution here
-        tldr = ' '.join(parameters)
-        if tldr:
+        text = ' '.join(parameters)
+        if text:
             # Add message to list
-            conv_tldr[str(time.time())] = tldr
+            conv_tldr[str(time.time())] = text
             for conv in conv_id_list:
                 bot.memory.set_by_path(['tldr', conv], conv_tldr)
             bot.memory.save()
