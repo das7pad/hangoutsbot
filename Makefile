@@ -21,6 +21,19 @@ update-requirements: venv-create
 	@$(pip) install -q --requirement requirements.txt --upgrade
 	@echo "Done"
 
+.PHONY: venv-dev
+venv-dev: venv
+	@echo "Upgrading Dev requirements"
+	@$(pip) install -q --requirement requirements-dev.txt --upgrade
+	@echo "Done"
+
+.PHONY: lint
+lint:
+	@if [ ! -d $(venv)/lib/*/site-packages/pylint ]; then make -s venv-dev; fi
+	@echo "Lint: started"
+	@(cd hangupsbot && ../$(venv)/bin/pylint -s no -j 4 hangupsbot)
+	@echo "Lint: no errors found"
+
 .PHONY: clean
 clean:
 	@echo "Remove compiled Python files"
