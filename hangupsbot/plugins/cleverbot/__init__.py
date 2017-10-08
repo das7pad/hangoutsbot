@@ -24,7 +24,6 @@ config.json
   * False to share memory between conversations
 """
 
-import asyncio
 import plugins
 import logging
 

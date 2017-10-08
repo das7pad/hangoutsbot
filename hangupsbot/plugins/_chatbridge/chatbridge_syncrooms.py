@@ -1,6 +1,5 @@
 # pylint: skip-file
 import aiohttp
-import asyncio
 import json
 import logging
 import requests

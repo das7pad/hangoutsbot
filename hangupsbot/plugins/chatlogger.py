@@ -40,7 +40,7 @@ class file_writer():
             if directory and not os.path.isdir(directory):
                 try:
                     os.makedirs(directory)
-                except OSError as e:
+                except OSError:
                     logger.exception('cannot create path: %s', path)
                     continue
 
@@ -65,7 +65,6 @@ class file_writer():
         conversation_text = event.text
 
         user_full_name = event.user.full_name
-        user_id = event.user_id
 
         text = "--- {}\n{} :: {}\n{}\n".format(conversation_name, event_timestamp, user_full_name, conversation_text)
 
@@ -77,10 +76,8 @@ class file_writer():
 
         conversation_id = event.conv_id
         conversation_name = bot.conversations.get_name(event.conv)
-        conversation_text = event.text
 
         user_full_name = event.user.full_name
-        user_id = event.user_id
 
         event_users = [event.conv.get_user(user_id) for user_id
                        in event.conv_event.participant_ids]
@@ -99,10 +96,8 @@ class file_writer():
 
         conversation_id = event.conv_id
         conversation_name = bot.conversations.get_name(event.conv)
-        conversation_text = event.text
 
         user_full_name = event.user.full_name
-        user_id = event.user_id
 
         text = "--- {}\n{} :: {}\nCONVERSATION RENAMED: {}\n".format(conversation_name, event_timestamp, user_full_name, conversation_name)
 

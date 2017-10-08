@@ -91,7 +91,7 @@ async def _handle_autoreply(bot, event):
             # Loop through list of global triggers e.g. ["hi","hello","hey"],["baf","BAF"].
             for kwds_gbl, sentences_gbl in autoreplies_list_global:
                 overlap = False
-                for kwds_lcl, sentences_lcl in autoreplies_list:
+                for kwds_lcl, dummy in autoreplies_list:
                     if type(kwds_gbl) is type(kwds_lcl) is list and (set(kwds_gbl) & set(kwds_lcl)):
                         overlap = True
                         break
@@ -142,7 +142,6 @@ async def send_reply(bot, event, message):
         except KeyError:
             values["tldr"] = "**[TLDR UNAVAILABLE]**" # prevents exception
             logger.warning("tldr plugin is not loaded")
-            pass
 
     envelopes = []
 

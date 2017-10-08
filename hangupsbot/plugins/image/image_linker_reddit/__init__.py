@@ -2,7 +2,6 @@
 based on the word/image list for the image linker bot on reddit
 sauce: http://www.reddit.com/r/image_linker_bot/comments/2znbrg/image_suggestion_thread_20/
 """
-import asyncio
 import io
 import logging
 import os

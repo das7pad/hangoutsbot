@@ -99,7 +99,7 @@ def detachsyncout(bot, event, target_conversation_id=None, *args):
         if target_conversation_id in sync_room_list:
             sync_room_list.remove(target_conversation_id)
             _detached = True
-            break;
+            break
 
     # cleanup: remove empty or 1-item syncouts by rewriting variable
     _syncouts = []

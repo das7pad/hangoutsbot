@@ -59,7 +59,7 @@ async def meme(bot, event, *args):
         else:
             await bot.coro_send_message(event.conv_id, "<i>couldn't find a nice picture :( try again</i>")
 
-    except Exception as e:
+    except:
         await bot.coro_send_message(event.conv_id, "<i>couldn't find a suitable meme! try again</i>")
         logger.exception("FAILED TO RETRIEVE MEME")
 

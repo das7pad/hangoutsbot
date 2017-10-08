@@ -50,7 +50,7 @@ async def convecho(bot, event, *args):
     """echo back text into filtered conversations"""
     posix_args = get_posix_args(args)
 
-    if (len(posix_args) > 1):
+    if len(posix_args) > 1:
         if not posix_args[0]:
             """block spamming ALL conversations"""
             return _("<em>sending to ALL conversations not allowed</em>")
@@ -142,7 +142,7 @@ async def convleave(bot, event, *args):
     """leave specified conversation(s)"""
     posix_args = get_posix_args(args)
 
-    if (len(posix_args) >= 1):
+    if len(posix_args) >= 1:
         if not posix_args[0]:
             """block leaving ALL conversations"""
             return _("<em>cannot leave ALL conversations</em>")
@@ -170,7 +170,7 @@ async def convleave(bot, event, *args):
                     del bot._conv_list._conv_dict[convid]
                 bot.conversations.remove(convid)
 
-            except hangups.NetworkError as e:
+            except hangups.NetworkError:
                 logging.exception("CONVLEAVE: error leaving %s %s",
                                   convid, convdata["title"])
 

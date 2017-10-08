@@ -63,7 +63,7 @@ async def topic(bot, event, *args):
     bot.memory.set_by_path(["conv_data", event.conv_id, "topic"], name)
     bot.memory.save()
 
-    if (topic == ''):
+    if topic == '':
         message = _("Removing topic")
         logger.info("topic cleared from %s", event.conv_id)
 

@@ -110,7 +110,7 @@ def tldr_shared(bot, args):
     params = args['params']
     conv_id = args['conv_id']
 
-    return_data, display = tldr_base(bot, conv_id, params)
+    return_data, dummy = tldr_base(bot, conv_id, params)
 
     return return_data
 

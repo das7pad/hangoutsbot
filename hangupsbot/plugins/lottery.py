@@ -111,7 +111,7 @@ def prepare(bot, event, *args):
             for tokendef in matches:
                 tcount = int(tokendef[1])
                 tname = tokendef[2]
-                for i in range(0, tcount):
+                for dummy in range(0, tcount):
                     draw_lists[global_draw_name]["box"].append(tname)
 
         else:
@@ -181,7 +181,7 @@ def perform_drawing(bot, event, *args):
                     # draw something for the user
                     _thing = str(draw_lists[global_draw_name]["box"].pop())
 
-                    text_drawn = _("<b>{}</b> draws <b>{}</b> from the <b>{}</b> box. ").format(event.user.full_name, _thing, word, );
+                    text_drawn = _("<b>{}</b> draws <b>{}</b> from the <b>{}</b> box. ").format(event.user.full_name, _thing, word, )
                     if not draw_lists[global_draw_name]["box"]:
                         text_drawn = text_drawn + _("...AAAAAND its all gone! The <b>{}</b> lottery is over folks.").format(word)
 
@@ -189,10 +189,10 @@ def perform_drawing(bot, event, *args):
 
                     draw_lists[global_draw_name]["users"][event.user.id_.chat_id] = _thing
             else:
-                text_finished = _("<b>{}</b>, the <b>{}</b> lottery is over. ").format(event.user.full_name, word);
+                text_finished = _("<b>{}</b>, the <b>{}</b> lottery is over. ").format(event.user.full_name, word)
 
                 if event.user.id_.chat_id in draw_lists[global_draw_name]["users"]:
-                    text_finished = _("You drew a {} previously.").format(draw_lists[global_draw_name]["users"][event.user.id_.chat_id]);
+                    text_finished = _("You drew a {} previously.").format(draw_lists[global_draw_name]["users"][event.user.id_.chat_id])
 
                 message = text_finished
         else:

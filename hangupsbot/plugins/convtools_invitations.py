@@ -114,7 +114,7 @@ async def _claim_invite(bot, invite_code, user_id):
                         conversation_id=hangups.hangouts_pb2.ConversationId(id=invitation["group_id"]),
                         client_generated_id=bot._client.get_client_generated_id())))
 
-        except hangups.NetworkError as e:
+        except hangups.NetworkError:
             # trying to add a user to a group where the user is already a member raises this
             logger.exception("_CLAIM_INVITE: FAILED %s %s",
                              invite_code, user_id)
@@ -224,7 +224,7 @@ async def invite(bot, event, *args):
         """
         wildcards = int(parameters[0])
         if wildcards and wildcards < 150:
-            del(parameters[0])
+            del parameters[0]
 
     elif "list" in parameters or "purge" in parameters:
         """[list] all invites inside the bot memory, and [purge] when requested"""
@@ -411,10 +411,10 @@ async def invite(bot, event, *args):
     """beyond this point, start doing irreversible things (like create groups)"""
 
     if not invitations:
-        return _('<em>invite: nobody invited</em>')
-
         invitation_log.append("no invitations were created")
         logger.info("convtools_invitations: nobody invited, aborting...")
+
+        return _('<em>invite: nobody invited</em>')
 
     else:
         """create new conversation (if required)"""

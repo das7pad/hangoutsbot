@@ -112,7 +112,7 @@ async def image_upload_single(image_uri):
 
                     if ext in ("jpg", "jpeg", "jpe", "jif", "jfif", "gif", "png"):
                         image_handling = "standard"
-                    elif ext in ("webp"):
+                    elif ext == "webp":
                         image_handling = "image_convert_to_png"
 
                 if image_handling:
@@ -123,7 +123,7 @@ async def image_upload_single(image_uri):
                             if results:
                                 # allow custom handlers to fail gracefully
                                 raw = results
-                        except Exception as e:
+                        except:
                             logger.exception("custom image handler failed: %s",
                                              image_handling)
                 else:
@@ -169,7 +169,7 @@ async def image_convert_to_png(image):
             stdout=PIPE,
             stderr=PIPE)
 
-        (stdout_data, stderr_data) = await proc.communicate(input=image)
+        (stdout_data, dummy) = await proc.communicate(input=image)
 
         return stdout_data
 

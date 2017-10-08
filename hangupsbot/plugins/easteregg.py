@@ -16,7 +16,7 @@ async def easteregg(bot, event, easteregg_name, eggcount=1, period=0.5, *args):
     supported easter egg trigger name: ponies , pitchforks , bikeshed , shydino
     """
 
-    for i in range(int(eggcount)):
+    for dummy in range(int(eggcount)):
         await bot._client.easter_egg(
             hangups.hangouts_pb2.EasterEggRequest(
                 request_header=bot._client.get_request_header(),

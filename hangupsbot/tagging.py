@@ -68,14 +68,14 @@ class Tags(object):
                 self.indices[tag_to_object][tag].remove(id_)
                 if not self.indices[tag_to_object][tag]:
                     # remove key entirely it its empty
-                    del(self.indices[tag_to_object][tag])
+                    del self.indices[tag_to_object][tag]
 
         if id_ in self.indices[object_to_tag]:
             if tag in self.indices[object_to_tag][id_]:
                 self.indices[object_to_tag][id_].remove(tag)
                 if not self.indices[object_to_tag][id_]:
                     # remove key entirely it its empty
-                    del(self.indices[object_to_tag][id_])
+                    del self.indices[object_to_tag][id_]
 
     def update(self, tag_type, id_, action, tag):
         updated = False
@@ -147,7 +147,7 @@ class Tags(object):
                 tags.remove(tag)
                 self.remove_from_index(index_type, tag, id_)
                 updated = True
-            except ValueError as e:
+            except ValueError:
                 # in case the value does not exist
                 pass
 

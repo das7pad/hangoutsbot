@@ -46,7 +46,7 @@ class HubotBridge():
                         continue
                     name = listener["name"]
                     port = listener["port"]
-                except KeyError as e:
+                except KeyError:
                     logger.warning("config.%s[%s] missing keyword",
                                    self.configkey, itemNo)
                     continue
@@ -73,10 +73,11 @@ class HubotBridge():
                     convlist = config["synced_conversations"]
                     if event.conv_id in convlist:
                         self._send_to_external_chat(bot, event, config)
-                except Exception as e:
+                except:
                     logger.exception("EXCEPTION in _handle_websync")
 
-    def _send_to_external_chat(self, bot, event, config):
+    @staticmethod
+    def _send_to_external_chat(bot, event, config):
         if event.from_bot:
             # don't send my own messages
             return

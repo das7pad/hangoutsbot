@@ -342,7 +342,7 @@ class HangupsBot(object):
                         len(convs), len(hangups_conv_list),
                         ", ".join(missing) or "none")
 
-        except Exception as e:
+        except:
             logger.exception("LIST_CONVERSATIONS: failed")
             raise
 

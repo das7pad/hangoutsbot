@@ -169,7 +169,7 @@ def _get_weather(bot, event, params):
 
     if not parameters:
         if bot.memory.exists(["conv_data", event.conv.id_]):
-            if (bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"])):
+            if bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"]):
                 location = bot.memory.get_by_path(["conv_data", event.conv.id_, "default_weather_location"])
     else:
         address = ''.join(parameters).strip()
