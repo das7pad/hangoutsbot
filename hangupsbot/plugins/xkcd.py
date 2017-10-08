@@ -85,7 +85,7 @@ async def _get_comic(bot, num=None):
             async with session.request('get', info["img"]) as request:
                 raw = await request.read()
         image_data = io.BytesIO(raw)
-        info['image_id'] = await bot._client.upload_image(image_data, filename=filename)
+        info['image_id'] = await bot.upload_image(image_data, filename=filename)
         _cache[info['num']] = info
         return info
 

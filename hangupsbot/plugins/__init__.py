@@ -280,7 +280,9 @@ def register_handler(function, pluggable="message", priority=50):
         pluggable: string, key in handler.EventHandler.pluggables, handler type
         priority: int, change the sequence of handling the event
     """
+    # pylint:disable=protected-access
     bot_handlers = tracking.bot._handlers
+    # pylint:enable=protected-access
     bot_handlers.register_handler(function, pluggable, priority)
 
 def register_sync_handler(function, name="message", priority=50):

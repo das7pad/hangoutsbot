@@ -10,7 +10,7 @@ import hangups
 import plugins
 
 from commands import command, Help
-
+from hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 
@@ -100,21 +100,15 @@ async def _claim_invite(bot, invite_code, user_id):
 
     invitation = bot.memory.get_by_path(memory_path)
     if invitation["user_id"] in ("*", user_id) and invitation["expiry"] > time.time():
-
+        conv_id = invitation["group_id"]
+        logger.debug("_claim_invite: adding %s to %s",
+                     user_id, conv_id)
+        conv = HangupsConversation(bot, conv_id)
         try:
-            logger.debug("_claim_invite: adding %s to %s",
-                         user_id, invitation["group_id"])
-
-            await bot._client.add_user(
-                hangups.hangouts_pb2.AddUserRequest(
-                    request_header=bot._client.get_request_header(),
-                    invitee_id=[hangups.hangouts_pb2.InviteeID(gaia_id=user_id)],
-                    event_request_header=hangups.hangouts_pb2.EventRequestHeader(
-                        conversation_id=hangups.hangouts_pb2.ConversationId(id=invitation["group_id"]),
-                        client_generated_id=bot._client.get_client_generated_id())))
+            await conv.add_users(
+                hangups.user.UserID(chat_id=user_id, gaia_id=user_id))
 
         except hangups.NetworkError:
-            # trying to add a user to a group where the user is already a member raises this
             logger.exception("_CLAIM_INVITE: FAILED %s %s",
                              invite_code, user_id)
             return
@@ -147,12 +141,14 @@ def _issue_invite_on_exit(bot, event):
 
 
 async def _new_group_conversation(bot, initiator_id):
+    # pylint:disable=protected-access
     _response = await bot._client.create_conversation(
         hangups.hangouts_pb2.CreateConversationRequest(
             request_header=bot._client.get_request_header(),
             type=hangups.hangouts_pb2.CONVERSATION_TYPE_GROUP,
             client_generated_id=bot._client.get_client_generated_id(),
             invitee_id=[hangups.hangouts_pb2.InviteeID(gaia_id=initiator_id)]))
+    # pylint:enable=protected-access
     new_conversation_id = _response.conversation.conversation_id.id
 
     await bot.coro_send_message(new_conversation_id, _("<i>group created</i>"))

@@ -52,7 +52,7 @@ async def meme(bot, event, *args):
                 photo_id = await bot.call_shared('image_upload_single', instanceImageUrl)
             except KeyError:
                 logger.warning('image plugin not loaded - using legacy code')
-                photo_id = await bot._client.upload_image(image_data, filename=filename)
+                photo_id = await bot.upload_image(image_data, filename=filename)
 
             await bot.coro_send_message(event.conv.id_, legacy_segments, image_id=photo_id)
 

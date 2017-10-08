@@ -65,9 +65,11 @@ async def help(bot, event, cmd=None, *args):  # pylint:disable=redefined-builtin
         help_lines.append("<b>Command-specific help:</b>")
         help_lines.append("/bot help <command name>")
 
+        # pylint:disable=protected-access
         bot_aliases = [_alias
                        for _alias in bot._handlers.bot_command
                        if len(_alias) < 9]
+        # pylint:enable=protected-access
         if len(bot_aliases) > 1:
             help_lines.append("")
             help_lines.append("<b>My short-hand names:</b>")

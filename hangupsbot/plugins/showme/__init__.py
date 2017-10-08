@@ -78,7 +78,7 @@ async def _send_source(bot, event, name, img_link):
     image_data = io.BytesIO(raw)
     filename = "{}_{}.{}".format(name, int(time.time()), ext)
     try:
-        image_id = await bot._client.upload_image(image_data, filename=filename)
+        image_id = await bot.upload_image(image_data, filename=filename)
     except hangups.NetworkError:
         await bot.coro_send_message(
             event.conv_id,

@@ -131,8 +131,8 @@ async def screenshot(bot, event, *args):
                                                  filename=filename)
             except KeyError:
                 logger.info('image plugin not loaded - using legacy code')
-                image_id = await bot._client.upload_image(image_data,
-                                                          filename=filename)
+                image_id = await bot.upload_image(image_data,
+                                                  filename=filename)
             await bot.coro_send_message(event.conv_id, url, image_id=image_id)
         except hangups.NetworkError:
             logger.exception("upload failed %s", url)

@@ -113,8 +113,8 @@ async def _watch_twitter_link(bot, event):
                         async with session.request('get', imagelink) as res:
                             raw = await res.read()
                     image_data = io.BytesIO(raw)
-                    image_id = await bot._client.upload_image(image_data,
-                                                              filename=filename)
+                    image_id = await bot.upload_image(image_data,
+                                                      filename=filename)
                     await bot.coro_send_message(event.conv.id_, None,
                                                 image_id=image_id)
 

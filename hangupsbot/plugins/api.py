@@ -54,7 +54,8 @@ def handle_as_command(bot, event, original_id):
 
     handle_response = functools.partial(response_received,
                                         original_id=original_id)
-    event.acknowledge.append(bot._handlers.register_reprocessor(handle_response))
+    event.acknowledge.append(
+        bot.call_shared("reprocessor.attach_reprocessor", handle_response))
 
 
 def _start_api(bot):

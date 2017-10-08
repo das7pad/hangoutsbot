@@ -49,7 +49,7 @@ def _botkeeper_list(bot, conv_id):
 
 
 async def _check_if_admin_added_me(bot, event, command):
-    bot_id = bot._user_list._self_user.id_
+    bot_id = bot.user_self()["chat_id"]
     if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
         if bot_id in event.conv_event.participant_ids:
             # bot was part of the event

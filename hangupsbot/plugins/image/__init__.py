@@ -137,7 +137,7 @@ async def image_upload_single(image_uri):
 async def image_upload_raw(image_data, filename):
     image_id = False
     try:
-        image_id = await _externals["bot"]._client.upload_image(image_data, filename=filename)
+        image_id = await _externals["bot"].upload_image(image_data, filename=filename)
     except KeyError as exc:
         logger.warning("_client.upload_image failed: %s", exc)
     return image_id

@@ -30,6 +30,7 @@ async def easteregg(bot, event, *args):
     period = float(args[2]) if len(args) > 2 and not args[2].isdigit() else 0.5
 
     for dummy in range(eggcount):
+        # pylint:disable=protected-access
         await bot._client.easter_egg(
             hangups.hangouts_pb2.EasterEggRequest(
                 request_header=bot._client.get_request_header(),
