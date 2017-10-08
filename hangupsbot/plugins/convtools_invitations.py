@@ -27,6 +27,7 @@ HELP = {
                 'to storage'),
     "rsvp": _("show invite codes or claim an invite")
 }
+EXPIRE_IN = 2592000
 
 class DummyEvent():
     """used to run the rename command"""
@@ -49,7 +50,7 @@ def _remove_invite(bot, invite_code):
         logger.debug("_remove_invite: nothing removed")
 
 
-def _issue_invite(bot, user_id, group_id, uses=1, expire_in=2592000, expiry=None):
+def _issue_invite(bot, user_id, group_id, uses=1):
     if not bot.memory.exists(["invites"]):
         bot.memory["invites"] = {}
 
@@ -80,9 +81,7 @@ def _issue_invite(bot, user_id, group_id, uses=1, expire_in=2592000, expiry=None
         raise ValueError("no invitation")
 
     # update/create some fields
-    if not expiry:
-        expiry = int(time.time()) + expire_in
-    invitation["expiry"] = expiry
+    invitation["expiry"] = int(time.time()) + EXPIRE_IN
     invitation["uses"] = uses
     invitation["updated"] = time.time()
 

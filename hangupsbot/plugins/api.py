@@ -78,7 +78,13 @@ def _start_api(bot):
                              itemNo, repr(err))
                 continue
 
-            aiohttp_start(bot, name, port, certfile, APIRequestHandler, group=__name__)
+            aiohttp_start(
+                bot=bot,
+                name=name,
+                port=port,
+                certfile=certfile,
+                requesthandlerclass=APIRequestHandler,
+                group=__name__)
 
 
 class APIRequestHandler(AsyncRequestHandler):

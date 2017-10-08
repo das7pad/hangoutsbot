@@ -700,7 +700,7 @@ class HangupsBot(object):
     async def coro_send_to_user_and_conversation(self, chat_id, conv_id,
                                                  message_private,
                                                  message_public=None,
-                                                 context=None):
+                                                 *, context=None):
         """send a message to a user's 1-to-1 with a hint in the public chat
 
         if no 1-to-1 is available, send everything to the public chat

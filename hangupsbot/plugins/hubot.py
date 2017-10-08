@@ -52,12 +52,12 @@ class HubotBridge():
                     continue
 
                 aiohttp_start(
-                    bot,
-                    name,
-                    port,
-                    certfile,
-                    self.RequestHandler,
-                    "hubotbridge." + self.configkey)
+                    bot=bot,
+                    name=name,
+                    port=port,
+                    certfile=certfile,
+                    requesthandlerclass=self.RequestHandler,
+                    group="hubotbridge." + self.configkey)
 
         logger.info("hubotbridge.sinks: %s thread(s) started for %s",
                     itemNo + 1, self.configkey)

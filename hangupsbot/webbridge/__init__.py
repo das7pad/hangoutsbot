@@ -419,11 +419,11 @@ class WebFramework:
                     continue
 
                 aiohttp_start(
-                    bot,
-                    name,
-                    port,
-                    certfile,
-                    self.RequestHandler,
-                    "webbridge." + self.configkey)
+                    bot=bot,
+                    name=name,
+                    port=port,
+                    certfile=certfile,
+                    requesthandlerclass=self.RequestHandler,
+                    group="webbridge." + self.configkey)
 
         logger.info("webbridge.sinks: {} thread(s) started for {}".format(itemNo + 1, self.configkey))

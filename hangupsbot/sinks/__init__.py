@@ -87,12 +87,12 @@ def start(bot):
 
         if issubclass(handler_class, AsyncRequestHandler):
             aiohttp_start(
-                bot,
-                name,
-                port,
-                certfile,
-                handler_class,
-                "json-rpc")
+                bot=bot,
+                name=name,
+                port=port,
+                certfile=certfile,
+                requesthandlerclass=handler_class,
+                group="json-rpc")
 
             aiohttpcount = aiohttpcount + 1
 
@@ -105,7 +105,7 @@ def start(bot):
     if aiohttpcount:
         logger.info("%s aiohttp web listener(s)", aiohttpcount)
 
-def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
+def aiohttp_start(*, bot, name, port, certfile=None, requesthandlerclass, group,
                   callback=None):
     requesthandler = requesthandlerclass(bot)
 
