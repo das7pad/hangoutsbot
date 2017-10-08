@@ -133,11 +133,8 @@ async def broadcast(bot, dummy, *args):
         # set broadcast message
         message = ' '.join(parameters)
         if message:
-            if args[1] in bot._handlers.bot_command:
-                text = [_("broadcast: message not allowed")]
-            else:
-                _internal["broadcast"]["message"] = message
-                text = [_("{} saved").format(message)]
+            _internal["broadcast"]["message"] = message
+            text = [_("{} saved").format(message)]
 
         else:
             text = [_("broadcast: message must be supplied after subcommand")]
