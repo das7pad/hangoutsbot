@@ -19,13 +19,13 @@ logger = logging.getLogger(__name__)
 _lookup = {}
 
 
-def _initialise(bot):
+def _initialise():
     _load_all_the_things()
     plugins.register_admin_command(["redditmemeword"])
     plugins.register_sync_handler(_scan_for_triggers, "message_once")
 
 
-def redditmemeword(bot, event, *args):
+def redditmemeword(dummy0, dummy1, *args):
     """trigger popular reddit meme images (eg. type 'slowclap.gif').
     Full list at http://goo.gl/ORmisN"""
     if len(args) == 1:
@@ -33,7 +33,7 @@ def redditmemeword(bot, event, *args):
         return "this one? {}".format(image_link)
 
 
-async def _scan_for_triggers(bot, event, command):
+async def _scan_for_triggers(bot, event):
     limit = 3
     count = 0
     lctext = event.text.lower()

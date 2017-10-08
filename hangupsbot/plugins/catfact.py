@@ -4,10 +4,10 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["catfact"])
 
-def catfact(bot, event, number=1):
+def catfact(dummy0, dummy1, number=1):
     try:
         r = requests.get("https://catfact.ninja/facts?limit={}".format(number))
         facts = [fact['fact'] for fact in r.json()['data']]

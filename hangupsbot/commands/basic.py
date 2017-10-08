@@ -107,7 +107,7 @@ def locale(bot, dummy, *args):
 
 
 @command.register
-async def ping(bot, event, *args):
+async def ping(bot, event, *dummys):
     """reply to a ping"""
     await bot.coro_send_message(event.conv_id, 'pong')
 
@@ -244,7 +244,7 @@ def resourcememory(*dummys):
 
 
 @command.register_unknown
-async def unknown_command(bot, event, *args):
+async def unknown_command(bot, event, *dummys):
     """handle unknown commands"""
     config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
     tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
@@ -255,7 +255,7 @@ async def unknown_command(bot, event, *args):
 
 
 @command.register_blocked
-async def blocked_command(bot, event, *args):
+async def blocked_command(bot, event, *dummys):
     """handle blocked commands"""
     config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
     tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)

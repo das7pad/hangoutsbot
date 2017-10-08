@@ -33,7 +33,7 @@ class DummyEvent():
     """used to run the rename command"""
     pass
 
-def _initialise(bot):
+def _initialise():
     """register commands and the help entrys"""
     plugins.register_admin_command(["invite"])
     plugins.register_user_command(["rsvp"])

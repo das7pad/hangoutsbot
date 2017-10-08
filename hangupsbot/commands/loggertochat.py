@@ -26,7 +26,7 @@ def _initialise(bot):
     rootLogger.addHandler(chatHandler)
 
 
-def logconfig(bot, event, loggername, level):
+def logconfig(bot, dummy, loggername, level):
     if loggername in sys.modules:
         config_logging = bot.get_config_option("logging") or {}
 
@@ -69,7 +69,7 @@ def logconfig(bot, event, loggername, level):
     return message
 
 
-def lograise(bot, event, *args):
+def lograise(dummy0, dummy1, *args):
     level = (''.join(args) or "DEBUG").upper()
 
     if level == "CRITICAL":

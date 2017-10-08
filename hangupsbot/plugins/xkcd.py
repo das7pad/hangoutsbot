@@ -46,7 +46,7 @@ async def xkcd(bot, event, *args):
 
     await _print_comic(bot, event)
 
-async def _watch_xkcd_link(bot, event, command):
+async def _watch_xkcd_link(bot, event):
     # Don't handle events caused by the bot himself
     if event.user.is_self:
         return

@@ -3,17 +3,16 @@ example plugin which watches rename events
 """
 
 import logging
-
+import plugins
 
 logger = logging.getLogger(__name__)
 
 
-def _initialise(Handlers, bot=None):
-    Handlers.register_handler(_watch_rename, "rename")
-    return []
+def _initialise():
+    plugins.register_handler(_watch_rename, "rename")
 
 
-async def _watch_rename(bot, event, command):
+async def _watch_rename(dummy, event):
     # Don't handle events caused by the bot himself
     if event.user.is_self:
         return

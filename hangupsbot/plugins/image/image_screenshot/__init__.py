@@ -28,7 +28,7 @@ dcap["phantomjs.page.settings.userAgent"] = (
 )
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["screenshot"])
     plugins.register_admin_command(["seturl", "clearurl"])
 
@@ -73,7 +73,7 @@ def seturl(bot, event, *args):
     return html
 
 
-def clearurl(bot, event, *args):
+def clearurl(bot, event, *dummys):
     """clear url for current converation for the screenshot command.
     """
     url = bot.conversation_memory_get(event.conv_id, 'url')

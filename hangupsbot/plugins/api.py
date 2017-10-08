@@ -36,7 +36,7 @@ def _initialise(bot):
 reprocessor_queue = {}
 
 
-def response_received(bot, event, dummy, results, original_id):
+def response_received(dummy0, dummy1, dummy2, results, original_id):
     if results:
         if isinstance(results, dict) and "api.response" in results:
             output = results["api.response"]

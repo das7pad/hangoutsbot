@@ -3,12 +3,12 @@ import plugins
 _VERIFY_TEXT = _('<i>User must say "hi" to me first via a 1-on-1 hangout, open '
                  '{url} and send me <b>{bot_cmd} verifyme</b>.</i>')
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["files", "test_one2one_message"])
     plugins.register_user_command(["iamspartacus", "verifyme"])
 
 
-def iamspartacus(bot, event, *args):
+def iamspartacus(bot, event, *dummys):
     """announce to the bot that you are spartacus"""
     admin_key = "admins"
     global_admins = bot.config.get_option(admin_key)
@@ -21,7 +21,7 @@ def iamspartacus(bot, event, *args):
     return _("<i>No! I am Spartacus!</i>")
 
 
-async def files(bot, event, *args):
+async def files(bot, event, *dummys):
     """list bot file paths"""
     if not await bot.coro_send_to_user(
             event.user_id.chat_id, _('<i>config: {}\nmemory: {}</i>').format(
@@ -57,7 +57,7 @@ async def verifyme(bot, event, *args):
         await _one2one_required(bot, event.conv)
 
 
-async def test_one2one_message(bot, event, *args):
+async def test_one2one_message(bot, event, *dummys):
     """send a test message instructing the user to open a 1-to-1 hangout with the bot"""
     await _one2one_required(bot, event.conv_id)
 

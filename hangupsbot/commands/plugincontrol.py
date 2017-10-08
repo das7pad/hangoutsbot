@@ -3,13 +3,13 @@ import logging
 
 import plugins
 
-from commands import command
+from commands import command, Help
 
 
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     pass # prevents commands from being automatically added
 
 def function_name(fn):
@@ -29,7 +29,7 @@ def function_name(fn):
 
 
 @command.register(admin=True)
-def plugininfo(bot, event, *args):
+def plugininfo(dummy0, dummy1, *args):
     """dumps plugin information"""
 
     text_plugins = []
@@ -190,7 +190,7 @@ async def pluginreload(bot, event, *args):
 
 
 @command.register(admin=True)
-def getplugins(bot, event, *args):
+def getplugins(bot, *dummys):
     """list all plugins loaded by the bot, and all available plugins"""
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
@@ -221,8 +221,12 @@ def _strip_plugin_path(path):
 
 
 @command.register(admin=True)
-async def removeplugin(bot, event, plugin, *args):
+async def removeplugin(bot, dummy, *args):
     """unloads a plugin from the bot and removes it from the config, does not require plugins. prefix"""
+
+    if not args:
+        raise Help(_('plugin name is missing!'))
+    plugin = args[0]
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
@@ -268,8 +272,12 @@ async def removeplugin(bot, event, plugin, *args):
 
 
 @command.register(admin=True)
-async def addplugin(bot, event, plugin, *args):
+async def addplugin(bot, dummy, *args):
     """loads a plugin on the bot and adds it to the config, does not require plugins. prefix"""
+
+    if not args:
+        raise Help(_('plugin name is missing!'))
+    plugin = args[0]
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):

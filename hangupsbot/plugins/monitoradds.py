@@ -20,7 +20,7 @@ def _initialise():
     plugins.register_admin_command(["addmod", "delmod"])
 
 
-async def _watch_new_adds(bot, event, command):
+async def _watch_new_adds(bot, event):
     # Check if watching for new adds is enabled
     if not bot.get_config_suboption(event.conv_id, 'watch_new_adds'):
         return
@@ -74,7 +74,7 @@ def addmod(bot, event, *args):
     html_message = _("<i>Moderators updated: {} added</i>")
     return html_message.format(args[0])
 
-def delmod(bot, event, *args):
+def delmod(bot, dummy, *args):
     """remove user id(s) from the whitelist of who can add to a hangout"""
     if not bot.config.get_option('mods'):
         return

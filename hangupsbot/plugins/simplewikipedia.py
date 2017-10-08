@@ -5,7 +5,7 @@ import wikipedia
 import plugins
 
 
-def wiki(bot, event, *args):
+def wiki(dummy0, dummy1, *args):
     """lookup a term on Wikipedia"""
 
     term = " ".join(args)

@@ -27,7 +27,7 @@ config.json
 import plugins
 import logging
 
-from random import randrange, randint
+from random import randrange
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,13 @@ except ImportError:
 __cleverbots = {}
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_sync_handler(_handle_incoming_message, "message_once")
     plugins.register_user_command(["chat"])
     plugins.register_admin_command(["chatreset"])
 
 
-async def _handle_incoming_message(bot, event, command):
+async def _handle_incoming_message(bot, event):
     """setting a global or per-conv cleverbot_percentage_replies config key
     will make this plugin intercept random messages to be sent to cleverbot"""
 
@@ -111,7 +111,7 @@ def chat(bot, event, *args):
     return response
 
 
-def chatreset(bot, event, *args):
+def chatreset(bot, event, *dummys):
     """tells cleverbot to forget things you've said in the past"""
 
     cw = _get_cw_for_chat(bot, event)

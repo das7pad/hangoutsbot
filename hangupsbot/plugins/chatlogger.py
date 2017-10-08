@@ -57,7 +57,7 @@ class file_writer():
                 logfile.write(text)
 
 
-    def on_chat_message(self, bot, event, command):
+    def on_chat_message(self, bot, event):
         event_timestamp = event.timestamp
 
         conversation_id = event.conv_id
@@ -71,7 +71,7 @@ class file_writer():
         self._append_to_file(conversation_id, text)
 
 
-    def on_membership_change(self, bot, event, command):
+    def on_membership_change(self, bot, event):
         event_timestamp = event.timestamp
 
         conversation_id = event.conv_id
@@ -91,7 +91,7 @@ class file_writer():
         self._append_to_file(conversation_id, text)
 
 
-    def on_rename(self, bot, event, command):
+    def on_rename(self, bot, event):
         event_timestamp = event.timestamp
 
         conversation_id = event.conv_id

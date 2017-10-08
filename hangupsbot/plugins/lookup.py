@@ -8,7 +8,7 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["lookup"])
 
 

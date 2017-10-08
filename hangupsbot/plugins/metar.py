@@ -29,7 +29,7 @@ def _api_lookup(target, iaco):
         return None
     return raw
 
-def metar(bot, event, *args):
+def metar(dummy0, dummy1, *args):
     """Display the current METAR weather report for the supplied ICAO airport code.
 <b>/bot metar <ICAO airport code></b>
 ICAO Airport Codes: https://en.wikipedia.org/wiki/International_Civil_Aviation_Organization_airport_code
@@ -48,7 +48,7 @@ METAR source: http://aviationweather.gov"""
                  "ICAO airport code and try again.")
     return data[0].text
 
-def taf(bot, event, *args):
+def taf(dummy0, dummy1, *args):
     """Looks up the most recent TAF weather forecast for the supplied ICAO airport code.
 <b>/bot taf <ICAO airport code></b>
 ICAO Airport Codes: https://en.wikipedia.org/wiki/International_Civil_Aviation_Organization_airport_code

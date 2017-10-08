@@ -11,7 +11,7 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_admin_command(["prepare", "perform_drawing"])
 
@@ -128,7 +128,7 @@ def prepare(bot, event, *args):
     return message
 
 
-def perform_drawing(bot, event, *args):
+def perform_drawing(bot, event, *dummys):
     """draw handling:
         /me draw[s] [a[n]] number[s] => draws from "number", "numbers" or "numberes"
         /me draw[s] [a[n]] sticks[s] => draws from "stick", "sticks" or "stickses"

@@ -6,7 +6,7 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["attachsyncout", "detachsyncout"])
 
 
@@ -77,7 +77,7 @@ def attachsyncout(bot, event, *args):
         return html_message.format(len(affected_conversations))
 
 
-def detachsyncout(bot, event, target_conversation_id=None, *args):
+def detachsyncout(bot, event, target_conversation_id=None, *dummys):
     """detach current conversation from a syncout if no parameters supplied. if a conversation id
     is supplied, the bot will attempt to detach that conversation from an existing syncout
     """

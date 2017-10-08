@@ -25,7 +25,7 @@ def rememberme(bot, event, *args):
         event.user.full_name)
 
 
-def whatme(bot, event, *args):
+def whatme(bot, event, *dummys):
     """reply with value stored for current user"""
 
     text = bot.user_memory_get(event.user.id_.chat_id, 'test_memory')
@@ -36,7 +36,7 @@ def whatme(bot, event, *args):
         event.user.full_name, text)
 
 
-def forgetme(bot, event, *args):
+def forgetme(bot, event, *dummys):
     """forget stored value for current user"""
 
     text = bot.user_memory_get(event.user_id.chat_id, 'test_memory')
@@ -65,7 +65,7 @@ def rememberchat(bot, event, *args):
             ).format(event.user.full_name)
 
 
-def whatchat(bot, event, *args):
+def whatchat(bot, event, *dummys):
     """reply with stored value for current conversation"""
 
     text = bot.conversation_memory_get(event.conv_id, 'test_memory')
@@ -76,7 +76,7 @@ def whatchat(bot, event, *args):
              "conversation</i>").format(event.user.full_name, text)
 
 
-def forgetchat(bot, event, *args):
+def forgetchat(bot, event, *dummys):
     """forget stored value for current conversation"""
 
     text = bot.conversation_memory_get(event.conv_id, 'test_memory')

@@ -6,7 +6,7 @@ import hangups
 logger = logging.getLogger(__name__)
 
 
-async def geticon(bot, event, *args):
+async def geticon(bot, event, *dummys):
     """ Return the avatar of the person who called this command """
 
     _response = await bot.get_entity_by_id(

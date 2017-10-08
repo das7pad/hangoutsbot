@@ -62,7 +62,7 @@ class HubotBridge():
         logger.info("hubotbridge.sinks: %s thread(s) started for %s",
                     itemNo + 1, self.configkey)
 
-    def _handle_websync(self, bot, event, command):
+    def _handle_websync(self, dummy, event):
         """Handle hangouts messages, preparing them to be sent to the
         external service
         """
@@ -72,12 +72,12 @@ class HubotBridge():
                 try:
                     convlist = config["synced_conversations"]
                     if event.conv_id in convlist:
-                        self._send_to_external_chat(bot, event, config)
+                        self._send_to_external_chat(dummy, event, config)
                 except:
                     logger.exception("EXCEPTION in _handle_websync")
 
     @staticmethod
-    def _send_to_external_chat(bot, event, config):
+    def _send_to_external_chat(dummy, event, config):
         if event.from_bot:
             # don't send my own messages
             return

@@ -13,7 +13,7 @@ from commands import Help
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["convecho", "convfilter", "convleave", "convrename", "convusers"])
 
 
@@ -46,7 +46,7 @@ async def convfilter(bot, event, *args):
         return {"api.response" : message}
 
 
-async def convecho(bot, event, *args):
+async def convecho(bot, dummy, *args):
     """echo back text into filtered conversations"""
     posix_args = get_posix_args(args)
 
@@ -70,7 +70,7 @@ async def convecho(bot, event, *args):
         await bot.coro_send_message(convid, text)
 
 
-async def convrename(bot, event, *args):
+async def convrename(bot, dummy, *args):
     """renames a single specified conversation"""
     posix_args = get_posix_args(args)
 
@@ -138,7 +138,7 @@ async def convusers(bot, event, *args):
     return {"api.response" : message}
 
 
-async def convleave(bot, event, *args):
+async def convleave(bot, dummy, *args):
     """leave specified conversation(s)"""
     posix_args = get_posix_args(args)
 

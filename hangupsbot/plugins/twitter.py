@@ -12,7 +12,9 @@ import datetime
 import aiohttp
 from TwitterAPI import TwitterAPI
 from bs4 import BeautifulSoup
+
 import plugins
+from commands import Help
 
 logger = logging.getLogger(__name__)
 
@@ -36,27 +38,33 @@ def prettydate(diff):
         return '1 hour ago'
     return '{} hours ago'.format(round(s/3600))
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])
     plugins.register_sync_handler(_watch_twitter_link, "message_once")
 
-def twittersecret(bot, event, secret):
+def twittersecret(bot, dummy, *args):
     '''Set your Twitter API Secret. Get one from https://apps.twitter.com/app'''
+    if not args:
+        raise Help()
+    secret = args[0]
     if not bot.memory.get_by_path(['twitter']):
         bot.memory.set_by_path(['twitter'], {})
 
     bot.memory.set_by_path(['twitter', 'secret'], secret)
     return "Twitter API secret set to <b>{}</b>.".format(secret)
 
-def twitterkey(bot, event, key):
+def twitterkey(bot, dummy, *args):
     '''Set your Twitter API Key. Get one from https://apps.twitter.com/'''
+    if not args:
+        raise Help()
+    key = args[0]
     if not bot.memory.get_by_path(['twitter']):
         bot.memory.set_by_path(['twitter'], {})
 
     bot.memory.set_by_path(['twitter', 'key'], key)
     return "Twitter API key set to <b>{}</b>.".format(key)
 
-def twitterconfig(bot, event):
+def twitterconfig(bot, *dummys):
     '''Get your Twitter credentials. Remember that these are meant to be kept secret!'''
 
     if not bot.memory.exists(['twitter']):
@@ -70,7 +78,7 @@ def twitterconfig(bot, event):
         bot.memory.get_by_path(['twitter', 'key']),
         bot.memory.get_by_path(['twitter', 'secret'])))
 
-async def _watch_twitter_link(bot, event, command):
+async def _watch_twitter_link(bot, event):
     if event.user.is_self:
         return
 

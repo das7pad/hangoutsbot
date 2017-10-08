@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 _externals = {"running": False}
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["meme"])
 
 

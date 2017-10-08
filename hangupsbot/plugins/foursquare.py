@@ -8,12 +8,16 @@ from commands import Help
 
 logger = logging.getLogger(__name__)
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["foursquareid", "foursquaresecret"])
     plugins.register_user_command(['foursquare'])
 
-def foursquareid(bot, event, clid):
+def foursquareid(bot, dummy, *args):
     '''Set the Foursquare API key for the bot - get one from https://foursquare.com/oauth'''
+    if not args:
+        raise Help()
+    clid = args[0]
+
     if not bot.memory.exists(["foursquare"]):
         bot.memory.set_by_path(["foursquare"], {})
 
@@ -23,8 +27,12 @@ def foursquareid(bot, event, clid):
     bot.memory.set_by_path(["foursquare", "id"], clid)
     return "Foursquare client id set to {}".format(clid)
 
-def foursquaresecret(bot, event, secret):
+def foursquaresecret(bot, dummy, *args):
     '''Set the Foursquare client secret for your bot - get it from https://foursquare.com/oauth'''
+    if not args:
+        raise Help()
+    secret = args[0]
+
     if not bot.memory.exists(["foursquare"]):
         bot.memory.set_by_path(["foursquare"], {})
 
@@ -64,7 +72,7 @@ def getplaces(location, clid, secret, section=None):
     return response
 
 
-async def foursquare(bot, event, *args):
+async def foursquare(bot, dummy, *args):
     '''Explore places near you with Foursquare!
 <b>/bot foursquare <location></b>: Display up to 10 of the recommended places near the specified location.
 <b>/bot foursquare [type] <location></b>: Display up to 10 places near the provided location of the type specified. <i>Valid types: food, drinks, coffee, shops, arts, outdoors, sights, trending, specials</i>'''

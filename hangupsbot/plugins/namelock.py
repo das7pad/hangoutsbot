@@ -11,7 +11,7 @@ from commands import command
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_handler(_watch_rename, "rename")
     plugins.register_admin_command(["topic"])
 

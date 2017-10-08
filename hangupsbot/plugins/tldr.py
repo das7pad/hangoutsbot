@@ -23,7 +23,7 @@ def _initialise(bot):
         bot.config.save()
 
 
-def tldrecho(bot, event, *args):
+def tldrecho(bot, event, *dummys):
     """defines whether the tldr is sent as a private message or into the main chat"""
 
     # If no memory entry exists for the conversation, create it.

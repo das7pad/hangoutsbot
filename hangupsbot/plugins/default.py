@@ -207,7 +207,7 @@ async def users(bot, event, *dummys):
     await command.run(bot, event, *["convusers", "id:" + event.conv_id])
 
 
-def user(bot, event, *args):
+def user(bot, dummy, *args):
     """find people by name"""
 
     search = " ".join(args)

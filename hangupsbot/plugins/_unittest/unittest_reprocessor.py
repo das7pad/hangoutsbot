@@ -8,7 +8,7 @@ def _initialise():
                                     "testnoncoroutinecontext"])
 
 
-async def testcoroutinecontext(bot, event, *args):
+async def testcoroutinecontext(bot, event, *dummys):
     """test hidden context"""
     await bot.coro_send_message(
         event.conv_id,
@@ -18,7 +18,7 @@ async def testcoroutinecontext(bot, event, *args):
                                            coro_reprocess_the_event)})
 
 
-async def testnoncoroutinecontext(bot, event, *args):
+async def testnoncoroutinecontext(bot, event, *dummys):
     """test hidden context"""
     await bot.coro_send_message(
         event.conv_id,

@@ -12,11 +12,11 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_handler(_watch_membership_change, "membership")
 
 
-async def _watch_membership_change(bot, event, command):
+async def _watch_membership_change(dummy, event):
     # Generate list of added or removed users
     event_users = [event.conv.get_user(user_id) for user_id
                    in event.conv_event.participant_ids]
