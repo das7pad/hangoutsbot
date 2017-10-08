@@ -9,7 +9,8 @@ from commands import command
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot): pass # prevents commands from being automatically added
+def _initialise(bot):
+    pass # prevents commands from being automatically added
 
 def function_name(fn):
     try:

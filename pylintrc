@@ -37,7 +37,6 @@ disable=
     invalid-name,
     line-too-long,
     missing-docstring,
-    multiple-statements,
     protected-access,
     reimported,
     too-few-public-methods,
