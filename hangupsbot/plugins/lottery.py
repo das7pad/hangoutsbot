@@ -34,7 +34,7 @@ def _get_global_lottery_name(bot, conversation_id, listname):
                     _linked_rooms = sync_room_list
                     _linked_rooms.sort() # keeps the order consistent
                     conversation_id = ":".join(_linked_rooms)
-                    logger.debug("joint room keys {}".format(conversation_id))
+                    logger.debug("joint room keys %s", conversation_id)
 
     return conversation_id + ":" + listname
 
@@ -165,7 +165,7 @@ def perform_drawing(bot, event, *args):
             _test_name = _get_global_lottery_name(bot, event.conv.id_, word)
             if _test_name in draw_lists:
                 global_draw_name = _test_name
-                logger.debug("{} is valid lottery".format(global_draw_name))
+                logger.debug("%s is valid lottery", global_draw_name)
                 break
 
         if global_draw_name is not None:

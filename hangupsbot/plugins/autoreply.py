@@ -37,7 +37,8 @@ async def _handle_autoreply(bot, event):
         return
 
     if "autoreplies-disable" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_):
-        logger.debug("explicitly disabled by tag for {} {}".format(event.user_id.chat_id, event.conv.id_))
+        logger.debug("explicitly disabled by tag for %s %s",
+                     event.user_id.chat_id, event.conv_id)
         return
 
     """Handle autoreplies to keywords in messages"""
@@ -111,12 +112,12 @@ async def _handle_autoreply(bot, event):
             if isinstance(kwds, list):
                 for kw in kwds:
                     if _words_in_text(kw, event.text) or kw == "*":
-                        logger.info("matched chat: {}".format(kw))
+                        logger.info("matched chat: %s", kw)
                         await send_reply(bot, event, message)
                         break
 
             elif event_type == kwds:
-                logger.info("matched event: {}".format(kwds))
+                logger.info("matched event: %s", kwds)
                 await send_reply(bot, event, message)
 
 
@@ -149,8 +150,8 @@ async def send_reply(bot, event, message):
         message = message.split(':', 1)[-1]
         target_conv = await bot.get_1to1(event.user.id_.chat_id)
         if not target_conv:
-            logger.error("1-to-1 unavailable for {} ({})".format(event.user.full_name,
-                                                                 event.user.id_.chat_id))
+            logger.error("1-to-1 unavailable for %s (%s)",
+                         event.user.full_name, event.user.id_.chat_id)
             return False
         envelopes.append((target_conv, message.format(**values)))
 
@@ -159,8 +160,8 @@ async def send_reply(bot, event, message):
         for guest in values["participants"]:
             target_conv = await bot.get_1to1(guest.id_.chat_id)
             if not target_conv:
-                logger.error("1-to-1 unavailable for {} ({})".format(guest.full_name,
-                                                                     guest.id_.chat_id))
+                logger.error("1-to-1 unavailable for %s (%s)",
+                             guest.full_name, guest.id_.chat_id)
                 return False
             values["guest"] = guest # add the guest as extra info
             envelopes.append((target_conv, message.format(**values)))

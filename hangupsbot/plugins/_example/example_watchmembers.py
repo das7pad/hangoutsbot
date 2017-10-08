@@ -24,7 +24,7 @@ async def _watch_membership_change(bot, event, command):
 
     # JOIN
     if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
-        logger.info('{} has added {}'.format(event.user.full_name, names))
+        logger.info('%s has added %s', event.user.full_name, names)
     # LEAVE
     else:
-        logger.info('{} has left'.format(names))
+        logger.info('%s has left', names)

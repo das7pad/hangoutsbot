@@ -46,7 +46,7 @@ async def meme(bot, event, *args):
             legacy_segments = [hangups.ChatMessageSegment(
                 instanceImageUrl, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
                 link_target=instanceImageUrl)]
-            logger.debug("uploading {} from {}".format(filename, instanceImageUrl))
+            logger.debug("uploading %s from %s", filename, instanceImageUrl)
 
             try:
                 photo_id = await bot.call_shared('image_upload_single', instanceImageUrl)

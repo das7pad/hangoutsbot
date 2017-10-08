@@ -338,11 +338,9 @@ class HangupsBot(object):
                     missing.append(conv.id_)
 
             logger.info("list_conversations: "
-                        "{} from permamem, "
-                        "{} from hangups - "
-                        "discrepancies: {}".format(len(convs),
-                                                   len(hangups_conv_list),
-                                                   ", ".join(missing) or "none"))
+                        "%s from permamem, %s from hangups - discrepancies: %s",
+                        len(convs), len(hangups_conv_list),
+                        ", ".join(missing) or "none")
 
         except Exception as e:
             logger.exception("LIST_CONVERSATIONS: failed")

@@ -44,7 +44,7 @@ def _remove_invite(bot, invite_code):
     if bot.memory.exists(memory_path):
         popped_invitation = bot.memory.pop_by_path(memory_path)
         bot.memory.save()
-        logger.debug("_remove_invite: {}".format(popped_invitation))
+        logger.debug("_remove_invite: %s", popped_invitation)
     else:
         logger.debug("_remove_invite: nothing removed")
 
@@ -59,7 +59,8 @@ def _issue_invite(bot, user_id, group_id, uses=1, expire_in=2592000, expiry=None
     for _key, _invitation in bot.memory["invites"].items():
         if _invitation["user_id"] == user_id and _invitation["group_id"] == group_id and _invitation["expiry"] > time.time():
             invitation = _invitation
-            logger.debug("_issue_invite: found existing invite id: {}".format(invitation["id"]))
+            logger.debug("_issue_invite: found existing invite id: %s",
+                         invitation["id"])
             break
 
     # create new invitation if no match found
@@ -67,7 +68,7 @@ def _issue_invite(bot, user_id, group_id, uses=1, expire_in=2592000, expiry=None
         while True:
             _id = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(6))
             if _id not in bot.memory["invites"]:
-                logger.debug("_issue_invite: create new invite id: {}".format(_id))
+                logger.debug("_issue_invite: create new invite id: %s", _id)
                 invitation = {
                     "id": _id,
                     "user_id": user_id,
@@ -102,7 +103,8 @@ async def _claim_invite(bot, invite_code, user_id):
     if invitation["user_id"] in ("*", user_id) and invitation["expiry"] > time.time():
 
         try:
-            logger.debug("_claim_invite: adding {} to {}".format(user_id, invitation["group_id"]))
+            logger.debug("_claim_invite: adding %s to %s",
+                         user_id, invitation["group_id"])
 
             await bot._client.add_user(
                 hangups.hangouts_pb2.AddUserRequest(
@@ -114,7 +116,8 @@ async def _claim_invite(bot, invite_code, user_id):
 
         except hangups.NetworkError as e:
             # trying to add a user to a group where the user is already a member raises this
-            logger.exception("_CLAIM_INVITE: FAILED {} {}".format(invite_code, user_id))
+            logger.exception("_CLAIM_INVITE: FAILED %s %s",
+                             invite_code, user_id)
             return
 
         invitation["uses"] = invitation["uses"] - 1
@@ -125,7 +128,7 @@ async def _claim_invite(bot, invite_code, user_id):
         else:
             _remove_invite(bot, invite_code)
 
-        logger.debug("_claim_invite: claimed {}".format(invitation))
+        logger.debug("_claim_invite: claimed %s", invitation)
 
     else:
         logger.debug("_claim_invite: invalid")
@@ -355,7 +358,8 @@ async def invite(bot, event, *args):
             "uses": wildcards})
 
         invitation_log.append("wildcard invites: {}".format(wildcards))
-        logger.info("convtools_invitations: {} wildcard invite for {}".format(wildcards, targetconv))
+        logger.info("convtools_invitations: %s wildcard invite for %s",
+                    wildcards, targetconv)
 
     else:
         """shortlist users from source room, or explicit list_users"""
@@ -367,8 +371,10 @@ async def invite(bot, event, *args):
                     shortlisted.append(chat_id)
 
             invitation_log.append("shortlisted: {}/{}".format(len(shortlisted), len(sourceconv_users)))
-            logger.info("convtools_invitations: shortlisted {}/{} from {}, everyone={}, list_users=[{}]".format(
-                len(shortlisted), len(sourceconv_users), sourceconv, everyone, len(list_users)))
+            logger.info("convtools_invitations: shortlisted %s/%s from %s, "
+                        "everyone=%s, list_users=[%s]",
+                        len(shortlisted), len(sourceconv_users),
+                        sourceconv, everyone, len(list_users))
 
         else:
             shortlisted = list_users
@@ -389,10 +395,13 @@ async def invite(bot, event, *args):
                 invited_users.append(uid)
             else:
                 invitation_log.append("excluding existing: {}".format(uid))
-                logger.info("convtools_invitations: rejecting {}, already in {}".format(uid, targetconv))
+                logger.info(
+                    "convtools_invitations: rejecting %s, already in %s",
+                    uid, targetconv)
         invited_users = list(set(invited_users))
 
-        logger.info("convtools_invitations: inviting {} to {}".format(len(invited_users), targetconv))
+        logger.info("convtools_invitations: inviting %s to %s",
+                    len(invited_users), targetconv)
 
         for uid in invited_users:
             invitations.append({

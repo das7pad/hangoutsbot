@@ -86,7 +86,7 @@ def _get_cw_for_chat(bot, event):
         else:
             cw = CleverWrap(api_key)
             __cleverbots[index] = cw
-            logger.debug("created new cw for {}".format(index))
+            logger.debug("created new cw for %s", index)
             return cw
 
 

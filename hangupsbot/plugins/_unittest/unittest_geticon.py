@@ -18,7 +18,7 @@ async def geticon(bot, event, *args):
 
     try:
         photo_uri = _response.entity[0].properties.photo_url
-    except Exception as e:
-        logger.exception("{} {} {}".format(event.user_id.chat_id, e, _response))
+    except Exception as err:
+        logger.exception("%s %s %s", event.user_id.chat_id, err, _response)
 
     await bot.coro_send_message(event.conv_id, photo_uri)

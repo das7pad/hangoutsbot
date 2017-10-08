@@ -23,16 +23,16 @@ def _initialise(bot):
 def memoryset(bot, event, *args):
     timestamp = time.time()
     bot.memory["unittest"] = str(timestamp)
-    logger.info("memoryset: {}".format(timestamp))
+    logger.info("memoryset: %s", timestamp)
 
 
 def memoryget(bot, event, *args):
-    logger.info("memoryget: {}".format(bot.memory["unittest"]))
+    logger.info("memoryget: %s", bot.memory["unittest"])
 
 
 def memorypop(bot, event, *args):
     the_string = bot.memory.pop("unittest")
-    logger.info("memorypop: {}".format(the_string))
+    logger.info("memorypop: %s", the_string)
 
 
 def memorytaint(bot, event, *args):
@@ -73,23 +73,23 @@ def submemoryclear(bot, event, *args):
 def submemoryset(bot, event, *args):
     timestamp = time.time()
     bot.memory["unittest-submemory"]["timestamp"] = str(timestamp)
-    logger.info("submemoryset: {}".format(timestamp))
+    logger.info("submemoryset: %s", timestamp)
 
 
 def submemoryget(bot, event, *args):
-    logger.info("submemoryget: {}".format(bot.memory["unittest-submemory"]["timestamp"]))
+    logger.info("submemoryget: %s", bot.memory["unittest-submemory"]["timestamp"])
 
 
 def submemorypop(bot, event, *args):
     the_string = bot.memory["unittest-submemory"].pop("timestamp")
-    logger.info("submemorypop: {}".format(the_string))
+    logger.info("submemorypop: %s", the_string)
 
 
 def memorydelete(bot, event, *args):
     the_string = bot.memory.pop_by_path(["unittest"])
-    logger.info("memorydelete: {}".format(the_string))
+    logger.info("memorydelete: %s", the_string)
 
 
 def submemorydelete(bot, event, *args):
     the_string = bot.memory.pop_by_path(["unittest-submemory", "timestamp"])
-    logger.info("submemorydelete: {}".format(the_string))
+    logger.info("submemorydelete: %s", the_string)

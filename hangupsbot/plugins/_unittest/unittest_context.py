@@ -33,9 +33,9 @@ async def _handle_incoming_message(bot, event, command):
 
     # output to log
     if event.passthru:
-        logger.info("passthru received: {}".format(event.passthru))
+        logger.info("passthru received: %s", event.passthru)
     if event.context:
-        logger.info("context received: {}".format(event.context))
+        logger.info("context received: %s", event.context)
 
     # output to stdout
     if event.passthru:

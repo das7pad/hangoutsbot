@@ -63,7 +63,7 @@ async def _scan_for_triggers(bot, event, command):
                     async with session.request('get', image_link) as res:
                         raw = await res.read()
                 image_data = io.BytesIO(raw)
-                logger.debug("uploading: {}".format(filename))
+                logger.debug("uploading: %s", filename)
                 image_id = await bot._client.upload_image(image_data, filename=filename)
             await bot.coro_send_message(event.conv.id_, "", image_id=image_id)
 
@@ -85,7 +85,7 @@ def _load_all_the_things():
                     _lookup[trigger].extend(images)
                 else:
                     _lookup[trigger] = images
-    logger.debug("{} trigger(s) loaded".format(len(_lookup)))
+    logger.debug("%s trigger(s) loaded", len(_lookup))
 
 
 def _get_a_link(trigger):

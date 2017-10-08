@@ -171,7 +171,9 @@ async def convleave(bot, event, *args):
                 bot.conversations.remove(convid)
 
             except hangups.NetworkError as e:
-                logging.exception("CONVLEAVE: error leaving {} {}".format(convid, convdata["title"]))
+                logging.exception("CONVLEAVE: error leaving %s %s",
+                                  convid, convdata["title"])
 
         else:
-            logging.warning("CONVLEAVE: cannot leave {} {} {}".format(convdata["type"], convid, convdata["title"]))
+            logging.warning("CONVLEAVE: cannot leave %s %s %s",
+                            convdata["type"], convid, convdata["title"])

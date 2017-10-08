@@ -68,12 +68,14 @@ def _start_api(bot):
             try:
                 certfile = sinkConfig["certfile"]
                 if not certfile:
-                    logger.error("config.api[{}].certfile must be configured".format(itemNo))
+                    logger.error("config.api[%s].certfile must be configured",
+                                 itemNo)
                     continue
                 name = sinkConfig["name"]
                 port = sinkConfig["port"]
-            except KeyError as e:
-                logger.error("config.api[{}] missing keyword".format(itemNo), e)
+            except KeyError as err:
+                logger.error("config.api[%s] missing keyword: %s",
+                             itemNo, repr(err))
                 continue
 
             aiohttp_start(bot, name, port, certfile, APIRequestHandler, group=__name__)

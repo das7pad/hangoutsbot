@@ -168,9 +168,9 @@ class Tags(object):
             else:
                 raise TypeError("unhandled update tag_type {}".format(tag_type))
 
-            logger.info("{}/{} action={} value={}".format(tag_type, id_, action, tag))
+            logger.info("%s/%s action=%s value=%s", tag_type, id_, action, tag)
         else:
-            logger.info("{}/{} action={} value={} [NO CHANGE]".format(tag_type, id_, action, tag))
+            logger.info("%s/%s action=%s value=%s [NO CHANGE]", tag_type, id_, action, tag)
 
         return updated
 
@@ -251,7 +251,7 @@ class Tags(object):
                 check_keys.extend([self.wildcard["one2one"]])
             check_keys.extend([self.wildcard["conversation"]])
         else:
-            logger.warning("convactive: conversation {} does not exist".format(conv_id))
+            logger.warning("convactive: conversation %s does not exist", conv_id)
 
         for _key in check_keys:
             if _key in self.indices["conv-tags"]:
@@ -324,7 +324,7 @@ class Tags(object):
         try:
             userlist = self.bot.conversations[conv_id]["participants"]
         except KeyError:
-            logger.warning("userlist: conversation {} does not exist".format(conv_id))
+            logger.warning("userlist: conversation %s does not exist", conv_id)
 
         results = {}
         for chat_id in userlist:

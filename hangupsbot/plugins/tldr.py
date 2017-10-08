@@ -51,7 +51,9 @@ def tldrecho(bot, event, *args):
 
     # Echo the current tldr setting
     message = '<b>TLDR echo setting for this hangout has been set to {0}.</b>'.format(tldr_echo_options[new_tldr])
-    logger.debug("{0} ({1}) has toggled the tldrecho in '{2}' to {3}".format(event.user.full_name, event.user.id_.chat_id, event.conv_id, tldr_echo_options[new_tldr]))
+    logger.debug("%s (%s) has toggled the tldrecho in '%s' to %s",
+                 event.user.full_name, event.user.id_.chat_id, event.conv_id,
+                 tldr_echo_options[new_tldr])
 
     return message
 

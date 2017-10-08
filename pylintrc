@@ -38,8 +38,6 @@ disable=
     invalid-name,
     len-as-condition,
     line-too-long,
-    logging-format-interpolation,
-    logging-not-lazy,
     missing-docstring,
     multiple-statements,
     no-else-return,

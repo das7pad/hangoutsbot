@@ -34,7 +34,7 @@ def dumpunknownusers(bot, event, *args):
                 _hangups = bot.memory["user_data"][chat_id]["_hangups"]
                 if _hangups["is_definitive"]:
                     if _hangups["full_name"].upper() == "UNKNOWN" and _hangups["full_name"] == _hangups["first_name"]:
-                        logger.info("dumpunknownusers {}".format(_hangups))
+                        logger.info("dumpunknownusers %s", _hangups)
 
     logger.info("dumpunknownusers finished")
 
@@ -51,7 +51,7 @@ def resetunknownusers(bot, event, *args):
                 _hangups = bot.memory["user_data"][chat_id]["_hangups"]
                 if _hangups["is_definitive"]:
                     if _hangups["full_name"].upper() == "UNKNOWN" and _hangups["full_name"] == _hangups["first_name"]:
-                        logger.info("resetunknownusers {}".format(_hangups))
+                        logger.info("resetunknownusers %s", _hangups)
                         bot.memory.set_by_path(["user_data", chat_id, "_hangups", "is_definitive"], False)
     bot.memory.save()
 
@@ -64,7 +64,7 @@ async def refreshusermemory(bot, event, *args):
     """refresh specified user chat ids with contact/getentitybyid"""
     logger.info("refreshusermemory started")
     updated = await bot.conversations.get_users_from_query(args)
-    logger.info("refreshusermemory {} updated".format(updated))
+    logger.info("refreshusermemory %s updated", updated)
     logger.info("refreshusermemory ended")
 
     return "<b>please see log/console</b>"

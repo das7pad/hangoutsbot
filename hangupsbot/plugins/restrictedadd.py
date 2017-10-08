@@ -56,17 +56,18 @@ async def _check_if_admin_added_me(bot, event, command):
             initiator_user_id = event.user_id.chat_id
 
             if initiator_user_id in _botkeeper_list(bot, event.conv_id):
-                logger.info("botkeeper added me to {}".format(event.conv_id))
+                logger.info("botkeeper added me to %s", event.conv_id)
 
             elif initiator_user_id == bot.user_self()["chat_id"]:
-                logger.info("bot added self to {}".format(event.conv_id))
+                logger.info("bot added self to %s", event.conv_id)
 
             elif event.conv_id in bot.conversations.get("tag:restrictedadd-whitelist"):
-                logger.info("bot added to whitelisted {}".format(event.conv_id))
+                logger.info("bot added to whitelisted %s", event.conv_id)
 
             else:
-                logger.warning("{} ({}) tried to add me to {}".format(
-                    initiator_user_id, event.user.full_name, event.conv_id))
+                logger.warning("%s (%s) tried to add me to %s",
+                               initiator_user_id, event.user.full_name,
+                               event.conv_id)
 
                 await bot.coro_send_message(
                     event.conv,
@@ -104,14 +105,15 @@ async def _verify_botkeeper_presence(bot, event, command):
 
     for user in event.conv.users:
         if user.id_.chat_id in botkeeper_list:
-            logger.debug("botkeeper found for {}: {}".format(event.conv_id, user.id_.chat_id))
+            logger.debug("botkeeper found for %s: %s",
+                         event.conv_id, user.id_.chat_id)
             botkeeper = True
             break
 
     _internal.last_verified[event.conv_id] = time.time()
 
     if not botkeeper:
-        logger.warning("no botkeeper in {}".format(event.conv_id))
+        logger.warning("no botkeeper in %s", event.conv_id)
 
         await bot.coro_send_message(
             event.conv,

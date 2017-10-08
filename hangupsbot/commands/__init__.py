@@ -404,7 +404,7 @@ class CommandDispatcher(object):
         user_commands = user_commands - admin_commands # ensure no overlap
 
         interval = time.time() - start_time
-        logger.debug("get_available_commands() - {}".format(interval))
+        logger.debug("get_available_commands() - %s", interval)
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 

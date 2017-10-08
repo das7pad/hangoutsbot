@@ -20,6 +20,7 @@ async def _watch_rename(bot, event, command):
 
     # Only print renames for now...
     if event.conv_event.new_name == '':
-        logger.info('{} cleared the conversation name'.format(event.user.first_name))
+        logger.info('%s cleared the conversation name', event.user.first_name)
     else:
-        logger.info('{} renamed the conversation to {}'.format(event.user.first_name, event.conv_event.new_name))
+        logger.info('%s renamed the conversation to %s',
+                    event.user.first_name, event.conv_event.new_name)

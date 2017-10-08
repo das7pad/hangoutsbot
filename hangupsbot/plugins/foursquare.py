@@ -46,12 +46,10 @@ def getplaces(location, clid, secret, section=None):
 
     try:
         req = urllib.request.urlopen(url)
-    except urllib.error.URLError as e:
-        logger.info(e.reason)
-        logger.info("URL: {}".format(url))
-        logger.info("CLIENT_ID: {}".format(clid))
-        logger.info("CLIENT_SECRET: {}".format(secret))
-        return "<i><b>Foursquare Error</b>: {}</i>".format(e.reason)
+    except urllib.error.URLError as err:
+        url = url.replace(clid, 'CLIENT_ID').replace(secret, 'CLIENT_SECRET')
+        logger.error("URL: %s, %s", url, repr(err))
+        return "<i><b>Foursquare Error</b>: {}</i>".format(err.reason)
     data = json.loads(req.read().decode("utf-8"))
 
     if section in types:

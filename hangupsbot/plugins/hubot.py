@@ -21,7 +21,8 @@ class HubotBridge():
         self.configuration = bot.get_config_option(self.configkey)
 
         if not self.configuration:
-            logger.info("no configuration for {}, not running".format(self.configkey))
+            logger.info("no configuration for %s, not running",
+                        self.configkey)
             return
 
         self._start_sinks(bot)
@@ -39,12 +40,15 @@ class HubotBridge():
                 try:
                     certfile = listener["certfile"]
                     if not certfile:
-                        logger.warning("config.{}[{}].certfile must be configured".format(self.configkey, itemNo))
+                        logger.warning(
+                            "config.%s[%s].certfile must be configured",
+                            self.configkey, itemNo)
                         continue
                     name = listener["name"]
                     port = listener["port"]
                 except KeyError as e:
-                    logger.warning("config.{}[{}] missing keyword".format(self.configkey, itemNo))
+                    logger.warning("config.%s[%s] missing keyword",
+                                   self.configkey, itemNo)
                     continue
 
                 aiohttp_start(
@@ -55,7 +59,8 @@ class HubotBridge():
                     self.RequestHandler,
                     "hubotbridge." + self.configkey)
 
-        logger.info("hubotbridge.sinks: {} thread(s) started for {}".format(itemNo + 1, self.configkey))
+        logger.info("hubotbridge.sinks: %s thread(s) started for %s",
+                    itemNo + 1, self.configkey)
 
     def _handle_websync(self, bot, event, command):
         """Handle hangouts messages, preparing them to be sent to the

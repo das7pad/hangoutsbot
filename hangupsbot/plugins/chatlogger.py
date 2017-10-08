@@ -41,10 +41,10 @@ class file_writer():
                 try:
                     os.makedirs(directory)
                 except OSError as e:
-                    logger.exception('cannot create path: {}'.format(path))
+                    logger.exception('cannot create path: %s', path)
                     continue
 
-            logger.info("stored in: {}".format(path))
+            logger.info("stored in: %s", path)
 
         if self.paths:
             self.initialised = True

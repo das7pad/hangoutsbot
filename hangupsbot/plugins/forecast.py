@@ -149,8 +149,8 @@ def _lookup_weather(coords):
         if 'daily' in j:
             current['daily'] = j['daily']['summary']
 
-    except ValueError as e:
-        logger.error("Forecast Error: {}".format(e))
+    except ValueError as err:
+        logger.error("Forecast Error: %s", err)
         current = dict()
     except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError, requests.exceptions.Timeout):
         logger.error('unable to connect with api.darksky.net: %d - %s', r.status_code, r.text)

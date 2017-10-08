@@ -65,7 +65,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 
     if probable_image_link and reject_googleusercontent and ".googleusercontent." in image_uri_lower:
         """reject links posted by google to prevent endless attachment loop"""
-        logger.debug("rejected link {} with googleusercontent".format(image_uri))
+        logger.debug("rejected link %s with googleusercontent", image_uri)
         return False
 
     if probable_image_link:
@@ -82,7 +82,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
         elif re.match(r'^https?://gfycat.com', image_uri):
             image_uri = re.sub(r'^https?://gfycat.com/', 'https://thumbs.gfycat.com/', image_uri) + '-size_restricted.gif'
 
-        logger.info('{} seems to be a valid image link'.format(image_uri))
+        logger.info('%s seems to be a valid image link', image_uri)
 
         return image_uri
 
@@ -91,7 +91,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 
 async def image_upload_single(image_uri):
     filename = os.path.basename(image_uri)
-    logger.info("fetching {}".format(filename))
+    logger.info("fetching %s", filename)
     try:
         async with aiohttp.ClientSession() as session:
             async with session.request('get', image_uri) as res:
@@ -124,13 +124,16 @@ async def image_upload_single(image_uri):
                                 # allow custom handlers to fail gracefully
                                 raw = results
                         except Exception as e:
-                            logger.exception("custom image handler failed: {}".format(image_handling))
+                            logger.exception("custom image handler failed: %s",
+                                             image_handling)
                 else:
-                    logger.warning("not image/image-like, filename={}, headers={}".format(filename, res.headers))
+                    logger.warning(
+                        "not image/image-like, filename=%s, headers=%s",
+                        filename, res.headers)
                     return False
 
     except (aiohttp_clienterror) as exc:
-        logger.warning("failed to get {} - {}".format(filename, exc))
+        logger.warning("failed to get %s - %s", filename, exc)
         return False
 
     image_data = io.BytesIO(raw)
@@ -143,7 +146,7 @@ async def image_upload_raw(image_data, filename):
     try:
         image_id = await _externals["bot"]._client.upload_image(image_data, filename=filename)
     except KeyError as exc:
-        logger.warning("_client.upload_image failed: {}".format(exc))
+        logger.warning("_client.upload_image failed: %s", exc)
     return image_id
 
 
@@ -171,5 +174,5 @@ async def image_convert_to_png(image):
         return stdout_data
 
     except FileNotFoundError:
-        logger.error("imagemagick not found at path {}".format(path_imagemagick))
+        logger.error("imagemagick not found at path %s", path_imagemagick)
         return False
