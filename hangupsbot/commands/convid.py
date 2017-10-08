@@ -52,15 +52,15 @@ async def convecho(bot, event, *args):
 
     if len(posix_args) > 1:
         if not posix_args[0]:
-            """block spamming ALL conversations"""
+            # block spamming ALL conversations
             return _("<em>sending to ALL conversations not allowed</em>")
         convlist = bot.conversations.get(filter=posix_args[0])
         text = ' '.join(posix_args[1:])
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
-        """specialised error message for /bot echo (implied convid: <event.conv_id>)"""
+        # specialised error message for /bot echo (implied convid: <event.conv_id>)
         raise Help(_("<em>missing text</em>"))
     else:
-        """general error"""
+        # general error
         raise Help(_("<em>required parameters: convfilter text</em>"))
 
     if not convlist:
@@ -93,10 +93,10 @@ async def convrename(bot, event, *args):
                     client_generated_id=bot._client.get_client_generated_id())))
 
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
-        """specialised error message for /bot rename (implied convid: <event.conv_id>)"""
+        # specialised error message for /bot rename (implied convid: <event.conv_id>)
         raise Help(_("<em>missing title</em>"))
     else:
-        """general error"""
+        # general error
         raise Help(_("<em>required parameters: convfilter title</em>"))
 
 
@@ -108,7 +108,7 @@ async def convusers(bot, event, *args):
         raise Help(_("<em>should be 1 parameter, {} supplied</em>").format(
             len(posix_args)))
     if not posix_args[0]:
-        """don't do it in all conversations - might crash hangups"""
+        # don't do it in all conversations - might crash hangups
         return _("<em>retrieving ALL conversations blocked</em>")
 
     chunks = [] # one "chunk" = info for 1 hangout
@@ -144,11 +144,11 @@ async def convleave(bot, event, *args):
 
     if len(posix_args) >= 1:
         if not posix_args[0]:
-            """block leaving ALL conversations"""
+            # block leaving ALL conversations
             return _("<em>cannot leave ALL conversations</em>")
         convlist = bot.conversations.get(filter=posix_args[0])
     else:
-        """general error"""
+        # general error
         raise Help(_("<em>required parameters: convfilter</em>"))
 
     for convid, convdata in convlist.items():

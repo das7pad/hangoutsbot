@@ -77,11 +77,9 @@ def prepare(bot, event, *args):
 
     draw_lists[global_draw_name] = {"box": [], "users": {}}
 
-    """special types
-        /bot prepare [thing] COMPASS - 4 cardinal + 4 ordinal
-
-        XXX: add more useful shortcuts here!
-    """
+    # special types
+    #     /bot prepare [thing] COMPASS - 4 cardinal + 4 ordinal
+    # XXX: add more useful shortcuts here!
     if listdef == "COMPASS":
         listdef = "north,north-east,east,south-east,south,south-west,west,north-west"
 
@@ -137,9 +135,8 @@ def perform_drawing(bot, event, *args):
         /me draws[s]<unrecognised> => draws from "default"
 
         note: to prepare lotteries/drawings, see /bot prepare ...
-
-        XXX: check is for singular, plural "-s" and plural "-es"
     """
+    # XXX: check is for singular, plural "-s" and plural "-es"
 
     draw_lists = _load_lottery_state(bot) # load in any existing lotteries
 

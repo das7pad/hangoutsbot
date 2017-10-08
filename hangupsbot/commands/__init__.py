@@ -30,34 +30,30 @@ class CommandDispatcher(object):
 
         self.command_tagsets = {}
 
-        """
-        inbuilt argument preprocessors, recognises:
-        * one_chat_id (also resolves #conv)
-          * @user
-          * #conv|@user (tagset convuser format)
-          * abcd|@user (tagset convuser format)
-        * one_conv_id
-          * #conv
-          * #conv|* (tagset convuser format)
-          * #conv|123 (tagset convuser format)
-        * test cases that won't match:
-          * #abcd#
-          * ##abcd
-          * ##abcd##
-          * ##abcd|*
-          * @user|abcd
-          * wxyz@user
-          * @user@wxyz
-        """
+        # inbuilt argument preprocessors, recognises:
+        # * one_chat_id (also resolves #conv)
+        #   * @user
+        #   * #conv|@user (tagset convuser format)
+        #   * abcd|@user (tagset convuser format)
+        # * one_conv_id
+        #   * #conv
+        #   * #conv|* (tagset convuser format)
+        #   * #conv|123 (tagset convuser format)
+        # * test cases that won't match:
+        #   * #abcd#
+        #   * ##abcd
+        #   * ##abcd##
+        #   * ##abcd|*
+        #   * @user|abcd
+        #   * wxyz@user
+        #   * @user@wxyz
 
         self.preprocessors = {"inbuilt": {
             r"^(#?[\w|]+[^#]\|)?@[\w]+[^@]$": self.one_chat_id,
             r"^#[\w|]+[^#]$": self.one_conv_id}}
 
-        """
-        disable implicit argument preprocessors on some commands
-        these are special use-cases that should be rare with supplied functionality
-        """
+        # disable implicit argument preprocessors on some commands
+        # these are special use-cases that should be rare with supplied functionality
         self.preprocessors_explicit = ["plugins.mentions.mention",
                                        "plugins.subscribe.subscribe",
                                        "plugins.subscribe.unsubscribe",
@@ -161,40 +157,38 @@ class CommandDispatcher(object):
         if internal_context.command_path in self.preprocessors_explicit and _implicit:
             _implicit = False
 
-        """
-        simple finite state machine parser:
+        # simple finite state machine parser:
 
-        * arguments are processed in order of input, from left-to-right
-        * default setting is always post-process
-          * switch off with config.json: commands.preprocessor.explicit = true
-        * default base trigger keyword = "resolve"
-          * override with config.json: commands.preprocessor.trigger
-          * full trigger keywords are:
-            * +<trigger> (add)
-            * -<trigger> (remove)
-          * customised trigger word must be unique enough to prevent conflicts for other plugin parameters
-          * all examples here assume the trigger keyword is the default
-          * devs: if conflict arises, other plugins have higher priority than this
-        * activate all resolvers for subsequent keywords (not required if implicit):
-            +resolve
-        * deactivate all resolvers for subsequent keywords:
-            -resolve
-        * activate specific resolver groups via keyword:
-            +resolve:<comma-separated list of resolver groups, no spaces> e.g.
-            +resolve:inbuilt,customalias1,customalias2
-        * deactivate all active resolvers via keyword:
-            +resolve:off
-            +resolve:false
-            +resolve:0
-        * deactivate specific resolvers via keyword:
-            -resolve:inbuilt
-            -resolve:inbuilt,customa
-        * escape trigger keyword with:
-          * quotes
-              "+resolve"
-          * backslash
-              \+resolve
-        """
+        # * arguments are processed in order of input, from left-to-right
+        # * default setting is always post-process
+        #   * switch off with config.json: commands.preprocessor.explicit = true
+        # * default base trigger keyword = "resolve"
+        #   * override with config.json: commands.preprocessor.trigger
+        #   * full trigger keywords are:
+        #     * +<trigger> (add)
+        #     * -<trigger> (remove)
+        #   * customised trigger word must be unique enough to prevent conflicts for other plugin parameters
+        #   * all examples here assume the trigger keyword is the default
+        #   * devs: if conflict arises, other plugins have higher priority than this
+        # * activate all resolvers for subsequent keywords (not required if implicit):
+        #     +resolve
+        # * deactivate all resolvers for subsequent keywords:
+        #     -resolve
+        # * activate specific resolver groups via keyword:
+        #     +resolve:<comma-separated list of resolver groups, no spaces> e.g.
+        #     +resolve:inbuilt,customalias1,customalias2
+        # * deactivate all active resolvers via keyword:
+        #     +resolve:off
+        #     +resolve:false
+        #     +resolve:0
+        # * deactivate specific resolvers via keyword:
+        #     -resolve:inbuilt
+        #     -resolve:inbuilt,customa
+        # * escape trigger keyword with:
+        #   * quotes
+        #       "+resolve"
+        #   * backslash
+        #       \+resolve
 
         if "inbuilt" in all_groups:
             # lowest priority: inbuilt
@@ -343,20 +337,20 @@ class CommandDispatcher(object):
         user_commands = set()
 
         if commands_admin is True:
-            """commands_admin: true # all commands are admin-only"""
+            # all commands are admin-only
             admin_commands = all_commands
 
         elif commands_user is True:
-            """commands_user: true # all commands are user-only"""
+            # all commands are user-only
             user_commands = all_commands
 
         elif commands_user:
-            """commands_user: [ "command", ... ] # listed are user commands, others admin-only"""
+            # listed are user commands, others admin-only
             user_commands = set(commands_user)
             admin_commands = all_commands - user_commands
 
         else:
-            """default: follow config["commands_admin"] + plugin settings"""
+            # default: follow config["commands_admin"] + plugin settings
             admin_commands = set(commands_admin) | set(self.admin_commands)
             user_commands = all_commands - admin_commands
 
@@ -427,8 +421,8 @@ class CommandDispatcher(object):
         if coro is None:
             raise KeyError("command {} not found".format(command_name))
 
-        """default: if exceptions occur in a command, output as message
-        supply keyword argument raise_exceptions=True to override behaviour"""
+        # default: if exceptions occur in a command, output as message
+        # supply keyword argument raise_exceptions=True to override behaviour
         raise_exceptions = kwds.pop("raise_exceptions", False)
 
         setattr(event, 'command_name', command_name)

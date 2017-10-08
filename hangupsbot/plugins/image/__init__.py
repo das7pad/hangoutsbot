@@ -44,7 +44,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
     """
 
     if " " in image_uri:
-        """immediately reject anything with non url-encoded spaces (%20)"""
+        # immediately reject anything with non url-encoded spaces (%20)
         return False
 
     probable_image_link = False
@@ -52,19 +52,19 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
     image_uri_lower = image_uri.lower()
 
     if re.match(r"^(https?://)?([a-z0-9.]*?\.)?imgur.com/", image_uri_lower, re.IGNORECASE):
-        """imgur links can be supplied with/without protocol and extension"""
+        # imgur links can be supplied with/without protocol and extension
         probable_image_link = True
 
     elif re.match(r'^https?://gfycat.com', image_uri_lower):
-        """imgur links can be supplied with/without protocol and extension"""
+        # imgur links can be supplied with/without protocol and extension
         probable_image_link = True
 
     elif image_uri_lower.startswith(("http://", "https://", "//")) and image_uri_lower.endswith((".png", ".gif", ".gifv", ".jpg", ".jpeg")):
-        """other image links must have protocol and end with valid extension"""
+        # other image links must have protocol and end with valid extension
         probable_image_link = True
 
     if probable_image_link and reject_googleusercontent and ".googleusercontent." in image_uri_lower:
-        """reject links posted by google to prevent endless attachment loop"""
+        # reject links posted by google to prevent endless attachment loop
         logger.debug("rejected link %s with googleusercontent", image_uri)
         return False
 
@@ -75,7 +75,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
                 image_uri = image_uri + ".gif"
             image_uri = "https://i.imgur.com/" + os.path.basename(image_uri)
 
-            """imgur wraps animations in player, force the actual image resource"""
+            # imgur wraps animations in player, force the actual image resource
             image_uri = image_uri.replace(".webm", ".gif")
             image_uri = image_uri.replace(".gifv", ".gif")
 
@@ -99,7 +99,8 @@ async def image_upload_single(image_uri):
 
                 image_handling = False # must == True if valid image, can contain additonal directives
 
-                """image handling logic for specific image types - if necessary, guess by extension"""
+                # image handling logic for specific image types
+                #  - if necessary, guess by extension
 
                 if content_type.startswith('image/'):
                     if content_type == "image/webp":

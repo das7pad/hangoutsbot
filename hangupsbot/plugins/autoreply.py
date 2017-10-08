@@ -41,7 +41,7 @@ async def _handle_autoreply(bot, event):
                      event.user_id.chat_id, event.conv_id)
         return
 
-    """Handle autoreplies to keywords in messages"""
+    # Handle autoreplies to keywords in messages
 
     if isinstance(event, sync.event.SyncEventMembership):
         if event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
@@ -58,11 +58,11 @@ async def _handle_autoreply(bot, event):
     # get_config_suboption returns the convo specific autoreply settings. If none set, it returns the global settings.
     autoreplies_list = bot.get_config_suboption(event.conv_id, 'autoreplies')
 
-    """option to merge per-conversation and global autoreplies, by:
-    * tagging a conversation with "autoreplies-merge" explicitly or by wildcard conv tag
-    * setting global config key: autoreplies.merge = true
-    note: you must also define the appropriate autoreply keys for a specific conversation
-    (by default per-conversation autoreplies replaces global autoreplies settings completely)"""
+    # option to merge per-conversation and global autoreplies, by:
+    # * tagging a conversation with "autoreplies-merge" explicitly or by wildcard conv tag
+    # * setting global config key: autoreplies.merge = true
+    # note: you must also define the appropriate autoreply keys for a specific conversation
+    # (by default per-conversation autoreplies replaces global autoreplies settings completely)
 
     tagged_autoreplies_merge = "autoreplies-merge" in bot.tags.convactive(event.conv_id)
     config_autoreplies_merge = bot.config.get_option('autoreplies.merge') or False

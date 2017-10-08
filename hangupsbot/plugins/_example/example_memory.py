@@ -51,7 +51,7 @@ def forgetme(bot, event, *args):
             event.user.full_name)
 
 
-"""conversation memory"""
+# conversation memory
 
 def rememberchat(bot, event, *args):
     """remember value for current conversation, memory must be empty.

@@ -43,18 +43,18 @@ async def verifyme(bot, event, *args):
     one2one = await bot.get_1to1(chat_id, force=True)
     if one2one:
         if event.user_id.chat_id == chat_id:
-            """send a private message only if the actual user requested it"""
+            # send a private message only if the actual user requested it
             await bot.coro_send_message(
                 one2one,
                 _('<i>verification completed - this is your one-to-one chat with the bot</i>'))
 
         if event.conv_id != one2one.id_:
-            """announce verification wherever it was requested"""
+            # announce verification wherever it was requested
             await bot.coro_send_message(
                 event.conv,
                 _('<i>verified - user has a one-to-one conversation with me</i>'))
     else:
-        """provide standard instructions if no one-2-one exists"""
+        # provide standard instructions if no one-2-one exists
         await _one2one_required(bot, event.conv)
 
 

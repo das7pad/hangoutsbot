@@ -38,29 +38,29 @@ def plugininfo(bot, event, *args):
         if not args or args[0] in plugin["metadata"]["module"] or args[0] in module_path:
             lines.append("<b>[ {} ]</b>".format(plugin["metadata"]["module.path"]))
 
-            """admin commands"""
+            # admin commands
             if plugin["commands"]["admin"]:
                 lines.append("<b>admin commands:</b> <pre>{}</pre>".format(", ".join(plugin["commands"]["admin"])))
 
-            """user-only commands"""
+            # user-only commands
             user_only_commands = list(set(plugin["commands"]["user"]) - set(plugin["commands"]["admin"]))
             if user_only_commands:
                 lines.append("<b>user commands:</b> <pre>{}</pre>".format(", ".join(user_only_commands)))
 
-            """handlers"""
+            # handlers
             if plugin["handlers"]:
                 lines.append("<b>handlers:</b>")
                 lines.append("\n".join(["... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
 
-            """shared"""
+            # shared
             if plugin["shared"]:
                 lines.append("<b>shared:</b> " + ", ".join(["<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
 
-            """threads"""
+            # threads
             if plugin["threads"]:
                 lines.append("<b>threads:</b> {}".format(len(plugin["threads"])))
 
-            """aiohttp.web"""
+            # aiohttp.web
             if plugin["aiohttp.web"]:
                 lines.append("<b>aiohttp.web:</b>")
                 from sinks import aiohttp_list
@@ -71,7 +71,7 @@ def plugininfo(bot, event, *args):
                 else:
                     lines.append('<em>no running aiohttp.web listeners</em>')
 
-            """tagged"""
+            # tagged
             if plugin["commands"]["tagged"]:
                 lines.append("<b>tagged via plugin module:</b>")
                 for command_name, type_tags in plugin["commands"]["tagged"].items():
@@ -89,7 +89,7 @@ def plugininfo(bot, event, *args):
 
                     lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(command_name, ', '.join(matches)))
 
-            """command: argument preprocessors"""
+            # command: argument preprocessors
             if plugin["commands"]["argument.preprocessors"]:
                 lines.append("<b>command preprocessor groups:</b> ")
                 lines.append(", ".join(plugin["commands"]["argument.preprocessors"]))

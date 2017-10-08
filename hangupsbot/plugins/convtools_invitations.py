@@ -200,17 +200,16 @@ async def invite(bot, event, *args):
     sourceconv = False
     list_users = []
 
-    """special cases:
-    * test [set flag, then remove parameter]
-    * no parameters [error out]
-    * 1st parameter is digit [wildcard invite]
-    * any parameter is "list" or "purge" [process then return immediately]
-    """
+    # special cases:
+    # * test [set flag, then remove parameter]
+    # * no parameters [error out]
+    # * 1st parameter is digit [wildcard invite]
+    # * any parameter is "list" or "purge" [process then return immediately]
 
     parameters = list(args)
 
     if "test" in parameters:
-        """turn on test mode - prevents writes"""
+        # turn on test mode - prevents writes
         test = True
         parameters.remove("test")
 
@@ -218,16 +217,15 @@ async def invite(bot, event, *args):
         return _("<em>insufficient parameters for invite</em>")
 
     elif parameters[0].isdigit():
-        """wildcard invites can be used by any user with access to the bot
-        note: wildcard invite command can still be superseded by specifying a "users" list
-          as a parameter
-        """
+        # wildcard invites can be used by any user with access to the bot
+        # note: wildcard invite command can still be superseded by specifying a "users" list
+        #   as a parameter
         wildcards = int(parameters[0])
         if wildcards and wildcards < 150:
             del parameters[0]
 
     elif "list" in parameters or "purge" in parameters:
-        """[list] all invites inside the bot memory, and [purge] when requested"""
+        # [list] all invites inside the bot memory, and [purge] when requested
 
         lines = []
 
@@ -271,7 +269,7 @@ async def invite(bot, event, *args):
 
         return "\n".join(lines)
 
-    """process parameters sequentially using a finite state machine"""
+    # process parameters sequentially using a finite state machine
 
     state = ["users"]
     for parameter in parameters:
@@ -291,26 +289,22 @@ async def invite(bot, event, *args):
             else:
                 raise Help("UNKNOWN STATE: {}".format(state[-1]))
 
-    """ensure supplied conversations are consistent"""
+    # ensure supplied conversations are consistent
 
     if not targetconv and not sourceconv:
-        """
-        from = None, to = None:
-            sourceconv = current
-            targetconv = new blank conversation
-        """
+        # from = None, to = None:
+        #     sourceconv = current
+        #     targetconv = new blank conversation
         sourceconv = event.conv_id
         targetconv = "NEW_GROUP"
 
     elif not targetconv:
-        """
-        from = current, to = None:
-            sourceconv = current
-            targetconv = new blank conversation
-        from = other, to = None:
-            sourceconv = other
-            targetconv = current (or new, if not GROUP)
-        """
+        # from = current, to = None:
+        #     sourceconv = current
+        #     targetconv = new blank conversation
+        # from = other, to = None:
+        #     sourceconv = other
+        #     targetconv = current (or new, if not GROUP)
         if sourceconv == event.conv_id:
             targetconv = "NEW GROUP"
         else:
@@ -320,29 +314,27 @@ async def invite(bot, event, *args):
                 targetconv = event.conv_id
 
     elif not sourceconv:
-        """
-        list_users = 0:
-            from = None, to = current:
-                ERROR
-            from = None, to = other:
-                sourceconv = current
-                targetconv = other
-        list_users > 0:
-            sourceconv = None
-            targetconv = *
-        """
+        # list_users = 0:
+        #     from = None, to = current:
+        #         ERROR
+        #     from = None, to = other:
+        #         sourceconv = current
+        #         targetconv = other
+        # list_users > 0:
+        #     sourceconv = None
+        #     targetconv = *
         if not list_users:
             if targetconv == event.conv_id:
                 return _('<em>invite: specify "from" or explicit list of "users"</em>')
             else:
                 sourceconv = event.conv_id
 
-    """sanity checking"""
+    # sanity checking
 
     if targetconv != "NEW_GROUP" and targetconv not in bot.conversations.get():
         return _('<em>invite: could not identify target conversation')
 
-    """invitation generation"""
+    # invitation generation
 
     invitation_log = [] # devnote: no more returns after this line!
 
@@ -352,7 +344,7 @@ async def invite(bot, event, *args):
     invitations = []
 
     if wildcards:
-        """wildcards can be used by any user to enter a targetconv"""
+        # wildcards can be used by any user to enter a targetconv
         invitations.append({
             "user_id": "*",
             "uses": wildcards})
@@ -362,7 +354,7 @@ async def invite(bot, event, *args):
                     wildcards, targetconv)
 
     else:
-        """shortlist users from source room, or explicit list_users"""
+        # shortlist users from source room, or explicit list_users
         shortlisted = []
         if sourceconv:
             sourceconv_users = _get_user_list(bot, sourceconv)
@@ -383,7 +375,7 @@ async def invite(bot, event, *args):
             logger.info("%s convtools_invitations: shortlisted %s",
                         len(shortlisted), sourceconv)
 
-        """exclude users who are already in the target conversation"""
+        # exclude users who are already in the target conversation
         if targetconv == "NEW_GROUP":
             # fake user list - _new_group_conversation() always creates group with bot and initiator
             targetconv_users = [event.user.id_.chat_id, bot.user_self()["chat_id"]]
@@ -408,7 +400,7 @@ async def invite(bot, event, *args):
                 "user_id": uid,
                 "uses": 1})
 
-    """beyond this point, start doing irreversible things (like create groups)"""
+    # beyond this point, start doing irreversible things (like create groups)
 
     if not invitations:
         invitation_log.append("no invitations were created")
@@ -417,14 +409,14 @@ async def invite(bot, event, *args):
         return _('<em>invite: nobody invited</em>')
 
     else:
-        """create new conversation (if required)"""
+        # create new conversation (if required)
 
         if targetconv == "NEW_GROUP":
             invitation_log.append("create new group")
             if not test:
                 targetconv = await _new_group_conversation(bot, event.user.id_.chat_id)
 
-        """issue the invites"""
+        # issue the invites
 
         invitation_ids = []
         for new_invite in invitations:

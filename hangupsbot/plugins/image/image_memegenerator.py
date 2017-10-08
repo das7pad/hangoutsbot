@@ -31,7 +31,7 @@ async def meme(bot, event, *args):
     try:
         parameters = args or ("robot",)
 
-        """public api: http://version1.api.memegenerator.net"""
+        # public api: http://version1.api.memegenerator.net
         url_api = 'http://version1.api.memegenerator.net/Instances_Search?q=' + "+".join(parameters) + '&pageIndex=0&pageSize=25'
 
         async with aiohttp.ClientSession() as session:

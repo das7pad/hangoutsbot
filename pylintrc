@@ -30,7 +30,6 @@ profile=no
 # multiple time.
 # TODO(das7pad): remove all.
 disable=
-    anomalous-backslash-in-string,
     bare-except,
     broad-except,
     deprecated-module,
@@ -41,7 +40,6 @@ disable=
     missing-docstring,
     multiple-statements,
     no-else-return,
-    pointless-string-statement,
     protected-access,
     reimported,
     too-few-public-methods,

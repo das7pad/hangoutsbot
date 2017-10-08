@@ -428,11 +428,9 @@ def get_configured_plugins(bot):
         plugin_list = retrieve_all_plugins()
 
     else:
-        """
-        perform fuzzy matching with actual retrieved plugins,
-        e.g. "abc" matches "xyz.abc"
-        if more than one match found, don't load plugin
-        """
+        # perform fuzzy matching with actual retrieved plugins,
+        # e.g. "abc" matches "xyz.abc"
+        # if more than one match found, don't load plugin
         plugins_included = []
         plugins_excluded = retrieve_all_plugins(allow_underscore=True)
 

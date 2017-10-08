@@ -71,7 +71,7 @@ async def topic(bot, event, *args):
         message = _("Setting topic to '{}'").format(name)
         logger.info("topic for %s set to: %s", event.conv_id, topic)
 
-    """Rename Hangout"""
+    # Rename Hangout
     await command.run(bot, event, *["convrename", "id:" + event.conv_id, name])
 
     return message
