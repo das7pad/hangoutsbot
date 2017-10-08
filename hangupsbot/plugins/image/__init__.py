@@ -8,8 +8,6 @@ import os
 import re
 import sys
 
-from asyncio.subprocess import PIPE
-
 import aiohttp
 
 import plugins
@@ -166,9 +164,9 @@ async def image_convert_to_png(image):
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin=PIPE,
-            stdout=PIPE,
-            stderr=PIPE)
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
 
         (stdout_data, dummy) = await proc.communicate(input=image)
 

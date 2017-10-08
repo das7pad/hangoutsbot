@@ -9,7 +9,7 @@ import hangups
 import plugins
 import sync.event
 
-from plugins.image import image_validate_and_upload_single
+from .image import image_validate_and_upload_single
 
 logger = logging.getLogger(__name__)
 

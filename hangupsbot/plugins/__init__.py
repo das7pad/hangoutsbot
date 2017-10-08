@@ -10,12 +10,10 @@ import logging
 import os
 import sys
 
-from inspect import getmembers, isfunction
-
 import utils
 from commands import command
 from sinks import aiohttp_servers, aiohttp_terminate
-from threadmanager import thread_manager
+from threadmanager import thread_manager      # pylint:disable=deprecated-module
 
 
 logger = logging.getLogger(__name__)
@@ -552,7 +550,8 @@ async def load(bot, module_path, module_name=None):
     if hasattr(sys.modules[module_path], "hangups_shim"):
         logger.info("%s has legacy hangups reference", module_name)
 
-    public_functions = list(getmembers(sys.modules[module_path], isfunction))
+    public_functions = list(
+        inspect.getmembers(sys.modules[module_path], inspect.isfunction))
 
     candidate_commands = []
 

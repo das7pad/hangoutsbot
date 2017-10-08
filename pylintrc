@@ -32,13 +32,11 @@ profile=no
 disable=
     bare-except,
     broad-except,
-    deprecated-module,
     fixme,
     invalid-name,
     line-too-long,
     missing-docstring,
     protected-access,
-    reimported,
     too-few-public-methods,
     too-many-arguments,
     too-many-branches,
@@ -50,10 +48,8 @@ disable=
     too-many-return-statements,
     too-many-statements,
     undefined-loop-variable,
-    ungrouped-imports,
     unused-argument,
     wrong-import-order,
-    wrong-import-position,
 
 
 [REPORTS]
