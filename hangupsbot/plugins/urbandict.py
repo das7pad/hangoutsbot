@@ -96,8 +96,7 @@ def urbandict(bot, event, *args):
         if term:
             return _('<i>no urban dictionary definition for "{}"</i>').format(
                 term)
-        else:
-            return _('<i>no term from urban dictionary</i>')
+        return _('<i>no term from urban dictionary</i>')
 
 
 def _initialise():

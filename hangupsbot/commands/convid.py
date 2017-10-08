@@ -153,7 +153,7 @@ async def convleave(bot, event, *args):
 
     for convid, convdata in convlist.items():
         if convdata["type"] == "GROUP":
-            if not "quietly" in posix_args:
+            if "quietly" not in posix_args:
                 await bot.coro_send_message(convid, _('I\'ll be back!'))
 
             try:

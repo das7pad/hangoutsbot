@@ -162,5 +162,4 @@ def removebotadd(bot, event, user_id, *args):
         _internal.last_verified = {} # force checks everywhere
 
         return _("user id {} removed as botkeeper").format(user_id)
-    else:
-        return _("user id {} is not authorised").format(user_id)
+    return _("user id {} is not authorised").format(user_id)

@@ -49,8 +49,7 @@ def dnd(bot, event, *args):
         return "global DND toggled ON for {}, expires in {} hour(s)".format(
             event.user.full_name,
             str(seconds_to_expire/3600))
-    else:
-        return "global DND toggled OFF for {}".format(event.user.full_name)
+    return "global DND toggled OFF for {}".format(event.user.full_name)
 
 
 def _expire_DNDs(bot):

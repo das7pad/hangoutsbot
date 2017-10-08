@@ -50,8 +50,7 @@ def weather(bot, event, *args):
     weather_data = _get_weather(bot, event, args)
     if weather_data:
         return _format_current_weather(weather_data)
-    else:
-        return _('There was an error retrieving the weather, guess you need to look outside.')
+    return _('There was an error retrieving the weather, guess you need to look outside.')
 
 def forecast(bot, event, *args):
     """Returns a brief textual forecast from darksky.net
@@ -61,8 +60,7 @@ def forecast(bot, event, *args):
     weather_data = _get_weather(bot, event, args)
     if weather_data:
         return _format_forecast_weather(weather_data)
-    else:
-        return _('There was an error retrieving the weather, guess you need to look outside.')
+    return _('There was an error retrieving the weather, guess you need to look outside.')
 
 def _format_current_weather(weather_data):
     """

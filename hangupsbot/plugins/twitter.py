@@ -34,8 +34,7 @@ def prettydate(diff):
         return '{} minutes ago'.format(round(s/60))
     elif s < 7200:
         return '1 hour ago'
-    else:
-        return '{} hours ago'.format(round(s/3600))
+    return '{} hours ago'.format(round(s/3600))
 
 def _initialise(bot):
     plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])

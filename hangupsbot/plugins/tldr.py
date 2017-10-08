@@ -228,5 +228,4 @@ def _time_ago(timestamp):
         return _("{}m").format(int(time_difference / 60))
     elif time_difference < 60 * 60 * 24:  # hours
         return _("{}h").format(int(time_difference / (60 * 60)))
-    else:
-        return _("{}d").format(int(time_difference / (60 * 60 * 24)))
+    return _("{}d").format(int(time_difference / (60 * 60 * 24)))

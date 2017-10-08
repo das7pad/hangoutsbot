@@ -18,8 +18,7 @@ def iamspartacus(bot, event, *args):
         bot.config[admin_key] = initial_admin_list
         bot.config.save()
         return _('<i>Starter: Configuring first admin: {}</i>').format(chat_id)
-    else:
-        return _("<i>No! I am Spartacus!</i>")
+    return _("<i>No! I am Spartacus!</i>")
 
 
 async def files(bot, event, *args):

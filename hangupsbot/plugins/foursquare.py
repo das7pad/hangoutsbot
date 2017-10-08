@@ -85,5 +85,4 @@ async def foursquare(bot, event, *args):
 
     if places:
         return places
-    else:
-        return _("Something went wrong.")
+    return _("Something went wrong.")

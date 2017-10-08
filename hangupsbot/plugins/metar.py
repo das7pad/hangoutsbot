@@ -46,8 +46,7 @@ METAR source: http://aviationweather.gov"""
     elif not data:
         return _("The response did not contain METAR information, check the "
                  "ICAO airport code and try again.")
-    else:
-        return data[0].text
+    return data[0].text
 
 def taf(bot, event, *args):
     """Looks up the most recent TAF weather forecast for the supplied ICAO airport code.
@@ -67,5 +66,4 @@ TAF source: http://aviationweather.gov"""
     elif not data:
         return _("The response did not contain TAF information, check the "
                  "ICAO airport code and try again.")
-    else:
-        return data[0].text
+    return data[0].text

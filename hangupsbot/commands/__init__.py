@@ -496,8 +496,7 @@ class CommandDispatcher(object):
         # assume it is the decorator (without any optional keyword arguments)
         if len(args) == 1 and callable(args[0]):
             return wrapper(args[0])
-        else:
-            return wrapper
+        return wrapper
 
     def register_unknown(self, func):
         """Decorator for registering unknown command"""

@@ -77,16 +77,15 @@ def _get_cw_for_chat(bot, event):
 
     if index in __cleverbots:
         return __cleverbots[index]
-    else:
-        # dev: you can define different API keys for different conversations
-        api_key = bot.get_config_suboption(event.conv_id, "cleverbot_api_key")
-        if not api_key:
-            return None
-        else:
-            cw = CleverWrap(api_key)
-            __cleverbots[index] = cw
-            logger.debug("created new cw for %s", index)
-            return cw
+
+    # dev: you can define different API keys for different conversations
+    api_key = bot.get_config_suboption(event.conv_id, "cleverbot_api_key")
+    if not api_key:
+        return None
+    cw = CleverWrap(api_key)
+    __cleverbots[index] = cw
+    logger.debug("created new cw for %s", index)
+    return cw
 
 
 def chat(bot, event, *args):
