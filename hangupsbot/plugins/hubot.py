@@ -11,16 +11,22 @@ from sinks import AsyncRequestHandler as IncomingRequestHandler
 
 
 logger = logging.getLogger(__name__)
-
+REQUIRED_ENTRYS = {
+    "certfile": str,
+    "name": str,
+    "port": int,
+    "HUBOT_URL": str,
+    "synced_conversations": list,
+}
 
 class HubotBridge():
+    configuration = []
     def __init__(self, bot, configkey, RequestHandler=IncomingRequestHandler):
         self.bot = self._bot = bot
         self.configkey = configkey
         self.RequestHandler = RequestHandler
-        self.configuration = bot.get_config_option(self.configkey)
 
-        if not self.configuration:
+        if not self._check_config():
             logger.info("no configuration for %s, not running",
                         self.configkey)
             return
@@ -29,52 +35,58 @@ class HubotBridge():
 
         plugins.register_handler(self._handle_websync)
 
+    def _check_config(self):
+        """validate each configured config entry and discard invalid entrys
+
+        Returns:
+            bool: True if any config is valid, otherwise False
+        """
+        input_config = self.bot.get_config_option(self.configkey)
+        valid_configs = []
+        if not input_config or isinstance(input_config, list):
+            return False
+        config_nr = 0
+        for config in input_config:
+            if not isinstance(config, dict):
+                logger.warning("config.%s[%s] is not a `dict`",
+                               self.configkey, config_nr)
+                continue
+            for key, expected_type in REQUIRED_ENTRYS.items():
+                if not config.get(key):
+                    logger.warning('config.%s[%s]["%s"] must be configured',
+                                   self.configkey, config_nr, key)
+                if not isinstance(config[key], expected_type):
+                    logger.warning('config.%s[%s]["%s"] must be of type %s',
+                                   self.configkey, config_nr, key,
+                                   expected_type.__name__)
+            valid_configs.append(config.copy())
+            config_nr += 1
+
+        self.configuration = valid_configs
+        return bool(valid_configs)
+
     def _start_sinks(self, bot):
+        for listener in self.configuration:
+            aiohttp_start(
+                bot=bot,
+                name=listener["name"],
+                port=listener["port"],
+                certfile=listener["certfile"],
+                requesthandlerclass=self.RequestHandler,
+                group="hubotbridge." + self.configkey)
 
-        itemNo = -1
-
-        if isinstance(self.configuration, list):
-            for listener in self.configuration:
-                itemNo += 1
-
-                try:
-                    certfile = listener["certfile"]
-                    if not certfile:
-                        logger.warning(
-                            "config.%s[%s].certfile must be configured",
-                            self.configkey, itemNo)
-                        continue
-                    name = listener["name"]
-                    port = listener["port"]
-                except KeyError:
-                    logger.warning("config.%s[%s] missing keyword",
-                                   self.configkey, itemNo)
-                    continue
-
-                aiohttp_start(
-                    bot=bot,
-                    name=name,
-                    port=port,
-                    certfile=certfile,
-                    requesthandlerclass=self.RequestHandler,
-                    group="hubotbridge." + self.configkey)
-
-        logger.info("hubotbridge.sinks: %s thread(s) started for %s",
-                    itemNo + 1, self.configkey)
+        logger.info("hubotbridge: %s bridges started for %s",
+                    len(self.configuration), self.configkey)
 
     def _handle_websync(self, dummy, event):
         """Handle hangouts messages, preparing them to be sent to the
         external service
         """
 
-        if isinstance(self.configuration, list):
-            for config in self.configuration:
-                try:
-                    convlist = config["synced_conversations"]
-                    if event.conv_id in convlist:
-                        self._send_to_external_chat(dummy, event, config)
-                except:
-                    logger.exception("EXCEPTION in _handle_websync")
+        for config in self.configuration:
+            convlist = config["synced_conversations"]
+            if event.conv_id in convlist:
+                self._send_to_external_chat(dummy, event, config)
 
     @staticmethod
     def _send_to_external_chat(dummy, event, config):

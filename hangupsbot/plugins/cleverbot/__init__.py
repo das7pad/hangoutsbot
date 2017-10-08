@@ -35,6 +35,7 @@ try:
     from cleverwrap import CleverWrap
 except ImportError:
     logger.warning("required module: cleverwrap")
+    raise
 
 __cleverbots = {}
 

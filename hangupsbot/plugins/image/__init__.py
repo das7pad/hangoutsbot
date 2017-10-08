@@ -19,13 +19,6 @@ logger = logging.getLogger(__name__)
 _externals = {"bot": None}
 
 
-try:
-    aiohttp_clienterror = aiohttp.ClientError
-except AttributeError:
-    aiohttp_clienterror = aiohttp.errors.ClientError  # pylint:disable=no-member
-    logger.warning("[DEPRECATED]: aiohttp < 2.0")
-
-
 def _initialise(bot):
     _externals["bot"] = bot
     plugins.register_shared('image_validate_link', image_validate_link)
@@ -122,7 +115,8 @@ async def image_upload_single(image_uri):
                             if results:
                                 # allow custom handlers to fail gracefully
                                 raw = results
-                        except:
+                        except:                     # pylint:disable=bare-except
+                            # unhandled Exception from custom image handler
                             logger.exception("custom image handler failed: %s",
                                              image_handling)
                 else:
@@ -131,7 +125,7 @@ async def image_upload_single(image_uri):
                         filename, res.headers)
                     return False
 
-    except (aiohttp_clienterror) as exc:
+    except aiohttp.ClientError as exc:
         logger.warning("failed to get %s - %s", filename, exc)
         return False
 

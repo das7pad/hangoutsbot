@@ -10,7 +10,8 @@ import json
 import datetime
 
 import aiohttp
-from TwitterAPI import TwitterAPI
+import hangups
+from TwitterAPI import TwitterAPI, TwitterConnectionError
 from bs4 import BeautifulSoup
 
 import plugins
@@ -98,7 +99,6 @@ async def _watch_twitter_link(bot, event):
         text = re.sub(r'(\W)#(\w{1,15})(\W)', r'\1<a href="https://twitter.com/hashtag/\2">#\2</a>\3', text)
         time = tweet['created_at']
         timeago = prettydate(datetime.datetime.now(tz=datetime.timezone.utc) - datetime.datetime.strptime(time, '%a %b %d %H:%M:%S %z %Y'))
-        logger.info(timeago)
         username = tweet['user']['name']
         twhandle = tweet['user']['screen_name']
         userurl = "https://twitter.com/intent/user?user_id={}".format(tweet['user']['id'])
@@ -122,7 +122,7 @@ async def _watch_twitter_link(bot, event):
             pass
 
         await bot.coro_send_message(event.conv, message)
-    except:
+    except (TwitterConnectionError, aiohttp.ClientError, hangups.NetworkError):
         url = event.text.lower()
         try:
             response = urllib.request.urlopen(url)

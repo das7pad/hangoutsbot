@@ -82,7 +82,7 @@ async def foursquare(bot, dummy, *args):
     try:
         clid = bot.memory.get_by_path(["foursquare", "id"])
         secret = bot.memory.get_by_path(["foursquare", "secret"])
-    except:
+    except (KeyError, TypeError):
         return _("Something went wrong - make sure the Foursquare plugin is correctly configured.")
 
     types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]

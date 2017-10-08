@@ -448,7 +448,7 @@ class CommandDispatcher(object):
             text = "\n".join(help_entry).strip()
             conv_id = await bot.get_1to1(event.user_id.chat_id) or conv_id
 
-        except Exception as err:
+        except Exception as err:    # plugin-error - pylint:disable=broad-except
             if raise_exceptions:
                 raise
 

@@ -347,7 +347,7 @@ async def mention(bot, event, *args):
                     logger.error(
                         "unknown return from pushbullet library: %s", push)
                     success = False
-            except:
+            except:               # pushbullet part - pylint:disable=bare-except
                 logger.exception("pushbullet error")
                 success = False
 

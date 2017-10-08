@@ -59,9 +59,9 @@ async def meme(bot, event, *args):
         else:
             await bot.coro_send_message(event.conv_id, "<i>couldn't find a nice picture :( try again</i>")
 
-    except:
+    except (aiohttp.ClientError, KeyError, IndexError, hangups.NetworkError):
         await bot.coro_send_message(event.conv_id, "<i>couldn't find a suitable meme! try again</i>")
-        logger.exception("FAILED TO RETRIEVE MEME")
+        logger.exception("FAILED TO RETRIEVE MEME: %s", repr(parameters))
 
     finally:
         _externals["running"] = False

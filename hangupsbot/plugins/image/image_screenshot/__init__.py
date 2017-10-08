@@ -6,10 +6,9 @@ import re
 import time
 import tempfile
 
+import hangups
 import selenium
-
 from selenium import webdriver
-
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 import plugins
@@ -121,7 +120,7 @@ async def screenshot(bot, event, *args):
 
         try:
             image_data = await _screencap(browser, url, filepath)
-        except:
+        except selenium.common.exceptions.WebDriverException:
             logger.exception("screencap failed %s", url)
             _externals["running"] = False
             return "<i>error getting screenshot</i>"
@@ -135,7 +134,7 @@ async def screenshot(bot, event, *args):
                 image_id = await bot._client.upload_image(image_data,
                                                           filename=filename)
             await bot.coro_send_message(event.conv_id, url, image_id=image_id)
-        except:
+        except hangups.NetworkError:
             logger.exception("upload failed %s", url)
             return "<i>error uploading screenshot</i>"
         finally:
