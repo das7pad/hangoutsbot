@@ -45,7 +45,7 @@ def response_received(bot, event, id, results, original_id):
 
 def handle_as_command(bot, event, id):
     event.from_bot = False
-    event._syncroom_no_repeat = True
+    event.syncroom_no_repeat = True
 
     if "acknowledge" not in dir(event):
         event.acknowledge = []
