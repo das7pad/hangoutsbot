@@ -363,6 +363,29 @@ async def config(bot, event, cmd=None, *args):
         KeyError: the given path does not exist
         ValueError: the given value is not a valid json
     """
+    async def _test():
+        num_parameters = len(parameters)
+        text_parameters = []
+        last = num_parameters - 1
+        for num, token in enumerate(parameters):
+            if num == last:
+                try:
+                    json.loads(token)
+                    token += " <b>(valid json)</b>"
+                except ValueError:
+                    token += " <em>(INVALID)</em>"
+            text_parameters.append(str(num + 1) + ": " + token)
+        text_parameters.insert(0, "<b>config test</b>")
+
+        if num_parameters == 1:
+            text_parameters.append(
+                _("<i>note: testing single parameter as json</i>"))
+        elif num_parameters < 1:
+            await command.unknown_command(bot, event)
+            return None
+
+        return "\n".join(text_parameters)
+
     #TODO(das7pad): refactor into smaller parts and validate the new value/path
 
     # consume arguments and differentiate beginning of a json array or object
@@ -399,27 +422,7 @@ async def config(bot, event, cmd=None, *args):
                  if config_args else dict(bot.config))
 
     elif cmd == 'test':
-        num_parameters = len(parameters)
-        text_parameters = []
-        last = num_parameters - 1
-        for num, token in enumerate(parameters):
-            if num == last:
-                try:
-                    json.loads(token)
-                    token += " <b>(valid json)</b>"
-                except ValueError:
-                    token += " <em>(INVALID)</em>"
-            text_parameters.append(str(num + 1) + ": " + token)
-        text_parameters.insert(0, "<b>config test</b>")
-
-        if num_parameters == 1:
-            text_parameters.append(
-                _("<i>note: testing single parameter as json</i>"))
-        elif num_parameters < 1:
-            await command.unknown_command(bot, event)
-            return
-
-        return "\n".join(text_parameters)
+        return await _test()
 
     elif cmd == 'set':
         config_args = list(parameters[:-1])

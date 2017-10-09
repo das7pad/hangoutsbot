@@ -20,24 +20,17 @@ from commands import Help
 logger = logging.getLogger(__name__)
 
 def prettydate(diff):
-    s = diff.seconds
-    if diff.days > 7 or diff.days < 0:
-        return diff.strftime('%d %b %y')
-    elif diff.days == 1:
-        return '1 day ago'
-    elif diff.days > 1:
-        return '{} days ago'.format(diff.days)
-    elif s <= 1:
-        return 'just now'
-    elif s < 60:
-        return '{} seconds ago'.format(s)
-    elif s < 120:
-        return '1 minute ago'
-    elif s < 3600:
-        return '{} minutes ago'.format(round(s/60))
-    elif s < 7200:
-        return '1 hour ago'
-    return '{} hours ago'.format(round(s/3600))
+    sec = diff.seconds
+    output = (diff.strftime('%d %b %y') if diff.days > 7 or diff.days < 0 else
+              '1 day ago' if diff.days == 1 else
+              '{} days ago'.format(diff.days) if diff.days > 1 else
+              'just now' if sec <= 1 else
+              '{} seconds ago'.format(sec) if sec < 60 else
+              '1 minute ago' if sec < 120 else
+              '{} minutes ago'.format(round(sec/60)) if sec < 3600 else
+              '1 hour ago' if sec < 7200 else
+              '{} hours ago'.format(round(sec/3600)))
+    return output
 
 def _initialise():
     plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])
