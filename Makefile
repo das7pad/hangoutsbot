@@ -1,5 +1,7 @@
 venv = venv
 pip = $(venv)/bin/pip
+# raise non-zero exit codes in pipes
+SHELL=/bin/bash -o pipefail
 
 .PHONY: venv
 venv: venv-create install-requirements
@@ -31,7 +33,8 @@ venv-dev: venv
 lint:
 	@if [ ! -d $(venv)/lib/*/site-packages/pylint ]; then make -s venv-dev; fi
 	@echo "Lint: started"
-	@(cd hangupsbot && ../$(venv)/bin/pylint -s no -j 4 hangupsbot)
+	@(cd hangupsbot && ../$(venv)/bin/pylint -s no -j 4 hangupsbot \
+		| sed -r 's/(\*{13})/\n\1/g')
 	@echo "Lint: no errors found"
 
 .PHONY: clean
