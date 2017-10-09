@@ -754,9 +754,6 @@ class TelegramBot(telepot.aio.Bot):
                                         (err, err.error_code, err.description))
 
             except Exception as err:              # pylint: disable=broad-except
-                if 'JSON' in repr(err).upper():
-                    logger.error('getUpdates received an invalid json response')
-                    continue
                 logger.exception('unexpected error in message loop')
             finally:
                 self._receive_next_updates = 0
