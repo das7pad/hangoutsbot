@@ -373,25 +373,27 @@ class CommandDispatcher(object):
                 # is tagged command generally available (in user_commands)?
                 # admins always get access, other users need appropriate tag(s)
                 # XXX: optimisation: check admin_commands to avoid unnecessary scanning
-                if command_name not in user_commands|admin_commands:
-                    for _match in tags:
-                        _set_allow = set([_match] if isinstance(_match, str) else _match)
-                        if is_admin or _set_allow <= _set_user_tags:
-                            admin_commands.update([command_name])
-                            break
+                if command_name in user_commands|admin_commands:
+                    continue
+                for _match in tags:
+                    _set_allow = set([_match] if isinstance(_match, str) else _match)
+                    if is_admin or _set_allow <= _set_user_tags:
+                        admin_commands.update([command_name])
+                        break
 
             if not is_admin:
                 # tagged commands can be explicitly denied
                 _denied = set()
                 for command_name in user_commands|admin_commands:
-                    if command_name in commands_tagged:
-                        tags = commands_tagged[command_name]
-                        for _match in tags:
-                            _set_allow = set([_match] if isinstance(_match, str) else _match)
-                            _set_deny = {config_tags_deny_prefix + x for x in _set_allow}
-                            if _set_deny <= _set_user_tags:
-                                _denied.update([command_name])
-                                break
+                    if command_name not in commands_tagged:
+                        continue
+                    tags = commands_tagged[command_name]
+                    for _match in tags:
+                        _set_allow = set([_match] if isinstance(_match, str) else _match)
+                        _set_deny = {config_tags_deny_prefix + x for x in _set_allow}
+                        if _set_deny <= _set_user_tags:
+                            _denied.update([command_name])
+                            break
                 admin_commands = admin_commands - _denied
                 user_commands = user_commands - _denied
 
