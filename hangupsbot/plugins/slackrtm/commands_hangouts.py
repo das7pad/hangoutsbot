@@ -29,10 +29,11 @@ HELP = {
 }
 
 
-def _get_slackrtm(slackname):
+def _get_slackrtm(bot, slackname):
     """scan all running slackrtms for a matching name
 
     Args:
+        bot (hangupsbot.HangupsBot): the running instance
         slackname (str): user input as a search query
 
     Returns:
@@ -51,13 +52,16 @@ def _get_slackrtm(slackname):
         raise Help(_('these slack teams match "%s", be more specific!') %
                    (slackname, ', '.join([slackrtm.name
                                           for slackrtm in matches])))
-    raise Help(_('there is no slack team with name "%s", use <i>{bot_cmd} '
-                 'slacks</i> to list all teams') % slackname)
+    raise Help(_('there is no slack team with name "{slack_name}", use '
+                 '<i>{bot_cmd} slacks</i> to list all teams').format(
+                     bot_cmd=bot.command_prefix,
+                     slack_name=slackname))
 
-def _get_slackrtm_and_channel(slackname, channel):
+def _get_slackrtm_and_channel(bot, slackname, channel):
     """scan all running slackrtms and their channel for a match
 
     Args:
+        bot (hangupsbot.HangupsBot): the running instance
         slackname (str): seach query for a slack team/SlackRTM
         channel (str): channel id of the team specified with slackname
 
@@ -67,14 +71,15 @@ def _get_slackrtm_and_channel(slackname, channel):
     Raises:
         Help: no matching slackrtm or channel is not in slackrtm
     """
-    slackrtm = _get_slackrtm(slackname)
+    slackrtm = _get_slackrtm(bot, slackname)
     channelname = slackrtm.get_chatname(channel)
     if channelname is not None:
         return slackrtm, channelname
 
-    raise Help(_('there is no channel with name "%s" in "%s", use '
-                 '<i>{bot_cmd} slack_channels %s</i> to list all channels') %
-               (channel, slackname, slackname))
+    raise Help(_('there is no channel with name "{channel}" in "{slack_name}", '
+                 'use <i>{bot_cmd} slack_channels {slack_name}</i> to list all '
+                 'channels').format(channel=channel, slack_name=slackname,
+                                    bot_cmd=bot.command_prefix))
 
 
 def slacks(*dummys):
@@ -93,12 +98,12 @@ def slacks(*dummys):
 
     return '\n'.join(lines)
 
-async def slack_channels(dummy0, dummy1, *args):
+async def slack_channels(bot, dummy, *args):
     """list all slack channels available in specified slack team
 
     Args:
-        bot  (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): ignored
         args (tuple): a tuple of str, the slackrtm name to query channels from
 
     Returns:
@@ -110,7 +115,7 @@ async def slack_channels(dummy0, dummy1, *args):
     if len(args) != 1:
         raise Help('specify slack team to get list of channels')
 
-    slackrtm = _get_slackrtm(args[0])
+    slackrtm = _get_slackrtm(bot, args[0])
     await slackrtm.update_cache('channels')
     await slackrtm.update_cache('groups')
 
@@ -127,12 +132,12 @@ async def slack_channels(dummy0, dummy1, *args):
 
     return '\n'.join(lines)
 
-def slack_users(dummy0, dummy1, *args):
+def slack_users(bot, dummy, *args):
     """list all slack channels available in specified slack team
 
     Args:
-        dummy0  (hangupsbot.HangupsBot): ignored
-        dummy1 (event.ConversationEvent): ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): ignored
         args (tuple): a tuple of str, slackrtm name and a channel of it
 
     Returns:
@@ -146,7 +151,7 @@ def slack_users(dummy0, dummy1, *args):
 
     slackname = args[0]
     channel = args[1]
-    slackrtm, channelname = _get_slackrtm_and_channel(slackname, channel)
+    slackrtm, channelname = _get_slackrtm_and_channel(bot, slackname, channel)
 
     lines = ['<b>Slack users in channel {}</b>:'.format(channelname)]
 
@@ -181,11 +186,11 @@ def slack_listsyncs(bot, *dummys):
 
     return '\n'.join(lines)
 
-def slack_syncto(dummy, event, *args):
+def slack_syncto(bot, event, *args):
     """start syncing the current hangout to a given slack team/channel
 
     Args:
-        dummy  (hangupsbot.HangupsBot): ignored
+        bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
         args (tuple): a tuple of str, slackrtm name and a channel of it
 
@@ -200,7 +205,7 @@ def slack_syncto(dummy, event, *args):
 
     slackname = args[0]
     channel = args[1]
-    slackrtm, channelname = _get_slackrtm_and_channel(slackname, channel)
+    slackrtm, channelname = _get_slackrtm_and_channel(bot, slackname, channel)
 
     try:
         slackrtm.config_syncto(channel, event.conv_id)
@@ -209,11 +214,11 @@ def slack_syncto(dummy, event, *args):
 
     return 'this hangout synced with {}:{}'.format(slackname, channelname)
 
-def slack_disconnect(dummy, event, *args):
+def slack_disconnect(bot, event, *args):
     """stop syncing the current hangout with given slack team and channel
 
     Args:
-        dummy  (hangupsbot.HangupsBot): ignored
+        bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
         args (tuple): a tuple of str, slackrtm name and a channel of it
 
@@ -228,7 +233,7 @@ def slack_disconnect(dummy, event, *args):
 
     slackname = args[0]
     channel = args[1]
-    slackrtm, channelname = _get_slackrtm_and_channel(slackname, channel)
+    slackrtm, channelname = _get_slackrtm_and_channel(bot, slackname, channel)
 
     try:
         slackrtm.config_disconnect(channel, event.conv_id)
