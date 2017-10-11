@@ -126,6 +126,8 @@ def setup_config(bot):
             'start_message': _('Hello {name}! You are talking to @{botusername}'
                                ', known as {botname}.'),
 
+            # delay between location updates in seconds
+            'location_sharing_update_delay': 30,
         }
     }
     bot.config.set_defaults(default_config)

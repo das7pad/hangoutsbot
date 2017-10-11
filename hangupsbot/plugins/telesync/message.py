@@ -7,11 +7,19 @@ import telepot
 
 from sync.event import SyncReply
 from sync.user import SyncUser
+from utils.cache import Cache
 
 from .exceptions import IgnoreMessage
 from .user import User
 
 logger = logging.getLogger(__name__)
+
+_LOCATION_SHARING_MAX = 60*60*8             # 8hours
+_LOCATION_CACHE = Cache(
+    default_timeout=_LOCATION_SHARING_MAX,
+    name='telesync_location_cache',
+    increase_on_access=False)
+_LOCATION_CACHE.start()
 
 
 class Message(dict):
@@ -140,21 +148,39 @@ class Message(dict):
         """map content type to a propper message text and find images
 
         Raises:
-            IgnoreMessage: the message should not be synced, invalid type
+            IgnoreMessage: the message should not be synced,
+                invalid type or duplicate location
         """
         def _create_gmaps_url():
             """create Google Maps query from a location in the message
 
             Returns:
                 string, a google maps link or .content_type or error
-            """
-            if not ('location' in self and
-                    'latitude' in self['location'] and
-                    'longitude' in self['location']):
-                # missing requirement to create a valid maps link
-                return self.content_type
 
-            return 'https://maps.google.com/maps?q={lat},{lng}'.format(
+            Raises:
+                IgnoreMessage: duplicate location, discard this message
+            """
+            msg_id = self.msg_id    # cache property call
+            if self.edited:
+                # the message is part of a live location sharing
+
+                # the `or` part cover bot restarts
+                last_pos_synced = _LOCATION_CACHE.get(msg_id) or self['date']
+                if (self['edit_date'] - last_pos_synced
+                        < self.tg_bot.config('location_sharing_update_delay')):
+                    raise IgnoreMessage()
+                sync_date = self['edit_date']
+                prefix = _('Live update: ')
+            else:
+                prefix = ''
+                sync_date = self['date']
+
+            # cleanup gracefully, as the cache does not allow updates
+            _LOCATION_CACHE.pop(msg_id, None)
+
+            _LOCATION_CACHE.add(msg_id, sync_date)
+            return '{prefix}https://maps.google.com/maps?q={lat},{lng}'.format(
+                prefix=prefix,
                 lat=self['location']['latitude'],
                 lng=self['location']['longitude'])
 
