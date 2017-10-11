@@ -12,9 +12,28 @@ tldr_echo_options = [
     "GLOBAL"
 ]
 
+HELP = {
+    'tldrecho': _('defines whether the tldr is sent as a private message or '
+                  'into the main chat'),
+
+    'tldr': _(
+        'read and manage tldr entries for a given conversation\n\n'
+        '- {bot_cmd} tldr <number>\n'
+        '   retrieve a specific numbered entry\n'
+        '- {bot_cmd} tldr <text>\n'
+        '   add <text> as an entry\n'
+        '- {bot_cmd} tldr edit <number> <text>\n'
+        '   replace the specified entry with the new <text>\n'
+        '- {bot_cmd} tldr clear <number>\n'
+        '   clear specified numbered entry\n'
+        '   <i>specialcase: {bot_cmd} tldr clear all\n'
+        '     clear all entries</i>')
+}
+
 def _initialise(bot):
     plugins.register_user_command(["tldr"])
     plugins.register_admin_command(["tldrecho"])
+    plugins.register_help(HELP)
     bot.register_shared("plugin_tldr_shared", tldr_shared)
 
     # Set the global option
@@ -24,7 +43,7 @@ def _initialise(bot):
 
 
 def tldrecho(bot, event, *dummys):
-    """defines whether the tldr is sent as a private message or into the main chat"""
+    """defines whether the tldr is sent as a private message instead"""
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
@@ -59,13 +78,7 @@ def tldrecho(bot, event, *dummys):
 
 
 async def tldr(bot, event, *args):
-    """read and manage tldr entries for a given conversation
-
-    * /bot tldr <number> - retrieve a specific numbered entry
-    * /bot tldr <text> - add <text> as an entry
-    * /bot tldr edit <number> <text> - replace the specified entry with the new <text>
-    * /bot tldr clear <number> - clear specified numbered entry
-    * /bot tldr clear all - clear all entries"""
+    """read and manage tldr entries for a given conversation"""
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):

@@ -42,10 +42,14 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
-HELP = _('Retrieve images from showme sources by saying: '
-         '"{bot_cmd} showme SOURCE" or list sources by saying '
-         '"{bot_cmd} showme sources" or all sources by saying '
-         '"{bot_cmd} showme all"')
+HELP = {
+    'showme': _('Retrieve images from showme sources by saying:\n'
+                ' {bot_cmd} showme SOURCE\n'
+                'list sources by saying:\n'
+                ' {bot_cmd} showme sources\n'
+                'or all sources by saying\n'
+                ' {bot_cmd} showme all'),
+}
 
 def _initalize(bot):
     """register the showme command if sources are configured in config

@@ -19,6 +19,17 @@ from commands import Help
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'twittersecret': _('Set your Twitter API Secret.\n'
+                       'Get one from https://apps.twitter.com/app'),
+
+    'twitterkey': _('Set your Twitter API Key.\n'
+                    'Get one from https://apps.twitter.com/'),
+
+    'twitterconfig': _('Get your Twitter credentials. Remember that these are '
+                       'meant to be kept secret!'),
+}
+
 def prettydate(diff):
     sec = diff.seconds
     output = (diff.strftime('%d %b %y') if diff.days > 7 or diff.days < 0 else
@@ -34,10 +45,11 @@ def prettydate(diff):
 
 def _initialise():
     plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])
+    plugins.register_help(HELP)
     plugins.register_sync_handler(_watch_twitter_link, "message_once")
 
 def twittersecret(bot, dummy, *args):
-    '''Set your Twitter API Secret. Get one from https://apps.twitter.com/app'''
+    """Set your Twitter API Secret."""
     if not args:
         raise Help()
     secret = args[0]
@@ -48,7 +60,7 @@ def twittersecret(bot, dummy, *args):
     return "Twitter API secret set to <b>{}</b>.".format(secret)
 
 def twitterkey(bot, dummy, *args):
-    '''Set your Twitter API Key. Get one from https://apps.twitter.com/'''
+    """Set your Twitter API Key."""
     if not args:
         raise Help()
     key = args[0]
@@ -59,7 +71,7 @@ def twitterkey(bot, dummy, *args):
     return "Twitter API key set to <b>{}</b>.".format(key)
 
 def twitterconfig(bot, *dummys):
-    '''Get your Twitter credentials. Remember that these are meant to be kept secret!'''
+    """Get your Twitter credentials."""
 
     if not bot.memory.exists(['twitter']):
         bot.memory.set_by_path(['twitter'], {})

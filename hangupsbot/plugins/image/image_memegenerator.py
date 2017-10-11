@@ -11,17 +11,21 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'meme': _('Searches for a meme related to <something>.\n'
+              'grabs a random meme when none provided'),
+}
 
 _externals = {"running": False}
 
 
 def _initialise():
     plugins.register_user_command(["meme"])
+    plugins.register_help(HELP)
 
 
 async def meme(bot, event, *args):
-    """Searches for a meme related to <something>;
-    grabs a random meme when none provided"""
+    """Searches for a meme related to <something>"""
     if _externals["running"]:
         await bot.coro_send_message(event.conv_id, "<i>busy, give me a moment...</i>")
         return

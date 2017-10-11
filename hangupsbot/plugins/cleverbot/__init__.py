@@ -39,11 +39,16 @@ except ImportError:
 
 __cleverbots = {}
 
+HELP = {
+    'chat': _('chat with cleverbot\n\nexample: {bot_cmd} chat hi cleverbot!'),
+    'chatreset': _("tells cleverbot to forget things you've said in the past"),
+}
 
 def _initialise():
     plugins.register_sync_handler(_handle_incoming_message, "message_once")
     plugins.register_user_command(["chat"])
     plugins.register_admin_command(["chatreset"])
+    plugins.register_help(HELP)
 
 
 async def _handle_incoming_message(bot, event):
@@ -90,9 +95,7 @@ def _get_cw_for_chat(bot, event):
 
 
 def chat(bot, event, *args):
-    """chat with cleverbot
-
-    example: /bot chat hi cleverbot!"""
+    """chat with cleverbot"""
 
     cw = _get_cw_for_chat(bot, event)
     if not cw:

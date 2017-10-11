@@ -13,15 +13,22 @@ EGGS = (
     'shydino',
 )
 
+HELP = {
+    'easteregg': _('starts hangouts easter egg combos.\n'
+                   'supply up to three parameters:\n'
+                   '  - easter egg trigger name\n'
+                   '     ponies, pitchforks, bikeshed or shydino\n'
+                   '  - number of times\n'
+                   '  - period between eastereggs (in seconds)\n'),
+}
+
 def _initialise():
     plugins.register_admin_command(["easteregg"])
+    plugins.register_help(HELP)
 
 
 async def easteregg(bot, event, *args):
-    """starts hangouts easter egg combos.
-    supply three parameters: easter egg trigger name, number of times, period (in seconds).
-    supported easter egg trigger name: ponies , pitchforks , bikeshed , shydino
-    """
+    """start hangouts easter egg combos."""
     if not args:
         raise Help()
 

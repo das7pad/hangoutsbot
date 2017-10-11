@@ -4,13 +4,15 @@ from random import randint
 from commands import Help
 import plugins
 
+
 HELP = {
     "diceroll": _(
         'Rolls dice\nsupply the number and sides of the dice as "<b>n</b>d<b>s'
         '</b>" to roll <b>n</b> dice with <b>s</b> sides\n"d<b>s</b>"'
         "will roll one <b>s</b> sided dice\nno parameters defaults to 1d6\n"
         "e.x. {bot_cmd} diceroll 4d3"),
-    "coinflip": _("flip a coin")
+
+    "coinflip": _("flip a coin"),
 }
 
 def _initialise():

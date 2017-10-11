@@ -10,10 +10,34 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'prepare': _('prepares a bundle of "things" for a random lottery.\n'
+                 'parameter: optional "things", draw definitions.\nif "things" '
+                 'is not specified, "default" will be used.\ndraw definitions '
+                 'can be a simple range such as 1-8; a specific list of things '
+                 'to draw such as <i>a,b,c,d,e</i> ; or a shorthand list such '
+                 'as <i>2abc1xyz (which prepares list abc,abc,xyz)</i> .\n'
+                 'any user can draw once from the default lottery with '
+                 'command <i>/me draws</i> .\nif multiple lotteries '
+                 '(non-default) are active, the user should use: '
+                 '<i>/me draws a "thing"</i> .\nspecial keywords for draw '
+                 'definitions: COMPASS creates a list based on the cardinal '
+                 'and ordinal directions.'),
+
+    'perform_drawing': _(
+        'draw handling:\n<i>/me draw[s] [a[n]] number[s]</i>\n'
+        '  draws from "number", "numbers" or "numberes"'
+        '<i>/me draw[s] [a[n]] sticks[s]</i>\n'
+        '  draws from "stick", "sticks" or "stickses"\n'
+        '<i>/me draws[s]<unrecognised></i>\n'
+        '  draws from "default"\n\nnote: to prepare lotteries/drawings, see '
+        '<b>{bot_cmd} prepare ...</b>'),
+}
 
 def _initialise():
     plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_admin_command(["prepare", "perform_drawing"])
+    plugins.register_help(HELP)
 
 
 async def _handle_me_action(bot, event, command):
@@ -55,14 +79,7 @@ def _save_lottery_state(bot, draw_lists):
 
 
 def prepare(bot, event, *args):
-    """prepares a bundle of "things" for a random lottery.
-    parameter: optional "things", draw definitions. if "things" is not specified, "default" will
-    be used. draw definitions can be a simple range such as 1-8; a specific list of things to draw
-    such as a,b,c,d,e; or a shorthand list such as 2abc1xyz (which prepares list abc,abc,xyz). any
-    user can draw once from the default lottery with command /me draws. if multiple lotteries
-    (non-default) are active, the user should use: /me draws a "thing". special keywords for
-    draw definitions: COMPASS creates list based on the cardinal and ordinal directions.
-    """
+    """prepares a bundle of "things" for a random lottery."""
 
     max_items = 100
 
@@ -129,13 +146,7 @@ def prepare(bot, event, *args):
 
 
 def perform_drawing(bot, event, *dummys):
-    """draw handling:
-        /me draw[s] [a[n]] number[s] => draws from "number", "numbers" or "numberes"
-        /me draw[s] [a[n]] sticks[s] => draws from "stick", "sticks" or "stickses"
-        /me draws[s]<unrecognised> => draws from "default"
-
-        note: to prepare lotteries/drawings, see /bot prepare ...
-    """
+    """draw handling"""
     # XXX: check is for singular, plural "-s" and plural "-es"
 
     draw_lists = _load_lottery_state(bot) # load in any existing lotteries

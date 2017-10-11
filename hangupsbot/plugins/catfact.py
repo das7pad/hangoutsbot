@@ -4,8 +4,13 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'catfact': _('get catfacts'),
+}
+
 def _initialise():
     plugins.register_user_command(["catfact"])
+    plugins.register_help(HELP)
 
 def catfact(dummy0, dummy1, number=1):
     try:

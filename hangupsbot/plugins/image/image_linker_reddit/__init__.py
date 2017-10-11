@@ -15,6 +15,10 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'redditmemeword': _("trigger popular reddit meme images (eg. type "
+                        "'slowclap.gif').\nFull list at http://goo.gl/ORmisN"),
+}
 
 _lookup = {}
 
@@ -23,13 +27,13 @@ def _initialise():
     _load_all_the_things()
     plugins.register_admin_command(["redditmemeword"])
     plugins.register_sync_handler(_scan_for_triggers, "message_once")
+    plugins.register_help(HELP)
 
 
-def redditmemeword(dummy0, dummy1, *args):
-    """trigger popular reddit meme images (eg. type 'slowclap.gif').
-    Full list at http://goo.gl/ORmisN"""
+async def redditmemeword(dummy0, dummy1, *args):
+    """trigger popular reddit meme images (eg. type 'slowclap.gif')."""
     if len(args) == 1:
-        image_link = _get_a_link(args[0])
+        image_link = await _get_a_link(args[0])
         return "this one? {}".format(image_link)
 
 

@@ -8,12 +8,31 @@ from commands import Help
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'foursquareid': _('Set the Foursquare API key for the bot\n'
+                      '  Get one from https://foursquare.com/oauth'),
+
+    'foursquaresecret': _('Set the Foursquare client secret for your bot\n'
+                          '  Get it from https://foursquare.com/oauth'),
+
+    'foursquare': _('Explore places near you with Foursquare!\n'
+                    ' <b>{bot_cmd} foursquare <location></b>:\n'
+                    '   Display up to 10 of the recommended places near the '
+                    'specified location.\n'
+                    ' <b>{bot_cmd} foursquare [type] <location></b>:\n'
+                    'Display up to 10 places near the provided location of the '
+                    'type specified.\n'
+                    '<i>Valid types: food, drinks, coffee, shops, arts, '
+                    'outdoors, sights, trending, specials</i>'),
+}
+
 def _initialise():
     plugins.register_admin_command(["foursquareid", "foursquaresecret"])
     plugins.register_user_command(['foursquare'])
+    plugins.register_help(HELP)
 
 def foursquareid(bot, dummy, *args):
-    '''Set the Foursquare API key for the bot - get one from https://foursquare.com/oauth'''
+    """Set the Foursquare API key for the bot"""
     if not args:
         raise Help()
     clid = args[0]
@@ -28,7 +47,7 @@ def foursquareid(bot, dummy, *args):
     return "Foursquare client id set to {}".format(clid)
 
 def foursquaresecret(bot, dummy, *args):
-    '''Set the Foursquare client secret for your bot - get it from https://foursquare.com/oauth'''
+    """Set the Foursquare client secret for your bot"""
     if not args:
         raise Help()
     secret = args[0]
@@ -73,9 +92,7 @@ def getplaces(location, clid, secret, section=None):
 
 
 async def foursquare(bot, dummy, *args):
-    '''Explore places near you with Foursquare!
-<b>/bot foursquare <location></b>: Display up to 10 of the recommended places near the specified location.
-<b>/bot foursquare [type] <location></b>: Display up to 10 places near the provided location of the type specified. <i>Valid types: food, drinks, coffee, shops, arts, outdoors, sights, trending, specials</i>'''
+    """Explore places near you with Foursquare!"""
     if not args:
         raise Help()
 

@@ -7,17 +7,22 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'dnd': _('allow users to toggle DND for ALL conversations '
+             '(i.e. no @mentions)\n{bot_cmd} dnd [<timeout in hours>]\n'
+             'example: <i>{bot_cmd} dnd 5</i>'),
+}
 
 def _initialise(bot):
     _reuseable = functools.partial(_user_has_dnd, bot)
     functools.update_wrapper(_reuseable, _user_has_dnd)
     plugins.register_shared('dnd.user_check', _reuseable)
     plugins.register_user_command(["dnd"])
+    plugins.register_help(HELP)
 
 
 def dnd(bot, event, *args):
-    """allow users to toggle DND for ALL conversations (i.e. no @mentions)
-        /bot dnd"""
+    """allow users to toggle DND for ALL conversations (i.e. no @mentions)"""
 
     # ensure dndlist is initialised
     if not bot.memory.exists(["donotdisturb"]):

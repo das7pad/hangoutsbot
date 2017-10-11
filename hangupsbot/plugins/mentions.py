@@ -33,6 +33,21 @@ EASTER_EGGS = {
 _nicks = {}
 _nicks_inverse = {}
 
+HELP = {
+    'mention': _('alert a @mentioned user'),
+
+    'pushbulletapi': _('allow users to configure pushbullet integration with '
+                       'their api key\n'
+                       '  {bot_cmd} pushbulletapi [<api key>|false]\n'
+                       'example: {bot_cmd} pushbulletapi XYZ'),
+
+    'bemorespecific': _('toggle the "be more specific message" on or off '
+                        'permanently'),
+
+    'setnickname': _('allow users to set a nickname for mentions and sync '
+                     'relays\n{bot_cmd} setnickname <nickname>\n'
+                     'example: {bot_cmd} setnickname alice'),
+}
 
 def _initialise(bot):
     """start listening to messages and register admin and user commands
@@ -47,6 +62,7 @@ def _initialise(bot):
     bot.memory.ensure_path(["user_data"])
     bot.memory.save()
     _populate_nicknames(bot)
+    plugins.register_help(HELP)
 
 def _populate_nicknames(bot):
     """Pull the keywords from memory and build an index and reverse index
@@ -411,8 +427,7 @@ async def mention(bot, event, *args):
         await bot.coro_send_message(event.conv, '<br>'.join(lines))
 
 def pushbulletapi(bot, event, *args):
-    """allow users to configure pushbullet integration with api key
-        /bot pushbulletapi [<api key>|false, 0, -1]"""
+    """allow users to configure pushbullet integration with api key"""
 
     if len(args) == 1:
         value = args[0]
@@ -452,8 +467,7 @@ def bemorespecific(bot, event, *dummys):
 
 
 def setnickname(bot, event, *args):
-    """allow users to set a nickname for sync relay
-        /bot setnickname <nickname>"""
+    """allow users to set a nickname for mentions and sync relays"""
 
     truncatelength = 16 # What should the maximum length of the nickname be?
     minlength = 2 # What should the minimum length of the nickname be?

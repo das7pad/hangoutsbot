@@ -13,6 +13,15 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'urbandict': _('lookup a term on Urban Dictionary. supplying no parameters '
+                   'will get you a random term.\n'
+                   'DISCLAIMER: all definitions are from '
+                   'http://www.urbandictionary.com/\n'
+                   '- the bot and its creators/maintainers take no '
+                   'responsibility for any hurt feelings.'),
+}
+
 class UrbanDictParser(HTMLParser):
 
     def __init__(self, *args, **kwargs):
@@ -57,11 +66,7 @@ def normalize_newlines(text):
 
 
 def urbandict(dummy0, dummy1, *args):
-    """lookup a term on Urban Dictionary.
-    supplying no parameters will get you a random term.
-    DISCLAIMER: all definitions are from http://www.urbandictionary.com/ - the bot and its
-    creators/maintainers take no responsibility for any hurt feelings.
-    """
+    """lookup a term on Urban Dictionary."""
 
     term = " ".join(args)
     if not term:
@@ -101,3 +106,4 @@ def urbandict(dummy0, dummy1, *args):
 
 def _initialise():
     plugins.register_user_command(["urbandict"])
+    plugins.register_help(HELP)

@@ -17,11 +17,26 @@ class __internal_vars():
 
 _internal = __internal_vars()
 
+HELP = {
+    'allowbotadd': _('add supplied user id as a botkeeper.\n'
+                     'botkeepers are allowed to add bots into a conversation '
+                     'and their continued presence in a conversation keeps the '
+                     'bot from leaving.'),
+
+    'removebotadd': _('remove supplied user id as a botkeeper.\n'
+                      'botkeepers are allowed to add bots into a conversation '
+                      'and their continued presence in a conversation keeps the'
+                      ' bot from leaving.\n'
+                      'warning: removing a botkeeper may cause the bot to leave'
+                      ' conversations where the current botkeeper is present, '
+                      'if no other botkeepers are present.'),
+}
 
 def _initialise():
     plugins.register_sync_handler(_check_if_admin_added_me, "membership_once")
     plugins.register_sync_handler(_verify_botkeeper_presence, "message_once")
     plugins.register_admin_command(["allowbotadd", "removebotadd"])
+    plugins.register_help(HELP)
 
 
 def _botkeeper_list(bot, conv_id):
@@ -128,10 +143,7 @@ async def _leave_the_chat_quietly(bot, event, command):
 
 
 def allowbotadd(bot, dummy, *args):
-    """add supplied user id as a botkeeper.
-    botkeepers are allowed to add bots into a conversation and their continued presence in a
-    conversation keeps the bot from leaving.
-    """
+    """add supplied user id as a botkeeper."""
     if not args:
         raise Help()
     user_id = args[0]
@@ -148,11 +160,7 @@ def allowbotadd(bot, dummy, *args):
 
 
 def removebotadd(bot, dummy, *args):
-    """remove supplied user id as a botkeeper.
-    botkeepers are allowed to add bots into a conversation and their continued presence in a
-    conversation keeps the bot from leaving. warning: removing a botkeeper may cause the bot to
-    leave conversations where the current botkeeper is present, if no other botkeepers are present.
-    """
+    """remove supplied user id as a botkeeper."""
     if not args:
         raise Help()
     user_id = args[0]

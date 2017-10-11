@@ -44,7 +44,7 @@ HELP = {
 
     "whoami": _("get your user id"),
 
-    "whereami": _("get current conversation id")
+    "whereami": _("get current conversation id"),
 }
 
 # non-persistent internal state independent of config.json/memory.json

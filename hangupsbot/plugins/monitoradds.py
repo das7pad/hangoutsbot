@@ -14,11 +14,17 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'addmod': _('add user id(s) to the whitelist of who can add to a hangout'),
+
+    'delmod': _('remove user id(s) from the whitelist of who can add to a '
+                'hangout'),
+}
 
 def _initialise():
     plugins.register_sync_handler(_watch_new_adds, "membership_once")
     plugins.register_admin_command(["addmod", "delmod"])
-
+    plugins.register_help(HELP)
 
 async def _watch_new_adds(bot, event):
     # Check if watching for new adds is enabled

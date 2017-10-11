@@ -3,9 +3,24 @@ import plugins
 _VERIFY_TEXT = _('<i>User must say "hi" to me first via a 1-on-1 hangout, open '
                  '{url} and send me <b>{bot_cmd} verifyme</b>.</i>')
 
+HELP = {
+    'iamspartacus': _('announce to the bot that you are spartacus aka the first'
+                      ' bot-admin'),
+
+    'file': _('list bot file paths'),
+
+    'verifyme': _('verify that the user has a 1-to-1 conversation with the bot.'
+                  '\noptionally, supply a user chat id to test a user other '
+                  'than yourself.'),
+
+    'test_one2one_message': _('send a test message instructing the user to open'
+                              'a 1-to-1 hangout with the bot'),
+}
+
 def _initialise():
     plugins.register_admin_command(["files", "test_one2one_message"])
     plugins.register_user_command(["iamspartacus", "verifyme"])
+    plugins.register_help(HELP)
 
 
 def iamspartacus(bot, event, *dummys):
@@ -30,9 +45,7 @@ async def files(bot, event, *dummys):
 
 
 async def verifyme(bot, event, *args):
-    """verify that the user has a 1-to-1 conversation with the bot.
-    optionally, supply a user chat id to test a user other than yourself.
-    """
+    """verify that the user has a 1-to-1 conversation with the bot."""
 
     if not args:
         chat_id = event.user.id_.chat_id
@@ -58,7 +71,7 @@ async def verifyme(bot, event, *args):
 
 
 async def test_one2one_message(bot, event, *dummys):
-    """send a test message instructing the user to open a 1-to-1 hangout with the bot"""
+    """send a test message instructing the user to open a 1on1 with the bot"""
     await _one2one_required(bot, event.conv_id)
 
 

@@ -10,7 +10,7 @@ HELP = {
     "botalias": _("show, add and remove bot command aliases\nshow:\n  "
                   "{bot_cmd} botalias\nadd:\n  {bot_cmd} botalias <single "
                   "alias>\nremove  {bot_cmd} botalias remove <single alias or "
-                  "multiple aliases separated by blanks>")
+                  "multiple aliases separated by blanks>"),
 }
 
 def _initialise(bot):

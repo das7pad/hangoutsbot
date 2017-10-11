@@ -25,8 +25,10 @@ HELP = {
                 'specifies destination conversation id - if unset, uses current'
                 'group or creates a new one\n"test" to prevent writing anything'
                 'to storage'),
-    "rsvp": _("show invite codes or claim an invite")
+
+    "rsvp": _("show invite codes or claim an invite"),
 }
+
 EXPIRE_IN = 2592000
 
 class DummyEvent():
@@ -38,6 +40,7 @@ def _initialise():
     plugins.register_admin_command(["invite"])
     plugins.register_user_command(["rsvp"])
     plugins.register_handler(_issue_invite_on_exit, "membership")
+    plugins.register_help(HELP)
 
 
 def _remove_invite(bot, invite_code):

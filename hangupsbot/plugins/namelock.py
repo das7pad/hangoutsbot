@@ -10,10 +10,18 @@ from commands import command
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'topic': _('locks a conversation title.\n'
+               ' {bot_cmd} topic <new_name>'
+               'example: {bot_cmd} topic Alerts'
+               'To clear and unlock the title run\n'
+               ' {bot_cmd} topic'),
+}
 
 def _initialise():
     plugins.register_handler(_watch_rename, "rename")
     plugins.register_admin_command(["topic"])
+    plugins.register_help(HELP)
 
 
 async def _watch_rename(bot, event):
@@ -56,7 +64,7 @@ async def _watch_rename(bot, event):
 
 
 async def topic(bot, event, *args):
-    """locks a conversation title. if no parameters supplied, clear and unlock the title"""
+    """locks or unlocks a conversation title."""
 
     name = ' '.join(args).strip()
 

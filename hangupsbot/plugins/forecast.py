@@ -14,19 +14,38 @@ from decimal import Decimal
 logger = logging.getLogger(__name__)
 _internal = {}
 
+HELP = {
+    'setweatherlocation': _('Sets the Lat Long default coordinates for this '
+                            'hangout when polling for weather data\n'
+                            '{bot_cmd} setWeatherLocation <location>'),
+
+    'weather': _("Returns weather information from darksky.net\n"
+                 " <b>{bot_cmd} weather <location></b>\n"
+                 "   Get location's current weather.\n"
+                 " <b>{bot_cmd} weather</b>\n"
+                 "   Get the hangouts default location's current weather. If "
+                 "the  default location is not set talk to a hangout admin."),
+
+    'forecast': _("Returns a brief textual forecast from darksky.net\n"
+                  " <b>{bot_cmd} weather <location></b>\n"
+                  "   Get location's current forecast.\n"
+                  " <b>{bot_cmd} weather</b>\n"
+                  "   Get the hangouts default location's forecast. If default "
+                  "location is not set talk to a hangout admin."),
+}
+
 def _initialize(bot):
     api_key = bot.config.get_option('forecast_api_key')
     if api_key:
         _internal['forecast_api_key'] = api_key
         plugins.register_user_command(['weather', 'forecast'])
         plugins.register_admin_command(['setweatherlocation'])
+        plugins.register_help(HELP)
     else:
         logger.debug('WEATHER: config["forecast_api_key"] required')
 
 def setweatherlocation(bot, event, *args):
-    """Sets the Lat Long default coordinates for this hangout when polling for weather data
-    /bot setWeatherLocation <location>
-    """
+    """Sets the Lat Long default coordinates for this hangout"""
     location = ''.join(args).strip()
     if not location:
         return _('No location was specified, please specify a location.')
@@ -43,20 +62,14 @@ def setweatherlocation(bot, event, *args):
     return _('This hangouts default location has been set to {}.').format(location)
 
 def weather(bot, event, *args):
-    """Returns weather information from darksky.net
-    <b>/bot weather <location></b> Get location's current weather.
-    <b>/bot weather</b> Get the hangouts default location's current weather. If the default location is not set talk to a hangout admin.
-    """
+    """Returns weather information from darksky.net"""
     weather_data = _get_weather(bot, event, args)
     if weather_data:
         return _format_current_weather(weather_data)
     return _('There was an error retrieving the weather, guess you need to look outside.')
 
 def forecast(bot, event, *args):
-    """Returns a brief textual forecast from darksky.net
-    <b>/bot weather <location></b> Get location's current forecast.
-    <b>/bot weather</b> Get the hangouts default location's forecast. If default location is not set talk to a hangout admin.
-    """
+    """Returns a brief textual forecast from darksky.net"""
     weather_data = _get_weather(bot, event, args)
     if weather_data:
         return _format_forecast_weather(weather_data)

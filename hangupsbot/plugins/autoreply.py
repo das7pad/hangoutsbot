@@ -18,7 +18,7 @@ HELP = {
         "adds or removes an autoreply.\nFormat:\nadd:\n {bot_cmd} autoreply add"
         ' [["question1","question2"],"answer"]\nremove:\n {bot_cmd} autoreply '
         'remove [["question"],"answer"]\nview all autoreplies:\n {bot_cmd} '
-        "autoreply")
+        "autoreply"),
 }
 
 def _initialise(bot):
