@@ -7,9 +7,12 @@ import telepot
 
 from sync.event import SyncReply
 from sync.user import SyncUser
+
+from .exceptions import IgnoreMessage
 from .user import User
 
 logger = logging.getLogger(__name__)
+
 
 class Message(dict):
     """parse the message once
@@ -18,7 +21,9 @@ class Message(dict):
 
     Args:
         msg: dict from telepot
-        tg_bot: TelegramBot instance
+
+    Raises:
+        IgnoreMessage: the message should not be synced
     """
     bot = None
     tg_bot = None
@@ -132,8 +137,11 @@ class Message(dict):
                          offset=offset, image=image)
 
     def _set_content(self):
-        """map content type to a propper message text and find images"""
+        """map content type to a propper message text and find images
 
+        Raises:
+            IgnoreMessage: the message should not be synced, invalid type
+        """
         def _create_gmaps_url():
             """create Google Maps query from a location in the message
 
@@ -189,4 +197,4 @@ class Message(dict):
             self.text = _create_gmaps_url()
 
         else:
-            self.text = '[{}]'.format(self.content_type)
+            raise IgnoreMessage()

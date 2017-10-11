@@ -42,6 +42,7 @@ from .commands_tg import (
     command_restrict_user,
 )
 
+from .exceptions import IgnoreMessage
 from .message import Message
 from .parsers import TelegramMessageSegment
 from .user import User
@@ -465,7 +466,11 @@ class TelegramBot(telepot.aio.Bot):
                 or any(key in response for key in IGNORED_MESSAGE_TYPES)):
             return
 
-        msg = Message(response)
+        try:
+            msg = Message(response)
+        except IgnoreMessage:
+            logger.debug('ignore message')
+            return
 
         if msg.content_type == 'text':
             valid, cmd, params = self._parse_command(msg)
