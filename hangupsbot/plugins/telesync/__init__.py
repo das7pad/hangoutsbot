@@ -128,6 +128,9 @@ def setup_config(bot):
 
             # delay between location updates in seconds
             'location_sharing_update_delay': 30,
+
+            # remove the edit-tag from live-locations
+            'location_sharing_remove_edit_tag': True,
         }
     }
     bot.config.set_defaults(default_config)

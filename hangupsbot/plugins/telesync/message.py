@@ -14,8 +14,23 @@ from .user import User
 
 logger = logging.getLogger(__name__)
 
+
+class _LocationCache(Cache):
+    """cache for location data
+
+    keys: msg_id (str)
+    values: last location data (tuple):
+        `(<timestamp (int)>, (<pos_lat (int)>, <pos_lng (int)>))`
+
+    Note: we can not resolve a msg_id to a user_id without storing the orignial
+     message. The debug-mode logs complete messages.
+    """
+    def __missing__(self, identifier):
+        return 0, (0, 0)
+
+
 _LOCATION_SHARING_MAX = 60*60*8             # 8hours
-_LOCATION_CACHE = Cache(
+_LOCATION_CACHE = _LocationCache(
     default_timeout=_LOCATION_SHARING_MAX,
     name='telesync_location_cache',
     increase_on_access=False)
@@ -161,28 +176,30 @@ class Message(dict):
                 IgnoreMessage: duplicate location, discard this message
             """
             msg_id = self.msg_id    # cache property call
+            pos = (self['location']['latitude'], self['location']['longitude'])
             if self.edited:
                 # the message is part of a live location sharing
 
-                # the `or` part cover bot restarts
-                last_pos_synced = _LOCATION_CACHE.get(msg_id) or self['date']
-                if (self['edit_date'] - last_pos_synced
-                        < self.tg_bot.config('location_sharing_update_delay')):
-                    raise IgnoreMessage()
-                sync_date = self['edit_date']
-                prefix = _('Live update: ')
+                last_synced, last_pos = _LOCATION_CACHE.get(msg_id, pop=True)
+                last_synced = last_synced or self['date']
+                if last_pos == pos:
+                    prefix = _('Last live update: ')
+                else:
+                    prefix = _('Live update: ')
+                    _LOCATION_CACHE.add(msg_id, (self['edit_date'], pos))
+
+                    min_delay = self.tg_bot.config(
+                        'location_sharing_update_delay')
+                    if self['edit_date'] - last_synced < min_delay:
+                        raise IgnoreMessage()
+
+                if self.tg_bot.config('location_sharing_remove_edit_tag'):
+                    self.pop('edit_date')
             else:
                 prefix = ''
-                sync_date = self['date']
 
-            # cleanup gracefully, as the cache does not allow updates
-            _LOCATION_CACHE.pop(msg_id, None)
-
-            _LOCATION_CACHE.add(msg_id, sync_date)
             return '{prefix}https://maps.google.com/maps?q={lat},{lng}'.format(
-                prefix=prefix,
-                lat=self['location']['latitude'],
-                lng=self['location']['longitude'])
+                prefix=prefix, lat=pos[0], lng=pos[1])
 
         if self.content_type == 'text':
             self.text = self['text']
