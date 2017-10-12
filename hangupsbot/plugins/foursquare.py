@@ -1,7 +1,7 @@
-import json
 import logging
 import urllib.parse
-import urllib.request
+
+import aiohttp
 
 import plugins
 from commands import Help
@@ -61,7 +61,7 @@ def foursquaresecret(bot, dummy, *args):
     bot.memory.set_by_path(["foursquare", "secret"], secret)
     return "Foursquare client secret set to {}".format(secret)
 
-def getplaces(location, clid, secret, section=None):
+async def getplaces(location, clid, secret, section=None):
     url = "https://api.foursquare.com/v2/venues/explore?client_id={}&client_secret={}&limit=10&v=20160503&near={}".format(clid, secret, location)
     types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
     if section in types:
@@ -72,12 +72,15 @@ def getplaces(location, clid, secret, section=None):
         return None
 
     try:
-        req = urllib.request.urlopen(url)
-    except urllib.error.URLError as err:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                data = await response.json()
+    except aiohttp.ClientError:
+        logger.error('url: %s, response: %s', url, repr(response))
         url = url.replace(clid, 'CLIENT_ID').replace(secret, 'CLIENT_SECRET')
-        logger.error("URL: %s, %s", url, repr(err))
-        return "<i><b>Foursquare Error</b>: {}</i>".format(err.reason)
-    data = json.loads(req.read().decode("utf-8"))
+        logger.error("URL: %s, %s", url, repr(response))
+        return "<i><b>Foursquare Error</b></i>"
 
     if section in types:
         places = ["Showing {} places near {}.<br>".format(section, data['response']['geocode']['displayString'])]
@@ -104,9 +107,9 @@ async def foursquare(bot, dummy, *args):
 
     types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
     if args[0] in types:
-        places = getplaces(urllib.parse.quote(" ".join(args[1:])), clid, secret, args[0])
+        places = await getplaces(urllib.parse.quote(" ".join(args[1:])), clid, secret, args[0])
     else:
-        places = getplaces(urllib.parse.quote(" ".join(args)), clid, secret)
+        places = await getplaces(urllib.parse.quote(" ".join(args)), clid, secret)
 
     if places:
         return places

@@ -1,6 +1,8 @@
 import logging
+
+import aiohttp
+
 import plugins
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -12,13 +14,18 @@ def _initialise():
     plugins.register_user_command(["catfact"])
     plugins.register_help(HELP)
 
-def catfact(dummy0, dummy1, number=1):
+async def catfact(dummy0, dummy1, *args):
+    number = args[0] if args and args[0].isdigit() else 1
+    url = "https://catfact.ninja/facts?limit={}".format(number)
     try:
-        r = requests.get("https://catfact.ninja/facts?limit={}".format(number))
-        facts = [fact['fact'] for fact in r.json()['data']]
-        html_text = '<br>'.join(facts)
-    except (requests.RequestException, ValueError, KeyError):
-        html_text = "Unable to get catfacts right now"
-        logger.exception(html_text)
-
-    return html_text
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                raw = await response.json()
+                facts = [fact['fact'] for fact in raw['data']]
+    except (aiohttp.ClientError, KeyError):
+        text = "Unable to get catfacts right now"
+        logger.exception(url)
+        return text
+    else:
+        return '<br>'.join(facts)

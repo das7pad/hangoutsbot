@@ -2,12 +2,11 @@
 
 Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
 """
-#TODO(das7pad) move to aiohttp for the requests
-
 import logging
-from urllib.request import urlopen
 from urllib.parse import quote as urlquote
 from html.parser import HTMLParser
+
+import aiohttp
 
 import plugins
 
@@ -65,7 +64,7 @@ def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
 
 
-def urbandict(dummy0, dummy1, *args):
+async def urbandict(dummy0, dummy1, *args):
     """lookup a term on Urban Dictionary."""
 
     term = " ".join(args)
@@ -74,8 +73,14 @@ def urbandict(dummy0, dummy1, *args):
     else:
         url = "http://www.urbandictionary.com/define.php?term=" + urlquote(term)
 
-    f = urlopen(url)
-    data = f.read().decode('utf-8')
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                data = await response.text()
+    except aiohttp.ClientError:
+        logger.error('url: %s, response: %s', url, repr(response))
+        return _('urbandict: request failed :(')
 
     urbanDictParser = UrbanDictParser()
     try:

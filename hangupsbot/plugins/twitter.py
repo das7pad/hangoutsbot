@@ -3,8 +3,6 @@ import io
 import logging
 import os
 import re
-import urllib.error
-import urllib.request
 
 import json
 import datetime
@@ -130,15 +128,16 @@ async def _watch_twitter_link(bot, event):
     except (TwitterConnectionError, aiohttp.ClientError, hangups.NetworkError):
         url = event.text.lower()
         try:
-            response = urllib.request.urlopen(url)
-        except urllib.error.URLError as e:
-            logger.info("Tried and failed to get the twitter status text:(")
-            logger.info(e.reason)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    response.raise_for_status()
+                    body = await response.text()
+        except aiohttp.ClientError:
+            logger.error('url: %s, response: %s', url, repr(response))
             return
 
         username = re.match(r".+twitter\.com/([a-zA-Z0-9_]+)/", url).group(1)
-        body = response.read()
-        soup = BeautifulSoup(body.decode("utf-8"), "lxml")
+        soup = BeautifulSoup(body, "lxml")
         twhandle = soup.title.text.split(" on Twitter: ")[0].strip()
         tweet = re.sub(r"#([a-zA-Z0-9]*)", r"<a href='https://twitter.com/hashtag/\1'>#\1</a>", soup.title.text.split(" on Twitter: ")[1].strip())
         message = "<b><a href='{}'>@{}</a> [{}]</b>: {}".format("https://twitter.com/{}".format(username), username, twhandle, tweet)

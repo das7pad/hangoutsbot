@@ -7,9 +7,11 @@ Instructions:
     * Store API key in config.json:forecast_api_key
 """
 import logging
-import plugins
-import requests
 from decimal import Decimal
+
+import aiohttp
+
+import plugins
 
 logger = logging.getLogger(__name__)
 _internal = {}
@@ -44,13 +46,13 @@ def _initialize(bot):
     else:
         logger.debug('WEATHER: config["forecast_api_key"] required')
 
-def setweatherlocation(bot, event, *args):
+async def setweatherlocation(bot, event, *args):
     """Sets the Lat Long default coordinates for this hangout"""
     location = ''.join(args).strip()
     if not location:
         return _('No location was specified, please specify a location.')
 
-    location = _lookup_address(location)
+    location = await _lookup_address(location)
     if location is None:
         return _('Unable to find the specified location.')
 
@@ -61,16 +63,16 @@ def setweatherlocation(bot, event, *args):
     bot.memory.save()
     return _('This hangouts default location has been set to {}.').format(location)
 
-def weather(bot, event, *args):
+async def weather(bot, event, *args):
     """Returns weather information from darksky.net"""
-    weather_data = _get_weather(bot, event, args)
+    weather_data = await _get_weather(bot, event, args)
     if weather_data:
         return _format_current_weather(weather_data)
     return _('There was an error retrieving the weather, guess you need to look outside.')
 
-def forecast(bot, event, *args):
+async def forecast(bot, event, *args):
     """Returns a brief textual forecast from darksky.net"""
-    weather_data = _get_weather(bot, event, args)
+    weather_data = await _get_weather(bot, event, args)
     if weather_data:
         return _format_forecast_weather(weather_data)
     return _('There was an error retrieving the weather, guess you need to look outside.')
@@ -107,69 +109,76 @@ def _format_forecast_weather(weather_data):
 
     return "\n".join(weatherStrings)
 
-def _lookup_address(location):
+async def _lookup_address(location):
     """
     Retrieve the coordinates of the location from googles geocode api.
     Limit of 2,000 requests a day
     """
     google_map_url = 'https://maps.googleapis.com/maps/api/geocode/json'
     payload = {'address': location}
-    resp = requests.get(google_map_url, params=payload)
     try:
-        resp.raise_for_status()
-        results = resp.json()['results'][0]
+        async with aiohttp.ClientSession() as session:
+            async with session.get(google_map_url,
+                                   params=payload) as response:
+                response.raise_for_status()
+                raw = await response.json()
+        results = raw['results'][0]
         return {
             'lat': results['geometry']['location']['lat'],
             'lng': results['geometry']['location']['lng'],
             'address': results['formatted_address']
         }
     except (IndexError, KeyError):
-        logger.error('unable to parse address return data: %d: %s', resp.status_code, resp.json())
+        logger.error('unable to parse address return data: %d: %s',
+                     repr(response), repr(raw))
         return None
-    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError, requests.exceptions.Timeout):
-        logger.error('unable to connect with maps.googleapis.com: %d - %s', resp.status_code, resp.text)
+    except aiohttp.ClientError:
+        logger.error('unable to connect with maps.googleapis.com: %d - %s',
+                     google_map_url, repr(response))
         return None
 
-def _lookup_weather(coords):
+async def _lookup_weather(coords):
     """
     Retrieve the current forecast for the specified coordinates from darksky.net
     Limit of 1,000 requests a day
     """
 
     forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_internal['forecast_api_key'], coords['lat'], coords['lng'])
-    r = requests.get(forecast_io_url)
-
     try:
-        j = r.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(forecast_io_url) as response:
+                response.raise_for_status()
+                raw = await response.json()
         current = {
-            'time' : j['currently']['time'],
-            'summary': j['currently']['summary'],
-            'temperature': Decimal(j['currently']['temperature']),
-            'feelsLike': Decimal(j['currently']['apparentTemperature']),
-            'units': _get_forcast_units(j),
-            'humidity': int(j['currently']['humidity']*100),
-            'windspeed' : Decimal(j['currently']['windSpeed']),
-            'windbearing' : j['currently']['windBearing'],
-            'pressure' : j['currently']['pressure']
+            'time' : raw['currently']['time'],
+            'summary': raw['currently']['summary'],
+            'temperature': Decimal(raw['currently']['temperature']),
+            'feelsLike': Decimal(raw['currently']['apparentTemperature']),
+            'units': _get_forcast_units(raw),
+            'humidity': int(raw['currently']['humidity']*100),
+            'windspeed' : Decimal(raw['currently']['windSpeed']),
+            'windbearing' : raw['currently']['windBearing'],
+            'pressure' : raw['currently']['pressure']
         }
         if current['units']['pressure'] == 'kPa':
             current['pressure'] = Decimal(current['pressure']/10)
 
-        if 'hourly' in j:
-            current['hourly'] = j['hourly']['summary']
-        if 'daily' in j:
-            current['daily'] = j['daily']['summary']
+        if 'hourly' in raw:
+            current['hourly'] = raw['hourly']['summary']
+        if 'daily' in raw:
+            current['daily'] = raw['daily']['summary']
 
-    except ValueError as err:
+    except (ValueError, KeyError) as err:
         logger.error("Forecast Error: %s", err)
         current = dict()
-    except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError, requests.exceptions.Timeout):
-        logger.error('unable to connect with api.darksky.net: %d - %s', r.status_code, r.text)
+    except aiohttp.ClientError:
+        logger.error('unable to connect with api.darksky.net: %d - %s',
+                     forecast_io_url, repr(response))
         return None
 
     return current
 
-def _get_weather(bot, event, params):
+async def _get_weather(bot, event, params):
     """
     Checks memory for a default location set for the current hangout.
     If one is not found and parameters were specified attempts to look up a location.
@@ -184,10 +193,10 @@ def _get_weather(bot, event, params):
                 location = bot.memory.get_by_path(["conv_data", event.conv.id_, "default_weather_location"])
     else:
         address = ''.join(parameters).strip()
-        location = _lookup_address(address)
+        location = await _lookup_address(address)
 
     if location:
-        return _lookup_weather(location)
+        return await _lookup_weather(location)
 
     return {}
 

@@ -1,9 +1,9 @@
 import logging
 
-from utils import unicode_to_ascii
-import urllib.request
+import aiohttp
 
 import plugins
+from utils import unicode_to_ascii
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def _initialise():
     plugins.register_help(HELP)
 
 
-def lookup(bot, event, *args):
+async def lookup(bot, event, *args):
     """find keywords in a specified spreadsheet"""
 
     if not bot.get_config_suboption(event.conv_id, 'spreadsheet_enabled'):
@@ -40,7 +40,14 @@ def lookup(bot, event, *args):
     logger.debug("%s (%s) has requested to lookup '%s'",
                  event.user.full_name, event.user_id.chat_id, keyword)
 
-    html = urllib.request.urlopen(spreadsheet_url).read()
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(spreadsheet_url) as response:
+                response.raise_for_status()
+                html = await response.text()
+    except aiohttp.ClientError:
+        logger.error('url: %s, response: %s', spreadsheet_url, repr(response))
+        return _('lookup: request failed :(')
 
     keyword_raw = keyword.strip().lower()
     keyword_ascii = unicode_to_ascii(keyword_raw)
@@ -52,7 +59,7 @@ def lookup(bot, event, *args):
     # Adapted from http://stackoverflow.com/questions/23377533/python-beautifulsoup-parsing-table
     from bs4 import BeautifulSoup
 
-    soup = BeautifulSoup(str(html, 'utf-8'), 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
     table = soup.find('table', attrs={'class':table_class})
     table_body = table.find('tbody')
 
