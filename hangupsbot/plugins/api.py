@@ -13,13 +13,15 @@ to be able to run admin commands externally
 
 More info: https://github.com/hangoutsbot/hangoutsbot/wiki/API-Plugin
 """
-import asyncio, functools, json, logging, time
+import asyncio
+import functools
+import json
+import logging
+import time
 
 from urllib.parse import unquote
 
 from aiohttp import web
-
-import plugins
 
 from sinks import aiohttp_start
 from sinks.base_bot_request_handler import AsyncRequestHandler
@@ -34,7 +36,7 @@ def _initialise(bot):
 reprocessor_queue = {}
 
 
-def response_received(bot, event, id, results, original_id):
+def response_received(dummy0, dummy1, dummy2, results, original_id):
     if results:
         if isinstance(results, dict) and "api.response" in results:
             output = results["api.response"]
@@ -43,15 +45,17 @@ def response_received(bot, event, id, results, original_id):
         reprocessor_queue[original_id] = output
 
 
-def handle_as_command(bot, event, id):
+def handle_as_command(bot, event, original_id):
     event.from_bot = False
     event.syncroom_no_repeat = True
 
     if "acknowledge" not in dir(event):
         event.acknowledge = []
 
-    handle_response = functools.partial(response_received, original_id=id)
-    event.acknowledge.append(bot._handlers.register_reprocessor(handle_response))
+    handle_response = functools.partial(response_received,
+                                        original_id=original_id)
+    event.acknowledge.append(
+        bot.call_shared("reprocessor.attach_reprocessor", handle_response))
 
 
 def _start_api(bot):
@@ -65,15 +69,23 @@ def _start_api(bot):
             try:
                 certfile = sinkConfig["certfile"]
                 if not certfile:
-                    logger.error("config.api[{}].certfile must be configured".format(itemNo))
+                    logger.error("config.api[%s].certfile must be configured",
+                                 itemNo)
                     continue
                 name = sinkConfig["name"]
                 port = sinkConfig["port"]
-            except KeyError as e:
-                logger.error("config.api[{}] missing keyword".format(itemNo), e)
+            except KeyError as err:
+                logger.error("config.api[%s] missing keyword: %s",
+                             itemNo, repr(err))
                 continue
 
-            aiohttp_start(bot, name, port, certfile, APIRequestHandler, group=__name__)
+            aiohttp_start(
+                bot=bot,
+                name=name,
+                port=port,
+                certfile=certfile,
+                requesthandlerclass=APIRequestHandler,
+                group=__name__)
 
 
 class APIRequestHandler(AsyncRequestHandler):
@@ -90,7 +102,7 @@ class APIRequestHandler(AsyncRequestHandler):
         if allowed_origins is None:
             raise web.HTTPForbidden()
 
-        if "*" == allowed_origins or "*" in allowed_origins:
+        if allowed_origins == "*" or "*" in allowed_origins:
             return web.Response(headers={
                 "Access-Control-Allow-Origin": origin,
                 "Access-Control-Allow-Headers": "content-type",
@@ -106,18 +118,18 @@ class APIRequestHandler(AsyncRequestHandler):
         })
 
     async def adapter_do_GET(self, request):
-        payload = { "sendto": request.match_info["id"],
-                    "key": request.match_info["api_key"],
-                    "content": unquote(request.match_info["message"]) }
+        payload = {"sendto": request.match_info["id"],
+                   "key": request.match_info["api_key"],
+                   "content": unquote(request.match_info["message"])}
 
         results = await self.process_request('', # IGNORED
                                              '', # IGNORED
                                              payload)
         if results:
-            content_type="text/html"
+            content_type = "text/html"
             results = results.encode("ascii", "xmlcharrefreplace")
         else:
-            content_type="text/plain"
+            content_type = "text/plain"
             results = "OK".encode('utf-8')
 
         return web.Response(body=results, content_type=content_type)
@@ -140,24 +152,24 @@ class APIRequestHandler(AsyncRequestHandler):
 
         return results
 
-    async def send_actionable_message(self, id, content):
+    async def send_actionable_message(self, target, content):
         """reprocessor: allow message to be intepreted as a command"""
         reprocessor_context = self._bot.call_shared(
             "reprocessor.attach_reprocessor", handle_as_command)
         reprocessor_id = reprocessor_context["id"]
 
-        if id in self._bot.conversations:
+        if target in self._bot.conversations:
             results = await self._bot.coro_send_message(
-                id,
+                target,
                 content,
-                context = { "reprocessor": reprocessor_context })
+                context={"reprocessor": reprocessor_context})
 
         else:
             # attempt to send to a user id
             results = await self._bot.coro_send_to_user(
-                id,
+                target,
                 content,
-                context = { "reprocessor": reprocessor_context })
+                context={"reprocessor": reprocessor_context})
 
         start_time = time.time()
         while time.time() - start_time < 3:

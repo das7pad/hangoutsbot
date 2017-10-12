@@ -1,5 +1,4 @@
 import logging
-import hangups
 
 from utils import unicode_to_ascii
 import urllib.request
@@ -8,9 +7,13 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'lookup': _('find keywords in a specified spreadsheet'),
+}
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["lookup"])
+    plugins.register_help(HELP)
 
 
 def lookup(bot, event, *args):
@@ -34,7 +37,8 @@ def lookup(bot, event, *args):
 
     htmlmessage = _('Results for keyword <b>{}</b>:\n').format(keyword)
 
-    logger.debug("{0} ({1}) has requested to lookup '{2}'".format(event.user.full_name, event.user.id_.chat_id, keyword))
+    logger.debug("%s (%s) has requested to lookup '%s'",
+                 event.user.full_name, event.user_id.chat_id, keyword)
 
     html = urllib.request.urlopen(spreadsheet_url).read()
 

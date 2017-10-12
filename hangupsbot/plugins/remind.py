@@ -7,9 +7,12 @@ import plugins
 
 HELP = {
     'remindme': _("Posts a custom message to a 1on1 after a delay\nUsage: "
-                  "{bot_cmd} remindme <b>delay (minutes)</b> <i>Message</i>"),
+                  "{bot_cmd} remindme <b><delay (minutes)></b> <i>Message</i>"
+                  "\nexample: {bot_cmd} remindme 5 The 5 Minutes are OVER"),
+
     'remindall': _("Posts a custom message to the chat after a delay\nUsage: "
-                   "{bot_cmd} remindall <b>delay (minutes)</b> <i>Message</i>")
+                   "{bot_cmd} remindall <b><delay (minutes)></b> <i>Message</i>"
+                   "\nexample: {bot_cmd} remindall 5 The 5 Minutes are OVER"),
 }
 
 def _initialise():

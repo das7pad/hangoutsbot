@@ -1,4 +1,5 @@
-import os, logging
+import os
+import logging
 
 import hangups
 
@@ -12,9 +13,9 @@ def _initialise(bot):
     fileWriter = file_writer(bot)
 
     if fileWriter.initialised:
-        plugins.register_handler(fileWriter.on_membership_change, type="membership")
-        plugins.register_handler(fileWriter.on_rename, type="rename")
-        plugins.register_handler(fileWriter.on_chat_message, type="allmessages")
+        plugins.register_handler(fileWriter.on_membership_change, "membership")
+        plugins.register_handler(fileWriter.on_rename, "rename")
+        plugins.register_handler(fileWriter.on_chat_message, "allmessages")
 
 
 class file_writer():
@@ -39,11 +40,11 @@ class file_writer():
             if directory and not os.path.isdir(directory):
                 try:
                     os.makedirs(directory)
-                except OSError as e:
-                    logger.exception('cannot create path: {}'.format(path))
+                except OSError:
+                    logger.exception('cannot create path: %s', path)
                     continue
 
-            logger.info("stored in: {}".format(path))
+            logger.info("stored in: %s", path)
 
         if self.paths:
             self.initialised = True
@@ -56,7 +57,7 @@ class file_writer():
                 logfile.write(text)
 
 
-    def on_chat_message(self, bot, event, command):
+    def on_chat_message(self, bot, event):
         event_timestamp = event.timestamp
 
         conversation_id = event.conv_id
@@ -64,22 +65,19 @@ class file_writer():
         conversation_text = event.text
 
         user_full_name = event.user.full_name
-        user_id = event.user_id
 
         text = "--- {}\n{} :: {}\n{}\n".format(conversation_name, event_timestamp, user_full_name, conversation_text)
 
         self._append_to_file(conversation_id, text)
 
 
-    def on_membership_change(self, bot, event, command):
+    def on_membership_change(self, bot, event):
         event_timestamp = event.timestamp
 
         conversation_id = event.conv_id
         conversation_name = bot.conversations.get_name(event.conv)
-        conversation_text = event.text
 
         user_full_name = event.user.full_name
-        user_id = event.user_id
 
         event_users = [event.conv.get_user(user_id) for user_id
                        in event.conv_event.participant_ids]
@@ -93,15 +91,13 @@ class file_writer():
         self._append_to_file(conversation_id, text)
 
 
-    def on_rename(self, bot, event, command):
+    def on_rename(self, bot, event):
         event_timestamp = event.timestamp
 
         conversation_id = event.conv_id
         conversation_name = bot.conversations.get_name(event.conv)
-        conversation_text = event.text
 
         user_full_name = event.user.full_name
-        user_id = event.user_id
 
         text = "--- {}\n{} :: {}\nCONVERSATION RENAMED: {}\n".format(conversation_name, event_timestamp, user_full_name, conversation_name)
 

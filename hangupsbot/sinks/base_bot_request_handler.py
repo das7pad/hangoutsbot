@@ -15,7 +15,7 @@ class AsyncRequestHandler:
 
     def __init__(self, *args):
         self.sinkname = self.__class__.__name__
-        if(args[0]):
+        if (args[0]):
             self.bot = args[0]
             self._bot = self.bot # backward-compatibility
 
@@ -83,7 +83,7 @@ class AsyncRequestHandler:
                 image_filename = str(int(time.time())) + ".jpg"
                 logger.warning("fallback image filename: {}".format(image_filename))
 
-            image_id = await self.bot._client.upload_image(image_data, filename=image_filename)
+            image_id = await self.bot.upload_image(image_data, filename=image_filename)
 
         if not text and not image_id:
             raise ValueError("nothing to send")

@@ -1,4 +1,5 @@
-import asyncio, logging, re
+import logging
+import re
 
 from random import shuffle
 
@@ -9,10 +10,34 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'prepare': _('prepares a bundle of "things" for a random lottery.\n'
+                 'parameter: optional "things", draw definitions.\nif "things" '
+                 'is not specified, "default" will be used.\ndraw definitions '
+                 'can be a simple range such as 1-8; a specific list of things '
+                 'to draw such as <i>a,b,c,d,e</i> ; or a shorthand list such '
+                 'as <i>2abc1xyz (which prepares list abc,abc,xyz)</i> .\n'
+                 'any user can draw once from the default lottery with '
+                 'command <i>/me draws</i> .\nif multiple lotteries '
+                 '(non-default) are active, the user should use: '
+                 '<i>/me draws a "thing"</i> .\nspecial keywords for draw '
+                 'definitions: COMPASS creates a list based on the cardinal '
+                 'and ordinal directions.'),
 
-def _initialise(bot):
+    'perform_drawing': _(
+        'draw handling:\n<i>/me draw[s] [a[n]] number[s]</i>\n'
+        '  draws from "number", "numbers" or "numberes"'
+        '<i>/me draw[s] [a[n]] sticks[s]</i>\n'
+        '  draws from "stick", "sticks" or "stickses"\n'
+        '<i>/me draws[s]<unrecognised></i>\n'
+        '  draws from "default"\n\nnote: to prepare lotteries/drawings, see '
+        '<b>{bot_cmd} prepare ...</b>'),
+}
+
+def _initialise():
     plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_admin_command(["prepare", "perform_drawing"])
+    plugins.register_help(HELP)
 
 
 async def _handle_me_action(bot, event, command):
@@ -33,7 +58,7 @@ def _get_global_lottery_name(bot, conversation_id, listname):
                     _linked_rooms = sync_room_list
                     _linked_rooms.sort() # keeps the order consistent
                     conversation_id = ":".join(_linked_rooms)
-                    logger.debug("joint room keys {}".format(conversation_id))
+                    logger.debug("joint room keys %s", conversation_id)
 
     return conversation_id + ":" + listname
 
@@ -54,14 +79,7 @@ def _save_lottery_state(bot, draw_lists):
 
 
 def prepare(bot, event, *args):
-    """prepares a bundle of "things" for a random lottery.
-    parameter: optional "things", draw definitions. if "things" is not specified, "default" will
-    be used. draw definitions can be a simple range such as 1-8; a specific list of things to draw
-    such as a,b,c,d,e; or a shorthand list such as 2abc1xyz (which prepares list abc,abc,xyz). any
-    user can draw once from the default lottery with command /me draws. if multiple lotteries
-    (non-default) are active, the user should use: /me draws a "thing". special keywords for
-    draw definitions: COMPASS creates list based on the cardinal and ordinal directions.
-    """
+    """prepares a bundle of "things" for a random lottery."""
 
     max_items = 100
 
@@ -76,11 +94,9 @@ def prepare(bot, event, *args):
 
     draw_lists[global_draw_name] = {"box": [], "users": {}}
 
-    """special types
-        /bot prepare [thing] COMPASS - 4 cardinal + 4 ordinal
-
-        XXX: add more useful shortcuts here!
-    """
+    # special types
+    #     /bot prepare [thing] COMPASS - 4 cardinal + 4 ordinal
+    # XXX: add more useful shortcuts here!
     if listdef == "COMPASS":
         listdef = "north,north-east,east,south-east,south,south-west,west,north-west"
 
@@ -93,14 +109,14 @@ def prepare(bot, event, *args):
     elif re.match(r"\d+-\d+", listdef):
         # sequential range: <integer> to <integer>
         _range = listdef.split("-")
-        min = int(_range[0])
-        max = int(_range[1])
-        if min == max:
-            raise Help(_("prepare: min and max are the same ({})").format(min))
-        if max < min:
-            min, max = max, min
-        max = max + 1 # inclusive
-        draw_lists[global_draw_name]["box"] = list(range(min, max))
+        min_ = int(_range[0])
+        max_ = int(_range[1])
+        if min_ == max_:
+            raise Help(_("prepare: min and max are the same ({})").format(min_))
+        if max_ < min_:
+            min_, max_ = max_, min_
+        max_ = max_ + 1 # inclusive
+        draw_lists[global_draw_name]["box"] = list(range(min_, max_))
 
     else:
         # numberTokens: <integer><name>
@@ -110,7 +126,7 @@ def prepare(bot, event, *args):
             for tokendef in matches:
                 tcount = int(tokendef[1])
                 tname = tokendef[2]
-                for i in range(0, tcount):
+                for dummy in range(0, tcount):
                     draw_lists[global_draw_name]["box"].append(tname)
 
         else:
@@ -129,16 +145,9 @@ def prepare(bot, event, *args):
     return message
 
 
-def perform_drawing(bot, event, *args):
-    """draw handling:
-        /me draw[s] [a[n]] number[s] => draws from "number", "numbers" or "numberes"
-        /me draw[s] [a[n]] sticks[s] => draws from "stick", "sticks" or "stickses"
-        /me draws[s]<unrecognised> => draws from "default"
-
-        note: to prepare lotteries/drawings, see /bot prepare ...
-
-        XXX: check is for singular, plural "-s" and plural "-es"
-    """
+def perform_drawing(bot, event, *dummys):
+    """draw handling"""
+    # XXX: check is for singular, plural "-s" and plural "-es"
 
     draw_lists = _load_lottery_state(bot) # load in any existing lotteries
 
@@ -160,11 +169,12 @@ def perform_drawing(bot, event, *args):
         # seek a matching draw name based on the hacky english singular-plural spellings
         global_draw_name = None
         _test_name = None
+        word = None
         for word in _plurality:
             _test_name = _get_global_lottery_name(bot, event.conv.id_, word)
             if _test_name in draw_lists:
                 global_draw_name = _test_name
-                logger.debug("{} is valid lottery".format(global_draw_name))
+                logger.debug("%s is valid lottery", global_draw_name)
                 break
 
         if global_draw_name is not None:
@@ -180,7 +190,7 @@ def perform_drawing(bot, event, *args):
                     # draw something for the user
                     _thing = str(draw_lists[global_draw_name]["box"].pop())
 
-                    text_drawn = _("<b>{}</b> draws <b>{}</b> from the <b>{}</b> box. ").format(event.user.full_name, _thing, word, );
+                    text_drawn = _("<b>{}</b> draws <b>{}</b> from the <b>{}</b> box. ").format(event.user.full_name, _thing, word, )
                     if not draw_lists[global_draw_name]["box"]:
                         text_drawn = text_drawn + _("...AAAAAND its all gone! The <b>{}</b> lottery is over folks.").format(word)
 
@@ -188,10 +198,10 @@ def perform_drawing(bot, event, *args):
 
                     draw_lists[global_draw_name]["users"][event.user.id_.chat_id] = _thing
             else:
-                text_finished = _("<b>{}</b>, the <b>{}</b> lottery is over. ").format(event.user.full_name, word);
+                text_finished = _("<b>{}</b>, the <b>{}</b> lottery is over. ").format(event.user.full_name, word)
 
                 if event.user.id_.chat_id in draw_lists[global_draw_name]["users"]:
-                    text_finished = _("You drew a {} previously.").format(draw_lists[global_draw_name]["users"][event.user.id_.chat_id]);
+                    text_finished = _("You drew a {} previously.").format(draw_lists[global_draw_name]["users"][event.user.id_.chat_id])
 
                 message = text_finished
         else:

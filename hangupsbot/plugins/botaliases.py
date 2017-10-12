@@ -10,7 +10,7 @@ HELP = {
     "botalias": _("show, add and remove bot command aliases\nshow:\n  "
                   "{bot_cmd} botalias\nadd:\n  {bot_cmd} botalias <single "
                   "alias>\nremove  {bot_cmd} botalias remove <single alias or "
-                  "multiple aliases separated by blanks>")
+                  "multiple aliases separated by blanks>"),
 }
 
 def _initialise(bot):
@@ -41,7 +41,9 @@ def _initialise(bot):
     if not bot_command_aliases:
         bot.append("/bot")
 
+    # pylint:disable=protected-access
     bot._handlers.bot_command = bot_command_aliases
+    # pylint:enable=protected-access
     logger.info("aliases: %s", bot_command_aliases)
 
     plugins.register_user_command(["botalias"])
@@ -58,7 +60,9 @@ def botalias(bot, event, *args):
     Returns:
         string
     """
+    # pylint:disable=protected-access
     _aliases = bot._handlers.bot_command
+    # pylint:enable=protected-access
     if not args:
         return _("<i>bot aliases: {}</i>").format(
             ", ".join(_aliases))

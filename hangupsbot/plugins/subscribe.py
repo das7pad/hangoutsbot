@@ -32,6 +32,27 @@ IGNORED_COMMANDS = set((
     'global_unsubscribe',
 ))
 
+HELP = {
+    'subscribe': _('allow users to subscribe to phrases, only one input at a '
+                   'time\n'
+                   'example: {bot_cmd} subscribe Downtime'),
+
+    'unsubscribe': _('Allow users to unsubscribe from phrases'),
+
+    'testsubscribe': _('handle the event text and allow the user to be '
+                       'self-mentioned'),
+
+    'global_subscribe': ('subscribe keywords globally with a custom '
+                         'conversation as target\n'
+                         'use <i>{bot_cmd} global_subscribe [conv] show</i> to '
+                         'list all keywords that redirect messages into the '
+                         'current or given conversation\n'
+                         'example: {bot_cmd} global_subscribe #audit'),
+
+    'global_unsubscribe': _('unsubscribe from keywords globally\n'
+                            'example: {bot_cmd} global_unsubscribe #audit'),
+}
+
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
@@ -43,6 +64,7 @@ def _initialise(bot):
     plugins.register_user_command(["subscribe", "unsubscribe"])
     plugins.register_admin_command(["global_subscribe", "global_unsubscribe"])
     plugins.register_admin_command(["testsubscribe"])
+    plugins.register_help(HELP)
     bot.register_shared('hide_from_subscribe', _hide_from_subscribe)
     bot.config.set_defaults({"subscribe.enabled": True})
     bot.memory.set_defaults({"hosubscribe": {}})

@@ -1,4 +1,7 @@
-import asyncio, logging, logging.handlers, sys
+import asyncio
+import logging
+import logging.handlers
+import sys
 
 import plugins
 
@@ -23,15 +26,15 @@ def _initialise(bot):
     rootLogger.addHandler(chatHandler)
 
 
-def logconfig(bot, event, loggername, level):
+def logconfig(bot, dummy, loggername, level):
     if loggername in sys.modules:
         config_logging = bot.get_config_option("logging") or {}
 
-        mapping = { "critical": 50,
-                    "error": 40,
-                    "warning": 30,
-                    "info": 20,
-                    "debug": 10 }
+        mapping = {"critical": 50,
+                   "error": 40,
+                   "warning": 30,
+                   "info": 20,
+                   "debug": 10}
 
         effective_level = 0
         if level.isdigit():
@@ -50,7 +53,7 @@ def logconfig(bot, event, loggername, level):
             if loggername in config_logging:
                 current = config_logging[loggername]
             else:
-                current = { "level": 0 }
+                current = {"level": 0}
 
             current["level"] = effective_level
 
@@ -66,7 +69,7 @@ def logconfig(bot, event, loggername, level):
     return message
 
 
-def lograise(bot, event, *args):
+def lograise(dummy0, dummy1, *args):
     level = (''.join(args) or "DEBUG").upper()
 
     if level == "CRITICAL":
@@ -87,14 +90,14 @@ class PluginFilter(logging.Filter):
         logging.Filter.__init__(self)
 
     def filter(self, record):
-        logging = self.bot.get_config_option("logging") or {}
-        if not logging:
+        logging_cfg = self.bot.get_config_option("logging") or {}
+        if not logging_cfg:
             return False
 
-        if record.name not in logging:
+        if record.name not in logging_cfg:
             return False
 
-        if record.levelno < logging[record.name]["level"]:
+        if record.levelno < logging_cfg[record.name]["level"]:
             return False
 
         return True

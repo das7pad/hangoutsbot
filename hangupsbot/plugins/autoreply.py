@@ -9,7 +9,7 @@ import hangups
 import plugins
 import sync.event
 
-from plugins.image import image_validate_and_upload_single
+from .image import image_validate_and_upload_single
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ HELP = {
         "adds or removes an autoreply.\nFormat:\nadd:\n {bot_cmd} autoreply add"
         ' [["question1","question2"],"answer"]\nremove:\n {bot_cmd} autoreply '
         'remove [["question"],"answer"]\nview all autoreplies:\n {bot_cmd} '
-        "autoreply")
+        "autoreply"),
 }
 
 def _initialise(bot):
@@ -37,10 +37,11 @@ async def _handle_autoreply(bot, event):
         return
 
     if "autoreplies-disable" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_):
-        logger.debug("explicitly disabled by tag for {} {}".format(event.user_id.chat_id, event.conv.id_))
+        logger.debug("explicitly disabled by tag for %s %s",
+                     event.user_id.chat_id, event.conv_id)
         return
 
-    """Handle autoreplies to keywords in messages"""
+    # Handle autoreplies to keywords in messages
 
     if isinstance(event, sync.event.SyncEventMembership):
         if event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
@@ -57,11 +58,11 @@ async def _handle_autoreply(bot, event):
     # get_config_suboption returns the convo specific autoreply settings. If none set, it returns the global settings.
     autoreplies_list = bot.get_config_suboption(event.conv_id, 'autoreplies')
 
-    """option to merge per-conversation and global autoreplies, by:
-    * tagging a conversation with "autoreplies-merge" explicitly or by wildcard conv tag
-    * setting global config key: autoreplies.merge = true
-    note: you must also define the appropriate autoreply keys for a specific conversation
-    (by default per-conversation autoreplies replaces global autoreplies settings completely)"""
+    # option to merge per-conversation and global autoreplies, by:
+    # * tagging a conversation with "autoreplies-merge" explicitly or by wildcard conv tag
+    # * setting global config key: autoreplies.merge = true
+    # note: you must also define the appropriate autoreply keys for a specific conversation
+    # (by default per-conversation autoreplies replaces global autoreplies settings completely)
 
     tagged_autoreplies_merge = "autoreplies-merge" in bot.tags.convactive(event.conv_id)
     config_autoreplies_merge = bot.config.get_option('autoreplies.merge') or False
@@ -72,11 +73,13 @@ async def _handle_autoreply(bot, event):
         autoreplies_list_global = bot.config.get_option('autoreplies')
 
         # If the global settings loaded from get_config_suboption then we now have them twice and don't need them, so can be ignored.
-        if autoreplies_list_global and (set([ frozenset([
-                frozenset(x) if isinstance(x, list) else x,
-                frozenset(y) if isinstance(y, list) else y ]) for x, y in autoreplies_list_global ])
-                != set([ frozenset([ frozenset(x) if isinstance(x, list) else x,
-                         frozenset(y) if isinstance(y, list) else y ]) for x, y in autoreplies_list ])):
+        if (autoreplies_list_global
+                and (set([frozenset([frozenset(x) if isinstance(x, list) else x,
+                                     frozenset(y) if isinstance(y, list) else y])
+                          for x, y in autoreplies_list_global])
+                     != set([frozenset([frozenset(x) if isinstance(x, list) else x,
+                                        frozenset(y) if isinstance(y, list) else y])
+                             for x, y in autoreplies_list]))):
 
             add_to_autoreplies = []
 
@@ -88,15 +91,15 @@ async def _handle_autoreply(bot, event):
             # Loop through list of global triggers e.g. ["hi","hello","hey"],["baf","BAF"].
             for kwds_gbl, sentences_gbl in autoreplies_list_global:
                 overlap = False
-                for kwds_lcl, sentences_lcl in autoreplies_list:
+                for kwds_lcl, dummy in autoreplies_list:
                     if type(kwds_gbl) is type(kwds_lcl) is list and (set(kwds_gbl) & set(kwds_lcl)):
                         overlap = True
                         break
                 if not overlap:
-                    add_to_autoreplies.extend( [[kwds_gbl, sentences_gbl]] )
+                    add_to_autoreplies.extend([[kwds_gbl, sentences_gbl]])
 
             # Extend original list with non-disgarded entries.
-            autoreplies_list.extend( add_to_autoreplies )
+            autoreplies_list.extend(add_to_autoreplies)
 
     if autoreplies_list:
         for kwds, sentences in autoreplies_list:
@@ -109,12 +112,12 @@ async def _handle_autoreply(bot, event):
             if isinstance(kwds, list):
                 for kw in kwds:
                     if _words_in_text(kw, event.text) or kw == "*":
-                        logger.info("matched chat: {}".format(kw))
+                        logger.info("matched chat: %s", kw)
                         await send_reply(bot, event, message)
                         break
 
             elif event_type == kwds:
-                logger.info("matched event: {}".format(kwds))
+                logger.info("matched event: %s", kwds)
                 await send_reply(bot, event, message)
 
 
@@ -127,9 +130,9 @@ async def send_reply(bot, event, message):
                   event.conv_id, _("Unidentified Conversation"))}
 
     if "participant_ids" in dir(event.conv_event):
-        values["participants"] = [ event.conv.get_user(user_id)
-                                   for user_id in event.conv_event.participant_ids ]
-        values["participants_namelist"] = ", ".join([ u.full_name for u in values["participants"] ])
+        values["participants"] = [event.conv.get_user(user_id)
+                                  for user_id in event.conv_event.participant_ids]
+        values["participants_namelist"] = ", ".join([u.full_name for u in values["participants"]])
 
     # tldr plugin integration: inject current conversation tldr text into auto-reply
     if '{tldr}' in message:
@@ -139,7 +142,6 @@ async def send_reply(bot, event, message):
         except KeyError:
             values["tldr"] = "**[TLDR UNAVAILABLE]**" # prevents exception
             logger.warning("tldr plugin is not loaded")
-            pass
 
     envelopes = []
 
@@ -147,8 +149,8 @@ async def send_reply(bot, event, message):
         message = message.split(':', 1)[-1]
         target_conv = await bot.get_1to1(event.user.id_.chat_id)
         if not target_conv:
-            logger.error("1-to-1 unavailable for {} ({})".format( event.user.full_name,
-                                                                  event.user.id_.chat_id ))
+            logger.error("1-to-1 unavailable for %s (%s)",
+                         event.user.full_name, event.user.id_.chat_id)
             return False
         envelopes.append((target_conv, message.format(**values)))
 
@@ -157,8 +159,8 @@ async def send_reply(bot, event, message):
         for guest in values["participants"]:
             target_conv = await bot.get_1to1(guest.id_.chat_id)
             if not target_conv:
-                logger.error("1-to-1 unavailable for {} ({})".format( guest.full_name,
-                                                                      guest.id_.chat_id ))
+                logger.error("1-to-1 unavailable for %s (%s)",
+                             guest.full_name, guest.id_.chat_id)
                 return False
             values["guest"] = guest # add the guest as extra info
             envelopes.append((target_conv, message.format(**values)))

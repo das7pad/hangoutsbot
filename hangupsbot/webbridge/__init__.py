@@ -139,7 +139,7 @@ class WebFramework:
             message = passthru["original_request"]["message"]
             image_id = passthru["original_request"]["image_id"]
             if "user" in passthru["original_request"]:
-                if(isinstance(passthru["original_request"]["user"], str)):
+                if (isinstance(passthru["original_request"]["user"], str)):
                     user = FakeUser( full_name = str,
                                      id_ = FakeUserID( chat_id = chat_id,
                                                        gaia_id = chat_id ))
@@ -419,11 +419,11 @@ class WebFramework:
                     continue
 
                 aiohttp_start(
-                    bot,
-                    name,
-                    port,
-                    certfile,
-                    self.RequestHandler,
-                    "webbridge." + self.configkey)
+                    bot=bot,
+                    name=name,
+                    port=port,
+                    certfile=certfile,
+                    requesthandlerclass=self.RequestHandler,
+                    group="webbridge." + self.configkey)
 
         logger.info("webbridge.sinks: {} thread(s) started for {}".format(itemNo + 1, self.configkey))

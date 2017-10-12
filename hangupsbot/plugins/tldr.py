@@ -12,9 +12,28 @@ tldr_echo_options = [
     "GLOBAL"
 ]
 
+HELP = {
+    'tldrecho': _('defines whether the tldr is sent as a private message or '
+                  'into the main chat'),
+
+    'tldr': _(
+        'read and manage tldr entries for a given conversation\n\n'
+        '- {bot_cmd} tldr <number>\n'
+        '   retrieve a specific numbered entry\n'
+        '- {bot_cmd} tldr <text>\n'
+        '   add <text> as an entry\n'
+        '- {bot_cmd} tldr edit <number> <text>\n'
+        '   replace the specified entry with the new <text>\n'
+        '- {bot_cmd} tldr clear <number>\n'
+        '   clear specified numbered entry\n'
+        '   <i>specialcase: {bot_cmd} tldr clear all\n'
+        '     clear all entries</i>')
+}
+
 def _initialise(bot):
     plugins.register_user_command(["tldr"])
     plugins.register_admin_command(["tldrecho"])
+    plugins.register_help(HELP)
     bot.register_shared("plugin_tldr_shared", tldr_shared)
 
     # Set the global option
@@ -23,22 +42,22 @@ def _initialise(bot):
         bot.config.save()
 
 
-def tldrecho(bot, event, *args):
-    """defines whether the tldr is sent as a private message or into the main chat"""
+def tldrecho(bot, event, *dummys):
+    """defines whether the tldr is sent as a private message instead"""
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
-        bot.memory.set_by_path(['conversations'],{})
-    if not bot.memory.exists(['conversations',event.conv_id]):
-        bot.memory.set_by_path(['conversations',event.conv_id],{})
+        bot.memory.set_by_path(['conversations'], {})
+    if not bot.memory.exists(['conversations', event.conv_id]):
+        bot.memory.set_by_path(['conversations', event.conv_id], {})
 
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):
         new_tldr = (bot.memory.get_by_path(['conversations', event.conv_id, 'tldr_echo']) + 1)%3
     else:
         # No path was found. Is this your first setup?
         new_tldr = 0
-    
-    if tldr_echo_options[new_tldr] is not "GLOBAL":
+
+    if tldr_echo_options[new_tldr] == "GLOBAL":
         # Update the tldr_echo setting
         bot.memory.set_by_path(['conversations', event.conv_id, 'tldr_echo'], new_tldr)
     else:
@@ -51,25 +70,21 @@ def tldrecho(bot, event, *args):
 
     # Echo the current tldr setting
     message = '<b>TLDR echo setting for this hangout has been set to {0}.</b>'.format(tldr_echo_options[new_tldr])
-    logger.debug("{0} ({1}) has toggled the tldrecho in '{2}' to {3}".format(event.user.full_name, event.user.id_.chat_id, event.conv_id, tldr_echo_options[new_tldr]))
+    logger.debug("%s (%s) has toggled the tldrecho in '%s' to %s",
+                 event.user.full_name, event.user.id_.chat_id, event.conv_id,
+                 tldr_echo_options[new_tldr])
 
     return message
 
 
 async def tldr(bot, event, *args):
-    """read and manage tldr entries for a given conversation
-
-    * /bot tldr <number> - retrieve a specific numbered entry
-    * /bot tldr <text> - add <text> as an entry
-    * /bot tldr edit <number> <text> - replace the specified entry with the new <text>
-    * /bot tldr clear <number> - clear specified numbered entry
-    * /bot tldr clear all - clear all entries"""
+    """read and manage tldr entries for a given conversation"""
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
-        bot.memory.set_by_path(['conversations'],{})
-    if not bot.memory.exists(['conversations',event.conv_id]):
-        bot.memory.set_by_path(['conversations',event.conv_id],{})
+        bot.memory.set_by_path(['conversations'], {})
+    if not bot.memory.exists(['conversations', event.conv_id]):
+        bot.memory.set_by_path(['conversations', event.conv_id], {})
 
     # Retrieve the current tldr echo status for the hangout.
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):
@@ -79,7 +94,7 @@ async def tldr(bot, event, *args):
 
     message, display = tldr_base(bot, event.conv_id, list(args))
 
-    if display is True and tldr_echo_options[tldr_echo] is 'PM':
+    if display is True and tldr_echo_options[tldr_echo] == 'PM':
         await bot.coro_send_to_user_and_conversation(
             event.user.id_.chat_id, event.conv_id, message,
             _("<i>{}, I've sent you the info in a PM</i>").format(
@@ -108,7 +123,7 @@ def tldr_shared(bot, args):
     params = args['params']
     conv_id = args['conv_id']
 
-    return_data, display = tldr_base(bot, conv_id, params)
+    return_data, dummy = tldr_base(bot, conv_id, params)
 
     return return_data
 
@@ -194,8 +209,8 @@ def tldr_base(bot, conv_id, parameters):
                 message = _("TL;DR #{} not found.").format(parameters[1])
             else:
                 edited_tldr = conv_tldr[sorted_keys[key_index]]
-                tldr = ' '.join(parameters[2:len(parameters)])
-                conv_tldr[sorted_keys[key_index]] = tldr
+                text = ' '.join(parameters[2:len(parameters)])
+                conv_tldr[sorted_keys[key_index]] = text
                 for conv in conv_id_list:
                     bot.memory.set_by_path(['tldr', conv], conv_tldr)
                 bot.memory.save()
@@ -206,10 +221,10 @@ def tldr_base(bot, conv_id, parameters):
         return message, display
 
     elif parameters[0]:  ## need a better looking solution here
-        tldr = ' '.join(parameters)
-        if tldr:
+        text = ' '.join(parameters)
+        if text:
             # Add message to list
-            conv_tldr[str(time.time())] = tldr
+            conv_tldr[str(time.time())] = text
             for conv in conv_id_list:
                 bot.memory.set_by_path(['tldr', conv], conv_tldr)
             bot.memory.save()
@@ -226,5 +241,4 @@ def _time_ago(timestamp):
         return _("{}m").format(int(time_difference / 60))
     elif time_difference < 60 * 60 * 24:  # hours
         return _("{}h").format(int(time_difference / (60 * 60)))
-    else:
-        return _("{}d").format(int(time_difference / (60 * 60 * 24)))
+    return _("{}d").format(int(time_difference / (60 * 60 * 24)))

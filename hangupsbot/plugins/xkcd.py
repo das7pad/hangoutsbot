@@ -15,6 +15,7 @@ _cache = {}
 
 def _initialise():
     plugins.register_user_command(["xkcd"])
+    plugins.register_help(HELP)
     plugins.register_sync_handler(_watch_xkcd_link, "message_once")
 
 regexps = (
@@ -23,14 +24,18 @@ regexps = (
     r"(?:\s|^)xkcd\s+(?:#\s*)?([0-9]+)(?:\s|$)",
 )
 
+HELP = {
+    'xkcd': _('show latest comic\n'
+              '  {bot_cmd} xkcd latest\n'
+              '  {bot_cmd} xkcd current\n'
+              'clear comic cache\n'
+              '  {bot_cmd} xkcd clear\n'
+              'search for a comic\n'
+              '  {bot_cmd} xkcd search <query>'),
+}
 
 async def xkcd(bot, event, *args):
-    """
-/bot xkcd latest: show latest comic
-/bot xkcd current: same
-/bot xkcd clear: clear comic cache
-/bot xkcd search <query>: search for a comic
-"""
+    """xkcd interface"""
     if len(args) == 1:
         if args[0] == "clear":
             _cache.clear()
@@ -46,7 +51,7 @@ async def xkcd(bot, event, *args):
 
     await _print_comic(bot, event)
 
-async def _watch_xkcd_link(bot, event, command):
+async def _watch_xkcd_link(bot, event):
     # Don't handle events caused by the bot himself
     if event.user.is_self:
         return
@@ -85,7 +90,7 @@ async def _get_comic(bot, num=None):
             async with session.request('get', info["img"]) as request:
                 raw = await request.read()
         image_data = io.BytesIO(raw)
-        info['image_id'] = await bot._client.upload_image(image_data, filename=filename)
+        info['image_id'] = await bot.upload_image(image_data, filename=filename)
         _cache[info['num']] = info
         return info
 
@@ -131,4 +136,3 @@ async def _search_comic(bot, event, terms):
 
     await bot.coro_send_message(event.conv.id_, msg)
     await _print_comic(bot, event, num)
-

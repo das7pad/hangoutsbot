@@ -14,13 +14,19 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'addmod': _('add user id(s) to the whitelist of who can add to a hangout'),
+
+    'delmod': _('remove user id(s) from the whitelist of who can add to a '
+                'hangout'),
+}
 
 def _initialise():
     plugins.register_sync_handler(_watch_new_adds, "membership_once")
     plugins.register_admin_command(["addmod", "delmod"])
+    plugins.register_help(HELP)
 
-
-async def _watch_new_adds(bot, event, command):
+async def _watch_new_adds(bot, event):
     # Check if watching for new adds is enabled
     if not bot.get_config_suboption(event.conv_id, 'watch_new_adds'):
         return
@@ -61,20 +67,20 @@ async def _watch_new_adds(bot, event, command):
 def addmod(bot, event, *args):
     """add user id(s) to the whitelist of who can add to a hangout"""
     mod_ids = list(args)
-    if(bot.get_config_suboption(event.conv_id, 'mods') != None):
+    if bot.get_config_suboption(event.conv_id, 'mods') is not None:
         for mod in bot.get_config_suboption(event.conv_id, 'mods'):
             mod_ids.append(mod)
         bot.config.set_by_path(["mods"], mod_ids)
         bot.config.save()
         html_message = _("<i>Moderators updated: {} added</i>")
         return html_message.format(args[0])
-    else:
-        bot.config.set_by_path(["mods"], mod_ids)
-        bot.config.save()
-        html_message = _("<i>Moderators updated: {} added</i>")
-        return html_message.format(args[0])
 
-def delmod(bot, event, *args):
+    bot.config.set_by_path(["mods"], mod_ids)
+    bot.config.save()
+    html_message = _("<i>Moderators updated: {} added</i>")
+    return html_message.format(args[0])
+
+def delmod(bot, dummy, *args):
     """remove user id(s) from the whitelist of who can add to a hangout"""
     if not bot.config.get_option('mods'):
         return

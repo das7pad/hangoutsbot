@@ -5,7 +5,8 @@ all these commands work on memory.json
 * retrieving and setting taint status of memory
 """
 
-import logging, time
+import logging
+import time
 
 import plugins
 
@@ -13,28 +14,28 @@ import plugins
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["memorytaint", "memoryuntaint", "memorystatus",
                                     "memoryset", "memoryget", "memorypop", "memorysave", "memorydelete",
                                     "submemoryinit", "submemoryclear", "submemoryset", "submemoryget", "submemorypop", "submemorydelete"])
 
 
-def memoryset(bot, event, *args):
+def memoryset(bot, *dummys):
     timestamp = time.time()
     bot.memory["unittest"] = str(timestamp)
-    logger.info("memoryset: {}".format(timestamp))
+    logger.info("memoryset: %s", timestamp)
 
 
-def memoryget(bot, event, *args):
-    logger.info("memoryget: {}".format(bot.memory["unittest"]))
+def memoryget(bot, *dummys):
+    logger.info("memoryget: %s", bot.memory["unittest"])
 
 
-def memorypop(bot, event, *args):
+def memorypop(bot, *dummys):
     the_string = bot.memory.pop("unittest")
-    logger.info("memorypop: {}".format(the_string))
+    logger.info("memorypop: %s", the_string)
 
 
-def memorytaint(bot, event, *args):
+def memorytaint(bot, *dummys):
     if bot.memory.changed:
         logger.info("memorytaint: memory already tainted")
     else:
@@ -42,7 +43,7 @@ def memorytaint(bot, event, *args):
         logger.info("memorytaint: memory tainted")
 
 
-def memoryuntaint(bot, event, *args):
+def memoryuntaint(bot, *dummys):
     if bot.memory.changed:
         bot.memory.changed = False
         logger.info("memoryuntaint: memory de-tainted")
@@ -50,45 +51,45 @@ def memoryuntaint(bot, event, *args):
         logger.info("memoryuntaint: memory not tainted")
 
 
-def memorystatus(bot, event, *args):
+def memorystatus(bot, *dummys):
     if bot.memory.changed:
         logger.info("memorystatus: memory tainted")
     else:
         logger.info("memorystatus: memory not tainted")
 
 
-def memorysave(bot, event, *args):
-    bot.memory.save() 
+def memorysave(bot, *dummys):
+    bot.memory.save()
 
 
-def submemoryinit(bot, event, *args):
+def submemoryinit(bot, *dummys):
     bot.memory["unittest-submemory"] = {}
 
 
-def submemoryclear(bot, event, *args):
+def submemoryclear(bot, *dummys):
     bot.memory.pop("unittest-submemory")
 
 
-def submemoryset(bot, event, *args):
+def submemoryset(bot, *dummys):
     timestamp = time.time()
     bot.memory["unittest-submemory"]["timestamp"] = str(timestamp)
-    logger.info("submemoryset: {}".format(timestamp))
+    logger.info("submemoryset: %s", timestamp)
 
 
-def submemoryget(bot, event, *args):
-    logger.info("submemoryget: {}".format(bot.memory["unittest-submemory"]["timestamp"]))
+def submemoryget(bot, *dummys):
+    logger.info("submemoryget: %s", bot.memory["unittest-submemory"]["timestamp"])
 
 
-def submemorypop(bot, event, *args):
+def submemorypop(bot, *dummys):
     the_string = bot.memory["unittest-submemory"].pop("timestamp")
-    logger.info("submemorypop: {}".format(the_string))
+    logger.info("submemorypop: %s", the_string)
 
 
-def memorydelete(bot, event, *args):
+def memorydelete(bot, *dummys):
     the_string = bot.memory.pop_by_path(["unittest"])
-    logger.info("memorydelete: {}".format(the_string))
+    logger.info("memorydelete: %s", the_string)
 
 
-def submemorydelete(bot, event, *args):
+def submemorydelete(bot, *dummys):
     the_string = bot.memory.pop_by_path(["unittest-submemory", "timestamp"])
-    logger.info("submemorydelete: {}".format(the_string))
+    logger.info("submemorydelete: %s", the_string)

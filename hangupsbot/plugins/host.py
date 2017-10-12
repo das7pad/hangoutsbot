@@ -47,18 +47,22 @@ import psutil
 
 import plugins
 
+
 HELP = {
     'check_load': _('enable/disable system load reporting above an average 1 '
                     'load per core into the current conv\n\n'
                     '<i>The threshold can be set manually to a different value:'
                     '\n  set "load_threshold" in your config to a custom value'
                     '</i>'),
+
     'report_online': _('enable/disable sending of a message into the current '
                        'conv on bot reboot\n<i>datadog: toggles the periodic '
                        'reporting of an online state of the bot to '
                        'datadog - this requires an active datadog service</i>'),
+
     'uptime': _('post the current sytem uptime in our private chat'),
-    'who': _('list current ssh-session on the host in our private chat')
+
+    'who': _('list current ssh-session on the host in our private chat'),
 }
 
 def _initialise(bot):

@@ -14,7 +14,7 @@ def _initialise():
     plugins.register_handler(on_typing_notification, "typing")
 
 
-def on_typing_notification(bot, event, command):
+def on_typing_notification(bot, event):
     if event.from_bot:
         # ignore self events
         return
@@ -42,7 +42,7 @@ def on_typing_notification(bot, event, command):
         raise ValueError("unknown typing status: %s" % typing_status)
 
 
-def on_watermark_update(bot, event, command):
+def on_watermark_update(bot, event):
     if event.from_bot:
         # ignore self events
         return

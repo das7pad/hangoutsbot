@@ -1,5 +1,9 @@
-import aiohttp, logging, os, random, urllib.request
+import logging
+import os
+import random
+import urllib.request
 
+import aiohttp
 import hangups
 
 import plugins
@@ -7,17 +11,21 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'meme': _('Searches for a meme related to <something>.\n'
+              'grabs a random meme when none provided'),
+}
 
-_externals = { "running": False }
+_externals = {"running": False}
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["meme"])
+    plugins.register_help(HELP)
 
 
 async def meme(bot, event, *args):
-    """Searches for a meme related to <something>;
-    grabs a random meme when none provided"""
+    """Searches for a meme related to <something>"""
     if _externals["running"]:
         await bot.coro_send_message(event.conv_id, "<i>busy, give me a moment...</i>")
         return
@@ -27,7 +35,7 @@ async def meme(bot, event, *args):
     try:
         parameters = args or ("robot",)
 
-        """public api: http://version1.api.memegenerator.net"""
+        # public api: http://version1.api.memegenerator.net
         url_api = 'http://version1.api.memegenerator.net/Instances_Search?q=' + "+".join(parameters) + '&pageIndex=0&pageSize=25'
 
         async with aiohttp.ClientSession() as session:
@@ -42,22 +50,22 @@ async def meme(bot, event, *args):
             legacy_segments = [hangups.ChatMessageSegment(
                 instanceImageUrl, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
                 link_target=instanceImageUrl)]
-            logger.debug("uploading {} from {}".format(filename, instanceImageUrl))
+            logger.debug("uploading %s from %s", filename, instanceImageUrl)
 
             try:
                 photo_id = await bot.call_shared('image_upload_single', instanceImageUrl)
             except KeyError:
                 logger.warning('image plugin not loaded - using legacy code')
-                photo_id = await bot._client.upload_image(image_data, filename=filename)
+                photo_id = await bot.upload_image(image_data, filename=filename)
 
             await bot.coro_send_message(event.conv.id_, legacy_segments, image_id=photo_id)
 
         else:
             await bot.coro_send_message(event.conv_id, "<i>couldn't find a nice picture :( try again</i>")
 
-    except Exception as e:
+    except (aiohttp.ClientError, KeyError, IndexError, hangups.NetworkError):
         await bot.coro_send_message(event.conv_id, "<i>couldn't find a suitable meme! try again</i>")
-        logger.exception("FAILED TO RETRIEVE MEME")
+        logger.exception("FAILED TO RETRIEVE MEME: %s", repr(parameters))
 
     finally:
         _externals["running"] = False

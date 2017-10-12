@@ -10,12 +10,10 @@ import logging
 import os
 import sys
 
-from inspect import getmembers, isfunction
-
 import utils
 from commands import command
 from sinks import aiohttp_servers, aiohttp_terminate
-from threadmanager import thread_manager
+from threadmanager import thread_manager      # pylint:disable=deprecated-module
 
 
 logger = logging.getLogger(__name__)
@@ -274,16 +272,18 @@ def register_help(source, name=None):
         raise ValueError('check args')
     tracking.bot.memory.set_defaults(source, ['command_help'])
 
-def register_handler(function, type="message", priority=50):
+def register_handler(function, pluggable="message", priority=50):
     """register external message handler
 
     Args:
         function: callable, with signature: function(bot, event, command)
-        name: string, key in handler.EventHandler.pluggables, event type
+        pluggable: string, key in handler.EventHandler.pluggables, handler type
         priority: int, change the sequence of handling the event
     """
+    # pylint:disable=protected-access
     bot_handlers = tracking.bot._handlers
-    bot_handlers.register_handler(function, type, priority)
+    # pylint:enable=protected-access
+    bot_handlers.register_handler(function, pluggable, priority)
 
 def register_sync_handler(function, name="message", priority=50):
     """register external sync handler
@@ -428,11 +428,9 @@ def get_configured_plugins(bot):
         plugin_list = retrieve_all_plugins()
 
     else:
-        """
-        perform fuzzy matching with actual retrieved plugins,
-        e.g. "abc" matches "xyz.abc"
-        if more than one match found, don't load plugin
-        """
+        # perform fuzzy matching with actual retrieved plugins,
+        # e.g. "abc" matches "xyz.abc"
+        # if more than one match found, don't load plugin
         plugins_included = []
         plugins_excluded = retrieve_all_plugins(allow_underscore=True)
 
@@ -554,7 +552,8 @@ async def load(bot, module_path, module_name=None):
     if hasattr(sys.modules[module_path], "hangups_shim"):
         logger.info("%s has legacy hangups reference", module_name)
 
-    public_functions = list(getmembers(sys.modules[module_path], isfunction))
+    public_functions = list(
+        inspect.getmembers(sys.modules[module_path], inspect.isfunction))
 
     candidate_commands = []
 

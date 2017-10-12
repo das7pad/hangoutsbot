@@ -1,19 +1,20 @@
 # TODO(das7pad) refactor needed
 
-import logging, shlex
+import logging
+import shlex
 
 import hangups
 
 import plugins
 
-from utils import simple_parse_to_segments
 from commands import Help
+from hangups_conversation import HangupsConversation
 
 
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["convecho", "convfilter", "convleave", "convrename", "convusers"])
 
 
@@ -46,21 +47,21 @@ async def convfilter(bot, event, *args):
         return {"api.response" : message}
 
 
-async def convecho(bot, event, *args):
+async def convecho(bot, dummy, *args):
     """echo back text into filtered conversations"""
     posix_args = get_posix_args(args)
 
-    if(len(posix_args) > 1):
+    if len(posix_args) > 1:
         if not posix_args[0]:
-            """block spamming ALL conversations"""
+            # block spamming ALL conversations
             return _("<em>sending to ALL conversations not allowed</em>")
         convlist = bot.conversations.get(filter=posix_args[0])
         text = ' '.join(posix_args[1:])
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
-        """specialised error message for /bot echo (implied convid: <event.conv_id>)"""
+        # specialised error message for /bot echo (implied convid: <event.conv_id>)
         raise Help(_("<em>missing text</em>"))
     else:
-        """general error"""
+        # general error
         raise Help(_("<em>required parameters: convfilter text</em>"))
 
     if not convlist:
@@ -70,7 +71,7 @@ async def convecho(bot, event, *args):
         await bot.coro_send_message(convid, text)
 
 
-async def convrename(bot, event, *args):
+async def convrename(bot, dummy, *args):
     """renames a single specified conversation"""
     posix_args = get_posix_args(args)
 
@@ -80,23 +81,21 @@ async def convrename(bot, event, *args):
             posix_args[0] = "id:" + posix_args[0]
         convlist = bot.conversations.get(filter=posix_args[0])
         title = ' '.join(posix_args[1:])
-
+        if not convlist:
+            return _('No conversation matched "%s"') % posix_args[0]
         # only act on the first matching conversation
-
-        await bot._client.rename_conversation(
-            hangups.hangouts_pb2.RenameConversationRequest(
-                request_header = bot._client.get_request_header(),
-                new_name = title,
-                event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                    conversation_id = hangups.hangouts_pb2.ConversationId(
-                        id = list(convlist.keys())[0] ),
-                    client_generated_id = bot._client.get_client_generated_id() )))
+        conv_id = list(convlist)[0]
+        conv = HangupsConversation(bot, conv_id)
+        try:
+            await conv.rename(title)
+        except hangups.NetworkError:
+            return _('Failed to rename!')
 
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
-        """specialised error message for /bot rename (implied convid: <event.conv_id>)"""
+        # specialised error message for /bot rename (implied convid: <event.conv_id>)
         raise Help(_("<em>missing title</em>"))
     else:
-        """general error"""
+        # general error
         raise Help(_("<em>required parameters: convfilter title</em>"))
 
 
@@ -108,7 +107,7 @@ async def convusers(bot, event, *args):
         raise Help(_("<em>should be 1 parameter, {} supplied</em>").format(
             len(posix_args)))
     if not posix_args[0]:
-        """don't do it in all conversations - might crash hangups"""
+        # don't do it in all conversations - might crash hangups
         return _("<em>retrieving ALL conversations blocked</em>")
 
     chunks = [] # one "chunk" = info for 1 hangout
@@ -138,40 +137,33 @@ async def convusers(bot, event, *args):
     return {"api.response" : message}
 
 
-async def convleave(bot, event, *args):
+async def convleave(bot, dummy, *args):
     """leave specified conversation(s)"""
     posix_args = get_posix_args(args)
 
-    if(len(posix_args) >= 1):
+    if len(posix_args) >= 1:
         if not posix_args[0]:
-            """block leaving ALL conversations"""
+            # block leaving ALL conversations
             return _("<em>cannot leave ALL conversations</em>")
         convlist = bot.conversations.get(filter=posix_args[0])
     else:
-        """general error"""
+        # general error
         raise Help(_("<em>required parameters: convfilter</em>"))
 
     for convid, convdata in convlist.items():
         if convdata["type"] == "GROUP":
-            if not "quietly" in posix_args:
+            if "quietly" not in posix_args:
                 await bot.coro_send_message(convid, _('I\'ll be back!'))
 
             try:
-                await bot._client.remove_user(
-                    hangups.hangouts_pb2.RemoveUserRequest(
-                        request_header = bot._client.get_request_header(),
-                        event_request_header = hangups.hangouts_pb2.EventRequestHeader(
-                            conversation_id = hangups.hangouts_pb2.ConversationId(
-                                id = convid ),
-                            client_generated_id = bot._client.get_client_generated_id() )))
-
-                if convid in bot._conv_list._conv_dict:
-                    # replicate hangups behaviour - remove conversation from internal dict
-                    del bot._conv_list._conv_dict[convid]
+                # pylint:disable=protected-access
+                await bot._conv_list.leave_conversation(convid)
                 bot.conversations.remove(convid)
 
-            except hangups.NetworkError as e:
-                logging.exception("CONVLEAVE: error leaving {} {}".format(convid, convdata["title"]))
+            except hangups.NetworkError:
+                logging.exception("CONVLEAVE: error leaving %s %s",
+                                  convid, convdata["title"])
 
         else:
-            logging.warning("CONVLEAVE: cannot leave {} {} {}".format(convdata["type"], convid, convdata["title"]))
+            logging.warning("CONVLEAVE: cannot leave %s %s %s",
+                            convdata["type"], convid, convdata["title"])

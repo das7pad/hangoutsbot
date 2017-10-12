@@ -5,21 +5,33 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'attachsyncout': _(
+        'attach conversations to a new/existing syncout group.\nsupply list of '
+        'conversation ids to attach. supplying an id that is not the current '
+        'conversation will make the bot attempt to attach the current '
+        'conversation to the specified id. if the id does not already exist in '
+        'another syncout group, a new syncout will be created consisting of the'
+        ' current conversation and the specified id. if more than conversation '
+        'id is supplied, the bot will attempt to attach all the conversation '
+        'ids to an existing syncout provided at least one of the supplied ids '
+        'is in an existing syncout. if all the conversation ids are new, then a'
+        ' new syncout will be created. append "quietly" to silently create/'
+        'attach.'),
 
-def _initialise(bot):
+    'detachsyncout': _(
+        'detach current conversation from a syncout if no parameters supplied.'
+        '\nif a conversation id is supplied, the bot will attempt to detach '
+        'that conversation from an existing syncout'),
+}
+
+def _initialise():
     plugins.register_admin_command(["attachsyncout", "detachsyncout"])
+    plugins.register_help(HELP)
 
 
 def attachsyncout(bot, event, *args):
-    """attach conversations to a new/existing syncout group.
-    supply list of conversation ids to attach. supplying an id that is not the current conversation
-    will make the bot attempt to attach the current conversation to the specified id. if the id
-    does not already exist in another syncout group, a new syncout will be created consisting of
-    the current conversation and the specified id. if more than conversation id is supplied, the
-    bot will attempt to attach all the conversation ids to an existing syncout provided at least
-    one of the supplied ids is in an existing syncout. if all the conversation ids are new, then
-    a new syncout will be created. append "quietly" to silently create/attach.
-    """
+    """attach conversations to a new/existing syncout group."""
 
     conversation_ids = list(args)
 
@@ -42,7 +54,7 @@ def attachsyncout(bot, event, *args):
 
     syncouts = bot.config.get_option('sync_rooms')
 
-    if type(syncouts) is not list:
+    if not isinstance(syncouts, list):
         syncouts = []
 
     affected_conversations = None
@@ -77,10 +89,8 @@ def attachsyncout(bot, event, *args):
         return html_message.format(len(affected_conversations))
 
 
-def detachsyncout(bot, event, target_conversation_id=None, *args):
-    """detach current conversation from a syncout if no parameters supplied. if a conversation id
-    is supplied, the bot will attempt to detach that conversation from an existing syncout
-    """
+def detachsyncout(bot, event, target_conversation_id=None, *dummys):
+    """detach current conversation from a syncout if no parameters supplied."""
 
     if not bot.config.get_option('syncing_enabled'):
         return
@@ -99,7 +109,7 @@ def detachsyncout(bot, event, target_conversation_id=None, *args):
         if target_conversation_id in sync_room_list:
             sync_room_list.remove(target_conversation_id)
             _detached = True
-            break;
+            break
 
     # cleanup: remove empty or 1-item syncouts by rewriting variable
     _syncouts = []

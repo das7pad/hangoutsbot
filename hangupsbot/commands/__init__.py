@@ -30,38 +30,34 @@ class CommandDispatcher(object):
 
         self.command_tagsets = {}
 
-        """
-        inbuilt argument preprocessors, recognises:
-        * one_chat_id (also resolves #conv)
-          * @user
-          * #conv|@user (tagset convuser format)
-          * abcd|@user (tagset convuser format)
-        * one_conv_id
-          * #conv
-          * #conv|* (tagset convuser format)
-          * #conv|123 (tagset convuser format)
-        * test cases that won't match:
-          * #abcd#
-          * ##abcd
-          * ##abcd##
-          * ##abcd|*
-          * @user|abcd
-          * wxyz@user
-          * @user@wxyz
-        """
+        # inbuilt argument preprocessors, recognises:
+        # * one_chat_id (also resolves #conv)
+        #   * @user
+        #   * #conv|@user (tagset convuser format)
+        #   * abcd|@user (tagset convuser format)
+        # * one_conv_id
+        #   * #conv
+        #   * #conv|* (tagset convuser format)
+        #   * #conv|123 (tagset convuser format)
+        # * test cases that won't match:
+        #   * #abcd#
+        #   * ##abcd
+        #   * ##abcd##
+        #   * ##abcd|*
+        #   * @user|abcd
+        #   * wxyz@user
+        #   * @user@wxyz
 
         self.preprocessors = {"inbuilt": {
             r"^(#?[\w|]+[^#]\|)?@[\w]+[^@]$": self.one_chat_id,
             r"^#[\w|]+[^#]$": self.one_conv_id}}
 
-        """
-        disable implicit argument preprocessors on some commands
-        these are special use-cases that should be rare with supplied functionality
-        """
-        self.preprocessors_explicit = [ "plugins.mentions.mention",
-                                        "plugins.subscribe.subscribe",
-                                        "plugins.subscribe.unsubscribe",
-                                        "plugins.subscribe.testsubscribe" ]
+        # disable implicit argument preprocessors on some commands
+        # these are special use-cases that should be rare with supplied functionality
+        self.preprocessors_explicit = ["plugins.mentions.mention",
+                                       "plugins.subscribe.subscribe",
+                                       "plugins.subscribe.unsubscribe",
+                                       "plugins.subscribe.testsubscribe"]
 
     def one_chat_id(self, token, internal_context, all_users=False):
         subtokens = token.split("|", 1)
@@ -135,7 +131,7 @@ class CommandDispatcher(object):
         return "|".join(subtokens)
 
     def preprocess_arguments(self, args, internal_context, force_trigger="",
-                             force_groups=[]):
+                             force_groups=()):
         """custom preprocessing for use by other plugins, specify:
         * force_trigger word to override config, default
           prevents confusion if botmin has overridden this for their own usage
@@ -161,40 +157,38 @@ class CommandDispatcher(object):
         if internal_context.command_path in self.preprocessors_explicit and _implicit:
             _implicit = False
 
-        """
-        simple finite state machine parser:
+        # simple finite state machine parser:
 
-        * arguments are processed in order of input, from left-to-right
-        * default setting is always post-process
-          * switch off with config.json: commands.preprocessor.explicit = true
-        * default base trigger keyword = "resolve"
-          * override with config.json: commands.preprocessor.trigger
-          * full trigger keywords are:
-            * +<trigger> (add)
-            * -<trigger> (remove)
-          * customised trigger word must be unique enough to prevent conflicts for other plugin parameters
-          * all examples here assume the trigger keyword is the default
-          * devs: if conflict arises, other plugins have higher priority than this
-        * activate all resolvers for subsequent keywords (not required if implicit):
-            +resolve
-        * deactivate all resolvers for subsequent keywords:
-            -resolve
-        * activate specific resolver groups via keyword:
-            +resolve:<comma-separated list of resolver groups, no spaces> e.g.
-            +resolve:inbuilt,customalias1,customalias2
-        * deactivate all active resolvers via keyword:
-            +resolve:off
-            +resolve:false
-            +resolve:0
-        * deactivate specific resolvers via keyword:
-            -resolve:inbuilt
-            -resolve:inbuilt,customa
-        * escape trigger keyword with:
-          * quotes
-              "+resolve"
-          * backslash
-              \+resolve
-        """
+        # * arguments are processed in order of input, from left-to-right
+        # * default setting is always post-process
+        #   * switch off with config.json: commands.preprocessor.explicit = true
+        # * default base trigger keyword = "resolve"
+        #   * override with config.json: commands.preprocessor.trigger
+        #   * full trigger keywords are:
+        #     * +<trigger> (add)
+        #     * -<trigger> (remove)
+        #   * customised trigger word must be unique enough to prevent conflicts for other plugin parameters
+        #   * all examples here assume the trigger keyword is the default
+        #   * devs: if conflict arises, other plugins have higher priority than this
+        # * activate all resolvers for subsequent keywords (not required if implicit):
+        #     +resolve
+        # * deactivate all resolvers for subsequent keywords:
+        #     -resolve
+        # * activate specific resolver groups via keyword:
+        #     +resolve:<comma-separated list of resolver groups, no spaces> e.g.
+        #     +resolve:inbuilt,customalias1,customalias2
+        # * deactivate all active resolvers via keyword:
+        #     +resolve:off
+        #     +resolve:false
+        #     +resolve:0
+        # * deactivate specific resolvers via keyword:
+        #     -resolve:inbuilt
+        #     -resolve:inbuilt,customa
+        # * escape trigger keyword with:
+        #   * quotes
+        #       "+resolve"
+        #   * backslash
+        #       \+resolve
 
         if "inbuilt" in all_groups:
             # lowest priority: inbuilt
@@ -290,14 +284,14 @@ class CommandDispatcher(object):
         """
         self.tracking = tracking
 
-    def register_tags(self, command, tagsets):
-        if command not in self.command_tagsets:
-            self.command_tagsets[command] = set()
+    def register_tags(self, command_name, tagsets):
+        if command_name not in self.command_tagsets:
+            self.command_tagsets[command_name] = set()
 
         if isinstance(tagsets, str):
             tagsets = set([tagsets])
 
-        self.command_tagsets[command] = self.command_tagsets[command] | tagsets
+        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tagsets
 
     @property
     def deny_prefix(self):
@@ -327,14 +321,15 @@ class CommandDispatcher(object):
         commands_tagged = bot.get_config_suboption(conv_id, 'commands_tagged') or {}
 
         # convert commands_tagged tag list into a set of (frozen)sets
-        commands_tagged = { key: set([ frozenset(value if isinstance(value, list) else [value])
-            for value in values ]) for key, values in commands_tagged.items() }
+        commands_tagged = {key: set([frozenset(value if isinstance(value, list) else [value])
+                                     for value in values])
+                           for key, values in commands_tagged.items()}
         # combine any plugin-determined tags with the config.json defined ones
         if self.command_tagsets:
-            for command, tagsets in self.command_tagsets.items():
-                if command not in commands_tagged:
-                    commands_tagged[command] = set()
-                commands_tagged[command] = commands_tagged[command] | tagsets
+            for command_name, tagsets in self.command_tagsets.items():
+                if command_name not in commands_tagged:
+                    commands_tagged[command_name] = set()
+                commands_tagged[command_name] = commands_tagged[command_name] | tagsets
 
         all_commands = set(self.commands)
 
@@ -342,20 +337,20 @@ class CommandDispatcher(object):
         user_commands = set()
 
         if commands_admin is True:
-            """commands_admin: true # all commands are admin-only"""
+            # all commands are admin-only
             admin_commands = all_commands
 
         elif commands_user is True:
-            """commands_user: true # all commands are user-only"""
+            # all commands are user-only
             user_commands = all_commands
 
         elif commands_user:
-            """commands_user: [ "command", ... ] # listed are user commands, others admin-only"""
+            # listed are user commands, others admin-only
             user_commands = set(commands_user)
             admin_commands = all_commands - user_commands
 
         else:
-            """default: follow config["commands_admin"] + plugin settings"""
+            # default: follow config["commands_admin"] + plugin settings
             admin_commands = set(commands_admin) | set(self.admin_commands)
             user_commands = all_commands - admin_commands
 
@@ -366,44 +361,46 @@ class CommandDispatcher(object):
         if commands_tagged:
             _set_user_tags = set(bot.tags.useractive(chat_id, conv_id))
 
-            for command, tags in commands_tagged.items():
-                if command not in all_commands:
+            for command_name, tags in commands_tagged.items():
+                if command_name not in all_commands:
                     # optimisation: don't check commands that aren't loaded into framework
                     continue
 
                 # raise tagged command access level if escalation required
-                if config_tags_escalate and command in user_commands:
-                    user_commands.remove(command)
+                if config_tags_escalate and command_name in user_commands:
+                    user_commands.remove(command_name)
 
                 # is tagged command generally available (in user_commands)?
                 # admins always get access, other users need appropriate tag(s)
                 # XXX: optimisation: check admin_commands to avoid unnecessary scanning
-                if command not in user_commands|admin_commands:
-                    for _match in tags:
-                        _set_allow = set([_match] if isinstance(_match, str) else _match)
-                        if is_admin or _set_allow <= _set_user_tags:
-                            admin_commands.update([command])
-                            break
+                if command_name in user_commands|admin_commands:
+                    continue
+                for _match in tags:
+                    _set_allow = set([_match] if isinstance(_match, str) else _match)
+                    if is_admin or _set_allow <= _set_user_tags:
+                        admin_commands.update([command_name])
+                        break
 
             if not is_admin:
                 # tagged commands can be explicitly denied
                 _denied = set()
-                for command in user_commands|admin_commands:
-                    if command in commands_tagged:
-                        tags = commands_tagged[command]
-                        for _match in tags:
-                            _set_allow = set([_match] if isinstance(_match, str) else _match)
-                            _set_deny = { config_tags_deny_prefix + x for x in _set_allow }
-                            if _set_deny <= _set_user_tags:
-                                _denied.update([command])
-                                break
+                for command_name in user_commands|admin_commands:
+                    if command_name not in commands_tagged:
+                        continue
+                    tags = commands_tagged[command_name]
+                    for _match in tags:
+                        _set_allow = set([_match] if isinstance(_match, str) else _match)
+                        _set_deny = {config_tags_deny_prefix + x for x in _set_allow}
+                        if _set_deny <= _set_user_tags:
+                            _denied.update([command_name])
+                            break
                 admin_commands = admin_commands - _denied
                 user_commands = user_commands - _denied
 
         user_commands = user_commands - admin_commands # ensure no overlap
 
         interval = time.time() - start_time
-        logger.debug("get_available_commands() - {}".format(interval))
+        logger.debug("get_available_commands() - %s", interval)
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 
@@ -426,8 +423,8 @@ class CommandDispatcher(object):
         if coro is None:
             raise KeyError("command {} not found".format(command_name))
 
-        """default: if exceptions occur in a command, output as message
-        supply keyword argument raise_exceptions=True to override behaviour"""
+        # default: if exceptions occur in a command, output as message
+        # supply keyword argument raise_exceptions=True to override behaviour
         raise_exceptions = kwds.pop("raise_exceptions", False)
 
         setattr(event, 'command_name', command_name)
@@ -453,7 +450,7 @@ class CommandDispatcher(object):
             text = "\n".join(help_entry).strip()
             conv_id = await bot.get_1to1(event.user_id.chat_id) or conv_id
 
-        except Exception as err:
+        except Exception as err:    # plugin-error - pylint:disable=broad-except
             if raise_exceptions:
                 raise
 
@@ -492,8 +489,8 @@ class CommandDispatcher(object):
             else:
                 # just register and return the same function
                 self.tracking.register_command("admin" if admin else "user",
-                                                  [func_name],
-                                                  tags=tags)
+                                               [func_name],
+                                               tags=tags)
 
             return func
 
@@ -501,8 +498,7 @@ class CommandDispatcher(object):
         # assume it is the decorator (without any optional keyword arguments)
         if len(args) == 1 and callable(args[0]):
             return wrapper(args[0])
-        else:
-            return wrapper
+        return wrapper
 
     def register_unknown(self, func):
         """Decorator for registering unknown command"""

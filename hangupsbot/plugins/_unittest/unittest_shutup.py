@@ -6,16 +6,11 @@ def _initialise():
     """register a handler for a given pluggable"""
     plugins.register_handler(_shutup, "sending", priority=49)
 
-def _shutup(bot, event, command):
+def _shutup():
     """suppress registered handler to work entirely above the configured level
 
-    Args:
-        bot: HangupsBot instance
-        event: ConversationEvent instance
-        command: command handler from commands
-
     Raises:
-        the uncommented handler suppressor
+        HangupsBotExceptions.SuppressEventHandling: discard the event
     """
     # suppresses this specific handler only
     # raise HangupsBotExceptions.SuppressHandler

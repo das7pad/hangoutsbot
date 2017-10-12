@@ -2,15 +2,15 @@
 import logging
 
 import plugins
-import handlers
 
-from commands import command
+from commands import command, Help
 
 
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot): pass # prevents commands from being automatically added
+def _initialise():
+    pass # prevents commands from being automatically added
 
 def function_name(fn):
     try:
@@ -29,74 +29,75 @@ def function_name(fn):
 
 
 @command.register(admin=True)
-def plugininfo(bot, event, *args):
+def plugininfo(dummy0, dummy1, *args):
     """dumps plugin information"""
 
     text_plugins = []
 
     for module_path, plugin in plugins.tracking.list.items():
         lines = []
-        if not args or args[0] in plugin["metadata"]["module"] or args[0] in module_path:
-            lines.append("<b>[ {} ]</b>".format(plugin["metadata"]["module.path"]))
+        if (args and args[0] not in plugin["metadata"]["module"]
+                or args[0] not in module_path):
+            continue
+        lines.append("<b>[ {} ]</b>".format(plugin["metadata"]["module.path"]))
 
-            """admin commands"""
-            if plugin["commands"]["admin"]:
-                lines.append("<b>admin commands:</b> <pre>{}</pre>".format(", ".join(plugin["commands"]["admin"])))
+        # admin commands
+        if plugin["commands"]["admin"]:
+            lines.append("<b>admin commands:</b> <pre>{}</pre>".format(", ".join(plugin["commands"]["admin"])))
 
-            """user-only commands"""
-            user_only_commands = list(set(plugin["commands"]["user"]) - set(plugin["commands"]["admin"]))
-            if user_only_commands:
-                lines.append("<b>user commands:</b> <pre>{}</pre>".format(", ".join(user_only_commands)))
+        # user-only commands
+        user_only_commands = list(set(plugin["commands"]["user"]) - set(plugin["commands"]["admin"]))
+        if user_only_commands:
+            lines.append("<b>user commands:</b> <pre>{}</pre>".format(", ".join(user_only_commands)))
 
-            """handlers"""
-            if plugin["handlers"]:
-                lines.append("<b>handlers:</b>")
-                lines.append("\n".join([ "... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
+        # handlers
+        if plugin["handlers"]:
+            lines.append("<b>handlers:</b>")
+            lines.append("\n".join(["... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
 
-            """shared"""
-            if plugin["shared"]:
-                lines.append("<b>shared:</b> " + ", ".join([ "<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
+        # shared
+        if plugin["shared"]:
+            lines.append("<b>shared:</b> " + ", ".join(["<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
 
-            """threads"""
-            if plugin["threads"]:
-                lines.append("<b>threads:</b> {}".format(len(plugin["threads"])))
+        # threads
+        if plugin["threads"]:
+            lines.append("<b>threads:</b> {}".format(len(plugin["threads"])))
 
-            """aiohttp.web"""
-            if plugin["aiohttp.web"]:
-                lines.append("<b>aiohttp.web:</b>")
-                from sinks import aiohttp_list
-                filtered = aiohttp_list(plugin["aiohttp.web"])
-                if filtered:
-                    lines.append('\n'.join(['... {}'.format(constructors[0].sockets[0].getsockname())
-                                            for constructors in filtered]))
+        # aiohttp.web
+        if plugin["aiohttp.web"]:
+            lines.append("<b>aiohttp.web:</b>")
+            from sinks import aiohttp_list
+            filtered = aiohttp_list(plugin["aiohttp.web"])
+            if filtered:
+                lines.append('\n'.join(['... {}'.format(constructors[0].sockets[0].getsockname())
+                                        for constructors in filtered]))
+            else:
+                lines.append('<em>no running aiohttp.web listeners</em>')
+
+        # tagged
+        if plugin["commands"]["tagged"]:
+            lines.append("<b>tagged via plugin module:</b>")
+            for command_name, type_tags in plugin["commands"]["tagged"].items():
+                if 'admin' in type_tags:
+                    plugin_tagsets = type_tags['admin']
                 else:
-                    lines.append('<em>no running aiohttp.web listeners</em>')
+                    plugin_tagsets = type_tags['user']
 
-            """tagged"""
-            if plugin["commands"]["tagged"]:
-                lines.append("<b>tagged via plugin module:</b>")
-                for command_name, type_tags in plugin["commands"]["tagged"].items():
-                    if 'admin' in type_tags:
-                        plugin_tagsets = type_tags['admin']
+                matches = []
+                for tagset in plugin_tagsets:
+                    if isinstance(tagset, frozenset):
+                        matches.append("[ {} ]".format(', '.join(tagset)))
                     else:
-                        plugin_tagsets = type_tags['user']
+                        matches.append(tagset)
 
-                    matches = []
-                    for tagset in plugin_tagsets:
-                        if isinstance(tagset, frozenset):
-                            matches.append("[ {} ]".format(', '.join(tagset)))
-                        else:
-                            matches.append(tagset)
+                lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(command_name, ', '.join(matches)))
 
-                    lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(command_name, ', '.join(matches)))
+        # command: argument preprocessors
+        if plugin["commands"]["argument.preprocessors"]:
+            lines.append("<b>command preprocessor groups:</b> ")
+            lines.append(", ".join(plugin["commands"]["argument.preprocessors"]))
 
-            """command: argument preprocessors"""
-            if plugin["commands"]["argument.preprocessors"]:
-                lines.append( "<b>command preprocessor groups:</b> "
-                              ", ".join(plugin["commands"]["argument.preprocessors"]) )
-
-        if lines:
-            text_plugins.append("\n".join(lines))
+        text_plugins.append("\n".join(lines))
 
     if text_plugins:
         message = "\n".join(text_plugins)
@@ -190,7 +191,7 @@ async def pluginreload(bot, event, *args):
 
 
 @command.register(admin=True)
-def getplugins(bot, event, *args):
+def getplugins(bot, *dummys):
     """list all plugins loaded by the bot, and all available plugins"""
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
@@ -221,8 +222,12 @@ def _strip_plugin_path(path):
 
 
 @command.register(admin=True)
-async def removeplugin(bot, event, plugin, *args):
+async def removeplugin(bot, dummy, *args):
     """unloads a plugin from the bot and removes it from the config, does not require plugins. prefix"""
+
+    if not args:
+        raise Help(_('plugin name is missing!'))
+    plugin = args[0]
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
@@ -262,14 +267,18 @@ async def removeplugin(bot, event, plugin, *args):
         lines.append('* not in config.json')
 
     if len(lines) == 1:
-        lines = [ "no action was taken for {}".format(plugin.replace("_", "\\_")) ]
+        lines = ["no action was taken for {}".format(plugin.replace("_", "\\_"))]
 
     return "\n".join(lines)
 
 
 @command.register(admin=True)
-async def addplugin(bot, event, plugin, *args):
+async def addplugin(bot, dummy, *args):
     """loads a plugin on the bot and adds it to the config, does not require plugins. prefix"""
+
+    if not args:
+        raise Help(_('plugin name is missing!'))
+    plugin = args[0]
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):

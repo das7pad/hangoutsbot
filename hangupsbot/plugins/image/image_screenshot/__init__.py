@@ -6,10 +6,9 @@ import re
 import time
 import tempfile
 
+import hangups
 import selenium
-
 from selenium import webdriver
-
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 import plugins
@@ -17,6 +16,17 @@ import plugins
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'screenshot': _('get a screenshot of a user provided URL or the default URL'
+                    ' of the hangout.'),
+
+    'seturl': _('set url for current converation for the screenshot command.\n'
+                '  use <b>{bot_cmd} clearurl</b> to clear the previous url '
+                'before setting a new one.'),
+
+    'clearurl': _('clear the default-url for current converation for the '
+                  'screenshot command.'),
+}
 
 _externals = {"running": False}
 
@@ -28,9 +38,10 @@ dcap["phantomjs.page.settings.userAgent"] = (
 )
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_user_command(["screenshot"])
     plugins.register_admin_command(["seturl", "clearurl"])
+    plugins.register_help(HELP)
 
 
 async def _open_file(name):
@@ -57,9 +68,7 @@ async def _screencap(browser, url, filename):
 
 
 def seturl(bot, event, *args):
-    """set url for current converation for the screenshot command.
-    use /bot clearurl to clear the previous url before setting a new one.
-    """
+    """set url for current converation for the screenshot command."""
     url = bot.conversation_memory_get(event.conv_id, 'url')
     if url is None:
         bot.conversation_memory_set(event.conv_id, 'url', ''.join(args))
@@ -73,9 +82,8 @@ def seturl(bot, event, *args):
     return html
 
 
-def clearurl(bot, event, *args):
-    """clear url for current converation for the screenshot command.
-    """
+def clearurl(bot, event, *dummys):
+    """clear url for current converation for the screenshot command."""
     url = bot.conversation_memory_get(event.conv_id, 'url')
     if url is None:
         html = _("<i><b>{}</b> nothing to clear for this conversation")
@@ -87,8 +95,7 @@ def clearurl(bot, event, *args):
     return html.format(event.user.full_name)
 
 async def screenshot(bot, event, *args):
-    """get a screenshot of a user provided URL or the default URL of the hangout.
-    """
+    """get a screenshot of a user provided URL or the hangouts' default URL"""
     if _externals["running"]:
         return "<i>processing another request, try again shortly</i>"
 
@@ -121,7 +128,7 @@ async def screenshot(bot, event, *args):
 
         try:
             image_data = await _screencap(browser, url, filepath)
-        except:
+        except selenium.common.exceptions.WebDriverException:
             logger.exception("screencap failed %s", url)
             _externals["running"] = False
             return "<i>error getting screenshot</i>"
@@ -132,10 +139,10 @@ async def screenshot(bot, event, *args):
                                                  filename=filename)
             except KeyError:
                 logger.info('image plugin not loaded - using legacy code')
-                image_id = await bot._client.upload_image(image_data,
-                                                          filename=filename)
+                image_id = await bot.upload_image(image_data,
+                                                  filename=filename)
             await bot.coro_send_message(event.conv_id, url, image_id=image_id)
-        except:
+        except hangups.NetworkError:
             logger.exception("upload failed %s", url)
             return "<i>error uploading screenshot</i>"
         finally:

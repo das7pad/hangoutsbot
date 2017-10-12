@@ -1,4 +1,5 @@
-import asyncio, json, logging
+import json
+import logging
 
 from sinks.base_bot_request_handler import AsyncRequestHandler
 
@@ -34,7 +35,7 @@ class webhookReceiver(AsyncRequestHandler):
             await self.send_data(conv_or_user_id, html)
 
         elif "zen" in payload:
-            logger.info("github zen received: {}".format(payload["zen"]))
+            logger.info("github zen received: %s", payload["zen"])
 
         else:
-            logger.error("unrecognised payload: {}".format(payload))
+            logger.error("unrecognised payload: %s", payload)

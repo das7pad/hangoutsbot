@@ -44,7 +44,7 @@ HELP = {
 
     "whoami": _("get your user id"),
 
-    "whereami": _("get current conversation id")
+    "whereami": _("get current conversation id"),
 }
 
 # non-persistent internal state independent of config.json/memory.json
@@ -204,7 +204,7 @@ async def users(bot, event, *dummys):
     await command.run(bot, event, *["convusers", "id:" + event.conv_id])
 
 
-def user(bot, event, *args):
+def user(bot, dummy, *args):
     """find people by name"""
 
     search = " ".join(args)
@@ -229,11 +229,11 @@ def user(bot, event, *args):
         unspaced_lower = re.sub(r'\s+', '', fullname_lower)
         unspaced_upper = re.sub(r'\s+', '', u.full_name.upper())
 
-        if( search_lower in fullname_lower
-            or search_lower in unspaced_lower
-            # XXX: turkish alphabet special case: converstion works better when uppercase
-            or search_upper in remove_accents(fullname_upper)
-            or search_upper in remove_accents(unspaced_upper) ):
+        if (search_lower in fullname_lower
+                or search_lower in unspaced_lower
+                # XXX: turkish alphabet special case: converstion works better when uppercase
+                or search_upper in remove_accents(fullname_upper)
+                or search_upper in remove_accents(unspaced_upper)):
 
             link = 'https://plus.google.com/u/0/{}/about'.format(u.id_.chat_id)
             segments.append(hangups.ChatMessageSegment(u.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
@@ -334,7 +334,7 @@ async def reload(bot, event, *dummys):
     bot.memory.load()
 
 
-def quit(bot, event, *dummys):
+def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
     """kill the bot
 
     Args:
@@ -363,6 +363,29 @@ async def config(bot, event, cmd=None, *args):
         KeyError: the given path does not exist
         ValueError: the given value is not a valid json
     """
+    async def _test():
+        num_parameters = len(parameters)
+        text_parameters = []
+        last = num_parameters - 1
+        for num, token in enumerate(parameters):
+            if num == last:
+                try:
+                    json.loads(token)
+                    token += " <b>(valid json)</b>"
+                except ValueError:
+                    token += " <em>(INVALID)</em>"
+            text_parameters.append(str(num + 1) + ": " + token)
+        text_parameters.insert(0, "<b>config test</b>")
+
+        if num_parameters == 1:
+            text_parameters.append(
+                _("<i>note: testing single parameter as json</i>"))
+        elif num_parameters < 1:
+            await command.unknown_command(bot, event)
+            return None
+
+        return "\n".join(text_parameters)
+
     #TODO(das7pad): refactor into smaller parts and validate the new value/path
 
     # consume arguments and differentiate beginning of a json array or object
@@ -399,27 +422,7 @@ async def config(bot, event, cmd=None, *args):
                  if config_args else dict(bot.config))
 
     elif cmd == 'test':
-        num_parameters = len(parameters)
-        text_parameters = []
-        last = num_parameters - 1
-        for num, token in enumerate(parameters):
-            if num == last:
-                try:
-                    json.loads(token)
-                    token += " <b>(valid json)</b>"
-                except ValueError:
-                    token += " <em>(INVALID)</em>"
-            text_parameters.append(str(num + 1) + ": " + token)
-        text_parameters.insert(0, "<b>config test</b>")
-
-        if num_parameters == 1:
-            text_parameters.append(
-                _("<i>note: testing single parameter as json</i>"))
-        elif num_parameters < 1:
-            await command.unknown_command(bot, event)
-            return
-
-        return "\n".join(text_parameters)
+        return await _test()
 
     elif cmd == 'set':
         config_args = list(parameters[:-1])

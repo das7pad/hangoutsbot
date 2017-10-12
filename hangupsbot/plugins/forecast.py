@@ -14,19 +14,38 @@ from decimal import Decimal
 logger = logging.getLogger(__name__)
 _internal = {}
 
+HELP = {
+    'setweatherlocation': _('Sets the Lat Long default coordinates for this '
+                            'hangout when polling for weather data\n'
+                            '{bot_cmd} setWeatherLocation <location>'),
+
+    'weather': _("Returns weather information from darksky.net\n"
+                 " <b>{bot_cmd} weather <location></b>\n"
+                 "   Get location's current weather.\n"
+                 " <b>{bot_cmd} weather</b>\n"
+                 "   Get the hangouts default location's current weather. If "
+                 "the  default location is not set talk to a hangout admin."),
+
+    'forecast': _("Returns a brief textual forecast from darksky.net\n"
+                  " <b>{bot_cmd} weather <location></b>\n"
+                  "   Get location's current forecast.\n"
+                  " <b>{bot_cmd} weather</b>\n"
+                  "   Get the hangouts default location's forecast. If default "
+                  "location is not set talk to a hangout admin."),
+}
+
 def _initialize(bot):
     api_key = bot.config.get_option('forecast_api_key')
     if api_key:
         _internal['forecast_api_key'] = api_key
         plugins.register_user_command(['weather', 'forecast'])
         plugins.register_admin_command(['setweatherlocation'])
+        plugins.register_help(HELP)
     else:
         logger.debug('WEATHER: config["forecast_api_key"] required')
 
 def setweatherlocation(bot, event, *args):
-    """Sets the Lat Long default coordinates for this hangout when polling for weather data
-    /bot setWeatherLocation <location>
-    """
+    """Sets the Lat Long default coordinates for this hangout"""
     location = ''.join(args).strip()
     if not location:
         return _('No location was specified, please specify a location.')
@@ -43,56 +62,48 @@ def setweatherlocation(bot, event, *args):
     return _('This hangouts default location has been set to {}.').format(location)
 
 def weather(bot, event, *args):
-    """Returns weather information from darksky.net
-    <b>/bot weather <location></b> Get location's current weather.
-    <b>/bot weather</b> Get the hangouts default location's current weather. If the default location is not set talk to a hangout admin.
-    """
-    weather = _get_weather(bot, event, args)
-    if weather:
-        return _format_current_weather(weather)
-    else:
-        return _('There was an error retrieving the weather, guess you need to look outside.')
+    """Returns weather information from darksky.net"""
+    weather_data = _get_weather(bot, event, args)
+    if weather_data:
+        return _format_current_weather(weather_data)
+    return _('There was an error retrieving the weather, guess you need to look outside.')
 
 def forecast(bot, event, *args):
-    """Returns a brief textual forecast from darksky.net
-    <b>/bot weather <location></b> Get location's current forecast.
-    <b>/bot weather</b> Get the hangouts default location's forecast. If default location is not set talk to a hangout admin.
-    """
-    weather = _get_weather(bot, event, args)
-    if weather:
-        return _format_forecast_weather(weather)
-    else:
-        return _('There was an error retrieving the weather, guess you need to look outside.')
+    """Returns a brief textual forecast from darksky.net"""
+    weather_data = _get_weather(bot, event, args)
+    if weather_data:
+        return _format_forecast_weather(weather_data)
+    return _('There was an error retrieving the weather, guess you need to look outside.')
 
-def _format_current_weather(weather):
+def _format_current_weather(weather_data):
     """
     Formats the current weather data for the user.
     """
     weatherStrings = []
-    if 'temperature' in weather:
-        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather['temperature'],2),weather['units']['temperature']))
-    if 'summary' in weather:
-        weatherStrings.append("<i>{0}</i>".format(weather['summary']))
-    if 'feelsLike' in weather:
-        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather['feelsLike'],2),weather['units']['temperature']))
-    if 'windspeed' in weather:
-        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather['windspeed'],2), weather['units']['windSpeed'], _get_wind_direction(weather['windbearing'])))
-    if 'humidity' in weather:
-        weatherStrings.append("Humidity: {0}%".format(weather['humidity']))
-    if 'pressure' in weather:
-        weatherStrings.append("Pressure: {0} {1}".format(round(weather['pressure'],2), weather['units']['pressure']))
+    if 'temperature' in weather_data:
+        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'], 2), weather_data['units']['temperature']))
+    if 'summary' in weather_data:
+        weatherStrings.append("<i>{0}</i>".format(weather_data['summary']))
+    if 'feelsLike' in weather_data:
+        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'], 2), weather_data['units']['temperature']))
+    if 'windspeed' in weather_data:
+        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'], 2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
+    if 'humidity' in weather_data:
+        weatherStrings.append("Humidity: {0}%".format(weather_data['humidity']))
+    if 'pressure' in weather_data:
+        weatherStrings.append("Pressure: {0} {1}".format(round(weather_data['pressure'], 2), weather_data['units']['pressure']))
 
     return "\n".join(weatherStrings)
 
-def _format_forecast_weather(weather):
+def _format_forecast_weather(weather_data):
     """
     Formats the forecast data for the user.
     """
     weatherStrings = []
-    if 'hourly' in weather:
-        weatherStrings.append("<b>Next 24 Hours</b>\n{}". format(weather['hourly']))
-    if 'daily' in weather:
-        weatherStrings.append("<b>Next 7 Days</b>\n{}". format(weather['daily']))
+    if 'hourly' in weather_data:
+        weatherStrings.append("<b>Next 24 Hours</b>\n{}". format(weather_data['hourly']))
+    if 'daily' in weather_data:
+        weatherStrings.append("<b>Next 7 Days</b>\n{}". format(weather_data['daily']))
 
     return "\n".join(weatherStrings)
 
@@ -125,7 +136,7 @@ def _lookup_weather(coords):
     Limit of 1,000 requests a day
     """
 
-    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_internal['forecast_api_key'],coords['lat'], coords['lng'])
+    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_internal['forecast_api_key'], coords['lat'], coords['lng'])
     r = requests.get(forecast_io_url)
 
     try:
@@ -149,8 +160,8 @@ def _lookup_weather(coords):
         if 'daily' in j:
             current['daily'] = j['daily']['summary']
 
-    except ValueError as e:
-        logger.error("Forecast Error: {}".format(e))
+    except ValueError as err:
+        logger.error("Forecast Error: %s", err)
         current = dict()
     except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError, requests.exceptions.Timeout):
         logger.error('unable to connect with api.darksky.net: %d - %s', r.status_code, r.text)
@@ -158,7 +169,7 @@ def _lookup_weather(coords):
 
     return current
 
-def _get_weather(bot,event,params):
+def _get_weather(bot, event, params):
     """
     Checks memory for a default location set for the current hangout.
     If one is not found and parameters were specified attempts to look up a location.
@@ -169,7 +180,7 @@ def _get_weather(bot,event,params):
 
     if not parameters:
         if bot.memory.exists(["conv_data", event.conv.id_]):
-            if(bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"])):
+            if bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"]):
                 location = bot.memory.get_by_path(["conv_data", event.conv.id_, "default_weather_location"])
     else:
         address = ''.join(parameters).strip()

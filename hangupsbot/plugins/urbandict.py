@@ -4,12 +4,23 @@ Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
 """
 #TODO(das7pad) move to aiohttp for the requests
 
+import logging
 from urllib.request import urlopen
 from urllib.parse import quote as urlquote
 from html.parser import HTMLParser
 
 import plugins
 
+logger = logging.getLogger(__name__)
+
+HELP = {
+    'urbandict': _('lookup a term on Urban Dictionary. supplying no parameters '
+                   'will get you a random term.\n'
+                   'DISCLAIMER: all definitions are from '
+                   'http://www.urbandictionary.com/\n'
+                   '- the bot and its creators/maintainers take no '
+                   'responsibility for any hurt feelings.'),
+}
 
 class UrbanDictParser(HTMLParser):
 
@@ -47,17 +58,15 @@ class UrbanDictParser(HTMLParser):
 
         self.translations[-1][self._section] += normalize_newlines(data)
 
+    def error(self, message):
+        logger.error(message)
 
 def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
 
 
-def urbandict(bot, event, *args):
-    """lookup a term on Urban Dictionary.
-    supplying no parameters will get you a random term.
-    DISCLAIMER: all definitions are from http://www.urbandictionary.com/ - the bot and its
-    creators/maintainers take no responsibility for any hurt feelings.
-    """
+def urbandict(dummy0, dummy1, *args):
+    """lookup a term on Urban Dictionary."""
 
     term = " ".join(args)
     if not term:
@@ -92,9 +101,9 @@ def urbandict(bot, event, *args):
         if term:
             return _('<i>no urban dictionary definition for "{}"</i>').format(
                 term)
-        else:
-            return _('<i>no term from urban dictionary</i>')
+        return _('<i>no term from urban dictionary</i>')
 
 
 def _initialise():
     plugins.register_user_command(["urbandict"])
+    plugins.register_help(HELP)

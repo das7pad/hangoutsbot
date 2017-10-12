@@ -108,7 +108,7 @@ def _initialize(bot):
     if get_location:
         global _MAP_MATCH
         _MAP_MATCH = re.compile(config.get("map_regex", _MAP_REGEX), re.IGNORECASE|re.MULTILINE)
-        plugins.register_handler(_location_handler, type="message")
+        plugins.register_handler(_location_handler, "message")
 
 
 def _expire_old_pins():
@@ -166,7 +166,7 @@ async def _spawn(bot, event, *args):
     environment.update(dict(os.environ))
 
     proc = await asyncio.create_subprocess_exec(*executable, stdout=PIPE, stderr=PIPE,
-                                                     env=environment)
+                                                env=environment)
 
     (stdout_data, stderr_data) = await proc.communicate()
     stdout_str = stdout_data.decode().rstrip()

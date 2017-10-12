@@ -5,7 +5,11 @@ import wikipedia
 import plugins
 
 
-def wiki(bot, event, *args):
+HELP = {
+    'wiki': _('lookup a term on Wikipedia'),
+}
+
+def wiki(dummy0, dummy1, *args):
     """lookup a term on Wikipedia"""
 
     term = " ".join(args)
@@ -32,3 +36,4 @@ def wiki(bot, event, *args):
 
 def _initialise():
     plugins.register_user_command(["wiki"])
+    plugins.register_help(HELP)

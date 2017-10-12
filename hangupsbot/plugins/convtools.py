@@ -15,17 +15,22 @@ logger = logging.getLogger(__name__)
 HELP = {
     "addusers": _("adds user(s) into a chat\nUsage: {bot_cmd} addusers <user id"
                   "(s)> [into <chat id>]"),
+
     "addme": _("add yourself into a chat\nUsage: {bot_cmd} addme <conv id>"),
+
     "createconversation": _("create a new conversation with the bot and the "
                             "specified user(s)\nUsage: {bot_cmd} "
                             "createconversation <user id(s)>"),
+
     "refresh": _("refresh a chat\nUsage: {bot_cmd} refresh\n[conversation] "
                  "<conversation id> [<without|remove> <user ids, "
                  "space-separated if more than one>] [<with|add> <user id(s)>] "
                  "[quietly] [norename]"),
+
     "kick": _("create a new conversation without certain users\nUsage: "
               "{bot_cmd} kick\n[<conversation id, current if not specified>] "
               "[<user ids, space-separated if more than one>] [quietly]"),
+
     "realkick": _("remove users from a conversation\nUsage: {bot_cmd} realkick "
                   "[<optional conversation id, current if not specified>] "
                   "[<user ids, space-separated if more than one>]"),

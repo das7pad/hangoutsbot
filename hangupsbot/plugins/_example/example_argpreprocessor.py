@@ -1,10 +1,10 @@
 import plugins
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_commands_argument_preprocessor_group(
         "exampleT",
-        { r"^@@\w+" : test_resolver })
+        {r"^@@\w+" : test_resolver})
 
-def test_resolver(token, external_context):
+def test_resolver(*dummys):
     return "!HELLOWORLD!"

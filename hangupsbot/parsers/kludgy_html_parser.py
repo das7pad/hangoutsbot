@@ -122,7 +122,7 @@ class simpleHTMLParser(HTMLParser):
 
     def handle_entityref(self, name):
         if self._flags["link_target"] is not None:
-            if(self._debug): print("simpleHTMLParser(): [LINK] entityref {}".format(name))
+            if (self._debug): print("simpleHTMLParser(): [LINK] entityref {}".format(name))
             self._link_text += "&" + name
         else:
             _unescaped = html.unescape("&" + name)
@@ -130,7 +130,7 @@ class simpleHTMLParser(HTMLParser):
 
     def handle_data(self, data):
         if self._flags["link_target"] is not None:
-            if(self._debug): print("simpleHTMLParser(): [LINK] data \"{}\"".format(data))
+            if (self._debug): print("simpleHTMLParser(): [LINK] data \"{}\"".format(data))
             self._link_text += data
         else:
             self.segments_extend(data, "data")
@@ -143,7 +143,7 @@ class simpleHTMLParser(HTMLParser):
 
     def segments_extend(self, text, type, forceNew=False):
         if len(self._segments) == 0 or forceNew is True:
-            if(self._debug): print("simpleHTMLParser(): [NEW] {} {}".format(type, text))
+            if (self._debug): print("simpleHTMLParser(): [NEW] {} {}".format(type, text))
             self._segments.append(
               hangups.ChatMessageSegment(
                 text,
@@ -152,7 +152,7 @@ class simpleHTMLParser(HTMLParser):
                 is_underline=self._flags["underline"],
                 link_target=self._flags["link_target"]))
         else:
-            if(self._debug): print("simpleHTMLParser(): [APPEND] {} {}".format(type, text))
+            if (self._debug): print("simpleHTMLParser(): [APPEND] {} {}".format(type, text))
             previous_segment = self._segments[-1]
             if (previous_segment.is_bold != self._flags["bold"] or
                     previous_segment.is_italic != self._flags["italic"] or

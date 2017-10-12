@@ -65,7 +65,7 @@ HELP = {
                  '<b>{bot_cmd} spotify <query></b> Directly adds a track to the'
                  ' playlist.\n'
                  '<b>{bot_cmd} spotify remove <track></b> Removes the track '
-                 'from the playlist.')
+                 'from the playlist.'),
 }
 
 

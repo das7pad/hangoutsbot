@@ -1,4 +1,3 @@
-#TODO(das7pad) refactor of aiohttp_start needed, it uses asyncio.async
 #TODO(das7pad) add documentation
 import asyncio
 import functools
@@ -88,12 +87,12 @@ def start(bot):
 
         if issubclass(handler_class, AsyncRequestHandler):
             aiohttp_start(
-                bot,
-                name,
-                port,
-                certfile,
-                handler_class,
-                "json-rpc")
+                bot=bot,
+                name=name,
+                port=port,
+                certfile=certfile,
+                requesthandlerclass=handler_class,
+                group="json-rpc")
 
             aiohttpcount = aiohttpcount + 1
 
@@ -106,7 +105,7 @@ def start(bot):
     if aiohttpcount:
         logger.info("%s aiohttp web listener(s)", aiohttpcount)
 
-def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
+def aiohttp_start(*, bot, name, port, certfile=None, requesthandlerclass, group,
                   callback=None):
     requesthandler = requesthandlerclass(bot)
 
@@ -124,7 +123,7 @@ def aiohttp_start(bot, name, port, certfile, requesthandlerclass, group,
     loop = asyncio.get_event_loop()
     server = loop.create_server(handler, name, port, ssl=sslcontext)
 
-    asyncio.async(server).add_done_callback(
+    asyncio.ensure_future(server).add_done_callback(
         functools.partial(aiohttp_started, handler=handler, app=app,
                           group=group, callback=callback))
 

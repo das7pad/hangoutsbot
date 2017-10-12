@@ -2,33 +2,42 @@
 based on the word/image list for the image linker bot on reddit
 sauce: http://www.reddit.com/r/image_linker_bot/comments/2znbrg/image_suggestion_thread_20/
 """
-import asyncio
-import aiohttp, io, logging, os, random, re
+import io
+import logging
+import os
+import random
+import re
+
+import aiohttp
 
 import plugins
 
 
 logger = logging.getLogger(__name__)
 
+HELP = {
+    'redditmemeword': _("trigger popular reddit meme images (eg. type "
+                        "'slowclap.gif').\nFull list at http://goo.gl/ORmisN"),
+}
 
 _lookup = {}
 
 
-def _initialise(bot):
+def _initialise():
     _load_all_the_things()
     plugins.register_admin_command(["redditmemeword"])
     plugins.register_sync_handler(_scan_for_triggers, "message_once")
+    plugins.register_help(HELP)
 
 
-def redditmemeword(bot, event, *args):
-    """trigger popular reddit meme images (eg. type 'slowclap.gif').
-    Full list at http://goo.gl/ORmisN"""
+async def redditmemeword(dummy0, dummy1, *args):
+    """trigger popular reddit meme images (eg. type 'slowclap.gif')."""
     if len(args) == 1:
-        image_link = _get_a_link(args[0])
+        image_link = await _get_a_link(args[0])
         return "this one? {}".format(image_link)
 
 
-async def _scan_for_triggers(bot, event, command):
+async def _scan_for_triggers(bot, event):
     limit = 3
     count = 0
     lctext = event.text.lower()
@@ -50,15 +59,15 @@ async def _scan_for_triggers(bot, event, command):
                 if re.match(r'^https?://gfycat.com', image_link):
                     image_link = re.sub(r'^https?://gfycat.com/', 'https://thumbs.gfycat.com/', image_link) + '-size_restricted.gif'
                 elif "imgur.com" in image_link:
-                    image_link = image_link.replace(".gifv",".gif")
-                    image_link = image_link.replace(".webm",".gif")
+                    image_link = image_link.replace(".gifv", ".gif")
+                    image_link = image_link.replace(".webm", ".gif")
                 filename = os.path.basename(image_link)
                 async with aiohttp.ClientSession() as session:
                     async with session.request('get', image_link) as res:
                         raw = await res.read()
                 image_data = io.BytesIO(raw)
-                logger.debug("uploading: {}".format(filename))
-                image_id = await bot._client.upload_image(image_data, filename=filename)
+                logger.debug("uploading: %s", filename)
+                image_id = await bot.upload_image(image_data, filename=filename)
             await bot.coro_send_message(event.conv.id_, "", image_id=image_id)
 
 
@@ -79,7 +88,7 @@ def _load_all_the_things():
                     _lookup[trigger].extend(images)
                 else:
                     _lookup[trigger] = images
-    logger.debug("{} trigger(s) loaded".format(len(_lookup)))
+    logger.debug("%s trigger(s) loaded", len(_lookup))
 
 
 def _get_a_link(trigger):

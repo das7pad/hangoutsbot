@@ -338,13 +338,11 @@ class HangupsBot(object):
                     missing.append(conv.id_)
 
             logger.info("list_conversations: "
-                         "{} from permamem, "
-                         "{} from hangups - "
-                         "discrepancies: {}".format( len(convs),
-                                                     len(hangups_conv_list),
-                                                     ", ".join(missing) or "none" ))
+                        "%s from permamem, %s from hangups - discrepancies: %s",
+                        len(convs), len(hangups_conv_list),
+                        ", ".join(missing) or "none")
 
-        except Exception as e:
+        except:
             logger.exception("LIST_CONVERSATIONS: failed")
             raise
 
@@ -702,7 +700,7 @@ class HangupsBot(object):
     async def coro_send_to_user_and_conversation(self, chat_id, conv_id,
                                                  message_private,
                                                  message_public=None,
-                                                 context=None):
+                                                 *, context=None):
         """send a message to a user's 1-to-1 with a hint in the public chat
 
         if no 1-to-1 is available, send everything to the public chat
