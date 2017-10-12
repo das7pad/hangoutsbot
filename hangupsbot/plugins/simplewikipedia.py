@@ -2,7 +2,7 @@ import re
 
 import wikipedia
 
-import plugins
+from hangupsbot import plugins
 
 
 HELP = {

@@ -1,6 +1,6 @@
 import asyncio
 
-import plugins
+from hangupsbot import plugins
 
 
 def _initialise():

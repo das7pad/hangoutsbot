@@ -1,8 +1,8 @@
 """bring some random actions to the conversations"""
 from random import randint
 
-from commands import Help
-import plugins
+from hangupsbot.commands import Help
+from hangupsbot import plugins
 
 
 HELP = {

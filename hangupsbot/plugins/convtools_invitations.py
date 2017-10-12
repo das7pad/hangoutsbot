@@ -7,10 +7,9 @@ import datetime
 
 import hangups
 
-import plugins
-
-from commands import command, Help
-from hangups_conversation import HangupsConversation
+from hangupsbot import plugins
+from hangupsbot.commands import command, Help
+from hangupsbot.hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 

@@ -23,8 +23,8 @@ from urllib.parse import unquote
 
 from aiohttp import web
 
-from sinks import aiohttp_start
-from sinks.base_bot_request_handler import AsyncRequestHandler
+from hangupsbot.sinks import aiohttp_start
+from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
 
 
 logger = logging.getLogger(__name__)

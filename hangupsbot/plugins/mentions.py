@@ -5,9 +5,8 @@ import re
 
 from pushbullet import PushBullet
 
-import plugins
-
-from utils import remove_accents
+from hangupsbot import plugins
+from hangupsbot.utils import remove_accents
 
 
 logger = logging.getLogger(__name__)

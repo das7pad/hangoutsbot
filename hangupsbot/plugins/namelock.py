@@ -3,9 +3,8 @@ and change the name back to a default name accordingly"""
 
 import logging
 
-import plugins
-
-from commands import command
+from hangupsbot import plugins
+from hangupsbot.commands import command
 
 
 logger = logging.getLogger(__name__)

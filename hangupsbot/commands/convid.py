@@ -5,10 +5,10 @@ import shlex
 
 import hangups
 
-import plugins
+from hangupsbot import plugins
 
-from commands import Help
-from hangups_conversation import HangupsConversation
+from hangupsbot.commands import Help
+from hangupsbot.hangups_conversation import HangupsConversation
 
 
 logger = logging.getLogger(__name__)

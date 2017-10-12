@@ -1,7 +1,7 @@
 import logging
 import re
 
-from commands import command
+from hangupsbot.commands import command
 
 
 logger = logging.getLogger(__name__)

@@ -14,13 +14,13 @@ import emoji
 
 from pyslack import SlackClient
 
-import plugins
-
-from sinks.base_bot_request_handler import AsyncRequestHandler
-
-from webbridge import ( WebFramework,
-                        IncomingRequestHandler,
-                        FakeEvent )
+from hangupsbot import plugins
+from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
+from hangupsbot.webbridge import (
+    WebFramework,
+    IncomingRequestHandler,
+    FakeEvent,
+)
 
 logger = logging.getLogger(__name__)
 

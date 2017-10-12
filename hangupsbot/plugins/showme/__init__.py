@@ -38,7 +38,7 @@ import logging
 import time
 import aiohttp
 import hangups
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

@@ -5,9 +5,9 @@ import logging
 
 import telepot
 
-from sync.event import SyncReply
-from sync.user import SyncUser
-from utils.cache import Cache
+from hangupsbot.sync.event import SyncReply
+from hangupsbot.sync.user import SyncUser
+from hangupsbot.utils.cache import Cache
 
 from .exceptions import IgnoreMessage
 from .user import User

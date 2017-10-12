@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """chatbot for Google Hangouts"""
 
 import argparse
@@ -15,28 +14,21 @@ import sys
 import appdirs
 import hangups
 
-#NOTE: bring in localization handling for our own modules
-#pylint:disable=wrong-import-position,wrong-import-order
-gettext.install("hangupsbot", localedir=os.path.join(os.path.dirname(__file__),
-                                                     "locale"))
+from hangupsbot import config
+from hangupsbot import handlers
+from hangupsbot import permamem
+from hangupsbot import plugins
+from hangupsbot import tagging
+from hangupsbot import sinks
+from hangupsbot import utils
+from hangupsbot import version
+from hangupsbot.commands import command
+from hangupsbot.exceptions import HangupsBotExceptions
+from hangupsbot.hangups_conversation import HangupsConversation
+from hangupsbot.sync.handler import SyncHandler
+from hangupsbot.sync.sending_queue import AsyncQueue
 
-from commands import command
-from exceptions import HangupsBotExceptions
-from hangups_conversation import HangupsConversation
-
-import config
-import handlers
-import permamem
-import plugins
-import tagging
-import sinks
-import utils
-import version
-
-import sync.handler
-from sync.sending_queue import AsyncQueue
-
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
     "bot_introduction": _("<i>Hi there! I'll be using this channel to send "
@@ -110,7 +102,7 @@ class HangupsBot(object):
         self.memory = config.Config(memory_path,
                                     failsafe_backups=_failsafe_backups,
                                     save_delay=_save_delay)
-        self.memory.logger = logging.getLogger("memory")
+        self.memory.logger = logging.getLogger("hangupsbot.memory")
         try:
             self.memory.load()
         except (OSError, IOError, ValueError):
@@ -303,7 +295,7 @@ class HangupsBot(object):
         if self.__retry_resetter is not None:
             self.__retry_resetter.cancel()
 
-        await sync.sending_queue.AsyncQueue.global_stop(
+        await AsyncQueue.global_stop(
             self.config["message_queque_unload_timeout"])
 
         await plugins.unload_all(self)
@@ -579,7 +571,7 @@ class HangupsBot(object):
         # release the global sending block
         AsyncQueue.release_block()
 
-        self.sync = sync.handler.SyncHandler(self, self._handlers)
+        self.sync = SyncHandler(self, self._handlers)
         await self.sync.setup()
 
         # monkeypatch plugins go heere

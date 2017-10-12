@@ -3,9 +3,8 @@ import re
 
 from random import shuffle
 
-from commands import Help
-
-import plugins
+from hangupsbot import plugins
+from hangupsbot.commands import Help
 
 
 logger = logging.getLogger(__name__)

@@ -5,10 +5,9 @@ import logging
 
 import hangups
 
-import plugins
-
-from utils import remove_accents
-from commands import command, Help
+from hangupsbot import plugins
+from hangupsbot.utils import remove_accents
+from hangupsbot.commands import command, Help
 
 
 logger = logging.getLogger(__name__)

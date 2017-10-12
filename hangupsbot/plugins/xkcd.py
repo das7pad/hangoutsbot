@@ -9,7 +9,7 @@ import urllib.parse
 import aiohttp
 from hangups import ChatMessageSegment
 
-import plugins
+from hangupsbot import plugins
 
 _cache = {}
 

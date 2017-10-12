@@ -8,7 +8,7 @@ from reparser import (
 from hangups.message_parser import markdown, Tokens, url_complete
 from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
 
-from sync.parser import (
+from hangupsbot.sync.parser import (
     MessageSegment,
     MessageParser,
     get_formatted,

@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 
 import aiohttp
 
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

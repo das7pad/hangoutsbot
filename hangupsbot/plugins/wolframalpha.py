@@ -15,7 +15,7 @@ import logging
 import aiohttp
 import wolframalpha
 
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

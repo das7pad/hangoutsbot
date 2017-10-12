@@ -45,7 +45,7 @@ except ImportError:
     statsd = None
 import psutil
 
-import plugins
+from hangupsbot import plugins
 
 
 HELP = {

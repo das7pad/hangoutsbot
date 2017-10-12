@@ -11,7 +11,7 @@ from decimal import Decimal
 
 import aiohttp
 
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 _internal = {}

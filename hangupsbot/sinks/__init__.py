@@ -7,7 +7,7 @@ import ssl
 
 from aiohttp import web
 
-from utils import class_from_name
+from hangupsbot.utils import class_from_name
 
 from .base_bot_request_handler import AsyncRequestHandler
 

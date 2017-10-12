@@ -1,6 +1,6 @@
 """provide one way replays for conversations"""
 
-import plugins
+from hangupsbot import plugins
 
 def _initialise():
     """register the conversation id provider"""

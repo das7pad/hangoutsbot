@@ -11,7 +11,7 @@ import selenium
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-import plugins
+from hangupsbot import plugins
 
 
 logger = logging.getLogger(__name__)

@@ -9,7 +9,7 @@ import logging
 
 from hangups import TYPING_TYPE_STARTED, TYPING_TYPE_PAUSED, ChatMessageEvent
 
-from hangups_conversation import HangupsConversation
+from hangupsbot.hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """hangouts commands to setup/remove/manage slackrtm syncs"""
 
-from commands import Help
+from hangupsbot.commands import Help
 
 from .exceptions import (
     AlreadySyncingError,

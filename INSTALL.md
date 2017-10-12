@@ -50,7 +50,7 @@ accounts: one is your actual account, the other will be your bot account.
 The basic syntax for running the bot (assuming you are in the root of the cloned
 repository) is:
 ```
-./venv/bin/python3 hangupsbot/hangupsbot.py
+./venv/bin/python3 hangupsbot
 ```
 
 You will be prompted for your gmail username and password. Use your bot account

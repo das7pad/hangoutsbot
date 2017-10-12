@@ -33,8 +33,7 @@ venv-dev: venv
 lint:
 	@if [ ! -d $(venv)/lib/*/site-packages/pylint ]; then make -s venv-dev; fi
 	@echo "Lint: started"
-	@(cd hangupsbot && ../$(venv)/bin/pylint -s no -j 4 hangupsbot \
-		| sed -r 's/(\*{13})/\n\1/g')
+	@$(venv)/bin/pylint -s no -j 4 hangupsbot | sed -r 's/(\*{13})/\n\1/g'
 	@echo "Lint: no errors found"
 
 .PHONY: clean

@@ -15,10 +15,9 @@ import telepot.aio.api
 import telepot.exception
 from telepot.loop import _extract_message
 
-import plugins
-
-from sync.parser import get_formatted
-from sync.sending_queue import AsyncQueueCache
+from hangupsbot import plugins
+from hangupsbot.sync.parser import get_formatted
+from hangupsbot.sync.sending_queue import AsyncQueueCache
 
 from .commands_tg import (
     command_whoami,

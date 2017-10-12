@@ -1,7 +1,7 @@
 # TODO(das7pad) refactor needed
 import logging
 
-import plugins
+from hangupsbot import plugins
 
 
 logger = logging.getLogger(__name__)

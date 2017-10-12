@@ -8,7 +8,7 @@ import logging
 
 import telepot.exception
 
-from sync.user import SyncUser
+from hangupsbot.sync.user import SyncUser
 
 logger = logging.getLogger(__name__)
 

@@ -21,8 +21,8 @@ from spotipy.util import prompt_for_user_token as spotify_get_auth_stdin
 import appdirs
 import soundcloud
 
-import commands                              # pylint:disable=wrong-import-order
-import plugins
+from hangupsbot import commands
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

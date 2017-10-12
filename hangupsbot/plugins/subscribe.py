@@ -4,8 +4,8 @@ import asyncio
 import logging
 import re
 
-import commands
-import plugins
+from hangupsbot import commands
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

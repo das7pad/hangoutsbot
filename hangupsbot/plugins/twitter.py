@@ -1,19 +1,18 @@
 
 import io
+import datetime
+import json
 import logging
 import os
 import re
-
-import json
-import datetime
 
 import aiohttp
 import hangups
 from TwitterAPI import TwitterAPI, TwitterConnectionError
 from bs4 import BeautifulSoup
 
-import plugins
-from commands import Help
+from hangupsbot import plugins
+from hangupsbot.commands import Help
 
 logger = logging.getLogger(__name__)
 

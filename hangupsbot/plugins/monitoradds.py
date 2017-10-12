@@ -9,7 +9,7 @@ import logging
 
 import hangups
 
-import plugins
+from hangupsbot import plugins
 
 
 logger = logging.getLogger(__name__)

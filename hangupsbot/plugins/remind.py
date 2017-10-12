@@ -1,8 +1,8 @@
 """schedule a reminder in a pubilc or private conversation"""
 import asyncio
 
-from commands import Help
-import plugins
+from hangupsbot import plugins
+from hangupsbot.commands import Help
 
 
 HELP = {

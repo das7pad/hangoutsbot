@@ -2,8 +2,8 @@ import logging
 
 import aiohttp
 
-import plugins
-from utils import unicode_to_ascii
+from hangupsbot import plugins
+from hangupsbot.utils import unicode_to_ascii
 
 logger = logging.getLogger(__name__)
 

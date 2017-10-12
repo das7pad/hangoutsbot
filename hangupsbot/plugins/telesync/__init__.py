@@ -9,8 +9,8 @@ import logging
 
 import telepot.exception
 
-import commands
-import plugins
+from hangupsbot import commands
+from hangupsbot import plugins
 
 # reload the other modules
 for _path_ in ('user', 'message', 'commands_tg', 'parsers', 'core'):

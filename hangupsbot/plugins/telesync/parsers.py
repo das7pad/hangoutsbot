@@ -3,7 +3,7 @@
 from reparser import Segment
 from hangups.message_parser import Tokens
 
-from sync.parser import MessageSegment, MessageParser
+from hangupsbot.sync.parser import MessageSegment, MessageParser
 
 class TelegramMessageParser(MessageParser):
     """message parser to merge entities into text"""

@@ -4,10 +4,9 @@ import logging
 
 import aiohttp
 
-import plugins
-
-from sinks import aiohttp_start
-from sinks import AsyncRequestHandler as IncomingRequestHandler
+from hangupsbot import plugins
+from hangupsbot.sinks import aiohttp_start
+from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
 
 
 logger = logging.getLogger(__name__)
@@ -113,6 +112,7 @@ class HubotBridge():
 class IncomingMessages(IncomingRequestHandler):
     @asyncio.coroutine
     def process_request(self, path, query_string, content):
+        # pylint:disable=unused-argument
         path = path.split("/")
         conversation_id = path[1]
         if conversation_id is None:

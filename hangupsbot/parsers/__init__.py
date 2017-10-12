@@ -5,7 +5,7 @@ more parsers and parser utility functions can be imported here
 #pylint: disable=unused-import
 import hangups
 
-from parsers.kludgy_html_parser import segment_to_html
+from hangupsbot.parsers.kludgy_html_parser import segment_to_html
 
 def simple_parse_to_segments(formatted_text):
     """parse text to hangups.ChatMessageSegements

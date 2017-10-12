@@ -1,8 +1,8 @@
 import logging
 import time
-import plugins
 
-from commands import Help
+from hangupsbot import plugins
+from hangupsbot.commands import Help
 
 logger = logging.getLogger(__name__)
 

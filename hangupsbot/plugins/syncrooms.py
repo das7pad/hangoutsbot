@@ -1,6 +1,6 @@
 """merge multiple hangouts into a sync room"""
 
-import plugins
+from hangupsbot import plugins
 
 def _initialise():
     """register conv sync provider"""

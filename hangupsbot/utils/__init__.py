@@ -7,7 +7,7 @@ import os
 import unicodedata
 import traceback
 
-from parsers import simple_parse_to_segments, segment_to_html
+from hangupsbot.parsers import simple_parse_to_segments, segment_to_html
 
 BASE_PATH = os.path.dirname(os.path.dirname(__file__)) + '/'
 
