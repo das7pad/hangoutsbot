@@ -36,6 +36,16 @@ lint:
 	@$(venv)/bin/pylint -s no -j 4 hangupsbot | sed -r 's/(\*{13})/\n\1/g'
 	@echo "Lint: no errors found"
 
+.PHONY: test-only
+test-only:
+	@if [ ! -d $(venv)/lib/*/site-packages/_pytest ]; then make -s venv-dev; fi
+	@echo "Tests: started"
+	@$(venv)/bin/py.test -q tests
+	@echo "Tests: all completed"
+
+.PHONY: test
+test: lint test-only
+
 .PHONY: clean
 clean:
 	@echo "Remove compiled Python files"
