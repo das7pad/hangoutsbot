@@ -25,6 +25,11 @@ class ServerStorage(list):
         """
         self.tracking = tracking
 
+    async def clear(self):
+        """remove all servers"""
+        groups = [item[3] for item in self]
+        await aiohttp_terminate(groups)
+
     def register_aiohttp_web(self, group):
         """add a single group to the plugin tracking
 

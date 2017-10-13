@@ -60,6 +60,14 @@ class Tracker(object):
         """
         self.bot = bot
 
+    async def clear(self):
+        """clear all entrys"""
+        self.reset()
+        for plugin_data in self.list.values():
+            for task in plugin_data["asyncio.task"]:
+                task.cancel()
+        self.list.clear()
+
     def reset(self):
         """clear the entrys of the current plugin registration"""
         self._current = {

@@ -293,6 +293,9 @@ class HangupsBot(object):
             self.config["message_queque_unload_timeout"])
 
         await plugins.unload_all(self)
+        await plugins.tracking.clear()
+        await command.clear()
+        await sinks.aiohttp_servers.clear()
 
         self.memory.flush()
         self.config.flush()

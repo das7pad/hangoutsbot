@@ -59,6 +59,12 @@ class CommandDispatcher(object):
                                        "plugins.subscribe.unsubscribe",
                                        "plugins.subscribe.testsubscribe"]
 
+    async def clear(self):
+        """drop all commands"""
+        self.commands.clear()
+        self.command_tagsets.clear()
+        self.admin_commands.clear()
+
     def one_chat_id(self, token, internal_context, all_users=False):
         subtokens = token.split("|", 1)
 
