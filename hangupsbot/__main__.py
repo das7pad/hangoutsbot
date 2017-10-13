@@ -1,7 +1,6 @@
 """entrypoint to start the bot"""
 
 import argparse
-import gettext
 import logging
 import logging.config
 import os
@@ -154,8 +153,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # NOTE: bring in localization handling for `main()` and our own modules
-    gettext.install("hangupsbot",
-                    localedir=os.path.join(os.path.dirname(__file__),
-                                           "locale"))
     main()
