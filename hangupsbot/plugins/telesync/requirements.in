@@ -1,0 +1,5 @@
+# core
+telepot==12.3
+
+# parsers
+ReParser
