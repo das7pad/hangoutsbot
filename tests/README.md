@@ -12,6 +12,11 @@ The `hangupsbot` can be tested
   make test-only
   ```
 
+- Run the test suite with logging
+  ```bash
+  make test-only-verbose
+  ```
+
 - Run linting and the test suite
   ```bash
   make test

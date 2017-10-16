@@ -36,11 +36,21 @@ lint:
 	@$(venv)/bin/pylint -s no -j 4 hangupsbot | sed -r 's/(\*{13})/\n\1/g'
 	@echo "Lint: no errors found"
 
+.PHONY: .test-req
+.test-req:
+	@if [ ! -d $(venv)/lib/*/site-packages/_pytest ]; then \
+		make -s venv-dev; fi
+
 .PHONY: test-only
-test-only:
-	@if [ ! -d $(venv)/lib/*/site-packages/_pytest ]; then make -s venv-dev; fi
+test-only: .test-req
 	@echo "Tests: started"
-	@$(venv)/bin/py.test -q tests
+	@$(venv)/bin/py.test -q -x tests
+	@echo "Tests: all completed"
+
+.PHONY: test-only-verbose
+test-only-verbose: .test-req
+	@echo "Tests: started in verbose mode"
+	@$(venv)/bin/py.test -vv -x tests
 	@echo "Tests: all completed"
 
 .PHONY: test
