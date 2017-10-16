@@ -719,12 +719,12 @@ class TelegramBot(telepot.aio.Bot):
         while hard_reset < self.config('message_loop_retries'):
             await asyncio.sleep(hard_reset*10 + delay)
             hard_reset += 1
-            delay = .2
 
             try:
                 while True:
                     updates = await self.getUpdates(offset=offset, timeout=120)
                     logger.debug(updates)
+                    delay = .2
                     self._receive_next_updates = time.time() + 120
                     for update in updates:
                         offset = update['update_id'] + 1
@@ -736,23 +736,24 @@ class TelegramBot(telepot.aio.Bot):
                     telepot.exception.UnauthorizedError):
                 raise
             except telepot.exception.TooManyRequestsError as err:
-                delay = err.json.get('parameters', {}).get('retry_after', 60.)
+                delay += err.json.get('parameters', {}).get('retry_after', 60.)
                 logger.warning('too many requests! received a delay=%s', delay)
 
             except telepot.exception.BadHTTPResponse as err:
-                delay = _log_http_error(delay,
-                                        (err, err.status, err.text))
+                delay += _log_http_error(delay,
+                                         (err, err.status, err.text))
 
             except telepot.exception.TelegramError as err:
                 if err.error_code == 409:
                     logger.critical(
                         'The API-KEY is in use of another service! '
                         'Telegram allows only one longpolling instance.')
-                    await asyncio.sleep(120)
+                    delay += 120
+                    await asyncio.sleep(delay)
                     continue
 
-                delay = _log_http_error(delay,
-                                        (err, err.error_code, err.description))
+                delay += _log_http_error(delay,
+                                         (err, err.error_code, err.description))
 
             except Exception as err:              # pylint: disable=broad-except
                 logger.exception('unexpected error in message loop')
