@@ -15,7 +15,7 @@ HELP = {
               'grabs a random meme when none provided'),
 }
 
-_externals = {"running": False}
+_EXTERNALS = {"running": False}
 
 
 def _initialise():
@@ -25,11 +25,11 @@ def _initialise():
 
 async def meme(bot, event, *args):
     """Searches for a meme related to <something>"""
-    if _externals["running"]:
+    if _EXTERNALS["running"]:
         await bot.coro_send_message(event.conv_id, "<i>busy, give me a moment...</i>")
         return
 
-    _externals["running"] = True
+    _EXTERNALS["running"] = True
 
     try:
         parameters = args or ("robot",)
@@ -75,4 +75,4 @@ async def meme(bot, event, *args):
         logger.exception("FAILED TO RETRIEVE MEME: %s", repr(parameters))
 
     finally:
-        _externals["running"] = False
+        _EXTERNALS["running"] = False

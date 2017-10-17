@@ -82,16 +82,16 @@ async def urbandict(dummy0, dummy1, *args):
         logger.error('url: %s, response: %s', url, repr(response))
         return _('urbandict: request failed :(')
 
-    urbanDictParser = UrbanDictParser()
+    urbandict_parser = UrbanDictParser()
     try:
-        urbanDictParser.feed(data)
+        urbandict_parser.feed(data)
     except IndexError:
         # apparently, nothing was returned
         pass
 
-    if urbanDictParser.translations:
+    if urbandict_parser.translations:
         html_text = ""
-        the_definition = urbanDictParser.translations[0]
+        the_definition = urbandict_parser.translations[0]
         html_text += '<b>"' + the_definition["word"] + '"</b>\n\n'
         if "def" in the_definition:
             html_text += _("<b>definition:</b> ")

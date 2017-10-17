@@ -6,7 +6,7 @@ from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 
-pp = pprint.PrettyPrinter(indent=2)
+_PP = pprint.PrettyPrinter(indent=2)
 
 
 def _initialise():
@@ -40,7 +40,7 @@ async def _handle_incoming_message(dummy, event):
     # output to stdout
     if event.passthru:
         print("--- event.passthru")
-        pp.pprint(event.passthru)
+        _PP.pprint(event.passthru)
     if event.context:
         print("--- event.context")
-        pp.pprint(event.context)
+        _PP.pprint(event.context)

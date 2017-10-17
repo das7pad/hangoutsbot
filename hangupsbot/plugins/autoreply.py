@@ -110,9 +110,9 @@ async def _handle_autoreply(bot, event):
                 message = sentences
 
             if isinstance(kwds, list):
-                for kw in kwds:
-                    if _words_in_text(kw, event.text) or kw == "*":
-                        logger.info("matched chat: %s", kw)
+                for trigger in kwds:
+                    if _words_in_text(trigger, event.text) or trigger == "*":
+                        logger.info("matched chat: %s", trigger)
                         await send_reply(bot, event, message)
                         break
 

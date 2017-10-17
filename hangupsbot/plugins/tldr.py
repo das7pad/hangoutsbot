@@ -6,7 +6,7 @@ from hangupsbot.commands import Help
 
 logger = logging.getLogger(__name__)
 
-tldr_echo_options = [
+TLDR_ECHO_OPTIONS = [
     "PM",
     "GROUP",
     "GLOBAL"
@@ -38,7 +38,7 @@ def _initialise(bot):
 
     # Set the global option
     if not bot.config.exists(['tldr_echo']):
-        bot.config.set_by_path(["tldr_echo"], 1) # tldr_echo_options[1] is "GROUP"
+        bot.config.set_by_path(["tldr_echo"], 1) # TLDR_ECHO_OPTIONS[1] is "GROUP"
         bot.config.save()
 
 
@@ -57,7 +57,7 @@ def tldrecho(bot, event, *dummys):
         # No path was found. Is this your first setup?
         new_tldr = 0
 
-    if tldr_echo_options[new_tldr] == "GLOBAL":
+    if TLDR_ECHO_OPTIONS[new_tldr] == "GLOBAL":
         # Update the tldr_echo setting
         bot.memory.set_by_path(['conversations', event.conv_id, 'tldr_echo'], new_tldr)
     else:
@@ -69,10 +69,10 @@ def tldrecho(bot, event, *dummys):
     bot.memory.save()
 
     # Echo the current tldr setting
-    message = '<b>TLDR echo setting for this hangout has been set to {0}.</b>'.format(tldr_echo_options[new_tldr])
+    message = '<b>TLDR echo setting for this hangout has been set to {0}.</b>'.format(TLDR_ECHO_OPTIONS[new_tldr])
     logger.debug("%s (%s) has toggled the tldrecho in '%s' to %s",
                  event.user.full_name, event.user.id_.chat_id, event.conv_id,
-                 tldr_echo_options[new_tldr])
+                 TLDR_ECHO_OPTIONS[new_tldr])
 
     return message
 
@@ -94,7 +94,7 @@ async def tldr(bot, event, *args):
 
     message, display = tldr_base(bot, event.conv_id, list(args))
 
-    if display is True and tldr_echo_options[tldr_echo] == 'PM':
+    if display is True and TLDR_ECHO_OPTIONS[tldr_echo] == 'PM':
         await bot.coro_send_to_user_and_conversation(
             event.user.id_.chat_id, event.conv_id, message,
             _("<i>{}, I've sent you the info in a PM</i>").format(

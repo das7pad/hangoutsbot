@@ -10,12 +10,12 @@ from hangupsbot.commands import Help
 logger = logging.getLogger(__name__)
 
 
-class __internal_vars():
+class _InternalVars():
     def __init__(self):
         self.last_verified = {}
 
 
-_internal = __internal_vars()
+_INTERNAL = _InternalVars()
 
 HELP = {
     'allowbotadd': _('add supplied user id as a botkeeper.\n'
@@ -107,7 +107,7 @@ async def _verify_botkeeper_presence(bot, event, command):
         return
 
     try:
-        if time.time() - _internal.last_verified[event.conv_id] < 60:
+        if time.time() - _INTERNAL.last_verified[event.conv_id] < 60:
             # don't check on every event
             return
     except KeyError:
@@ -125,7 +125,7 @@ async def _verify_botkeeper_presence(bot, event, command):
             botkeeper = True
             break
 
-    _internal.last_verified[event.conv_id] = time.time()
+    _INTERNAL.last_verified[event.conv_id] = time.time()
 
     if not botkeeper:
         logger.warning("no botkeeper in %s", event.conv_id)
@@ -155,7 +155,7 @@ def allowbotadd(bot, dummy, *args):
     allowbotadd_ids.append(user_id)
     bot.memory.save()
 
-    _internal.last_verified = {} # force checks everywhere
+    _INTERNAL.last_verified = {} # force checks everywhere
     return _("user id {} added as botkeeper").format(user_id)
 
 
@@ -173,7 +173,7 @@ def removebotadd(bot, dummy, *args):
         allowbotadd_ids.remove(user_id)
         bot.memory.save()
 
-        _internal.last_verified = {} # force checks everywhere
+        _INTERNAL.last_verified = {} # force checks everywhere
 
         return _("user id {} removed as botkeeper").format(user_id)
     return _("user id {} is not authorised").format(user_id)

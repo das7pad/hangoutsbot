@@ -21,7 +21,7 @@ class ThreadManager(list):
         self.append(thread)
         self.tracking.register_thread(thread)
 
-thread_manager = ThreadManager()
+thread_manager = ThreadManager()                   # pylint:disable=invalid-name
 
 def start_thread(target, args):
     thread = Thread(target=target, args=args)

@@ -25,7 +25,7 @@ from hangupsbot.webbridge import (
 logger = logging.getLogger(__name__)
 
 
-_externals = { "plugin_name": "slackBasic", # same plugin name in SlackAsyncListener and BridgeInstance
+_EXTERNALS = { "plugin_name": "slackBasic", # same plugin name in SlackAsyncListener and BridgeInstance
                'BridgeInstance': None } # allow us to expose BridgeInstance to SlackAsyncListener
 
 class SlackAsyncListener(AsyncRequestHandler):
@@ -65,7 +65,7 @@ class SlackAsyncListener(AsyncRequestHandler):
 
                     # cheat and use an an external variable to reach BridgeInstance
 
-                    await _externals['BridgeInstance']._send_to_internal_chat(
+                    await _EXTERNALS['BridgeInstance']._send_to_internal_chat(
                         conv_id,
                         original_message,
                         {   "source_user": user,
@@ -123,7 +123,7 @@ class SlackAsyncListener(AsyncRequestHandler):
 
 class BridgeInstance(WebFramework):
     def setup_plugin(self):
-        self.plugin_name = _externals["plugin_name"]
+        self.plugin_name = _EXTERNALS["plugin_name"]
 
     def applicable_configuration(self, conv_id):
         """customised (legacy) configuration structure:
@@ -229,4 +229,4 @@ class BridgeInstance(WebFramework):
 
 
 def _initialise(bot):
-    _externals['BridgeInstance'] = BridgeInstance(bot, "slack", SlackAsyncListener)
+    _EXTERNALS['BridgeInstance'] = BridgeInstance(bot, "slack", SlackAsyncListener)

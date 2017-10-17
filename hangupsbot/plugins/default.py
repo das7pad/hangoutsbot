@@ -47,7 +47,7 @@ HELP = {
 }
 
 # non-persistent internal state independent of config.json/memory.json
-_internal = {"broadcast": {"message": "", "conversations": []}} # /bot broadcast
+_INTERNAL = {"broadcast": {"message": "", "conversations": []}} # /bot broadcast
 
 def _initialise():
     """register the commands and their help entrys"""
@@ -115,16 +115,16 @@ async def broadcast(bot, dummy, *args):
 
         conv_info = ["<b><i>{}</i></b> ... <i>{}</i>".format(
             bot.conversations.get_name(convid, '~'), convid)
-                     for convid in _internal["broadcast"]["conversations"]]
+                     for convid in _INTERNAL["broadcast"]["conversations"]]
 
-        if not _internal["broadcast"]["message"]:
+        if not _INTERNAL["broadcast"]["message"]:
             text = [_("broadcast: no message set")]
 
         elif not conv_info:
             text = [_("broadcast: no conversations available")]
 
         else:
-            text = [_("<b>message:</b>"), _internal["broadcast"]["message"],
+            text = [_("<b>message:</b>"), _INTERNAL["broadcast"]["message"],
                     _("<b>to:</b>")]
             text.extend(conv_info)
 
@@ -132,7 +132,7 @@ async def broadcast(bot, dummy, *args):
         # set broadcast message
         message = ' '.join(parameters)
         if message:
-            _internal["broadcast"]["message"] = message
+            _INTERNAL["broadcast"]["message"] = message
             text = [_("{} saved").format(message)]
 
         else:
@@ -142,12 +142,12 @@ async def broadcast(bot, dummy, *args):
         # add conversations to a broadcast
         if parameters[0] == "groups":
             # add all groups
-            _internal["broadcast"]["conversations"].extend(
+            _INTERNAL["broadcast"]["conversations"].extend(
                 list(bot.conversations.get("type:group")))
 
         elif parameters[0] == "ALL":
             # add EVERYTHING - try not to use this, will message 1-to-1s as well
-            _internal["broadcast"]["conversations"].extend(
+            _INTERNAL["broadcast"]["conversations"].extend(
                 list(bot.conversations.get()))
 
         else:
@@ -156,27 +156,27 @@ async def broadcast(bot, dummy, *args):
             for convid, convdata in bot.conversations.get().items():
                 if (search.lower() in convdata["title"].lower() or
                         search in convid):
-                    _internal["broadcast"]["conversations"].append(convid)
+                    _INTERNAL["broadcast"]["conversations"].append(convid)
 
-        _internal["broadcast"]["conversations"] = list(
-            set(_internal["broadcast"]["conversations"]))
+        _INTERNAL["broadcast"]["conversations"] = list(
+            set(_INTERNAL["broadcast"]["conversations"]))
         text = [_("broadcast: {} conversation(s)".format(
-            len(_internal["broadcast"]["conversations"])))]
+            len(_INTERNAL["broadcast"]["conversations"])))]
 
     elif subcmd == "remove":
         if parameters[0].lower() == "all":
             # remove all conversations from broadcast
-            _internal["broadcast"]["conversations"] = []
+            _INTERNAL["broadcast"]["conversations"] = []
             text = [_("broadcast: cleared all conversations")]
 
         else:
             # remove by wild card search of title or id
             search = " ".join(parameters)
             removed = []
-            for convid in _internal["broadcast"]["conversations"]:
+            for convid in _INTERNAL["broadcast"]["conversations"]:
                 if (search.lower() in bot.conversations.get_name(convid).lower()
                         or search in convid):
-                    _internal["broadcast"]["conversations"].remove(convid)
+                    _INTERNAL["broadcast"]["conversations"].remove(convid)
                     removed.append("<b><i>{}</i></b> (<i>{}</i>)".format(
                         bot.conversations.get_name(convid), convid))
 
@@ -185,12 +185,12 @@ async def broadcast(bot, dummy, *args):
     elif subcmd == "NOW":
         # send the broadcast
         context = {"syncroom_no_repeat": True} # prevent echos across syncrooms
-        for convid in _internal["broadcast"]["conversations"]:
+        for convid in _INTERNAL["broadcast"]["conversations"]:
             await bot.coro_send_message(convid,
-                                        _internal["broadcast"]["message"],
+                                        _INTERNAL["broadcast"]["message"],
                                         context=context)
         text = [_("broadcast: message sent to {} chats".format(
-            len(_internal["broadcast"]["conversations"])))]
+            len(_INTERNAL["broadcast"]["conversations"])))]
 
     else:
         raise Help()
@@ -222,11 +222,11 @@ def user(bot, dummy, *args):
     for chat_id in bot.memory["user_data"]:
         all_known_users[chat_id] = bot.get_hangups_user(chat_id)
 
-    for u in sorted(all_known_users.values(), key=lambda x: x.full_name.split()[-1]):
-        fullname_lower = u.full_name.lower()
-        fullname_upper = u.full_name.upper()
+    for usr in sorted(all_known_users.values(), key=lambda x: x.full_name.split()[-1]):
+        fullname_lower = usr.full_name.lower()
+        fullname_upper = usr.full_name.upper()
         unspaced_lower = re.sub(r'\s+', '', fullname_lower)
-        unspaced_upper = re.sub(r'\s+', '', u.full_name.upper())
+        unspaced_upper = re.sub(r'\s+', '', usr.full_name.upper())
 
         if (search_lower in fullname_lower
                 or search_lower in unspaced_lower
@@ -234,15 +234,15 @@ def user(bot, dummy, *args):
                 or search_upper in remove_accents(fullname_upper)
                 or search_upper in remove_accents(unspaced_upper)):
 
-            link = 'https://plus.google.com/u/0/{}/about'.format(u.id_.chat_id)
-            segments.append(hangups.ChatMessageSegment(u.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
+            link = 'https://plus.google.com/u/0/{}/about'.format(usr.id_.chat_id)
+            segments.append(hangups.ChatMessageSegment(usr.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
                                                        link_target=link))
-            if u.emails:
+            if usr.emails:
                 segments.append(hangups.ChatMessageSegment(' ('))
-                segments.append(hangups.ChatMessageSegment(u.emails[0], hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
-                                                           link_target='mailto:{}'.format(u.emails[0])))
+                segments.append(hangups.ChatMessageSegment(usr.emails[0], hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
+                                                           link_target='mailto:{}'.format(usr.emails[0])))
                 segments.append(hangups.ChatMessageSegment(')'))
-            segments.append(hangups.ChatMessageSegment(' ... {}'.format(u.id_.chat_id)))
+            segments.append(hangups.ChatMessageSegment(' ... {}'.format(usr.id_.chat_id)))
             segments.append(hangups.ChatMessageSegment('\n', hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK))
 
     return segments

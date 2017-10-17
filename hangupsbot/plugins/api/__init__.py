@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 def _initialise(bot):
     _start_api(bot)
 
-reprocessor_queue = {}
+REPROCESSOR_QUEUE = {}
 
 
 def response_received(dummy0, dummy1, dummy2, results, original_id):
@@ -42,7 +42,7 @@ def response_received(dummy0, dummy1, dummy2, results, original_id):
             output = results["api.response"]
         else:
             output = results
-        reprocessor_queue[original_id] = output
+        REPROCESSOR_QUEUE[original_id] = output
 
 
 def handle_as_command(bot, event, original_id):
@@ -60,23 +60,23 @@ def handle_as_command(bot, event, original_id):
 
 def _start_api(bot):
     api = bot.config.get_option('api')
-    itemNo = -1
+    item_num = -1
 
     if isinstance(api, list):
-        for sinkConfig in api:
-            itemNo += 1
+        for sink_config in api:
+            item_num += 1
 
             try:
-                certfile = sinkConfig["certfile"]
+                certfile = sink_config["certfile"]
                 if not certfile:
                     logger.error("config.api[%s].certfile must be configured",
-                                 itemNo)
+                                 item_num)
                     continue
-                name = sinkConfig["name"]
-                port = sinkConfig["port"]
+                name = sink_config["name"]
+                port = sink_config["port"]
             except KeyError as err:
                 logger.error("config.api[%s] missing keyword: %s",
-                             itemNo, repr(err))
+                             item_num, repr(err))
                 continue
 
             aiohttp_start(
@@ -90,12 +90,12 @@ def _start_api(bot):
 
 class APIRequestHandler(AsyncRequestHandler):
     def addroutes(self, router):
-        router.add_route("OPTIONS", "/", self.adapter_do_OPTIONS)
-        router.add_route("POST", "/", self.adapter_do_POST)
-        router.add_route('GET', '/{api_key}/{id}/{message:.*?}', self.adapter_do_GET)
+        router.add_route("OPTIONS", "/", self.adapter_do_options)
+        router.add_route("POST", "/", self.adapter_do_post)
+        router.add_route('GET', '/{api_key}/{id}/{message:.*?}', self.adapter_do_get)
 
 
-    async def adapter_do_OPTIONS(self, request):
+    async def adapter_do_options(self, request):
         origin = request.headers["Origin"]
 
         allowed_origins = self._bot.config.get_option("api_origins")
@@ -117,7 +117,7 @@ class APIRequestHandler(AsyncRequestHandler):
             "Vary": "Origin",
         })
 
-    async def adapter_do_GET(self, request):
+    async def adapter_do_get(self, request):
         payload = {"sendto": request.match_info["id"],
                    "key": request.match_info["api_key"],
                    "content": unquote(request.match_info["message"])}
@@ -173,9 +173,9 @@ class APIRequestHandler(AsyncRequestHandler):
 
         start_time = time.time()
         while time.time() - start_time < 3:
-            if reprocessor_id in reprocessor_queue:
-                response = reprocessor_queue[reprocessor_id]
-                del reprocessor_queue[reprocessor_id]
+            if reprocessor_id in REPROCESSOR_QUEUE:
+                response = REPROCESSOR_QUEUE[reprocessor_id]
+                del REPROCESSOR_QUEUE[reprocessor_id]
                 return "[" + str(time.time() - start_time) + "] " + response
             await asyncio.sleep(0.1)
 

@@ -16,11 +16,11 @@ from hangupsbot import plugins
 logger = logging.getLogger(__name__)
 
 
-_externals = {"bot": None}
+_EXTERNALS = {"bot": None}
 
 
 def _initialise(bot):
-    _externals["bot"] = bot
+    _EXTERNALS["bot"] = bot
     plugins.register_shared('image_validate_link', image_validate_link)
     plugins.register_shared('image_upload_single', image_upload_single)
     plugins.register_shared('image_upload_raw', image_upload_raw)
@@ -137,13 +137,14 @@ async def image_upload_single(image_uri):
 async def image_upload_raw(image_data, filename):
     image_id = False
     try:
-        image_id = await _externals["bot"].upload_image(image_data, filename=filename)
+        image_id = await _EXTERNALS["bot"].upload_image(image_data, filename=filename)
     except KeyError as exc:
         logger.warning("_client.upload_image failed: %s", exc)
     return image_id
 
 
 async def image_validate_and_upload_single(text, reject_googleusercontent=True):
+    # pylint:disable=invalid-name
     image_id = False
     image_link = image_validate_link(text, reject_googleusercontent=reject_googleusercontent)
     if image_link:
@@ -152,7 +153,7 @@ async def image_validate_and_upload_single(text, reject_googleusercontent=True):
 
 
 async def image_convert_to_png(image):
-    path_imagemagick = _externals["bot"].config.get_option("image.imagemagick") or "/usr/bin/convert"
+    path_imagemagick = _EXTERNALS["bot"].config.get_option("image.imagemagick") or "/usr/bin/convert"
     cmd = (path_imagemagick, "-", "png:-")
 
     try:

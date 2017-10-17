@@ -18,9 +18,9 @@ USER_NOTE_START_1ON1 = _(
     )
 
 # Cache to keep track of what keywords are being watched.
-# _keywords is indexed with a users chat_id, _global_keywords by keyword
-_keywords = {}
-_global_keywords = {}
+# _KEYWORDS is indexed with a users chat_id, _GLOBAL_KEYWORDS by keyword
+_KEYWORDS = {}
+_GLOBAL_KEYWORDS = {}
 
 MENTION_TEMPLATE = (
     '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
@@ -95,8 +95,8 @@ def _populate_keywords(bot):
     for userchatid in bot.memory.get_option("user_data"):
         userkeywords = bot.user_memory_get(userchatid, "keywords")
         if userkeywords is not None:
-            _keywords[userchatid] = userkeywords
-    _global_keywords.update(bot.memory['hosubscribe'])
+            _KEYWORDS[userchatid] = userkeywords
+    _GLOBAL_KEYWORDS.update(bot.memory['hosubscribe'])
 
 def _is_ignored_command(event):
     """check whether the event runs a command that should not trigger a mention
@@ -129,7 +129,7 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
                 chat_id in event.notified_users):
             # user is part of event or already got mentioned for this event
             continue
-        user_phrases = _keywords.get(chat_id, [])
+        user_phrases = _KEYWORDS.get(chat_id, [])
         matches = []
         for phrase in user_phrases:
             if phrase in event_text:
@@ -160,7 +160,7 @@ def _handle_once(bot, event):
     event_text = event.text.lower()
     previous_targets = event.previous_targets.union(event.targets)
 
-    for keyword, conversations in _global_keywords.copy().items():
+    for keyword, conversations in _GLOBAL_KEYWORDS.copy().items():
         if keyword not in event_text:
             continue
         for alias in conversations:
@@ -245,32 +245,32 @@ async def subscribe(bot, event, *args):
 
     lines = []
     if keyword:
-        if chat_id in _keywords:
-            if keyword in _keywords[chat_id]:
+        if chat_id in _KEYWORDS:
+            if keyword in _KEYWORDS[chat_id]:
                 # Duplicate!
                 return _("Already subscribed to '{}'!").format(keyword)
             else:
                 # Not a duplicate, proceeding
-                _keywords[chat_id].append(keyword)
+                _KEYWORDS[chat_id].append(keyword)
         else:
             # first one ever
-            _keywords[chat_id] = [keyword]
+            _KEYWORDS[chat_id] = [keyword]
             lines.append(USER_NOTE_SELF_MENTION)
 
         # Save to file
-        bot.user_memory_set(chat_id, "keywords", _keywords[chat_id])
+        bot.user_memory_set(chat_id, "keywords", _KEYWORDS[chat_id])
 
     else:
         # user might need help
         lines.append(_("Usage: {bot_cmd} subscribe [keyword]").format(
             bot_cmd=bot.command_prefix))
 
-    if _keywords[chat_id]:
+    if _KEYWORDS[chat_id]:
         # Note: print each keyword into one line to differeniate between
         # "'keyword1', 'keyword2'" and "'keyword1, keyword1', 'keyword2'"
         # second happens as users try to add more than one keyword at once
         lines.append(_("Subscribed to:"))
-        lines += _keywords[chat_id]
+        lines += _KEYWORDS[chat_id]
 
     return '\n'.join(lines)
 
@@ -284,22 +284,22 @@ def unsubscribe(bot, event, *args):
     """
     chat_id = event.user_id.chat_id
 
-    if chat_id not in _keywords:
+    if chat_id not in _KEYWORDS:
         return _('No subscribes found for you')
 
     keyword = ' '.join(args).lower()
     if not keyword:
         text = _("Unsubscribing all keywords")
-        _keywords[chat_id] = []
+        _KEYWORDS[chat_id] = []
 
-    elif keyword in _keywords[chat_id]:
+    elif keyword in _KEYWORDS[chat_id]:
         text = _("Unsubscribing from keyword '{}'").format(keyword)
-        _keywords[chat_id].remove(keyword)
+        _KEYWORDS[chat_id].remove(keyword)
 
     else:
         return _('keyword "%s" not found') % keyword
 
-    bot.user_memory_set(chat_id, "keywords", _keywords[chat_id])
+    bot.user_memory_set(chat_id, "keywords", _KEYWORDS[chat_id])
     return text
 
 def testsubscribe(bot, event, *dummys):
@@ -335,30 +335,30 @@ def global_subscribe(bot, event, *args):
     alias = bot.call_shared('convid2alias', conv_id) or conv_id
     keyword = args[-1].lower()
 
-    if keyword in _global_keywords:
-        if alias in _global_keywords[keyword]:
+    if keyword in _GLOBAL_KEYWORDS:
+        if alias in _GLOBAL_KEYWORDS[keyword]:
             return _('The conversation "%s" already receives messages '
                      'containing "%s".') % (alias, keyword)
 
-        _global_keywords[keyword].append(alias)
+        _GLOBAL_KEYWORDS[keyword].append(alias)
         text = _('These conversation will receive messages containing "%s":'
-                 '\n%s') % (keyword, ', '.join(_global_keywords[keyword]))
+                 '\n%s') % (keyword, ', '.join(_GLOBAL_KEYWORDS[keyword]))
 
     elif keyword != 'show':
-        _global_keywords[keyword] = [alias]
+        _GLOBAL_KEYWORDS[keyword] = [alias]
         text = _('The conversation "%s" is the only one with a subscribe to '
                  '"%s"') % (alias, keyword)
 
     else:
         subscribes = []
-        for keyword_, conversations in _global_keywords.copy().items():
+        for keyword_, conversations in _GLOBAL_KEYWORDS.copy().items():
             if alias in conversations:
                 subscribes.append(keyword_)
         return _('The conversation "%s" has subscribed to %s') % (
             alias, (', '.join(['"%s"' % item for item in subscribes])
                     or _('None')))
 
-    bot.memory['hosubscribe'] = _global_keywords
+    bot.memory['hosubscribe'] = _GLOBAL_KEYWORDS
     bot.memory.save()
     return text
 
@@ -385,20 +385,20 @@ def global_unsubscribe(bot, event, *args):
     alias = bot.call_shared('convid2alias', conv_id) or conv_id
     keyword = args[-1].lower()
 
-    if keyword not in _global_keywords:
+    if keyword not in _GLOBAL_KEYWORDS:
         return _('No conversation has subscribed to %s') % keyword
 
-    if alias not in _global_keywords[keyword]:
+    if alias not in _GLOBAL_KEYWORDS[keyword]:
         return _('The conversation "%s" has not subscribed to "%s"') % (alias,
                                                                         keyword)
 
-    _global_keywords[keyword].remove(alias)
+    _GLOBAL_KEYWORDS[keyword].remove(alias)
 
-    if not _global_keywords[keyword]:
+    if not _GLOBAL_KEYWORDS[keyword]:
         # cleanup
-        _global_keywords.pop(keyword)
+        _GLOBAL_KEYWORDS.pop(keyword)
 
-    bot.memory['hosubscribe'] = _global_keywords
+    bot.memory['hosubscribe'] = _GLOBAL_KEYWORDS
     bot.memory.save()
     return _('The conversation "%s" will no longer receive messages '
              'containing "%s"') % (alias, keyword)

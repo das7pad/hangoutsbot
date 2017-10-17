@@ -20,7 +20,7 @@ HELP = {
                         "'slowclap.gif').\nFull list at http://goo.gl/ORmisN"),
 }
 
-_lookup = {}
+_LOOKUP = {}
 
 
 def _initialise():
@@ -42,7 +42,7 @@ async def _scan_for_triggers(bot, event):
     count = 0
     lctext = event.text.lower()
     image_links = set()
-    for trigger in _lookup:
+    for trigger in _LOOKUP:
         pattern = r'\\b' + trigger + r'\.(jpg|png|gif|bmp)\\b'
         if re.search(pattern, lctext):
             image_links.add(_get_a_link(trigger))
@@ -74,8 +74,8 @@ async def _scan_for_triggers(bot, event):
 def _load_all_the_things():
     plugin_dir = os.path.dirname(os.path.realpath(__file__))
     source_file = os.path.join(plugin_dir, "sauce.txt")
-    with open(source_file) as f:
-        content = f.read().splitlines()
+    with open(source_file) as file:
+        content = file.read().splitlines()
     for line in content:
         parts = line.strip("|").split('|')
         if len(parts) == 2:
@@ -84,14 +84,14 @@ def _load_all_the_things():
             images = [re.search(r'\((.*?)\)$', x).group(1)
                       for x in images.split(' ')]
             for trigger in triggers:
-                if trigger in _lookup:
-                    _lookup[trigger].extend(images)
+                if trigger in _LOOKUP:
+                    _LOOKUP[trigger].extend(images)
                 else:
-                    _lookup[trigger] = images
-    logger.debug("%s trigger(s) loaded", len(_lookup))
+                    _LOOKUP[trigger] = images
+    logger.debug("%s trigger(s) loaded", len(_LOOKUP))
 
 
 def _get_a_link(trigger):
-    if trigger in _lookup:
-        return random.choice(_lookup[trigger])
+    if trigger in _LOOKUP:
+        return random.choice(_LOOKUP[trigger])
     return False

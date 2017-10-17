@@ -116,16 +116,16 @@ async def convusers(bot, event, *args):
         lines.append(_('Users in <b>{}</b>').format(
             convdata["title"], len(convdata["participants"])))
         for chat_id in convdata["participants"]:
-            User = bot.get_hangups_user(chat_id)
+            user = bot.get_hangups_user(chat_id)
             # name and G+ link
             _line = '<b><a href="https://plus.google.com/{}">{}</a></b>'.format(
-                User.id_.chat_id, User.full_name)
+                user.id_.chat_id, user.full_name)
             # email from hangups UserList (if available)
-            if User.emails:
+            if user.emails:
                 _line += '\n... (<a href="mailto:{0}">{0}</a>)'.format(
-                    User.emails[0])
+                    user.emails[0])
             # user id
-            _line += "\n... {}".format(User.id_.chat_id) # user id
+            _line += "\n... {}".format(user.id_.chat_id) # user id
             lines.append(_line)
         lines.append(_('<b>Users: {}</b>').format(
             len(convdata["participants"])))

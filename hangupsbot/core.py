@@ -697,6 +697,7 @@ class HangupsBot(object):
             message: string or a list of hangups.ChatMessageSegment
             context: dict, optional information about the message
         """
+        # pylint:disable=invalid-name
         conv_1on1 = await self.get_1to1(chat_id)
 
         full_name = self.get_hangups_user(chat_id).full_name

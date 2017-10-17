@@ -38,7 +38,7 @@ except ImportError:
     logger.warning("required module: cleverwrap")
     raise
 
-__cleverbots = {}
+__CLEVERBOTS = {}
 
 HELP = {
     'chat': _('chat with cleverbot\n\nexample: {bot_cmd} chat hi cleverbot!'),
@@ -82,24 +82,24 @@ def _get_cw_for_chat(bot, event):
     else:
         index = "shared"
 
-    if index in __cleverbots:
-        return __cleverbots[index]
+    if index in __CLEVERBOTS:
+        return __CLEVERBOTS[index]
 
     # dev: you can define different API keys for different conversations
     api_key = bot.get_config_suboption(event.conv_id, "cleverbot_api_key")
     if not api_key:
         return None
-    cw = CleverWrap(api_key)
-    __cleverbots[index] = cw
+    new_cw = CleverWrap(api_key)
+    __CLEVERBOTS[index] = new_cw
     logger.debug("created new cw for %s", index)
-    return cw
+    return new_cw
 
 
 def chat(bot, event, *args):
     """chat with cleverbot"""
 
-    cw = _get_cw_for_chat(bot, event)
-    if not cw:
+    chat_cw = _get_cw_for_chat(bot, event)
+    if not chat_cw:
         response = "API key not defined: config.cleverbot_api_key"
         logger.error(response)
         return response
@@ -109,9 +109,9 @@ def chat(bot, event, *args):
     else:
         input_text = event.text
 
-    # cw.say takes one argument, the input string. It is a blocking call that returns cleverbot's response.
+    # chat_cw.say takes one argument, the input string. It is a blocking call that returns cleverbot's response.
     # see https://github.com/edwardslabs/cleverwrap.py for more information
-    response = cw.say(input_text)
+    response = chat_cw.say(input_text)
 
     return response
 
@@ -119,7 +119,7 @@ def chat(bot, event, *args):
 def chatreset(bot, event, *dummys):
     """tells cleverbot to forget things you've said in the past"""
 
-    cw = _get_cw_for_chat(bot, event)
-    if cw:
-        cw.reset()
+    chat_cw = _get_cw_for_chat(bot, event)
+    if chat_cw:
+        chat_cw.reset()
     return "cleverbot has been reset!"
