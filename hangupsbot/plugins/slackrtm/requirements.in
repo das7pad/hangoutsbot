@@ -1,0 +1,8 @@
+# core
+aiohttp>2,<3
+
+# message
+emoji==0.4.5
+
+# parser
+ReParser

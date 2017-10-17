@@ -1,0 +1,4 @@
+aiohttp>2,<3
+bs4
+lxml
+TwitterAPI
