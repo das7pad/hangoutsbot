@@ -1,1 +1,1 @@
-"""tests of the dependencies for a `hangupsbot.HangupsBot`"""
+"""tests of the dependencies for a `hangupsbot.core.HangupsBot`"""
