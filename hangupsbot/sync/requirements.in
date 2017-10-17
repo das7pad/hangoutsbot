@@ -1,0 +1,4 @@
+aiohttp>2,<3
+Pillow
+imageio
+moviepy
