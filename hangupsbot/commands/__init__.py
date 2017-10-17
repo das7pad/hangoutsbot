@@ -11,6 +11,12 @@ import hangups
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_CONFIG = {
+    'command_timeout': 5*60,
+
+}
+
+
 class Help(Exception):
     """raise to request the help entry of the current command
 
@@ -280,7 +286,7 @@ class CommandDispatcher(object):
         """
         self.bot = bot
         # set the default timeout for commands to execute to 5minutes
-        bot.config.set_defaults({'command_timeout': (5*60)})
+        bot.config.set_defaults(DEFAULT_CONFIG)
 
     def set_tracking(self, tracking):
         """register the plugin tracking for commands
@@ -410,19 +416,24 @@ class CommandDispatcher(object):
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 
-    async def run(self, bot, event, *args, **kwds):
+    async def run(self, bot, event, *args, **kwargs):
         """Run a command
 
         Args:
             bot: HangupsBot instance
             event: event.ConversationEvent like instance
             args: tuple of string, including the command name in fist place
-            kwds: dict, additional info to the execution including the key
+            kwargs: dict, additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
+
         Raises:
             KeyError: specified command is unknown
-            any other: the kwarg 'raise_exceptions' is set and the command
-             raised
+            Help: the kwarg 'raise_exceptions' is set and the command raised
+            asyncio.TimeoutError: the kwarg 'raise_exceptions' is set and the
+                command execution time exceeded the `command_timeout` limit
+                which is set in the bot config, default see `DEFAULT_CONFIG`
+            mixed: the kwarg 'raise_exceptions' is set and the command
+             raised an Exception
         """
         command_name = args[0].lower()
         coro = self.commands.get(command_name)
@@ -431,7 +442,7 @@ class CommandDispatcher(object):
 
         # default: if exceptions occur in a command, output as message
         # supply keyword argument raise_exceptions=True to override behaviour
-        raise_exceptions = kwds.pop("raise_exceptions", False)
+        raise_exceptions = kwargs.pop("raise_exceptions", False)
 
         setattr(event, 'command_name', command_name)
         setattr(event, 'command_module', coro.__module__)
@@ -440,17 +451,22 @@ class CommandDispatcher(object):
         conv_id = event.conv_id
         context = None
         try:
-            result = await asyncio.wait_for(coro(bot, event, *args[1:], **kwds),
-                                            bot.config['command_timeout'])
+            result = await asyncio.wait_for(
+                coro(bot, event, *args[1:], **kwargs),
+                bot.config['command_timeout'])
 
         except asyncio.CancelledError:
             # shutdown in progress
             raise
 
         except asyncio.TimeoutError:
+            if raise_exceptions:
+                raise
             text = _('command execution of "{}" timed out').format(command_name)
 
         except Help as err:
+            if raise_exceptions:
+                raise
             help_entry = (*err.args, '', '<b>%s:</b>' % command_name,
                           get_func_help(bot, command_name, coro))
             text = "\n".join(help_entry).strip()
