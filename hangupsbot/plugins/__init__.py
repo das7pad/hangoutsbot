@@ -10,10 +10,12 @@ import logging
 import os
 import sys
 
-import utils
-from commands import command
-from sinks import aiohttp_servers, aiohttp_terminate
-from threadmanager import thread_manager      # pylint:disable=deprecated-module
+from hangupsbot import utils
+from hangupsbot.commands import command
+from hangupsbot.sinks import aiohttp_servers, aiohttp_terminate
+# pylint:disable=deprecated-module
+from hangupsbot.threadmanager import thread_manager
+# pylint:enable=deprecated-module
 
 
 logger = logging.getLogger(__name__)
@@ -362,9 +364,7 @@ def retrieve_all_plugins(plugin_path=None, must_start_with=None,
     """
 
     if not plugin_path:
-        plugin_path = "{path}{separator}plugins".format(
-            path=os.path.dirname(os.path.realpath(sys.argv[0])),
-            separator=os.sep)
+        plugin_path = os.path.dirname(__file__)
 
     plugin_list = []
 
@@ -442,7 +442,7 @@ def get_configured_plugins(bot):
 
             matches = []
             for found in plugins_excluded:
-                fullfound = "plugins." + found
+                fullfound = "hangupsbot.plugins." + found
                 if fullfound.endswith(dotconfigured):
                     matches.append(found)
             num_matches = len(matches)
@@ -548,12 +548,13 @@ async def load(bot, module_path, module_name=None):
         await unload(bot, module_path)
         return False
 
-    setattr(sys.modules[module_path], 'print', utils.print_to_logger)
-    if hasattr(sys.modules[module_path], "hangups_shim"):
+    real_module_path = 'hangupsbot.' + module_path
+    setattr(sys.modules[real_module_path], 'print', utils.print_to_logger)
+    if hasattr(sys.modules[real_module_path], "hangups_shim"):
         logger.info("%s has legacy hangups reference", module_name)
 
     public_functions = list(
-        inspect.getmembers(sys.modules[module_path], inspect.isfunction))
+        inspect.getmembers(sys.modules[real_module_path], inspect.isfunction))
 
     candidate_commands = []
 
@@ -628,6 +629,7 @@ def load_module(module_path):
         boolean, True if no Exception was raised on (re)load, otherwise False
     """
     message = "search for plugin in sys.modules"
+    module_path = 'hangupsbot.' + module_path
     try:
         if module_path in sys.modules:
             message = "reload"

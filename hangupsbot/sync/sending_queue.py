@@ -5,7 +5,8 @@ import asyncio
 import functools
 import logging
 
-from utils.cache import Cache
+from hangupsbot.utils.cache import Cache
+
 from . import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)

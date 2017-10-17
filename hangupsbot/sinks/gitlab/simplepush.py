@@ -5,15 +5,12 @@ GitLab webhook receiver - see http://doc.gitlab.com/ee/web_hooks/web_hooks.html
 import json
 import logging
 
-from sinks.base_bot_request_handler import AsyncRequestHandler
+import dateutil.parser
+
+from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
 
 logger = logging.getLogger(__name__)
 
-try:
-    import dateutil.parser
-except ImportError:
-    logger.error("missing module python_dateutil: pip3 install python_dateutil")
-    raise
 
 class webhookReceiver(AsyncRequestHandler):
     """Receive REST API posts from GitLab"""

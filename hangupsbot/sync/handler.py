@@ -11,12 +11,11 @@ import random
 import hangups
 from hangups import hangouts_pb2
 
-# pylint: disable=wrong-import-order
-from commands import command
-from exceptions import SuppressEventHandling
-import handlers
-import plugins
-from utils.cache import Cache
+from hangupsbot import handlers
+from hangupsbot import plugins
+from hangupsbot.commands import command
+from hangupsbot.exceptions import SuppressEventHandling
+from hangupsbot.utils.cache import Cache
 
 from . import DEFAULT_CONFIG, SYNCPROFILE_HELP
 from .exceptions import MissingArgument, UnRegisteredProfilesync

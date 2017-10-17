@@ -28,8 +28,12 @@ profile=no
 # Disable the message, report, category or checker with the given id(s). You
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time.
-# TODO(das7pad): remove all.
+# TODO(das7pad): remove all disabled items not listed below:
+# - ungrouped-imports: Use `hangupsbot` as a static namespace, do not mark
+#                      `from hangupsbot.plugins.xyz import abc` as convention
+#                      error
 disable=
+    ungrouped-imports,
     fixme,
     invalid-name,
     line-too-long,
@@ -41,7 +45,6 @@ disable=
     too-many-locals,
     too-many-public-methods,
     too-many-statements,
-    wrong-import-order,
 
 
 [REPORTS]

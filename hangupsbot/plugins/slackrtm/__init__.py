@@ -43,7 +43,7 @@ Use "@hobot help" for more help on the Slack side.
 
 import logging
 
-import plugins
+from hangupsbot import plugins
 
 # reload the other modules
 # pylint: disable=wrong-import-position,unused-import

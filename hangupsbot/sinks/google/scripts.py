@@ -1,7 +1,7 @@
 import json
 import logging
 
-from sinks.base_bot_request_handler import AsyncRequestHandler
+from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
 
 
 logger = logging.getLogger(__name__)

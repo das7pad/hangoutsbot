@@ -347,7 +347,8 @@ def get_formatted(segments, raw_style, *, internal_source=False):
                 # Note: Google adds tracking to urls sent via Hangouts, but
                 #  the url text still contains the original url
                 url = text
-            if text == url or (url.startswith('http://') and text == url[7:]):
+            if (urllib.parse.unquote(text) == urllib.parse.unquote(url)
+                    or (url.startswith('http://') and text == url[7:])):
                 if style['ignore_links_matching_text']:
                     url = None
             elif not style['allow_hidden_url']:

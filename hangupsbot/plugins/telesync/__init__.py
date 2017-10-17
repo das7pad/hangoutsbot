@@ -9,8 +9,8 @@ import logging
 
 import telepot.exception
 
-import commands
-import plugins
+from hangupsbot import commands
+from hangupsbot import plugins
 
 # reload the other modules
 for _path_ in ('user', 'message', 'commands_tg', 'parsers', 'core'):
@@ -126,6 +126,11 @@ def setup_config(bot):
             'start_message': _('Hello {name}! You are talking to @{botusername}'
                                ', known as {botname}.'),
 
+            # delay between location updates in seconds
+            'location_sharing_update_delay': 30,
+
+            # remove the edit-tag from live-locations
+            'location_sharing_remove_edit_tag': True,
         }
     }
     bot.config.set_defaults(default_config)

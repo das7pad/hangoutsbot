@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import sys
 
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

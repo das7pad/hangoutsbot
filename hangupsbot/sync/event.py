@@ -8,7 +8,7 @@ import logging
 
 import hangups
 
-import hangups_conversation
+from hangupsbot import hangups_conversation
 
 from .exceptions import MissingArgument
 from .image import SyncImage

@@ -5,11 +5,37 @@ import logging
 
 import telepot
 
-from sync.event import SyncReply
-from sync.user import SyncUser
+from hangupsbot.sync.event import SyncReply
+from hangupsbot.sync.user import SyncUser
+from hangupsbot.utils.cache import Cache
+
+from .exceptions import IgnoreMessage
 from .user import User
 
 logger = logging.getLogger(__name__)
+
+
+class _LocationCache(Cache):
+    """cache for location data
+
+    keys: msg_id (str)
+    values: last location data (tuple):
+        `(<timestamp (int)>, (<pos_lat (int)>, <pos_lng (int)>))`
+
+    Note: we can not resolve a msg_id to a user_id without storing the orignial
+     message. The debug-mode logs complete messages.
+    """
+    def __missing__(self, identifier):
+        return 0, (0, 0)
+
+
+_LOCATION_SHARING_MAX = 60*60*8             # 8hours
+_LOCATION_CACHE = _LocationCache(
+    default_timeout=_LOCATION_SHARING_MAX,
+    name='telesync_location_cache',
+    increase_on_access=False)
+_LOCATION_CACHE.start()
+
 
 class Message(dict):
     """parse the message once
@@ -18,7 +44,9 @@ class Message(dict):
 
     Args:
         msg: dict from telepot
-        tg_bot: TelegramBot instance
+
+    Raises:
+        IgnoreMessage: the message should not be synced
     """
     bot = None
     tg_bot = None
@@ -132,23 +160,46 @@ class Message(dict):
                          offset=offset, image=image)
 
     def _set_content(self):
-        """map content type to a propper message text and find images"""
+        """map content type to a propper message text and find images
 
+        Raises:
+            IgnoreMessage: the message should not be synced,
+                invalid type or duplicate location
+        """
         def _create_gmaps_url():
             """create Google Maps query from a location in the message
 
             Returns:
                 string, a google maps link or .content_type or error
-            """
-            if not ('location' in self and
-                    'latitude' in self['location'] and
-                    'longitude' in self['location']):
-                # missing requirement to create a valid maps link
-                return self.content_type
 
-            return 'https://maps.google.com/maps?q={lat},{lng}'.format(
-                lat=self['location']['latitude'],
-                lng=self['location']['longitude'])
+            Raises:
+                IgnoreMessage: duplicate location, discard this message
+            """
+            msg_id = self.msg_id    # cache property call
+            pos = (self['location']['latitude'], self['location']['longitude'])
+            if self.edited:
+                # the message is part of a live location sharing
+
+                last_synced, last_pos = _LOCATION_CACHE.get(msg_id, pop=True)
+                last_synced = last_synced or self['date']
+                if last_pos == pos:
+                    prefix = _('Last live update: ')
+                else:
+                    prefix = _('Live update: ')
+                    _LOCATION_CACHE.add(msg_id, (self['edit_date'], pos))
+
+                    min_delay = self.tg_bot.config(
+                        'location_sharing_update_delay')
+                    if self['edit_date'] - last_synced < min_delay:
+                        raise IgnoreMessage()
+
+                if self.tg_bot.config('location_sharing_remove_edit_tag'):
+                    self.pop('edit_date')
+            else:
+                prefix = ''
+
+            return '{prefix}https://maps.google.com/maps?q={lat},{lng}'.format(
+                prefix=prefix, lat=pos[0], lng=pos[1])
 
         if self.content_type == 'text':
             self.text = self['text']
@@ -189,4 +240,4 @@ class Message(dict):
             self.text = _create_gmaps_url()
 
         else:
-            self.text = '[{}]'.format(self.content_type)
+            raise IgnoreMessage()

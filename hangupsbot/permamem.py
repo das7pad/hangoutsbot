@@ -7,7 +7,7 @@ import re
 
 import hangups
 
-from hangups_conversation import HangupsConversation
+from hangupsbot.hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 

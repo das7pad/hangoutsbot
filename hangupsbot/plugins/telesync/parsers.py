@@ -3,7 +3,7 @@
 from reparser import Segment
 from hangups.message_parser import Tokens
 
-from sync.parser import MessageSegment, MessageParser
+from hangupsbot.sync.parser import MessageSegment, MessageParser
 
 class TelegramMessageParser(MessageParser):
     """message parser to merge entities into text"""
@@ -29,7 +29,7 @@ class TelegramMessageParser(MessageParser):
             if start_pos > last_pos:
                 segments.extend(super().parse(text[last_pos:start_pos]))
 
-            last_pos += entity['length']
+            last_pos = start_pos + entity['length']
             formatting = {'is_' + entity['type']: True}
             segments.append(Segment(text[start_pos:last_pos], **formatting))
 

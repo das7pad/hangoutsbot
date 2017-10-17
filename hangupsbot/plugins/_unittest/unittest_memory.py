@@ -8,7 +8,7 @@ all these commands work on memory.json
 import logging
 import time
 
-import plugins
+from hangupsbot import plugins
 
 
 logger = logging.getLogger(__name__)

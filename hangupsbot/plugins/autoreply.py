@@ -6,10 +6,10 @@ import re
 
 import hangups
 
-import plugins
-import sync.event
+from hangupsbot import plugins
+from hangupsbot.sync import event as sync_events
 
-from .image import image_validate_and_upload_single
+from hangupsbot.plugins.image import image_validate_and_upload_single
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +43,12 @@ async def _handle_autoreply(bot, event):
 
     # Handle autoreplies to keywords in messages
 
-    if isinstance(event, sync.event.SyncEventMembership):
+    if isinstance(event, sync_events.SyncEventMembership):
         if event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
             event_type = "JOIN"
         else:
             event_type = "LEAVE"
-    elif isinstance(event, sync.event.SyncEvent):
+    elif isinstance(event, sync_events.SyncEvent):
         event_type = "MESSAGE"
     elif isinstance(event.conv_event, hangups.RenameEvent):
         event_type = "RENAME"

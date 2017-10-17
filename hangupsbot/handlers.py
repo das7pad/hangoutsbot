@@ -10,12 +10,16 @@ import uuid
 import hangups
 import hangups.parsers
 
-import plugins
-from commands import command
-from event import (GenericEvent, TypingEvent, WatermarkEvent, ConversationEvent)
-from exceptions import HangupsBotExceptions
-
-from utils.cache import Cache
+from hangupsbot import plugins
+from hangupsbot.commands import command
+from hangupsbot.event import (
+    GenericEvent,
+    TypingEvent,
+    WatermarkEvent,
+    ConversationEvent
+)
+from hangupsbot.exceptions import HangupsBotExceptions
+from hangupsbot.utils.cache import Cache
 
 logger = logging.getLogger(__name__)
 

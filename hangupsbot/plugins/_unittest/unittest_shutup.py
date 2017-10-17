@@ -1,6 +1,7 @@
 """example plugin demonstrating various levels of sending handler suppression"""
-from exceptions import HangupsBotExceptions
-import plugins
+
+from hangupsbot import plugins
+from hangupsbot.exceptions import HangupsBotExceptions
 
 def _initialise():
     """register a handler for a given pluggable"""

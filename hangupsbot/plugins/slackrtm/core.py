@@ -5,11 +5,11 @@ import logging
 
 import aiohttp
 
-import plugins
+from hangupsbot import plugins
 
-from sync.sending_queue import AsyncQueueCache
-from sync.user import SyncUser
-from sync.utils import get_sync_config_entry
+from hangupsbot.sync.sending_queue import AsyncQueueCache
+from hangupsbot.sync.user import SyncUser
+from hangupsbot.sync.utils import get_sync_config_entry
 
 from .commands_slack import slack_command_handler
 from .exceptions import (

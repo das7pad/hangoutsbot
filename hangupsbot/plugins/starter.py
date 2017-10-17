@@ -1,4 +1,4 @@
-import plugins
+from hangupsbot import plugins
 
 _VERIFY_TEXT = _('<i>User must say "hi" to me first via a 1-on-1 hangout, open '
                  '{url} and send me <b>{bot_cmd} verifyme</b>.</i>')

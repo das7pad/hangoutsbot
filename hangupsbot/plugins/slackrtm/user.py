@@ -1,7 +1,7 @@
 """Subclass of SyncUser for Slack users"""
 __author__ = 'das7pad@outlook.com'
 
-from sync.user import SyncUser
+from hangupsbot.sync.user import SyncUser
 
 class SlackUser(SyncUser):
     """get a sync user for a given user id from slack

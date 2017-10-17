@@ -6,7 +6,7 @@ import time
 import logging
 from collections import namedtuple
 
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

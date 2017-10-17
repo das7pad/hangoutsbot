@@ -2,7 +2,7 @@
 example plugin which demonstrates user and conversation memory
 """
 
-import plugins
+from hangupsbot import plugins
 
 
 def _initialise():

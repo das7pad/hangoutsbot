@@ -71,8 +71,8 @@ import asyncio
 from asyncio.subprocess import PIPE
 from datetime import datetime, timedelta, timezone
 
-from commands import command
-import plugins
+from hangupsbot import plugins
+from hangupsbot.commands import command
 
 logger = logging.getLogger(__name__)
 

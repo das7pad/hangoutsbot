@@ -1,9 +1,9 @@
 # TODO(das7pad) refactor needed
 import logging
 
-import plugins
-
-from commands import command, Help
+from hangupsbot import plugins
+from hangupsbot.commands import command, Help
+from hangupsbot.sinks import aiohttp_list
 
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,6 @@ def plugininfo(dummy0, dummy1, *args):
         # aiohttp.web
         if plugin["aiohttp.web"]:
             lines.append("<b>aiohttp.web:</b>")
-            from sinks import aiohttp_list
             filtered = aiohttp_list(plugin["aiohttp.web"])
             if filtered:
                 lines.append('\n'.join(['... {}'.format(constructors[0].sockets[0].getsockname())

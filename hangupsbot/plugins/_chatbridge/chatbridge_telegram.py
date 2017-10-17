@@ -7,11 +7,12 @@ import os
 import re
 import requests
 
-import plugins
-
-from webbridge import ( WebFramework,
-                        IncomingRequestHandler,
-                        FakeEvent )
+from hangupsbot import plugins
+from hangupsbot.webbridge import (
+    WebFramework,
+    IncomingRequestHandler,
+    FakeEvent,
+)
 
 logger = logging.getLogger(__name__)
 

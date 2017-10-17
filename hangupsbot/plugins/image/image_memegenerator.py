@@ -1,12 +1,11 @@
 import logging
 import os
 import random
-import urllib.request
 
 import aiohttp
 import hangups
 
-import plugins
+from hangupsbot import plugins
 
 
 logger = logging.getLogger(__name__)
@@ -43,22 +42,30 @@ async def meme(bot, event, *args):
                 results = await api_request.json()
 
         if results['result']:
-            instanceImageUrl = random.choice(results['result'])['instanceImageUrl']
-
-            image_data = urllib.request.urlopen(instanceImageUrl)
-            filename = os.path.basename(instanceImageUrl)
-            legacy_segments = [hangups.ChatMessageSegment(
-                instanceImageUrl, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
-                link_target=instanceImageUrl)]
-            logger.debug("uploading %s from %s", filename, instanceImageUrl)
+            url_image = random.choice(results['result'])['instanceImageUrl']
 
             try:
-                photo_id = await bot.call_shared('image_upload_single', instanceImageUrl)
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url_image) as response:
+                        response.raise_for_status()
+                        image_data = await response.read()
+            except aiohttp.ClientError:
+                logger.error('url: %s, response: %s', url_image, repr(response))
+                raise
+
+            filename = os.path.basename(url_image)
+            segments = [hangups.ChatMessageSegment(
+                url_image, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
+                link_target=url_image)]
+            logger.debug("uploading %s from %s", filename, url_image)
+
+            try:
+                photo_id = await bot.call_shared('image_upload_single', url_image)
             except KeyError:
                 logger.warning('image plugin not loaded - using legacy code')
                 photo_id = await bot.upload_image(image_data, filename=filename)
 
-            await bot.coro_send_message(event.conv.id_, legacy_segments, image_id=photo_id)
+            await bot.coro_send_message(event.conv_id, segments, image_id=photo_id)
 
         else:
             await bot.coro_send_message(event.conv_id, "<i>couldn't find a nice picture :( try again</i>")

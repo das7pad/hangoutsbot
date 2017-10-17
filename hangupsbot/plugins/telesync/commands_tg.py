@@ -8,12 +8,11 @@ import telepot.exception
 from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
                                 ReplyKeyboardRemove)
 
-from commands import command    # pylint:disable=wrong-import-order
-
-from sync import SYNC_CONFIG_KEYS
-from sync.event import FakeEvent
-from sync.utils import get_sync_config_entry
-from sync.user import SyncUser
+from hangupsbot.commands import command
+from hangupsbot.sync import SYNC_CONFIG_KEYS
+from hangupsbot.sync.event import FakeEvent
+from hangupsbot.sync.utils import get_sync_config_entry
+from hangupsbot.sync.user import SyncUser
 
 logger = logging.getLogger(__name__)
 

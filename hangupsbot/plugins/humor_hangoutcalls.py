@@ -1,7 +1,7 @@
 import time
 
 import hangups
-import plugins
+from hangupsbot import plugins
 
 
 def _initialise():

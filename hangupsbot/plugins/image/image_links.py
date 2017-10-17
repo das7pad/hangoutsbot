@@ -3,8 +3,8 @@ Identify images, upload them to google plus, post in hangouts
 """
 import logging
 
-import plugins
-from plugins.image import image_validate_and_upload_single
+from hangupsbot import plugins
+from hangupsbot.plugins.image import image_validate_and_upload_single
 
 
 logger = logging.getLogger(__name__)

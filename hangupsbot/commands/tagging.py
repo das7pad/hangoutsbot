@@ -3,7 +3,7 @@
 import logging
 import pprint
 
-from . import command, Help
+from hangupsbot.commands import command, Help
 
 
 logger = logging.getLogger(__name__)

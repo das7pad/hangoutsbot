@@ -5,8 +5,8 @@ import sys
 
 import psutil
 
-from version import __version__
-from . import command, get_func_help, Help
+from hangupsbot.version import __version__
+from hangupsbot.commands import command, get_func_help, Help
 
 
 logger = logging.getLogger(__name__)

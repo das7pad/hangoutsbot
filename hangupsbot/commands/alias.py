@@ -4,9 +4,9 @@ __author__ = 'kilr00y@esthar.net, das7pad@outlook.com'
 
 import functools
 
-import plugins
+from hangupsbot import plugins
 
-from . import Help
+from hangupsbot.commands import Help
 
 HELP = {
     'gethoalias': _('Get the alias for the current or given conversation\n'

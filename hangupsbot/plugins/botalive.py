@@ -7,7 +7,7 @@ import random
 import time
 
 import hangups.exceptions
-import plugins
+from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 

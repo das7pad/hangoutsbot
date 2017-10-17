@@ -5,8 +5,8 @@ import re
 
 import emoji
 
-from sync.event import SyncReply
-from sync.parser import get_formatted
+from hangupsbot.sync.event import SyncReply
+from hangupsbot.sync.parser import get_formatted
 
 from .exceptions import (
     IgnoreMessage,

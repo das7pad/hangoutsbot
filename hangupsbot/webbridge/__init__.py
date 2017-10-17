@@ -7,12 +7,10 @@ from collections import namedtuple
 
 from hangups import ChatMessageEvent
 
-import plugins
-
-from parsers.markdown import html_to_hangups_markdown
-
-from sinks import aiohttp_start
-from sinks.base_bot_request_handler import AsyncRequestHandler as IncomingRequestHandler
+from hangupsbot import plugins
+from hangupsbot.sinks import aiohttp_start
+from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
+from hangupsbot.parsers.markdown import html_to_hangups_markdown
 
 
 logger = logging.getLogger(__name__)

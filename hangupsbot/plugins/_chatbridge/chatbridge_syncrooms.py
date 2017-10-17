@@ -4,10 +4,12 @@ import json
 import logging
 import requests
 
-import plugins
+from hangupsbot import plugins
 
-from webbridge import ( WebFramework,
-                        FakeEvent )
+from hangupsbot.webbridge import (
+    WebFramework,
+    FakeEvent,
+)
 
 logger = logging.getLogger(__name__)
 

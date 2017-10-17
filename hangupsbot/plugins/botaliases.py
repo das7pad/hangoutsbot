@@ -1,7 +1,7 @@
 """aliases for the bot"""
 import logging
 
-import plugins
+from hangupsbot import plugins
 
 
 logger = logging.getLogger(__name__)
