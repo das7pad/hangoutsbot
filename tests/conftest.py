@@ -5,6 +5,8 @@ import sys
 
 from . import fixtures
 from .fixtures import (
+    bot,
+    event,
     module_wrapper,
 )
 
