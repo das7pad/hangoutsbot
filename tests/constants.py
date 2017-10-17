@@ -16,6 +16,7 @@ __all__ = (
     'COOKIES_PATH',
     'DEFAULT_BOT_KWARGS',
     'DEFAULT_TIMESTAMP',
+    'EVENT_LOOP',
     'MEMORY_PATH',
     'USER_EMAIL_BOT',
     'USER_NAME_1',
@@ -26,6 +27,7 @@ __all__ = (
     'USER_PHOTO_BOT',
 )
 
+import asyncio
 import json
 import os
 
@@ -35,6 +37,8 @@ CONFIG_PATH = os.path.join(_BASE_PATH, 'config.json')
 MEMORY_PATH = os.path.join(_BASE_PATH, 'memory.json')
 COOKIES_PATH = os.path.join(_BASE_PATH, 'cookies.json')
 del _BASE_PATH
+
+EVENT_LOOP = asyncio.get_event_loop()
 
 DEFAULT_BOT_KWARGS = dict(cookies_path=COOKIES_PATH, config_path=CONFIG_PATH,
                           memory_path=MEMORY_PATH, max_retries=5)

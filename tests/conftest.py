@@ -3,6 +3,13 @@
 import logging
 import sys
 
+from . import fixtures
+from .fixtures import (
+    module_wrapper,
+)
+
+__all__ = fixtures.__all__
+
 LOGGING_FORMAT = (
     "%(relativeCreated)d "
     "%(levelname)s "
