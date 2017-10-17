@@ -425,6 +425,10 @@ class CommandDispatcher(object):
             args: tuple of string, including the command name in fist place
             kwargs: dict, additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
+                '__return_result__' to return all command output
+
+        Returns:
+            mixed: command output, as requested
 
         Raises:
             KeyError: specified command is unknown
@@ -447,6 +451,7 @@ class CommandDispatcher(object):
         setattr(event, 'command_name', command_name)
         setattr(event, 'command_module', coro.__module__)
         setattr(event, 'command_path', coro.__module__ + '.' + command_name)
+        return_result = kwargs.pop("__return_result__", False)
 
         conv_id = event.conv_id
         context = None
@@ -480,6 +485,8 @@ class CommandDispatcher(object):
             text = "<i><b>%s</b> %s</i>" % (command_name, type(err).__name__)
 
         else:
+            if return_result:
+                return result
             if (isinstance(result, str) or
                     (isinstance(result, list) and
                      all([isinstance(item, hangups.ChatMessageSegment)
