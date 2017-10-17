@@ -13,6 +13,10 @@ __all__ = (
     'CONV_NAME_1',
     'CONV_NAME_2',
     'CONV_NAME_3',
+    'COOKIES_PATH',
+    'DEFAULT_BOT_KWARGS',
+    'DEFAULT_TIMESTAMP',
+    'MEMORY_PATH',
     'USER_EMAIL_BOT',
     'USER_NAME_1',
     'USER_NAME_2',
@@ -28,7 +32,15 @@ import os
 _BASE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           '.cache')
 CONFIG_PATH = os.path.join(_BASE_PATH, 'config.json')
+MEMORY_PATH = os.path.join(_BASE_PATH, 'memory.json')
+COOKIES_PATH = os.path.join(_BASE_PATH, 'cookies.json')
 del _BASE_PATH
+
+DEFAULT_BOT_KWARGS = dict(cookies_path=COOKIES_PATH, config_path=CONFIG_PATH,
+                          memory_path=MEMORY_PATH, max_retries=5)
+
+DEFAULT_TIMESTAMP = 1111111111111111
+
 CONV_ID_1 = 'CONV_ID_1'
 CONV_ID_2 = 'CONV_ID_2'
 CONV_ID_3 = 'CONV_ID_3'

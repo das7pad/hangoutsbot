@@ -7,6 +7,7 @@
 
 git+https://github.com/das7pad/hangups@7abfab0519b673885cb7b73090e3bcb2e4f50926
 aiohttp==2.2.5
+aioresponses==0.3.0
 appdirs==1.4.3
 astroid==1.5.3
 async-timeout==2.0.0

@@ -1,2 +1,3 @@
+aioresponses
 pylint
 pytest-sugar
