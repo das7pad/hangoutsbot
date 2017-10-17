@@ -10,6 +10,7 @@ aiohttp==2.2.5
 aioresponses==0.3.0
 appdirs==1.4.3
 astroid==1.5.3
+async-generator==1.8
 async-timeout==2.0.0
 beautifulsoup4==4.6.0
 bs4==0.0.1
@@ -44,6 +45,7 @@ pyasn1-modules==0.1.5
 pyasn1==0.3.7
 pylint==1.7.4
 pyslack==0.3.0
+pytest-asyncio==0.8.0
 pytest-sugar==0.9.0
 pytest==3.2.3
 python-dateutil==2.6.1

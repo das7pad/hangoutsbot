@@ -39,17 +39,43 @@ Currently there are two fixtures implemented:
   - for two different users, an admin and a regular user
 
   the event can be feed with additional text:
-  ```
+  ```python
   def my_test(event):
     event_with_text = event.with_text('my text')
     assert event_with_text.text == 'my text'
   ```
   it is also possible to prepend a default bot-command prefix:
-  ```
+  ```python
   def my_test(event):
     event_with_args = event.for_command('my_cmd', 'first', 'second')
     assert event_with_args.text == '/bot my_cmd first second'
     args = event_with_args.args
     assert args[0] == 'first'
     assert args[1] == 'second'
+  ```
+
+## Plugin tests may use the following structure
+  ```python
+  import pytest
+
+  from hangupsbot import plugins
+  from hangupsbot import commands
+
+  from tests import run_cmd
+  from tests.constants import CHAT_ID_ADMIN
+
+  @pytest.mark.asyncio
+  async def test_load_plugin(bot):
+      await plugins.load(bot, 'plugins.my_plugin')
+
+  @pytest.mark.asyncio
+  async def test_my_command(bot, event):
+      event = event.for_command('my_command', 'INVALID-ARGUMENT')
+      with pytest.raises(commands.Help):
+          await run_cmd(bot, event)
+
+      event = event.for_command('my_command', 'additional arguments')
+      result = await run_cmd(bot, event)
+      expected_text = '<b>Changed entry XYZ</b>'
+      assert expected == result
   ```

@@ -1,3 +1,4 @@
 aioresponses
 pylint
+pytest-asyncio
 pytest-sugar

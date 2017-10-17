@@ -5,6 +5,7 @@ __all__ = (
     'simple_conv_list',
     'simple_user_list',
     'build_user_conversation_list_base',
+    'run_cmd',
 )
 import time
 from collections import namedtuple
@@ -12,6 +13,7 @@ from collections import namedtuple
 import hangups
 from hangups import hangouts_pb2
 from hangups.user import User, UserID
+from hangupsbot.commands import command
 
 from tests.constants import (
     DEFAULT_TIMESTAMP,
@@ -156,3 +158,7 @@ def build_user_conversation_list_base():
                 entities=users,
                 conv_parts=()), dict(conv_states=conv_states,
                                      sync_timestamp=DEFAULT_TIMESTAMP)
+
+async def run_cmd(bot, event):
+    kwargs = dict(__return_result__=True, raise_exceptions=True)
+    return await command.run(bot, event, *event.text.split()[1:], **kwargs)
