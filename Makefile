@@ -68,6 +68,13 @@ venv-dev: gen-dev-requirements
 	@$(pip) install -q --requirement requirements-dev.txt
 	@echo "Done"
 
+.PHONY: install
+install: gen-requirements
+	@echo "Install: started"
+	@rm -rf `find hangupsbot -name __pycache__`
+	@$(pip) install -q . --upgrade
+	@echo "Install: finished"
+
 .PHONY: lint
 lint: venv-dev
 	@echo "Lint: started"
