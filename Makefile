@@ -84,4 +84,4 @@ lint: venv-dev
 .PHONY: clean
 clean:
 	@echo "Remove local cache and compiled Python files"
-	@rm -rf .cache `find . -name __pycache__`
+	@rm -rf .cache `find hangupsbot tests examples -name __pycache__`
