@@ -6,6 +6,7 @@ import re
 
 from hangupsbot import commands
 from hangupsbot import plugins
+from hangupsbot.sync.event import SyncEvent
 
 logger = logging.getLogger(__name__)
 
@@ -302,7 +303,7 @@ def unsubscribe(bot, event, *args):
     bot.user_memory_set(chat_id, "keywords", _keywords[chat_id])
     return text
 
-def testsubscribe(bot, event, *dummys):
+async def testsubscribe(bot, event, *dummys):
     """handle the event text and allow the user to be self-mentioned
 
     Args:
@@ -310,7 +311,10 @@ def testsubscribe(bot, event, *dummys):
         event: event.ChatMessageEvent instance
         *args: list of strings, additional words as the test mention
     """
-    _handle_keyword(bot, event, False, include_event_user=True)
+    sync_event = SyncEvent(conv_id=event.conv_id, user=event.user_id,
+                           text=event.conv_event.segments)
+    await sync_event.process()
+    _handle_keyword(bot, sync_event, False, include_event_user=True)
 
 def global_subscribe(bot, event, *args):
     """subscribe keywords globally with a custom conversation as target
