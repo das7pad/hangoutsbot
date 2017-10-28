@@ -57,9 +57,13 @@ _DEFAULT_CONFIG = {
     'subscribe.enabled': True,
 }
 _DEFAULT_MEMORY = {
+    'subscribe': {
+        '_migrated_': 0,
+    },
     'user_data': {},
     'hosubscribe': {},
 }
+_RE_UNESCAPE = re.compile(r'\\()')
 
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
@@ -77,6 +81,7 @@ def _initialise(bot):
 
     bot.config.set_defaults(_DEFAULT_CONFIG)
     bot.memory.validate(_DEFAULT_MEMORY)
+    _migrate_data(bot)
     bot.memory.save()
 
     _populate_keywords(bot)
@@ -95,6 +100,21 @@ def _hide_from_subscribe(item):
         logger.warning('%s is not a valid command container', repr(item),
                        include_stack=True)
 
+def _migrate_data(bot):
+    """escape keywords
+
+    Args:
+        bot (HangupsBot): the running instance
+    """
+    path = ['subscribe', '_migrated_']
+    if bot.memory.get_by_path(path) < 20171029:
+        # escape keywords
+        for data in bot.memory['user_data'].values():
+            if 'keywords' not in data:
+                continue
+            data['keywords'] = [re.escape(entry) for entry in data['keywords']]
+        bot.memory.set_by_path(path, 20171029)
+
 def _populate_keywords(bot):
     """Pull the keywords from memory
 
@@ -102,9 +122,9 @@ def _populate_keywords(bot):
         bot: HangupsBot instance
     """
     for userchatid in bot.memory.get_option("user_data"):
-        userkeywords = bot.user_memory_get(userchatid, "keywords")
-        if userkeywords is not None:
-            _keywords[userchatid] = userkeywords
+        userkeywords = bot.user_memory_get(userchatid, 'keywords')
+        if userkeywords:
+            _keywords[userchatid] = re.compile(r'|'.join(userkeywords))
     _global_keywords.update(bot.memory['hosubscribe'])
 
 def _is_ignored_command(event):
@@ -138,11 +158,10 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
                 chat_id in event.notified_users):
             # user is part of event or already got mentioned for this event
             continue
-        user_phrases = _keywords.get(chat_id, [])
-        matches = []
-        for phrase in user_phrases:
-            if phrase in event_text:
-                matches.append(phrase)
+        if chat_id not in _keywords:
+            continue
+        user_phrases = _keywords[chat_id]
+        matches = set(user_phrases.findall(event_text))
 
         if not matches:
             continue
@@ -237,6 +256,33 @@ async def _send_notification(bot, event, matches, user):
     logger.info("%s (%s) alerted via 1on1 (%s)",
                 user.full_name, user.id_.chat_id, conv_1on1.id_)
 
+def _unescape_regex(regex):
+    """replace escaped regex char
+
+    Args:
+        regex (str): escaped regex string
+
+    Returns:
+        str: unescaped source
+    """
+    return _RE_UNESCAPE.sub(r'\1', regex.replace(r'\b', ' '))
+
+def _escape_keyword(keyword):
+    """escape a keyword to use it as part of a regex
+
+    Args:
+        keyword (str): user input
+
+    Returns:
+        str: re escaped input
+    """
+    if (len(keyword) > 2
+            and keyword[1] == keyword[-2] == ' '
+            and keyword[0] == keyword[-1]
+            and keyword[0] in '"\''):
+        return r'\b%s\b' % re.escape(keyword[2:-2])
+    return re.escape(keyword)
+
 async def subscribe(bot, event, *args):
     """allow users to subscribe to phrases, only one input at a time
 
@@ -246,7 +292,10 @@ async def subscribe(bot, event, *args):
         *args: tuple of strings, additional words as the keyword to subscribe
     """
     keyword = ' '.join(args).lower()
+    regex = _escape_keyword(keyword)
+
     chat_id = event.user_id.chat_id
+    userkeywords = bot.user_memory_get(chat_id, 'keywords')
 
     conv_1on1 = await bot.get_1to1(chat_id)
     if not conv_1on1:
@@ -254,32 +303,33 @@ async def subscribe(bot, event, *args):
 
     lines = []
     if keyword:
-        if chat_id in _keywords:
-            if keyword in _keywords[chat_id]:
-                # Duplicate!
-                return _("Already subscribed to '{}'!").format(keyword)
-            else:
-                # Not a duplicate, proceeding
-                _keywords[chat_id].append(keyword)
-        else:
+        if userkeywords is None:
             # first one ever
-            _keywords[chat_id] = [keyword]
+            userkeywords = []
             lines.append(USER_NOTE_SELF_MENTION)
+            lines.append('')
+
+        elif regex in userkeywords:
+            # Duplicate!
+            return _("Already subscribed to '{}'!").format(keyword)
+
+        userkeywords.append(regex)
+        _keywords[chat_id] = re.compile(r'|'.join(userkeywords))
 
         # Save to file
-        bot.user_memory_set(chat_id, "keywords", _keywords[chat_id])
+        bot.user_memory_set(chat_id, 'keywords', userkeywords)
 
     else:
         # user might need help
         lines.append(_("Usage: {bot_cmd} subscribe [keyword]").format(
             bot_cmd=bot.command_prefix))
 
-    if _keywords[chat_id]:
+    if userkeywords:
         # Note: print each keyword into one line to differeniate between
         # "'keyword1', 'keyword2'" and "'keyword1, keyword1', 'keyword2'"
         # second happens as users try to add more than one keyword at once
         lines.append(_("Subscribed to:"))
-        lines += _keywords[chat_id]
+        lines += [repr(_unescape_regex(entry)) for entry in userkeywords]
 
     return '\n'.join(lines)
 
@@ -292,23 +342,31 @@ def unsubscribe(bot, event, *args):
         *args: tuple of strings, additional words as the keyword to unsubscribe
     """
     chat_id = event.user_id.chat_id
+    userkeywords = bot.user_memory_get(chat_id, 'keywords')
 
-    if chat_id not in _keywords:
+    if not userkeywords:
         return _('No subscribes found for you')
 
     keyword = ' '.join(args).lower()
+    regex = _escape_keyword(keyword)
+
     if not keyword:
         text = _("Unsubscribing all keywords")
-        _keywords[chat_id] = []
+        _keywords.pop(chat_id)
+        userkeywords = []
 
-    elif keyword in _keywords[chat_id]:
+    elif regex in userkeywords:
         text = _("Unsubscribing from keyword '{}'").format(keyword)
-        _keywords[chat_id].remove(keyword)
+        userkeywords.remove(regex)
+        if userkeywords:
+            _keywords[chat_id] = re.compile(r'|'.join(userkeywords))
+        else:
+            _keywords.pop(chat_id)
 
     else:
         return _('keyword "%s" not found') % keyword
 
-    bot.user_memory_set(chat_id, "keywords", _keywords[chat_id])
+    bot.user_memory_set(chat_id, 'keywords', userkeywords)
     return text
 
 async def testsubscribe(bot, event, *dummys):
