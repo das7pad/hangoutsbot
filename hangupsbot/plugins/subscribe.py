@@ -53,6 +53,13 @@ HELP = {
     'global_unsubscribe': _('unsubscribe from keywords globally\n'
                             'example: {bot_cmd} global_unsubscribe #audit'),
 }
+_DEFAULT_CONFIG = {
+    'subscribe.enabled': True,
+}
+_DEFAULT_MEMORY = {
+    'user_data': {},
+    'hosubscribe': {},
+}
 
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
@@ -67,10 +74,11 @@ def _initialise(bot):
     plugins.register_admin_command(["testsubscribe"])
     plugins.register_help(HELP)
     bot.register_shared('hide_from_subscribe', _hide_from_subscribe)
-    bot.config.set_defaults({"subscribe.enabled": True})
-    bot.memory.set_defaults({"hosubscribe": {}})
-    bot.memory.ensure_path(["user_data"])
+
+    bot.config.set_defaults(_DEFAULT_CONFIG)
+    bot.memory.validate(_DEFAULT_MEMORY)
     bot.memory.save()
+
     _populate_keywords(bot)
 
 def _hide_from_subscribe(item):
