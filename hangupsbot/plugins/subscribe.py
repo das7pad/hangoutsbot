@@ -351,7 +351,9 @@ def unsubscribe(bot, event, *args):
     regex = _escape_keyword(keyword)
 
     if not keyword:
-        text = _("Unsubscribing all keywords")
+        lines = [_("Unsubscribing all keywords:")]
+        lines += [repr(_unescape_regex(entry)) for entry in userkeywords]
+        text = '\n'.join(lines)
         _keywords.pop(chat_id)
         userkeywords = []
 
