@@ -152,6 +152,8 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
         return
 
     event_text = re.sub(r"\s+", " ", event.text).lower()
+    if event.conv_event.attachments:
+        event_text.replace(event.conv_event.attachments[0], '').strip('\n')
     for user in users_in_chat:
         chat_id = user.id_.chat_id
         if (not include_event_user and
@@ -186,6 +188,8 @@ def _handle_once(bot, event):
 
     matches = {}
     event_text = event.text.lower()
+    if event.conv_event.attachments:
+        event_text.replace(event.conv_event.attachments[0], '').strip('\n')
     previous_targets = event.previous_targets.union(event.targets)
 
     for keyword, conversations in _global_keywords.copy().items():
