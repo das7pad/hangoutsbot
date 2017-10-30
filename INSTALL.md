@@ -29,7 +29,12 @@ and get it up and running.
     versions of packages we require and install the dependencies:
 
     ```
-    make venv
+    make install
+    ```
+
+    _You can specify a custom location for the virtual environment:_
+    ```
+    make install venv=/my/path
     ```
 
 3.  Run the program interactively for the first time - this topic is covered in
