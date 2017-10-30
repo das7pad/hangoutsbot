@@ -135,7 +135,7 @@ def main():
     if not os.path.isfile(args.config):
         try:
             shutil.copy(
-                os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),
+                os.path.abspath(os.path.join(os.path.dirname(__file__),
                                              "config.json")),
                 args.config)
         except (OSError, IOError) as err:

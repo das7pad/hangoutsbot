@@ -71,5 +71,8 @@ setup(
         'hangupsbot.plugins.image.image_linker_reddit': [
             'sauce.txt',
         ],
+        'hangupsbot': [
+            'config.json',
+        ],
     },
 )
