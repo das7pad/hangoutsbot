@@ -43,7 +43,7 @@ Please see:
 
 Note: **First run?** See the [installation instructions](INSTALL.md)
 
-To execute: `/path/to/venv/bin/python3 hangupsbot` from the repository directory
+run `/path/to/venv/bin/hangupsbot` with these optional arguments:
 
 ```
 usage: hangupsbot [-h] [-d] [--log LOG] [--cookies COOKIES] [--memory MEMORY] [--config CONFIG] [--version]
@@ -61,6 +61,8 @@ optional arguments:
                    ~/.local/share/hangupsbot/config.json)
 --version          show program's version number and exit
 ```
+
+Example: `/opt/venv/bin/hangupsbot --cookies ~/mybot/cookies.secret`
 
 # Bot Configuration for Administrators
 
@@ -147,7 +149,7 @@ A full list of commands supported by the base framework is available at the
 
 * Run the bot with the `-d` parameter e.g.
   ```
-  ./venv/bin/python3 hangupsbot -d
+  ./venv/bin/hangupsbot -d
   ```
   - this lowers the log level to `DEBUG` for a more verbose and informative log
   file.
