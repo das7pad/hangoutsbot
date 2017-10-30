@@ -131,9 +131,8 @@ A full list of commands supported by the base framework is available at the
 # Updating
 
 1. Navigate to the repository directory (eg. `cd ~/hangupsbot`)
-2. Change to the latest stable branch using `git checkout master`
-3. `git pull` to pull the latest version of hangupsbot
-4. Install lastest features
+2. `git pull` to pull the latest version of hangupsbot
+3. Install lastest features
     ```
     make install
     ```
@@ -142,7 +141,7 @@ A full list of commands supported by the base framework is available at the
     ```
     make install venv=/my/path
     ```
-5. Restart the bot
+4. Restart the bot
 
 # Debugging
 
