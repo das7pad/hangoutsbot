@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.5
 LABEL description="Google Hangouts Bot"
 LABEL maintainer="http://github.com/hangoutsbot/hangoutsbot"
 WORKDIR /app
