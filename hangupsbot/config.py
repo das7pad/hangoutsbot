@@ -4,13 +4,16 @@ import asyncio
 import collections
 from datetime import datetime
 import functools
+import io
 import json
 import glob
 import logging
 import operator
 import os
 import shutil
+import sys
 import time
+import traceback
 
 import hangups.event
 
@@ -147,11 +150,12 @@ class Config(collections.MutableMapping):
         self.config = json.loads(json_str)
         asyncio.ensure_future(self.on_reload.fire())
 
-    def save(self, delay=True):
+    def save(self, delay=True, stack=None):
         """dump the cached data to file
 
         Args:
-            delay: boolean, set to False to force an immediate dump
+            delay (bool): set to False to force an immediate dump
+            stack (str): stack of the `save` call
 
         Raises:
             IOError: the config can not be saved to the configured path
@@ -163,9 +167,15 @@ class Config(collections.MutableMapping):
             # skip dumping as the file is already up to date
             return
 
+        if stack is None:
+            frame = sys._getframe().f_back     # pylint:disable=protected-access
+            with io.StringIO() as writer:
+                traceback.print_stack(frame, file=writer)
+                stack = writer.getvalue()
+
         if self.save_delay and delay:
             self._timer_save = asyncio.get_event_loop().call_later(
-                self.save_delay, self.save, False)
+                self.save_delay, self.save, False, stack)
             return
 
         start_time = time.time()
@@ -176,6 +186,7 @@ class Config(collections.MutableMapping):
         try:
             self._last_dump = json.dumps(self.config, indent=2, sort_keys=True)
         except TypeError:
+            self.logger.error('bad value stored by\n%s', stack)
             self._recover_from_failsafe()
         else:
             with open(self.filename, 'w') as file:
