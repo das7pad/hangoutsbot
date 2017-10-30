@@ -52,26 +52,27 @@ def configure_logging(args):
             }
         },
         "loggers": {
-            # root logger
+            # base config, applies to all logger
             "": {
                 "handlers": ["file", "console", "file_warnings"],
                 "level": log_level
             },
+            # adjust the log-level for modules explicit:
 
-            # requests is freakishly noisy
+            ## security: do not expose tokens to the log file
+            "urllib3.connectionpool": {"level": "INFO"},
             "requests": {"level": "INFO"},
 
+            ## adjust noisy module logger
+            "asyncio": {"level": "WARNING"},
             "hangups": {"level": "WARNING"},
 
-            # ignore the addition of fallback users
+            ## ignore the addition of fallback users
             "hangups.user": {"level": "ERROR"},
 
-            # do not log disconnects twice, we already attach a logger to
-            # ._client.on_disconnect
+            ## do not log disconnects twice, we already attach a logger to
+            ## our `hangups.Client.on_disconnect` event
             "hangups.channel": {"level": "ERROR"},
-
-            # asyncio's debugging logs are VERY noisy, so adjust the log level
-            "asyncio": {"level": "WARNING"},
         }
     }
 
