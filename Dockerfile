@@ -1,6 +1,6 @@
 FROM python:3.5
 LABEL description="Google Hangouts Bot"
-LABEL maintainer="http://github.com/hangoutsbot/hangoutsbot"
+LABEL maintainer="http://github.com/das7pad/hangoutsbot"
 WORKDIR /app
 RUN mkdir /data
 VOLUME /data
