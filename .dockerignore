@@ -1,4 +1,5 @@
 *
 !hangupsbot
 !docker-entrypoint.sh
-!requirements.txt
+!Makefile
+!setup.py

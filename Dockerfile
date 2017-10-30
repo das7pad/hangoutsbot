@@ -8,5 +8,6 @@ RUN mkdir -p /root/.local/share && ln -s /data /root/.local/share/hangupsbot
 ENTRYPOINT ["./docker-entrypoint.sh"]
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
-COPY docker-entrypoint.sh requirements.txt hangupsbot ./
-RUN pip install -r requirements.txt
+COPY docker-entrypoint.sh Makefile setup.py ./
+COPY hangupsbot ./hangupsbot
+RUN make install
