@@ -155,7 +155,6 @@ class Config(collections.MutableMapping):
 
         Raises:
             IOError: the config can not be saved to the configured path
-            ValueError: the config can not be formated as json
         """
         if self._timer_save is not None:
             self._timer_save.cancel()
@@ -174,9 +173,13 @@ class Config(collections.MutableMapping):
         if self.failsafe_backups:
             self._make_failsafe_backup()
 
-        self._last_dump = json.dumps(self.config, indent=2, sort_keys=True)
-        with open(self.filename, 'w') as file:
-            file.write(self._last_dump)
+        try:
+            self._last_dump = json.dumps(self.config, indent=2, sort_keys=True)
+        except TypeError:
+            self._recover_from_failsafe()
+        else:
+            with open(self.filename, 'w') as file:
+                file.write(self._last_dump)
 
         interval = time.time() - start_time
         self.logger.info("%s write %s", self.filename, interval)
