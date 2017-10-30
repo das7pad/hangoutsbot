@@ -160,13 +160,13 @@ class Config(collections.MutableMapping):
         if self._timer_save is not None:
             self._timer_save.cancel()
 
+        if not self._changed:
+            # skip dumping as the file is already up to date
+            return
+
         if self.save_delay and delay:
             self._timer_save = asyncio.get_event_loop().call_later(
                 self.save_delay, self.save, False)
-            return
-
-        if not self._changed:
-            # skip dumping as the file is already up to date
             return
 
         start_time = time.time()
