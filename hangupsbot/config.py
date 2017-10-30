@@ -99,7 +99,6 @@ class Config(collections.MutableMapping):
                 with open(recovery_filename, 'r') as file:
                     data = file.read()
                 self._loads(data)
-                return True
             except IOError:
                 self.logger.warning('Failed to remove %s, check permissions',
                                     recovery_filename)
@@ -109,6 +108,7 @@ class Config(collections.MutableMapping):
                 self.save(delay=False)
                 self.logger.info("recovered %s successful from %s",
                                  self.filename, recovery_filename)
+                return True
         return False
 
     def load(self):
