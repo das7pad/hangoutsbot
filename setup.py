@@ -3,6 +3,7 @@
 # TODO(das7pad): copy localisation
 
 import glob
+import json
 import os
 import sys
 
@@ -56,6 +57,12 @@ for dependency in INSTALL_REQUIRES.copy():
 PACKAGES = [path[:-12].replace('/', '.')
             for path in glob.glob('hangupsbot/**/__init__.py', recursive=True)]
 
+PACKAGE_DATA = {}
+for path in glob.glob('hangupsbot/**/package_data.json', recursive=True):
+    with open(path, 'r') as file:
+        PACKAGE_DATA.update(json.load(file))
+
+
 setup(
     name='hangupsbot',
     version=VERSION,
@@ -67,12 +74,5 @@ setup(
             'hangupsbot=hangupsbot.__main__:main',
         ],
     },
-    package_data={
-        'hangupsbot.plugins.image.image_linker_reddit': [
-            'sauce.txt',
-        ],
-        'hangupsbot': [
-            'config.json',
-        ],
-    },
+    package_data=PACKAGE_DATA,
 )
