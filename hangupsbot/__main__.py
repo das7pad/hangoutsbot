@@ -129,7 +129,7 @@ def main():
             try:
                 os.makedirs(directory)
             except OSError as err:
-                sys.exit(_("Failed to create directory: %s"), err)
+                sys.exit(_("Failed to create directory: %s") % err)
 
     # If there is no config file in user data directory, copy default one there
     if not os.path.isfile(args.config):
@@ -139,7 +139,7 @@ def main():
                                              "config.json")),
                 args.config)
         except (OSError, IOError) as err:
-            sys.exit(_("Failed to copy default config file: %s"), err)
+            sys.exit(_("Failed to copy default config file: %s") % err)
 
     configure_logging(args)
 
