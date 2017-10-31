@@ -282,7 +282,8 @@ def telesync(bot, event, *args):
         text = ('"%s"' % '", "'.join(bot.memory.get_by_path(path))
                 if bot.memory.exists(path) and bot.memory.get_by_path(path)
                 else _('no chats'))
-        lines.append(_('syncing "%s" to %s') % (ho_chat_id, text))
+        lines.append(_('syncing "{conv_id}" to {tg_ids}').format(
+            conv_id=ho_chat_id, tg_ids=text))
 
     ho_chat_id = event.conv_id
     lines = []

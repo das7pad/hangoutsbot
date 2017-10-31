@@ -413,26 +413,31 @@ def global_subscribe(bot, event, *args):
 
     if keyword in _global_keywords:
         if alias in _global_keywords[keyword]:
-            return _('The conversation "%s" already receives messages '
-                     'containing "%s".') % (alias, keyword)
+            return _('The conversation "{alias}" already receives messages '
+                     'containing "{keyword}".').format(alias=alias,
+                                                       keyword=keyword)
 
         _global_keywords[keyword].append(alias)
-        text = _('These conversation will receive messages containing "%s":'
-                 '\n%s') % (keyword, ', '.join(_global_keywords[keyword]))
+        text = _('These conversation will receive messages containing '
+                 '"{keyword}":\n{conv_ids}').format(
+                     keyword=keyword,
+                     conv_ids=', '.join(_global_keywords[keyword]))
 
     elif keyword != 'show':
         _global_keywords[keyword] = [alias]
-        text = _('The conversation "%s" is the only one with a subscribe to '
-                 '"%s"') % (alias, keyword)
+        text = _('The conversation "{alias}" is the only one with a subscribe '
+                 'on "{keyword}"').format(alias=alias, keyword=keyword)
 
     else:
         subscribes = []
         for keyword_, conversations in _global_keywords.copy().items():
             if alias in conversations:
                 subscribes.append(keyword_)
-        return _('The conversation "%s" has subscribed to %s') % (
-            alias, (', '.join(['"%s"' % item for item in subscribes])
-                    or _('None')))
+        return _('The conversation "{alias}" has subscribed to {keywords}'
+                ).format(
+                    alias=alias,
+                    keywords=(', '.join('"%s"' % item for item in subscribes)
+                              or _('None')))
 
     bot.memory['hosubscribe'] = _global_keywords
     bot.memory.save()
@@ -465,8 +470,8 @@ def global_unsubscribe(bot, event, *args):
         return _('No conversation has subscribed to %s') % keyword
 
     if alias not in _global_keywords[keyword]:
-        return _('The conversation "%s" has not subscribed to "%s"') % (alias,
-                                                                        keyword)
+        return _('The conversation "{alias}" has not subscribed to "{keyword}"'
+                ).format(alias=alias, keyword=keyword)
 
     _global_keywords[keyword].remove(alias)
 
@@ -476,5 +481,5 @@ def global_unsubscribe(bot, event, *args):
 
     bot.memory['hosubscribe'] = _global_keywords
     bot.memory.save()
-    return _('The conversation "%s" will no longer receive messages '
-             'containing "%s"') % (alias, keyword)
+    return _('The conversation "{alias}" will no longer receive messages '
+             'containing "{keyword}"').format(alias=alias, keyword=keyword)

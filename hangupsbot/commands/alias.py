@@ -93,12 +93,15 @@ def sethoalias(bot, event, *args):
     if newalias == 'none':
         if conv_id == event.conv_id:
             return _('<i>HO alias deleted</i>')
-        return _('<i>HO alias for</i>  {} <i>deleted</i>').format(conv_id)
-    elif conv_id == event.conv_id:
-        return _('<i>HO alias set to</i>  <b>{}</b>').format(newalias)
+        return _('<i>HO alias for</i>  {conv_id} <i>deleted</i>').format(
+            conv_id=conv_id)
 
-    return _('<i>HO alias for</i>  {} <i>is set to</i>  <b>{}</b>').format(
-        conv_id, newalias)
+    elif conv_id == event.conv_id:
+        return _('<i>HO alias set to</i>  <b>{newalias}</b>').format(
+            newalias=newalias)
+
+    return _('<i>HO alias for</i>  {conv_id} <i>is set to</i>  <b>'
+             '{newalias}</b>').format(conv_id=conv_id, newalias=newalias)
 
 def gethoalias(bot, event, *args):
     """get the alias for the current or given conversation
@@ -132,9 +135,12 @@ def gethoalias(bot, event, *args):
         if conv_id == event.conv_id:
             return _('<i>There is no alias set for this HO</i>')
 
-        return _('<i>There is no alias set for the HO</i> %s') % conv_id
+        return _('<i>There is no alias set for the HO</i> {conv_id}').format(
+            conv_id=conv_id)
 
     elif conv_id == event.conv_id:
-        return _('<i>Current HO alias is</i>  <b>%s</b>') % alias
+        return _('<i>Current HO alias is</i>  <b>{alias}</b>').format(
+            alias=alias)
 
-    return _('<i>HO alias for</i>  %s <i>is</i>  <b>%s</b>') % (conv_id, alias)
+    return _('<i>HO alias for</i>  {conv_id} <i>is</i>  <b>{alias}</b>').format(
+        conv_id=conv_id, alias=alias)
