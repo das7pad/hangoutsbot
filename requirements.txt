@@ -5,7 +5,7 @@
 #   make gen-requirements
 #
 
-git+https://github.com/das7pad/hangups@7abfab0519b673885cb7b73090e3bcb2e4f50926#egg=hangups==hangups-0.4.3.6
+git+https://github.com/das7pad/hangups@v0.4.3.6#egg=hangups==hangups-0.4.3.6
 aiohttp==2.3.1
 appdirs==1.4.3
 async-timeout==2.0.0
@@ -19,7 +19,6 @@ decorator==4.0.11
 emoji==0.4.5
 fudge==1.1.0
 google-api-python-client==1.6.4
-hangups==0.4.3
 httplib2==0.10.3
 idna==2.6
 imageio==2.1.2
@@ -54,6 +53,7 @@ six==1.11.0
 soundcloud==0.5.0
 spotipy==2.4.4
 telepot==12.3
+tld==0.7.9
 tqdm==4.11.2
 twitterapi==2.4.6
 uritemplate==3.0.0
