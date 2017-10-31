@@ -13,9 +13,6 @@ import sys
 from hangupsbot import utils
 from hangupsbot.commands import command
 from hangupsbot.sinks import aiohttp_servers, aiohttp_terminate
-# pylint:disable=deprecated-module
-from hangupsbot.threadmanager import thread_manager
-# pylint:enable=deprecated-module
 
 
 logger = logging.getLogger(__name__)
@@ -239,7 +236,6 @@ class Tracker(object):
 tracking = Tracker()
 aiohttp_servers.set_tracking(tracking)
 command.set_tracking(tracking)
-thread_manager.set_tracking(tracking)
 
 
 # helpers, used by loaded plugins to register commands
