@@ -4,13 +4,16 @@ import asyncio
 import collections
 from datetime import datetime
 import functools
+import io
 import json
 import glob
 import logging
 import operator
 import os
 import shutil
+import sys
 import time
+import traceback
 
 import hangups.event
 
@@ -96,7 +99,6 @@ class Config(collections.MutableMapping):
                 with open(recovery_filename, 'r') as file:
                     data = file.read()
                 self._loads(data)
-                return True
             except IOError:
                 self.logger.warning('Failed to remove %s, check permissions',
                                     recovery_filename)
@@ -106,6 +108,7 @@ class Config(collections.MutableMapping):
                 self.save(delay=False)
                 self.logger.info("recovered %s successful from %s",
                                  self.filename, recovery_filename)
+                return True
         return False
 
     def load(self):
@@ -147,26 +150,32 @@ class Config(collections.MutableMapping):
         self.config = json.loads(json_str)
         asyncio.ensure_future(self.on_reload.fire())
 
-    def save(self, delay=True):
+    def save(self, delay=True, stack=None):
         """dump the cached data to file
 
         Args:
-            delay: boolean, set to False to force an immediate dump
+            delay (bool): set to False to force an immediate dump
+            stack (str): stack of the `save` call
 
         Raises:
             IOError: the config can not be saved to the configured path
-            ValueError: the config can not be formated as json
         """
         if self._timer_save is not None:
             self._timer_save.cancel()
 
-        if self.save_delay and delay:
-            self._timer_save = asyncio.get_event_loop().call_later(
-                self.save_delay, self.save, False)
-            return
-
         if not self._changed:
             # skip dumping as the file is already up to date
+            return
+
+        if stack is None:
+            frame = sys._getframe().f_back     # pylint:disable=protected-access
+            with io.StringIO() as writer:
+                traceback.print_stack(frame, file=writer)
+                stack = writer.getvalue()
+
+        if self.save_delay and delay:
+            self._timer_save = asyncio.get_event_loop().call_later(
+                self.save_delay, self.save, False, stack)
             return
 
         start_time = time.time()
@@ -174,9 +183,14 @@ class Config(collections.MutableMapping):
         if self.failsafe_backups:
             self._make_failsafe_backup()
 
-        self._last_dump = json.dumps(self.config, indent=2, sort_keys=True)
-        with open(self.filename, 'w') as file:
-            file.write(self._last_dump)
+        try:
+            self._last_dump = json.dumps(self.config, indent=2, sort_keys=True)
+        except TypeError:
+            self.logger.error('bad value stored by\n%s', stack)
+            self._recover_from_failsafe()
+        else:
+            with open(self.filename, 'w') as file:
+                file.write(self._last_dump)
 
         interval = time.time() - start_time
         self.logger.info("%s write %s", self.filename, interval)

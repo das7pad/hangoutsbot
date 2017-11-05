@@ -1,3 +1,4 @@
-[submodule "hangupsbot/locale"]
-	path = hangupsbot/locale
-        url = https://github.com/hangoutsbot/hangoutsbot-locales.git
+[submodule "localization"]
+    path = hangupsbot/locale
+    url = https://github.com/das7pad/hangoutsbot-locales.git
+	branch = dev

@@ -161,7 +161,8 @@ def whereami(dummy, msg, dummys):
     Returns:
         str: command output
     """
-    return _('@%s: you are in channel %s') % (msg.user.username, msg.channel)
+    return _('@{user_name}: you are in channel {channel_id}').format(
+        user_name=msg.user.username, channel_id=msg.channel)
 
 def whoami(dummy, msg, dummys):
     """tells you your own user id
@@ -174,8 +175,8 @@ def whoami(dummy, msg, dummys):
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
     """
-    return '1on1', _('@%s: your userid is %s') % (msg.user.username,
-                                                  msg.user.usr_id)
+    return '1on1', _('@{user_name}: your userid is {user_id}').format(
+        user_name=msg.user.username, user_id=msg.user.usr_id)
 
 def whois(slackbot, msg, args):
     """whois @username tells you the user id of @username
@@ -195,12 +196,15 @@ def whois(slackbot, msg, args):
     search = args[0][1:] if args[0][0] == '@' else args[0]
     for uid in slackbot.users:
         if slackbot.get_username(uid) == search:
-            message = _('@%s: the user id of _%s_ is %s') % (
-                msg.user.username, slackbot.get_username(uid), uid)
+            message = _('@{user_name}: the user id of _{name}_ is {other_id}'
+                       ).format(user_name=msg.user.username,
+                                name=slackbot.get_username(uid),
+                                other_id=uid)
             break
     else:
-        message = _('%s: sorry, but I could not find user _%s_ in this slack.'
-                   ) % (msg.user.username, search)
+        message = _('@{user_name}: sorry, but I could not find user _{search}_ '
+                    'in this slack.').format(user_name=msg.user.username,
+                                             search=search)
     return '1on1', message
 
 def admins(slackbot, msg, dummys):
@@ -482,5 +486,7 @@ def sync_config(slackbot, msg, args):
     except (KeyError, TypeError) as err:
         return str(err)
     else:
-        return _('%s updated for channel "%s" from "%s" to "%s"') % (
-            key, channel, last_value, new_value)
+        return _('{sync_option} updated for channel "{channel_id}" '
+                 'from "{old}" to "{new}"').format(
+                     sync_option=key, channel_id=channel, old=last_value,
+                     new=new_value)

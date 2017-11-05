@@ -210,7 +210,8 @@ def slack_syncto(bot, event, *args):
     try:
         slackrtm.config_syncto(channel, event.conv_id)
     except AlreadySyncingError:
-        return _('hangout already synced with %s:%s') % (slackname, channelname)
+        return _('hangout already synced with {teamname}:{channel}').format(
+            teamname=slackname, channel=channelname)
 
     return 'this hangout synced with {}:{}'.format(slackname, channelname)
 

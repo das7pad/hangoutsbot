@@ -1,1 +1,1 @@
-git+https://github.com/das7pad/hangups@7abfab0519b673885cb7b73090e3bcb2e4f50926
+git+https://github.com/das7pad/hangups@v0.4.3.6#egg=hangups==hangups-0.4.3.6

@@ -1,7 +1,6 @@
 """entrypoint to start the bot"""
 
 import argparse
-import gettext
 import logging
 import logging.config
 import os
@@ -53,26 +52,27 @@ def configure_logging(args):
             }
         },
         "loggers": {
-            # root logger
+            # base config, applies to all logger
             "": {
                 "handlers": ["file", "console", "file_warnings"],
                 "level": log_level
             },
+            # adjust the log-level for modules explicit:
 
-            # requests is freakishly noisy
+            ## security: do not expose tokens to the log file
+            "urllib3.connectionpool": {"level": "INFO"},
             "requests": {"level": "INFO"},
 
+            ## adjust noisy module logger
+            "asyncio": {"level": "WARNING"},
             "hangups": {"level": "WARNING"},
 
-            # ignore the addition of fallback users
+            ## ignore the addition of fallback users
             "hangups.user": {"level": "ERROR"},
 
-            # do not log disconnects twice, we already attach a logger to
-            # ._client.on_disconnect
+            ## do not log disconnects twice, we already attach a logger to
+            ## our `hangups.Client.on_disconnect` event
             "hangups.channel": {"level": "ERROR"},
-
-            # asyncio's debugging logs are VERY noisy, so adjust the log level
-            "asyncio": {"level": "WARNING"},
         }
     }
 
@@ -130,17 +130,17 @@ def main():
             try:
                 os.makedirs(directory)
             except OSError as err:
-                sys.exit(_("Failed to create directory: %s"), err)
+                sys.exit(_("Failed to create directory: %s") % err)
 
     # If there is no config file in user data directory, copy default one there
     if not os.path.isfile(args.config):
         try:
             shutil.copy(
-                os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),
+                os.path.abspath(os.path.join(os.path.dirname(__file__),
                                              "config.json")),
                 args.config)
         except (OSError, IOError) as err:
-            sys.exit(_("Failed to copy default config file: %s"), err)
+            sys.exit(_("Failed to copy default config file: %s") % err)
 
     configure_logging(args)
 
@@ -154,8 +154,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # NOTE: bring in localization handling for `main()` and our own modules
-    gettext.install("hangupsbot",
-                    localedir=os.path.join(os.path.dirname(__file__),
-                                           "locale"))
     main()

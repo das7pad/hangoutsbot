@@ -309,8 +309,10 @@ async def sync_config(bot, event, *args):
     except (KeyError, TypeError) as err:
         return err.args[0]
     else:
-        return _('%s updated for conversation "%s" from "%s" to "%s"') % (
-            key, conv_id, last_value, new_value)
+        return _('{sync_option} updated for conversation "{conv-id}" '
+                 'from "{old}" to "{new}"').format(
+                     sync_option=key, conv_id=conv_id, old=last_value,
+                     new=new_value)
 
 def _sync_config(bot, conversation, key, value):
     """update a config entry for a conversation
@@ -356,8 +358,10 @@ def _sync_config(bot, conversation, key, value):
         expected_type = type(DEFAULT_CONFIG[key])
         if not isinstance(new_value, expected_type):
             raise TypeError(
-                _('%s is not a valid value for %s: expected %s but got %s' % (
-                    new_value, key, expected_type, type(new_value))))
+                _('{new} is not a valid value for {sync_option}: '
+                  'expected {wanted_type} but got {new_type}').format(
+                      new=new_value, sync_option=key, wanted_type=expected_type,
+                      new_type=type(new_value)))
 
         bot.config.set_by_path(path, new_value)
 
@@ -635,14 +639,17 @@ async def sync1to1(bot, event, *args):
                 or matching[0] if len(matching) == 1 else None)
 
     if platform is None:
-        raise Help(_('"%s" is not a valid sync platform, choose one of:\n%s')
-                   % (args[0], '"%s"' % '", "'.join(platforms)))
+        raise Help(_('"{term}" is not a valid sync platform, choose one of:\n'
+                     '{platforms}').format(
+                         term=args[0],
+                         platforms='"%s"' % '", "'.join(platforms)))
 
     path = ['profilesync', platform, 'ho2', event.user_id.chat_id]
     if not bot.memory.exists(path):
         label, cmd, dummy = bot.sync.profilesync_cmds[platform]
-        return _('You do not have a profilesync set for <b>%s</b>!\n'
-                 'Start one there with <b>%s</b>') % (label, cmd)
+        return _('You do not have a profilesync set for <b>{platform}</b>!\n'
+                 'Start one there with <b>{platform_cmd}</b>').format(
+                     platform=label, platform_cmd=cmd)
     platform_id = bot.memory.get_by_path(path)
 
     conv_1on1 = (await bot.get_1to1(event.user_id.chat_id, force=True)).id_
@@ -842,5 +849,5 @@ def autokick(bot, event, *args):
 
     bot.config.save()
 
-    return _('autokick is %s for %s') % (_('OFF') if was_enabled else _('ON'),
-                                         conv_id)
+    return _('autokick is {state} for {conv_id}').format(
+        state=_('OFF') if was_enabled else _('ON'), conv_id=conv_id)
