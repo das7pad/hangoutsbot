@@ -59,25 +59,25 @@ gen-dev-requirements: .gen-requirements
 	@echo "Done"
 
 .PHONY: install-requirements
-install-requirements: gen-requirements
+install-requirements: venv-create
 	@echo "Installing requirements"
 	@$(pip) install -q --requirement requirements.txt
 	@echo "Done"
 
 .PHONY: update-requirements
-update-requirements: gen-requirements
+update-requirements: venv-create
 	@echo "Updating requirements"
 	@$(pip) install -q --requirement requirements.txt --upgrade
 	@echo "Done"
 
 .PHONY: venv-dev
-venv-dev: gen-dev-requirements
+venv-dev: venv-create
 	@echo "Installing Dev requirements"
 	@$(pip) install -q --requirement requirements-dev.txt
 	@echo "Done"
 
 .PHONY: install
-install: gen-requirements
+install: venv-create
 	@echo "Install: started"
 	@rm -rf `find hangupsbot -name __pycache__`
 	@$(pip) install -q . --process-dependency-links
