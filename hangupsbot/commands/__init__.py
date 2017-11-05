@@ -510,14 +510,14 @@ class CommandDispatcher(object):
         self.blocked_command = asyncio.coroutine(func)
         return func
 
-    def register_argument_preprocessor_group(self, name, preprocessors):
+    def register_arg_preprocessor_group(self, name, preprocessors):
         name_lower = name.lower()
         self.preprocessors[name_lower] = preprocessors
-        self.tracking.register_command_argument_preprocessors_group(
+        self.tracking.register_arg_preprocessors_group(
             name_lower)
 
 # CommandDispatcher singleton
-command = CommandDispatcher()
+command = CommandDispatcher()                      # pylint:disable=invalid-name
 
 def get_func_help(bot, cmd, func):
     """get a custom help message from memory or parse the doc string of the func

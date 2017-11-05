@@ -20,10 +20,10 @@ REQUIRED_ENTRYS = {
 
 class HubotBridge():
     configuration = []
-    def __init__(self, bot, configkey, RequestHandler=IncomingRequestHandler):
+    def __init__(self, bot, configkey, handler_class=IncomingRequestHandler):
         self.bot = self._bot = bot
         self.configkey = configkey
-        self.RequestHandler = RequestHandler
+        self.handler_class = handler_class
 
         if not self._check_config():
             logger.info("no configuration for %s, not running",
@@ -71,7 +71,7 @@ class HubotBridge():
                 name=listener["name"],
                 port=listener["port"],
                 certfile=listener["certfile"],
-                requesthandlerclass=self.RequestHandler,
+                requesthandlerclass=self.handler_class,
                 group="hubotbridge." + self.configkey)
 
         logger.info("hubotbridge: %s bridges started for %s",

@@ -14,7 +14,7 @@ import aiohttp
 from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
-_internal = {}
+_INTERNAL = {}
 
 HELP = {
     'setweatherlocation': _('Sets the Lat Long default coordinates for this '
@@ -39,7 +39,7 @@ HELP = {
 def _initialize(bot):
     api_key = bot.config.get_option('forecast_api_key')
     if api_key:
-        _internal['forecast_api_key'] = api_key
+        _INTERNAL['forecast_api_key'] = api_key
         plugins.register_user_command(['weather', 'forecast'])
         plugins.register_admin_command(['setweatherlocation'])
         plugins.register_help(HELP)
@@ -81,33 +81,33 @@ def _format_current_weather(weather_data):
     """
     Formats the current weather data for the user.
     """
-    weatherStrings = []
+    weather_lines = []
     if 'temperature' in weather_data:
-        weatherStrings.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'], 2), weather_data['units']['temperature']))
+        weather_lines.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'], 2), weather_data['units']['temperature']))
     if 'summary' in weather_data:
-        weatherStrings.append("<i>{0}</i>".format(weather_data['summary']))
+        weather_lines.append("<i>{0}</i>".format(weather_data['summary']))
     if 'feelsLike' in weather_data:
-        weatherStrings.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'], 2), weather_data['units']['temperature']))
+        weather_lines.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'], 2), weather_data['units']['temperature']))
     if 'windspeed' in weather_data:
-        weatherStrings.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'], 2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
+        weather_lines.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'], 2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
     if 'humidity' in weather_data:
-        weatherStrings.append("Humidity: {0}%".format(weather_data['humidity']))
+        weather_lines.append("Humidity: {0}%".format(weather_data['humidity']))
     if 'pressure' in weather_data:
-        weatherStrings.append("Pressure: {0} {1}".format(round(weather_data['pressure'], 2), weather_data['units']['pressure']))
+        weather_lines.append("Pressure: {0} {1}".format(round(weather_data['pressure'], 2), weather_data['units']['pressure']))
 
-    return "\n".join(weatherStrings)
+    return "\n".join(weather_lines)
 
 def _format_forecast_weather(weather_data):
     """
     Formats the forecast data for the user.
     """
-    weatherStrings = []
+    weather_lines = []
     if 'hourly' in weather_data:
-        weatherStrings.append("<b>Next 24 Hours</b>\n{}". format(weather_data['hourly']))
+        weather_lines.append("<b>Next 24 Hours</b>\n{}". format(weather_data['hourly']))
     if 'daily' in weather_data:
-        weatherStrings.append("<b>Next 7 Days</b>\n{}". format(weather_data['daily']))
+        weather_lines.append("<b>Next 7 Days</b>\n{}". format(weather_data['daily']))
 
-    return "\n".join(weatherStrings)
+    return "\n".join(weather_lines)
 
 async def _lookup_address(location):
     """
@@ -143,7 +143,7 @@ async def _lookup_weather(coords):
     Limit of 1,000 requests a day
     """
 
-    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_internal['forecast_api_key'], coords['lat'], coords['lng'])
+    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_INTERNAL['forecast_api_key'], coords['lat'], coords['lng'])
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(forecast_io_url) as response:
@@ -233,36 +233,36 @@ def _get_wind_direction(degrees):
     Determines the direction the wind is blowing from based off the degree passed from the API
     0 degrees is true north
     """
-    directionText = "N"
+    direction_text = "N"
     if degrees >= 5 and degrees < 40:
-        directionText = "NNE"
+        direction_text = "NNE"
     elif degrees >= 40 and degrees < 50:
-        directionText = "NE"
+        direction_text = "NE"
     elif degrees >= 50 and degrees < 85:
-        directionText = "ENE"
+        direction_text = "ENE"
     elif degrees >= 85 and degrees < 95:
-        directionText = "E"
+        direction_text = "E"
     elif degrees >= 95 and degrees < 130:
-        directionText = "ESE"
+        direction_text = "ESE"
     elif degrees >= 130 and degrees < 140:
-        directionText = "SE"
+        direction_text = "SE"
     elif degrees >= 140 and degrees < 175:
-        directionText = "SSE"
+        direction_text = "SSE"
     elif degrees >= 175 and degrees < 185:
-        directionText = "S"
+        direction_text = "S"
     elif degrees >= 185 and degrees < 220:
-        directionText = "SSW"
+        direction_text = "SSW"
     elif degrees >= 220 and degrees < 230:
-        directionText = "SW"
+        direction_text = "SW"
     elif degrees >= 230 and degrees < 265:
-        directionText = "WSW"
+        direction_text = "WSW"
     elif degrees >= 265 and degrees < 275:
-        directionText = "W"
+        direction_text = "W"
     elif degrees >= 275 and degrees < 310:
-        directionText = "WNW"
+        direction_text = "WNW"
     elif degrees >= 310 and degrees < 320:
-        directionText = "NW"
+        direction_text = "NW"
     elif degrees >= 320 and degrees < 355:
-        directionText = "NNW"
+        direction_text = "NNW"
 
-    return directionText
+    return direction_text

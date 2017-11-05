@@ -28,11 +28,11 @@ HELP = {
                   'screenshot command.'),
 }
 
-_externals = {"running": False}
+_EXTERNALS = {"running": False}
 
 
-dcap = dict(DesiredCapabilities.PHANTOMJS)
-dcap["phantomjs.page.settings.userAgent"] = (
+_DCAP = dict(DesiredCapabilities.PHANTOMJS)
+_DCAP["phantomjs.page.settings.userAgent"] = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.34  "
     "(KHTML, like Gecko) PhantomJS/1.9.7 Safari/534.34"
 )
@@ -96,7 +96,7 @@ def clearurl(bot, event, *dummys):
 
 async def screenshot(bot, event, *args):
     """get a screenshot of a user provided URL or the hangouts' default URL"""
-    if _externals["running"]:
+    if _EXTERNALS["running"]:
         return "<i>processing another request, try again shortly</i>"
 
     if args:
@@ -110,7 +110,7 @@ async def screenshot(bot, event, *args):
         return html
 
     else:
-        _externals["running"] = True
+        _EXTERNALS["running"] = True
 
         if not re.match(r'^[a-zA-Z]+://', url):
             url = 'http://' + url
@@ -120,17 +120,17 @@ async def screenshot(bot, event, *args):
         logger.debug("temporary screenshot file: %s", filepath)
 
         try:
-            browser = webdriver.PhantomJS(desired_capabilities=dcap,
+            browser = webdriver.PhantomJS(desired_capabilities=_DCAP,
                                           service_log_path=os.path.devnull)
         except selenium.common.exceptions.WebDriverException:
-            _externals["running"] = False
+            _EXTERNALS["running"] = False
             return "<i>phantomjs could not be started - is it installed?</i>"
 
         try:
             image_data = await _screencap(browser, url, filepath)
         except selenium.common.exceptions.WebDriverException:
             logger.exception("screencap failed %s", url)
-            _externals["running"] = False
+            _EXTERNALS["running"] = False
             return "<i>error getting screenshot</i>"
 
         try:
@@ -146,4 +146,4 @@ async def screenshot(bot, event, *args):
             logger.exception("upload failed %s", url)
             return "<i>error uploading screenshot</i>"
         finally:
-            _externals["running"] = False
+            _EXTERNALS["running"] = False

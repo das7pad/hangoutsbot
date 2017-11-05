@@ -29,8 +29,8 @@ EASTER_EGGS = {
 }
 
 # cache nicks
-_nicks = {}
-_nicks_inverse = {}
+_NICKS = {}
+_NICKS_INVERSE = {}
 
 HELP = {
     'mention': _('alert a @mentioned user'),
@@ -72,8 +72,8 @@ def _populate_nicknames(bot):
     for chat_id in bot.memory["user_data"]:
         nickname = bot.user_memory_get(chat_id, "nickname")
         if nickname:
-            _nicks[chat_id] = nickname
-            _nicks_inverse[nickname.lower()] = chat_id
+            _NICKS[chat_id] = nickname
+            _NICKS_INVERSE[nickname.lower()] = chat_id
 
 async def _handle_mention(bot, event, command):
     """forward cleaned @mention names to the main mention function
@@ -225,7 +225,7 @@ async def mention(bot, event, *args):
     exact_fragment_matches = []
     mention_list = []
 
-    nickname_chat_id = _nicks_inverse.get(username_lower)
+    nickname_chat_id = _NICKS_INVERSE.get(username_lower)
     if (nickname_chat_id is not None
             and nickname_chat_id not in event.notified_users
             and any(user.id_.chat_id == nickname_chat_id
@@ -494,23 +494,23 @@ def setnickname(bot, event, *args):
 
     text = None
     if not nickname:
-        old_nickname = _nicks.pop(chat_id, None)
+        old_nickname = _NICKS.pop(chat_id, None)
         if old_nickname is None:
             text = _("<i>Nickname is already unset.</i>")
         else:
-            _nicks_inverse.pop(old_nickname, None)
+            _NICKS_INVERSE.pop(old_nickname, None)
             text = _('<i>Removing nickname "{}"</i>').format(old_nickname)
             path = ['user_data', chat_id]
             bot.memory.pop_by_path(path + ['nickname'])
             bot.memory.pop_by_path(path + ['label'])
 
-    elif nickname.lower() in _nicks_inverse:
-        nickname_user_id = _nicks_inverse[nickname.lower()]
+    elif nickname.lower() in _NICKS_INVERSE:
+        nickname_user_id = _NICKS_INVERSE[nickname.lower()]
 
         if nickname_user_id != chat_id:
             text = _('<i>Nickname <b>"{}"</b> is already in use by {}').format(
                 nickname, bot.get_hangups_user(nickname_user_id).full_name)
-        elif nickname == _nicks[chat_id]:
+        elif nickname == _NICKS[chat_id]:
             text = _('<i>Your nickname is already <b>"{}"</b></i>').format(
                 nickname)
 
@@ -521,13 +521,13 @@ def setnickname(bot, event, *args):
     bot.user_memory_set(chat_id, "nickname", nickname)
 
     # Update nicks cache with new nickname
-    old_nickname = _nicks.pop(chat_id, None)
-    _nicks_inverse.pop(old_nickname, None)
+    old_nickname = _NICKS.pop(chat_id, None)
+    _NICKS_INVERSE.pop(old_nickname, None)
     text = (_("Setting nickname to '{}'").format(nickname)
             if old_nickname is None else
             _("Updating nickname to '{}'").format(nickname))
-    _nicks[chat_id] = nickname
-    _nicks_inverse[nickname.lower()] = chat_id
+    _NICKS[chat_id] = nickname
+    _NICKS_INVERSE[nickname.lower()] = chat_id
 
     # cache the new display name
     label = "{} ({})".format(event.user.first_name, nickname)

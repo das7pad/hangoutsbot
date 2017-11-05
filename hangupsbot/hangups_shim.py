@@ -1,5 +1,5 @@
 """legacy schema of hangups"""
-# pylint: disable=unused-import
+# pylint: disable=unused-import, invalid-name
 
 from collections import Mapping, namedtuple
 

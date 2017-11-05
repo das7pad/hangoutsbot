@@ -35,7 +35,6 @@ profile=no
 disable=
     ungrouped-imports,
     fixme,
-    invalid-name,
     line-too-long,
     missing-docstring,
     too-few-public-methods,

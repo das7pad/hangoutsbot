@@ -219,7 +219,7 @@ class Tracker(object):
         """add a single asnycio.Task to the plugin tracking"""
         self._current["asyncio.task"].append(task)
 
-    def register_command_argument_preprocessors_group(self, name):
+    def register_arg_preprocessor_group(self, name):
         """add a argument preprocessor to the plugin tracking"""
         if name not in self._current["commands"]["argument.preprocessors"]:
             self._current["commands"]["argument.preprocessors"].append(name)
@@ -233,7 +233,7 @@ class Tracker(object):
         self._current["aiohttp.session"].append(session)
 
 
-tracking = Tracker()
+tracking = Tracker()                               # pylint:disable=invalid-name
 aiohttp_servers.set_tracking(tracking)
 command.set_tracking(tracking)
 
@@ -334,7 +334,8 @@ def start_asyncio_task(function, *args, **kwargs):
     return task
 
 def register_commands_argument_preprocessor_group(name, preprocessors):
-    command.register_argument_preprocessor_group(name, preprocessors)
+    # pylint:disable=invalid-name
+    command.register_arg_preprocessor_group(name, preprocessors)
 
 def register_aiohttp_session(session):
     """register a session that will be closed on pluginunload
