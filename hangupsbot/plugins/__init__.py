@@ -718,7 +718,7 @@ async def unload(bot, module_path):
             await aiohttp_terminate(group)
 
     for groupname in plugin["commands"]["argument.preprocessors"]:
-        del command.preprocessors[groupname]
+        command.arguments_parser.deregister_preprocessor_group(groupname)
 
     for session in plugin['aiohttp.session']:
         session.close()
