@@ -261,3 +261,12 @@ class ArgumentsParser(object):
             new_args.append(arg)
 
         return new_args
+
+def _initialize(bot):
+    """register the arguments parser as shared
+
+    Args:
+        bot (HangupsBot): the running instance
+    """
+    from hangupsbot.commands import command
+    bot.register_shared('arguments_parser', command.arguments_parser)
