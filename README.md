@@ -10,7 +10,7 @@ Please see:
 
 
 ## Repository Links
-* [Translation Project](https://github.com/hangoutsbot/hangoutsbot-locales)
+* [Translation Project](https://github.com/das7pad/hangoutsbot-locales)
 * [Reference Hangups Library](https://github.com/das7pad/hangups)
 
 
@@ -180,6 +180,6 @@ Please see
 # Credits / History
 
 Hangoutsbot is derived from
-  [hangupsbot](https://github.com/hangoutsbot/hangoutsbot)
+  [hangoutsbot](https://github.com/hangoutsbot/hangoutsbot)
 
 On 2017-07-17, this fork was made standalone
