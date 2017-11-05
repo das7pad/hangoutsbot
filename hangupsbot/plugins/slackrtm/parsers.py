@@ -1,4 +1,5 @@
 """parser to process slack markdown"""
+# -*- coding: utf-8 -*-
 
 from reparser import (
     Token,

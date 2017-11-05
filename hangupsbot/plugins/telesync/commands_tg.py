@@ -171,7 +171,8 @@ async def command_whois(tg_bot, msg, *args):
         user = await tg_bot.get_tg_user(user_id, msg.chat_id)
         if term in repr(data).lower() or term in str(user).lower():
             name = user.get_displayname(user.identifier)
-            text = _('User <i>%s</i> has the id "%s"') % (name, user_id)
+            text = _('User <i>{name}</i> has the id "{tg_id}"').format(
+                name=name, tg_id=user_id)
             break
     else:
         text = _('Could not find a user matching "%s"') % term
@@ -655,8 +656,10 @@ async def command_sync_config(tg_bot, msg, *args):
         text = err.args[0]
 
     else:
-        text = _('%s updated for channel "%s" from "%s" to "%s"') % (
-            key, chat_id, last_value, new_value)
+        text = _('{sync_option} updated for channel "{tg_id}" '
+                 'from "{old}" to "{new}"').format(
+                     sync_option=key, tg_id=chat_id, old=last_value,
+                     new=new_value)
 
     await tg_bot.sendMessage(
         msg.chat_id, text,
@@ -758,8 +761,8 @@ async def restrict_users(tg_bot, tg_chat_id, mode, user_ids, silent=False):
         if not silent:
             await tg_bot.editMessageText(
                 (tg_chat_id, status_msg['message_id']),
-                _('Finished %s/%s requests for /restrict_users') % (
-                    len(results), len(user_ids)))
+                _('Finished {completed}/{num_all} requests for /restrict_users'
+                 ).format(completed=len(results), num_all=len(user_ids)))
 
         raw_results = await asyncio.gather(
             *(tg_bot.restrictChatMember(tg_chat_id, user_id, **rights)

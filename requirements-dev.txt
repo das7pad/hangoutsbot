@@ -5,8 +5,8 @@
 #   make gen-dev-requirements
 #
 
-git+https://github.com/das7pad/hangups@7abfab0519b673885cb7b73090e3bcb2e4f50926
-aiohttp==2.2.5
+git+https://github.com/das7pad/hangups@v0.4.3.6#egg=hangups==hangups-0.4.3.6
+aiohttp==2.3.1
 aioresponses==0.3.0
 appdirs==1.4.3
 astroid==1.5.3
@@ -17,6 +17,7 @@ bs4==0.0.1
 certifi==2017.7.27.1
 chardet==3.0.4
 cleverwrap==0.2.3.6
+configargparse==0.11.0
 decorator==4.0.11
 emoji==0.4.5
 fudge==1.1.0
@@ -30,14 +31,16 @@ jaraco.itertools==2.0.1
 lazy-object-proxy==1.3.1
 lxml==4.1.0
 mccabe==0.6.1
+mechanicalsoup==0.6.0
 more-itertools==3.2.0
 moviepy==0.2.3.2
 multidict==3.3.0
 numpy==1.13.3
 oauth2client==4.1.2
-oauthlib==2.0.4
+oauthlib==2.0.6
 olefile==0.44
 pillow==4.3.0
+protobuf==3.1.0.post1
 psutil==5.2.2
 pushbullet.py==0.11.0
 py==1.4.34
@@ -50,6 +53,7 @@ pytest-sugar==0.9.0
 pytest==3.2.3
 python-dateutil==2.6.1
 python-magic==0.4.13
+readlike==0.1.2
 reparser==1.4.3
 requests-oauthlib==0.8.0
 requests==2.18.4
@@ -61,10 +65,12 @@ soundcloud==0.5.0
 spotipy==2.4.4
 telepot==12.3
 termcolor==1.1.0
+tld==0.7.9
 tqdm==4.11.2
 twitterapi==2.4.6
 uritemplate==3.0.0
 urllib3==1.22
+urwid==1.3.1
 websocket-client==0.44.0
 wikipedia==1.4.0
 wolframalpha==3.0

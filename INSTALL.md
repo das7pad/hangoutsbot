@@ -29,7 +29,12 @@ and get it up and running.
     versions of packages we require and install the dependencies:
 
     ```
-    make venv
+    make install
+    ```
+
+    _You can specify a custom location for the virtual environment:_
+    ```
+    make install venv=/my/path
     ```
 
 3.  Run the program interactively for the first time - this topic is covered in
@@ -47,10 +52,14 @@ and get it up and running.
 You need to **run the bot for the first time**. You will need at least two gmail
 accounts: one is your actual account, the other will be your bot account.
 
-The basic syntax for running the bot (assuming you are in the root of the cloned
-repository) is:
+The basic syntax for running the bot from root of the cloned repository is:
 ```
-./venv/bin/python3 hangupsbot
+./venv/bin/hangupsbot
+```
+
+_If you specified a custom location for the virtual environment:_
+```
+/my/path/bin/hangupsbot
 ```
 
 You will be prompted for your gmail username and password. Use your bot account

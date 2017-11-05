@@ -214,7 +214,7 @@ def tldr_base(bot, conv_id, parameters):
                 for conv in conv_id_list:
                     bot.memory.set_by_path(['tldr', conv], conv_tldr)
                 bot.memory.save()
-                message = _('TL;DR #{} edited - "{}" -> "{}"').format(parameters[1], edited_tldr, tldr)
+                message = _('TL;DR #{} edited - "{}" -> "{}"').format(parameters[1], edited_tldr, text)
         else:
             message = _('Unknown Command at "tldr edit."')
 
@@ -228,7 +228,7 @@ def tldr_base(bot, conv_id, parameters):
             for conv in conv_id_list:
                 bot.memory.set_by_path(['tldr', conv], conv_tldr)
             bot.memory.save()
-            message = _('<em>{}</em> added to TL;DR. Count: {}').format(tldr, len(conv_tldr))
+            message = _('<em>{}</em> added to TL;DR. Count: {}').format(text, len(conv_tldr))
 
             return message, display
 

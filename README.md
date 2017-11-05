@@ -10,7 +10,7 @@ Please see:
 
 
 ## Repository Links
-* [Translation Project](https://github.com/hangoutsbot/hangoutsbot-locales)
+* [Translation Project](https://github.com/das7pad/hangoutsbot-locales)
 * [Reference Hangups Library](https://github.com/das7pad/hangups)
 
 
@@ -43,7 +43,7 @@ Please see:
 
 Note: **First run?** See the [installation instructions](INSTALL.md)
 
-To execute: `/path/to/venv/bin/python3 hangupsbot` from the repository directory
+run `/path/to/venv/bin/hangupsbot` with these optional arguments:
 
 ```
 usage: hangupsbot [-h] [-d] [--log LOG] [--cookies COOKIES] [--memory MEMORY] [--config CONFIG] [--version]
@@ -61,6 +61,8 @@ optional arguments:
                    ~/.local/share/hangupsbot/config.json)
 --version          show program's version number and exit
 ```
+
+Example: `/opt/venv/bin/hangupsbot --cookies ~/mybot/cookies.secret`
 
 # Bot Configuration for Administrators
 
@@ -131,16 +133,23 @@ A full list of commands supported by the base framework is available at the
 # Updating
 
 1. Navigate to the repository directory (eg. `cd ~/hangupsbot`)
-2. Change to the latest stable branch using `git checkout master`
-3. `git pull` to pull the latest version of hangupsbot
-4. `make update-requirements`
-5. Restart the bot
+2. `git pull` to pull the latest version of hangupsbot
+3. Install lastest features
+    ```
+    make install
+    ```
+
+    _You can specify a custom location for the virtual environment:_
+    ```
+    make install venv=/my/path
+    ```
+4. Restart the bot
 
 # Debugging
 
 * Run the bot with the `-d` parameter e.g.
   ```
-  ./venv/bin/python3 hangupsbot -d
+  ./venv/bin/hangupsbot -d
   ```
   - this lowers the log level to `DEBUG` for a more verbose and informative log
   file.
@@ -171,6 +180,6 @@ Please see
 # Credits / History
 
 Hangoutsbot is derived from
-  [hangupsbot](https://github.com/hangoutsbot/hangoutsbot)
+  [hangoutsbot](https://github.com/hangoutsbot/hangoutsbot)
 
 On 2017-07-17, this fork was made standalone

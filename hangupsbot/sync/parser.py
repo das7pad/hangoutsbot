@@ -246,13 +246,14 @@ class MessageSegmentHangups(hangups.ChatMessageSegment):
 class MessageSegmentInternal(MessageSegmentHangups):
     """message segment that stores text and formatting from internal formatting
 
-    parses html only
+    parses html and linebreaks only
 
     Args:
         text: string, message part without formatting
         kwargs: see MessageSegmentInternal
     """
-    _parser = MessageParser(Tokens.basic + Tokens.html)
+    line_breaks = [Tokens.basic[1]]     # drop autolinking
+    _parser = MessageParser(line_breaks + Tokens.html)
 
 
 class MessageSegment(MessageSegmentHangups):

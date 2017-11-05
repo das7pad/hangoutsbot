@@ -113,8 +113,8 @@ async def broadcast(bot, dummy, *args):
     if subcmd == "info":
         # display broadcast data such as message and target rooms
 
-        conv_info = ["<b><i>{}</i></b> ... <i>{}</i>".format(
-            bot.conversations.get_name(convid, '~'), convid)
+        conv_info = ["<b><i>{name}</i></b> ... <i>{conv_id}</i>".format(
+            name=bot.conversations.get_name(convid, '~'), conv_id=convid)
                      for convid in _internal["broadcast"]["conversations"]]
 
         if not _internal["broadcast"]["message"]:
@@ -160,8 +160,8 @@ async def broadcast(bot, dummy, *args):
 
         _internal["broadcast"]["conversations"] = list(
             set(_internal["broadcast"]["conversations"]))
-        text = [_("broadcast: {} conversation(s)".format(
-            len(_internal["broadcast"]["conversations"])))]
+        text = [_("broadcast: {conv_count} conversation(s)").format(
+            conv_count=len(_internal["broadcast"]["conversations"]))]
 
     elif subcmd == "remove":
         if parameters[0].lower() == "all":
@@ -177,10 +177,13 @@ async def broadcast(bot, dummy, *args):
                 if (search.lower() in bot.conversations.get_name(convid).lower()
                         or search in convid):
                     _internal["broadcast"]["conversations"].remove(convid)
-                    removed.append("<b><i>{}</i></b> (<i>{}</i>)".format(
-                        bot.conversations.get_name(convid), convid))
+                    removed.append(
+                        _("<b><i>{name}</i></b> (<i>{conv_id}</i>)").format(
+                            name=bot.conversations.get_name(convid),
+                            conv_id=convid))
 
-            text = [_("broadcast: removed {}".format(", ".join(removed)))]
+            text = [_("broadcast: removed {conv_tags}".format(
+                conv_tags=", ".join(removed)))]
 
     elif subcmd == "NOW":
         # send the broadcast
@@ -189,8 +192,8 @@ async def broadcast(bot, dummy, *args):
             await bot.coro_send_message(convid,
                                         _internal["broadcast"]["message"],
                                         context=context)
-        text = [_("broadcast: message sent to {} chats".format(
-            len(_internal["broadcast"]["conversations"])))]
+        text = [_("broadcast: message sent to {conv_count} chats").format(
+            conv_count=len(_internal["broadcast"]["conversations"]))]
 
     else:
         raise Help()
@@ -268,13 +271,14 @@ def hangouts(bot, dummy, *args):
 
     lines = []
     for convid, convdata in bot.conversations.get(text_search).items():
-        lines.append("<b>{}</b>: <i>{}</i>".format(convdata["title"], convid))
+        lines.append("<b>{title}</b>: <i>{conv_id}</i>".format(
+            title=convdata["title"], conv_id=convid))
 
-    lines.append(_("<b>Total: {}</b>").format(len(lines)))
+    lines.append(_("<b>Total: {lines_num}</b>").format(lines_num=len(lines)))
 
     if text_search:
-        lines.insert(0, _('<b>List of hangouts matching:</b> "<i>{}</i>"'
-                         ).format(text_search))
+        lines.insert(0, _('<b>List of hangouts matching:</b> "<i>{term}</i>"'
+                         ).format(term=text_search))
 
     return "\n".join(lines)
 
@@ -495,8 +499,8 @@ def whoami(bot, event, *dummys):
     else:
         fullname = event.user.full_name
 
-    return _("<b><i>%s</i></b>, chat_id = <i>%s</i>") % (fullname,
-                                                         event.user_id.chat_id)
+    return _("<b><i>{fullname}</i></b>, chat_id = <i>{chat_id}</i>").format(
+        fullname=fullname, chat_id=event.user_id.chat_id)
 
 
 def whereami(dummy, event, *dummys):
@@ -510,5 +514,6 @@ def whereami(dummy, event, *dummys):
     Returns:
         string
     """
-    return _("You are at <b><i>{}</i></b>, conv_id = <i>{}</i>").format(
-        event.conv.name, event.conv_id)
+    return _("You are at <b><i>{conv_name}</i></b>, "
+             "conv_id = <i>{conv_id}</i>").format(conv_name=event.conv.name,
+                                                  conv_id=event.conv_id)

@@ -257,6 +257,7 @@ class SlackRTM(object):
                     await plugins.unload(self.bot, self.identifier)
                 except plugins.NotLoaded:
                     pass
+                self.logger.debug('unloaded')
 
         self.logger.critical('ran out of retries, closing the connection')
 
@@ -702,6 +703,9 @@ class SlackRTM(object):
                             raise ValueError('reply has no `type` entry: %s'
                                              % repr(reply))
                     except (ValueError, TypeError) as err:
+                        if websocket.closed:
+                            self.logger.warning('websocket connection closed')
+                            break
                         # covers invalid json-replys and replys without a `type`
                         self.logger.warning('bad websocket read: %s', repr(err))
                         soft_reset += 1
