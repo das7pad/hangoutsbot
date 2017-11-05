@@ -83,6 +83,10 @@ install: gen-requirements
 	@$(pip) install -q . --process-dependency-links
 	@echo "Install: finished"
 
+.PHONY: localization
+localization:
+	@make -s --directory hangupsbot/locale
+
 .PHONY: lint
 lint: venv-dev
 	@echo "Lint: started"
