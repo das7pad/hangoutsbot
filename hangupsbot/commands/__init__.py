@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import re
-import time
 
 import hangups
 
@@ -97,8 +96,6 @@ class CommandDispatcher(object):
         return self.bot.config.get_option('commands.tags.escalate')
 
     def get_available_commands(self, bot, chat_id, conv_id):
-        start_time = time.time()
-
         config_tags_deny_prefix = self.deny_prefix
         config_tags_escalate = self.escalate_tagged
 
@@ -189,9 +186,6 @@ class CommandDispatcher(object):
                 user_commands = user_commands - _denied
 
         user_commands = user_commands - admin_commands # ensure no overlap
-
-        interval = time.time() - start_time
-        logger.debug("get_available_commands() - %s", interval)
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 
