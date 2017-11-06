@@ -1,6 +1,5 @@
 """command dispatch for the HangupsBot"""
 #TODO(das7pad) refactor .get_available_commands()
-#TODO(das7pad) extract config entrys to defaults
 import asyncio
 import logging
 import re
@@ -12,12 +11,29 @@ from hangupsbot.commands.arguments_parser import ArgumentsParser
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_CONFIG = {
+    'commands_admin': [],
+
+    'commands_user': [],
+
+    'commands_tagged': {},
+
+    'commands.tags.deny-prefix': '!',
+
+    'commands.tags.escalate': False,
+
+    # default timeout for command-coros to return: 5minutes
+    'command_timeout': 5*60,
+}
+
+
 class Help(Exception):
     """raise to request the help entry of the current command
 
     opt: supplied text as string in the arguments will be prepended to the help
     """
     pass
+
 
 class CommandDispatcher(object):
     """Register commands and run them"""
@@ -53,8 +69,7 @@ class CommandDispatcher(object):
         """
         self.bot = bot
         self._arguments_parser.set_bot(bot)
-        # set the default timeout for commands to execute to 5minutes
-        bot.config.set_defaults({'command_timeout': (5*60)})
+        bot.config.set_defaults(DEFAULT_CONFIG)
 
     def set_tracking(self, tracking):
         """register the plugin tracking for commands
@@ -75,15 +90,11 @@ class CommandDispatcher(object):
 
     @property
     def deny_prefix(self):
-        config_tags_deny_prefix = self.bot.config.get_option(
-            'commands.tags.deny-prefix') or "!"
-        return config_tags_deny_prefix
+        return self.bot.config.get_option('commands.tags.deny-prefix')
 
     @property
     def escalate_tagged(self):
-        config_tags_escalate = self.bot.config.get_option(
-            'commands.tags.escalate') or False
-        return config_tags_escalate
+        return self.bot.config.get_option('commands.tags.escalate')
 
     def get_available_commands(self, bot, chat_id, conv_id):
         start_time = time.time()
@@ -96,9 +107,9 @@ class CommandDispatcher(object):
         if chat_id in config_admins:
             is_admin = True
 
-        commands_admin = bot.get_config_suboption(conv_id, 'commands_admin') or []
-        commands_user = bot.get_config_suboption(conv_id, 'commands_user') or []
-        commands_tagged = bot.get_config_suboption(conv_id, 'commands_tagged') or {}
+        commands_admin = bot.get_config_suboption(conv_id, 'commands_admin')
+        commands_user = bot.get_config_suboption(conv_id, 'commands_user')
+        commands_tagged = bot.get_config_suboption(conv_id, 'commands_tagged')
 
         # convert commands_tagged tag list into a set of (frozen)sets
         commands_tagged = {key: set([frozenset(value if isinstance(value, list) else [value])
