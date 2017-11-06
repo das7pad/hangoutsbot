@@ -100,9 +100,7 @@ class CommandDispatcher(object):
         config_tags_escalate = self.escalate_tagged
 
         config_admins = bot.get_config_suboption(conv_id, 'admins')
-        is_admin = False
-        if chat_id in config_admins:
-            is_admin = True
+        is_admin = chat_id in config_admins
 
         commands_admin = bot.get_config_suboption(conv_id, 'commands_admin')
         commands_user = bot.get_config_suboption(conv_id, 'commands_user')
@@ -125,16 +123,15 @@ class CommandDispatcher(object):
                     commands_tagged[command_name] = set()
                 commands_tagged[command_name] = commands_tagged[command_name] | tagsets
 
-        admin_commands = set()
-        user_commands = set()
-
         if commands_admin is True:
             # all commands are admin-only
             admin_commands = all_commands
+            user_commands = set()
 
         elif commands_user is True:
             # all commands are user-only
             user_commands = all_commands
+            admin_commands = set()
 
         elif commands_user:
             # listed are user commands, others admin-only
@@ -143,12 +140,13 @@ class CommandDispatcher(object):
 
         else:
             # default: follow config["commands_admin"] + plugin settings
-            admin_commands = set(commands_admin) | set(self.admin_commands)
+            admin_commands = set(commands_admin)
+            admin_commands.update(self.admin_commands)
             user_commands = all_commands - admin_commands
 
         # make admin commands unavailable to non-admin user
         if not is_admin:
-            admin_commands = set()
+            admin_commands.clear()
 
         if commands_tagged:
             _set_user_tags = set(bot.tags.useractive(chat_id, conv_id))
@@ -164,9 +162,10 @@ class CommandDispatcher(object):
                 if command_name in user_commands|admin_commands:
                     continue
                 for _match in tags:
-                    _set_allow = set([_match] if isinstance(_match, str) else _match)
+                    _set_allow = set((_match,) if isinstance(_match, str)
+                                     else _match)
                     if is_admin or _set_allow <= _set_user_tags:
-                        admin_commands.update([command_name])
+                        admin_commands.add(command_name)
                         break
 
             if not is_admin:
@@ -177,10 +176,11 @@ class CommandDispatcher(object):
                         continue
                     tags = commands_tagged[command_name]
                     for _match in tags:
-                        _set_allow = set([_match] if isinstance(_match, str) else _match)
+                        _set_allow = set((_match,) if isinstance(_match, str)
+                                         else _match)
                         _set_deny = {config_tags_deny_prefix + x for x in _set_allow}
                         if _set_deny <= _set_user_tags:
-                            _denied.update([command_name])
+                            _denied.add(command_name)
                             break
                 admin_commands = admin_commands - _denied
                 user_commands = user_commands - _denied
