@@ -108,18 +108,22 @@ class CommandDispatcher(object):
         commands_user = bot.get_config_suboption(conv_id, 'commands_user')
         commands_tagged = bot.get_config_suboption(conv_id, 'commands_tagged')
 
+        all_commands = set(self.commands)
+
         # convert commands_tagged tag list into a set of (frozen)sets
-        commands_tagged = {key: set([frozenset(value if isinstance(value, list) else [value])
-                                     for value in values])
-                           for key, values in commands_tagged.items()}
+        # optimization: ignore tags for not loaded commands
+        commands_tagged = {cmd: set(frozenset((value if isinstance(value, list)
+                                               else (value,)))
+                                    for value in tags)
+                           for cmd, tags in commands_tagged.items()
+                           if cmd in all_commands}
+
         # combine any plugin-determined tags with the config.json defined ones
         if self.command_tagsets:
             for command_name, tagsets in self.command_tagsets.items():
                 if command_name not in commands_tagged:
                     commands_tagged[command_name] = set()
                 commands_tagged[command_name] = commands_tagged[command_name] | tagsets
-
-        all_commands = set(self.commands)
 
         admin_commands = set()
         user_commands = set()
@@ -150,10 +154,6 @@ class CommandDispatcher(object):
             _set_user_tags = set(bot.tags.useractive(chat_id, conv_id))
 
             for command_name, tags in commands_tagged.items():
-                if command_name not in all_commands:
-                    # optimisation: don't check commands that aren't loaded into framework
-                    continue
-
                 # raise tagged command access level if escalation required
                 if config_tags_escalate and command_name in user_commands:
                     user_commands.remove(command_name)
