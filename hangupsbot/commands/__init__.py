@@ -149,28 +149,28 @@ class CommandDispatcher(object):
             admin_commands.clear()
 
         if commands_tagged and not is_admin:
-            _set_user_tags = set(bot.tags.useractive(chat_id, conv_id))
-            _denied = set()
+            user_tags = set(bot.tags.useractive(chat_id, conv_id))
+            denied_commands = set()
 
             for command_name, tags in commands_tagged.items():
                 # raise tagged command access level if escalation required
                 if config_tags_escalate and command_name in user_commands:
                     user_commands.remove(command_name)
 
-                for _match in tags:
-                    _set_allow = set((_match,) if isinstance(_match, str)
-                                     else _match)
-                    if _set_allow <= _set_user_tags:
+                for tag in tags:
+                    wanted_grant_tags = set((tag,) if isinstance(tag, str)
+                                            else tag)
+                    if wanted_grant_tags <= user_tags:
                         admin_commands.add(command_name)
 
-                    _set_deny = set(config_tags_deny_prefix + tag
-                                    for tag in _set_allow)
-                    if _set_deny <= _set_user_tags:
-                        _denied.add(command_name)
+                    revoke_tags = set(config_tags_deny_prefix + tag
+                                      for tag in wanted_grant_tags)
+                    if revoke_tags <= user_tags:
+                        denied_commands.add(command_name)
                         break
 
-            admin_commands = admin_commands - _denied
-            user_commands = user_commands - _denied
+            admin_commands = admin_commands - denied_commands
+            user_commands = user_commands - denied_commands
 
         user_commands = user_commands - admin_commands # ensure no overlap
 
