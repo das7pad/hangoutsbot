@@ -11,19 +11,19 @@ logger = logging.getLogger(__name__)
 def _initialise(bot):
     plugins.register_admin_command(["lograise", "logconfig"])
 
-    rootLogger = logging.getLogger()
-    for handler in rootLogger.handlers:
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
         if handler.__class__.__name__ == "ChatMessageLogger":
             logger.info("ChatMessageLogger already attached")
             return
 
-    chatHandler = ChatMessageLogger(bot)
+    chathandler = ChatMessageLogger(bot)
 
-    chatHandler.setFormatter(logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
-    chatHandler.setLevel(logging.WARNING)
-    chatHandler.addFilter(PluginFilter(bot))
+    chathandler.setFormatter(logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
+    chathandler.setLevel(logging.WARNING)
+    chathandler.addFilter(PluginFilter(bot))
 
-    rootLogger.addHandler(chatHandler)
+    root_logger.addHandler(chathandler)
 
 
 def logconfig(bot, dummy, loggername, level):

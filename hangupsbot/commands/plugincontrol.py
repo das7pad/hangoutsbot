@@ -12,18 +12,18 @@ logger = logging.getLogger(__name__)
 def _initialise():
     pass # prevents commands from being automatically added
 
-def function_name(fn):
+def function_name(func):
     try:
         # standard function
-        return fn.__name__
+        return func.__name__
     except AttributeError:
         try:
             # lambda
-            return fn.func_name
+            return func.func_name
         except AttributeError:
             try:
                 # functools.partial
-                return function_name(fn.func)
+                return function_name(func.func)
             except AttributeError:
                 return '<unknown>'
 
@@ -252,8 +252,8 @@ async def removeplugin(bot, dummy, *args):
             escaped_module_path = module_path.replace("_", "\\_")
             await plugins.unload(bot, module_path)
             lines.append('* **unloaded: {}**'.format(escaped_module_path))
-        except (RuntimeError, KeyError) as e:
-            lines.append('* error unloading {}: {}'.format(escaped_module_path, str(e)))
+        except (RuntimeError, KeyError) as err:
+            lines.append('* error unloading {}: {}'.format(escaped_module_path, str(err)))
     else:
         lines.append('* not loaded on bot start')
 
@@ -307,8 +307,8 @@ async def addplugin(bot, dummy, *args):
                 lines.append('* **loaded: {}**'.format(escaped_module_path))
             else:
                 lines.append('* failed to load: {}'.format(escaped_module_path))
-        except RuntimeError as e:
-            lines.append('* error loading {}: {}'.format(escaped_module_path, str(e)))
+        except RuntimeError as err:
+            lines.append('* error loading {}: {}'.format(escaped_module_path, str(err)))
 
     if plugin in config_plugins:
         lines.append('* already in config.json')

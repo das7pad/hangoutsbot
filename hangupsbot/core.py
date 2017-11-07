@@ -588,6 +588,7 @@ class HangupsBot(object):
         await self._handlers.setup(self._conv_list)
 
         await plugins.load(self, "sync")
+        await plugins.load(self, "commands.arguments_parser")
         await plugins.load(self, "commands.plugincontrol")
         await plugins.load(self, "commands.alias")
         await plugins.load(self, "commands.basic")
@@ -700,6 +701,7 @@ class HangupsBot(object):
             message: string or a list of hangups.ChatMessageSegment
             context: dict, optional information about the message
         """
+        # pylint:disable=invalid-name
         conv_1on1 = await self.get_1to1(chat_id)
 
         full_name = self.get_hangups_user(chat_id).full_name

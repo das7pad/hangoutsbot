@@ -38,7 +38,7 @@ class ServerStorage(list):
         """
         self.tracking.register_aiohttp_web(group)
 
-aiohttp_servers = ServerStorage()
+aiohttp_servers = ServerStorage()                  # pylint:disable=invalid-name
 
 
 def start(bot):

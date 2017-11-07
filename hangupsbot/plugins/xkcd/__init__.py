@@ -11,14 +11,14 @@ from hangups import ChatMessageSegment
 
 from hangupsbot import plugins
 
-_cache = {}
+_CACHE = {}
 
 def _initialise():
     plugins.register_user_command(["xkcd"])
     plugins.register_help(HELP)
     plugins.register_sync_handler(_watch_xkcd_link, "message_once")
 
-regexps = (
+REGEXPS = (
     r"https?://(?:www\.)?(?:explain)?xkcd.com/([0-9]+)(?:/|\s|$)",
     r"https?://(?:www\.)?explainxkcd.com/wiki/index\.php(?:/|\?title=)([0-9]+)(?:[^0-9]|$)",
     r"(?:\s|^)xkcd\s+(?:#\s*)?([0-9]+)(?:\s|$)",
@@ -38,7 +38,7 @@ async def xkcd(bot, event, *args):
     """xkcd interface"""
     if len(args) == 1:
         if args[0] == "clear":
-            _cache.clear()
+            _CACHE.clear()
             return
 
         if args[0] == "search":
@@ -56,7 +56,7 @@ async def _watch_xkcd_link(bot, event):
     if event.user.is_self:
         return
 
-    for regexp in regexps:
+    for regexp in REGEXPS:
         match = re.search(regexp, event.text, flags=re.IGNORECASE)
         if not match:
             continue
@@ -73,17 +73,17 @@ async def _get_comic(bot, num=None):
         num = None
         url = 'https://xkcd.com/info.0.json'
 
-    if num in _cache:
-        return _cache[num]
+    if num in _CACHE:
+        return _CACHE[num]
     else:
         async with aiohttp.ClientSession() as session:
             async with session.request('get', url) as request:
                 raw = await request.read()
         info = json.loads(raw.decode())
 
-        if info['num'] in _cache:
+        if info['num'] in _CACHE:
             # may happen when searching for the latest comic
-            return _cache[info['num']]
+            return _CACHE[info['num']]
 
         filename = os.path.basename(info["img"])
         async with aiohttp.ClientSession() as session:
@@ -91,7 +91,7 @@ async def _get_comic(bot, num=None):
                 raw = await request.read()
         image_data = io.BytesIO(raw)
         info['image_id'] = await bot.upload_image(image_data, filename=filename)
-        _cache[info['num']] = info
+        _CACHE[info['num']] = info
         return info
 
 async def _print_comic(bot, event, num=None):

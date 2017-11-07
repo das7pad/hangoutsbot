@@ -10,15 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    fileWriter = file_writer(bot)
+    file_writer = FileWriter(bot)
 
-    if fileWriter.initialised:
-        plugins.register_handler(fileWriter.on_membership_change, "membership")
-        plugins.register_handler(fileWriter.on_rename, "rename")
-        plugins.register_handler(fileWriter.on_chat_message, "allmessages")
+    if file_writer.initialised:
+        plugins.register_handler(file_writer.on_membership_change, "membership")
+        plugins.register_handler(file_writer.on_rename, "rename")
+        plugins.register_handler(file_writer.on_chat_message, "allmessages")
 
 
-class file_writer():
+class FileWriter(object):
     bot = None
     paths = []
     initialised = False

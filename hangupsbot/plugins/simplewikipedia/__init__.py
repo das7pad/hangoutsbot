@@ -27,8 +27,8 @@ def wiki(dummy0, dummy1, *args):
         html_text = '<b>"{}"</b>\n\n{}\n\n{}'.format(term, summary, source)
     except wikipedia.exceptions.PageError:
         html_text = _("<i>no entry found for {}</i>").format(term)
-    except wikipedia.exceptions.DisambiguationError as e:
-        exception_text = str(e).strip().replace("\n", "\n")
+    except wikipedia.exceptions.DisambiguationError as err:
+        exception_text = str(err).strip()
         html_text = "<i>{}</i>".format(exception_text)
 
     return html_text

@@ -20,10 +20,10 @@ class AsyncRequestHandler:
             self._bot = self.bot # backward-compatibility
 
     def addroutes(self, router):
-        router.add_route("POST", "/{convid}", self.adapter_do_POST)
-        router.add_route("POST", "/{convid}/", self.adapter_do_POST)
+        router.add_route("POST", "/{convid}", self.adapter_do_post)
+        router.add_route("POST", "/{convid}/", self.adapter_do_post)
 
-    async def adapter_do_POST(self, request):
+    async def adapter_do_post(self, request):
         raw_content = await request.content.read()
 
         results = await self.process_request( request.path,

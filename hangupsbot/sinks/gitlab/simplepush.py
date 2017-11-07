@@ -12,7 +12,7 @@ from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
 logger = logging.getLogger(__name__)
 
 
-class webhookReceiver(AsyncRequestHandler):
+class WebhookReceiver(AsyncRequestHandler):
     """Receive REST API posts from GitLab"""
     _bot = None
 

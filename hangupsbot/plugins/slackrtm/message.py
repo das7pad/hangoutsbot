@@ -131,7 +131,7 @@ class SlackMessage(object):
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
 
         self.channel = reply.get('channel') or reply.get('group')
-        if self.channel is None:
+        if not isinstance(self.channel, str):
             raise ParseError('no channel found in reply')
 
         self.user = None
