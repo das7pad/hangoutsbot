@@ -1,5 +1,5 @@
 """command dispatch for the HangupsBot"""
-#TODO(das7pad) refactor .get_available_commands()
+
 import asyncio
 import logging
 import re
@@ -108,20 +108,15 @@ class CommandDispatcher(object):
 
         all_commands = set(self.commands)
 
-        # convert commands_tagged tag list into a set of (frozen)sets
         # optimization: ignore tags for not loaded commands
-        commands_tagged = {cmd: set(frozenset((value if isinstance(value, list)
-                                               else (value,)))
-                                    for value in tags)
+        commands_tagged = {cmd: set(tags)
                            for cmd, tags in commands_tagged.items()
                            if cmd in all_commands}
 
         # combine any plugin-determined tags with the config.json defined ones
-        if self.command_tagsets:
-            for command_name, tagsets in self.command_tagsets.items():
-                if command_name not in commands_tagged:
-                    commands_tagged[command_name] = set()
-                commands_tagged[command_name] = commands_tagged[command_name] | tagsets
+        for command_name, tagsets in self.command_tagsets.items():
+            config_tags = commands_tagged.setdefault(command_name, set())
+            config_tags.update(tagsets)
 
         if commands_admin is True:
             # all commands are admin-only
@@ -149,7 +144,7 @@ class CommandDispatcher(object):
             admin_commands.clear()
 
         if commands_tagged and not is_admin:
-            user_tags = set(bot.tags.useractive(chat_id, conv_id))
+            user_tags = frozenset(bot.tags.useractive(chat_id, conv_id))
             denied_commands = set()
 
             for command_name, tags in commands_tagged.items():
@@ -158,13 +153,13 @@ class CommandDispatcher(object):
                     user_commands.remove(command_name)
 
                 for tag in tags:
-                    wanted_grant_tags = set((tag,) if isinstance(tag, str)
-                                            else tag)
+                    wanted_grant_tags = frozenset((tag,) if isinstance(tag, str)
+                                                  else tag)
                     if wanted_grant_tags <= user_tags:
                         admin_commands.add(command_name)
 
-                    revoke_tags = set(config_tags_deny_prefix + tag
-                                      for tag in wanted_grant_tags)
+                    revoke_tags = frozenset(config_tags_deny_prefix + tag
+                                            for tag in wanted_grant_tags)
                     if revoke_tags <= user_tags:
                         denied_commands.add(command_name)
                         break
