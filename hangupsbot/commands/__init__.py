@@ -135,12 +135,12 @@ class CommandDispatcher(object):
 
         elif commands_user:
             # listed are user commands, others admin-only
-            user_commands = set(commands_user)
+            user_commands = set(commands_user).intersection(all_commands)
             admin_commands = all_commands - user_commands
 
         else:
             # default: follow config["commands_admin"] + plugin settings
-            admin_commands = set(commands_admin)
+            admin_commands = set(commands_admin).intersection(all_commands)
             admin_commands.update(self.admin_commands)
             user_commands = all_commands - admin_commands
 
