@@ -786,7 +786,10 @@ class SlackRTM(object):
 
             error_message = 'error while parsing the SyncReply\nreply=%s'
             sync_reply = await msg.get_sync_reply(self, reply)
-        except (ParseError, IgnoreMessage) as err:
+        except ParseError as err:
+            self.logger.error('%s\nreply=%s', repr(err), reply)
+            return
+        except IgnoreMessage as err:
             self.logger.debug(repr(err))
             return
         except SlackAuthError as err:
