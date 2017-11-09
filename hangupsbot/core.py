@@ -306,35 +306,6 @@ class HangupsBot(object):
         asyncio.ensure_future(self._unload()).add_done_callback(
             lambda x: sys.exit(0))
 
-    def list_conversations(self):
-        """List all active conversations"""
-        convs = []
-        check_ids = []
-        missing = []
-
-        try:
-            for conv_id in self.conversations.catalog:
-                convs.append(HangupsConversation(self, conv_id))
-                check_ids.append(conv_id)
-
-            hangups_conv_list = self._conv_list.get_all()
-
-            # XXX: run consistency check on reportedly missing conversations from catalog
-            for conv in hangups_conv_list:
-                if conv.id_ not in check_ids:
-                    missing.append(conv.id_)
-
-            logger.info("list_conversations: "
-                        "%s from permamem, %s from hangups - discrepancies: %s",
-                        len(convs), len(hangups_conv_list),
-                        ", ".join(missing) or "none")
-
-        except:
-            logger.exception("LIST_CONVERSATIONS: failed")
-            raise
-
-        return convs
-
     def get_hangups_user(self, user_id):
         """get a user from the user list
 
