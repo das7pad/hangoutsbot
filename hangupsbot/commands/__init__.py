@@ -9,8 +9,6 @@ import time
 
 import hangups
 
-import plugins
-
 logger = logging.getLogger(__name__)
 
 class Help(Exception):
@@ -493,7 +491,7 @@ class CommandDispatcher(object):
 
             else:
                 # just register and return the same function
-                plugins.tracking.register_command("admin" if admin else "user",
+                self.tracking.register_command("admin" if admin else "user",
                                                   [func_name],
                                                   tags=tags)
 
@@ -519,7 +517,7 @@ class CommandDispatcher(object):
     def register_argument_preprocessor_group(self, name, preprocessors):
         name_lower = name.lower()
         self.preprocessors[name_lower] = preprocessors
-        plugins.tracking.register_command_argument_preprocessors_group(
+        self.tracking.register_command_argument_preprocessors_group(
             name_lower)
 
 # CommandDispatcher singleton

@@ -2,6 +2,8 @@ import asyncio
 
 import plugins
 
+_VERIFY_TEXT = _('<i>User must say "hi" to me first via a 1-on-1 hangout, open '
+                 '{url} and send me <b>{bot_cmd} verifyme</b>.</i>')
 
 def _initialise(bot):
     plugins.register_admin_command(["files", "test_one2one_message"])
@@ -40,7 +42,7 @@ async def verifyme(bot, event, *args):
     else:
         chat_id = " ".join(args)
 
-    one2one = await bot.get_1to1(chat_id)
+    one2one = await bot.get_1to1(chat_id, force=True)
     if one2one:
         if event.user_id.chat_id == chat_id:
             """send a private message only if the actual user requested it"""
@@ -63,7 +65,7 @@ async def test_one2one_message(bot, event, *args):
 
 async def _one2one_required(bot, target_conversation):
     myself = bot.user_self()
+    url = 'https://hangouts.google.com/chat/person/%s' % myself['chat_id']
     await bot.coro_send_message(target_conversation,
-        (_('<i>User must say "hi" to me first via a 1-on-1 hangout with <b>{}</b>.') +
-         _('Then let me know by sending <b>/bot verifyme</b> in this chat.</i>')).format(
-            myself["email"]))
+                                _VERIFY_TEXT.format(url=url,
+                                                    bot_cmd=bot.command_prefix))

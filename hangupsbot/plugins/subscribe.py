@@ -25,6 +25,13 @@ _global_keywords = {}
 MENTION_TEMPLATE = (
     '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
 
+IGNORED_COMMANDS = set((
+    'subscribe',
+    'unsubscribe',
+    'global_subscribe',
+    'global_unsubscribe',
+))
+
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
@@ -36,11 +43,26 @@ def _initialise(bot):
     plugins.register_user_command(["subscribe", "unsubscribe"])
     plugins.register_admin_command(["global_subscribe", "global_unsubscribe"])
     plugins.register_admin_command(["testsubscribe"])
+    bot.register_shared('hide_from_subscribe', _hide_from_subscribe)
     bot.config.set_defaults({"subscribe.enabled": True})
     bot.memory.set_defaults({"hosubscribe": {}})
     bot.memory.ensure_path(["user_data"])
     bot.memory.save()
     _populate_keywords(bot)
+
+def _hide_from_subscribe(item):
+    """register a command to be hidden from subscribes on execute
+
+    Args:
+        item: string or tuple or list, a single or multiple commands
+    """
+    if isinstance(item, str):
+        IGNORED_COMMANDS.add(item)
+    elif isinstance(item, (list, tuple)):
+        IGNORED_COMMANDS.update(item)
+    else:
+        logger.warning('%s is not a valid command container', repr(item),
+                       include_stack=True)
 
 def _populate_keywords(bot):
     """Pull the keywords from memory
@@ -54,8 +76,25 @@ def _populate_keywords(bot):
             _keywords[userchatid] = userkeywords
     _global_keywords.update(bot.memory['hosubscribe'])
 
+def _is_ignored_command(event):
+    """check whether the event runs a command that should not trigger a mention
+
+    Args:
+        event: sync.event.SyncEvent instance
+
+    Returns:
+        boolean
+    """
+    args = event.text.split()
+    if len(args) < 2:
+        return False
+    prefixes = event.bot._handlers.bot_command # pylint:disable=protected-access
+    return args[0] in prefixes and args[1] in IGNORED_COMMANDS
+
 def _handle_keyword(bot, event, dummy, include_event_user=False):
     """handle keyword"""
+    if _is_ignored_command(event):
+        return
 
     users_in_chat = event.user_list
     if not bot.get_config_suboption(event.conv_id, 'subscribe.enabled'):
@@ -87,6 +126,14 @@ def _handle_once(bot, event):
         bot: HangupsBot instance
         event: sync.event.SyncEvent instance
     """
+    # ignore marked HOs
+    if any(bot.get_config_suboption(conv_id, 'ignore_hosubscribe')
+           for conv_id in event.targets):
+        return
+
+    if _is_ignored_command(event):
+        return
+
     matches = {}
     event_text = event.text.lower()
     previous_targets = event.previous_targets.union(event.targets)
@@ -103,6 +150,9 @@ def _handle_once(bot, event):
             matches[conv_id] = keyword
 
     user = bot.sync.get_sync_user(user_id=bot.user_self()['chat_id'])
+    kwargs = dict(identifier='hangouts:%s' % event.conv_id, user=user, title='',
+                  notified_users=event.notified_users,
+                  previous_targets=previous_targets)
     for conv_id, keyword in matches.items():
         user_name = event.user.get_displayname(conv_id, text_only=True)
         title = event.title(conv_id)
@@ -110,10 +160,8 @@ def _handle_once(bot, event):
             title = ' in <i>%s</i> ' % title
         text = _('<b>{}</b> mentioned "{}"{}:\n{}').format(
             user_name, keyword, title, event.text)
-        asyncio.ensure_future(
-            bot.sync.message(identifier='hangouts:%s' % event.conv_id,
-                             conv_id=conv_id, user=user, text=text, title='',
-                             previous_targets=previous_targets))
+        asyncio.ensure_future(bot.sync.message(conv_id=conv_id, text=text,
+                                               **kwargs))
 
 async def _send_notification(bot, event, matches, user):
     """Alert a user that a keyword that they subscribed to has been used
@@ -330,5 +378,5 @@ def global_unsubscribe(bot, event, *args):
 
     bot.memory['hosubscribe'] = _global_keywords
     bot.memory.save()
-    return _('The conversation "%s" will not longer receive messages '
+    return _('The conversation "%s" will no longer receive messages '
              'containing "%s"') % (alias, keyword)

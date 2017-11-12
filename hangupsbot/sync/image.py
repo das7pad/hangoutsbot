@@ -46,6 +46,9 @@ TYPE_MAPPING = {
     'avi': 'video'
 }
 
+DEFAULT_SIZE = (0, 0)
+MOVIE_EXTENSIONS = ('mp4', 'avi', 'gif')
+
 PATH = '/tmp/image_sync_RAW'
 
 logger = logging.getLogger(__name__)
@@ -155,7 +158,7 @@ class SyncImage(object):
         self._filename = None
         self._size = (size if isinstance(size, tuple) and len(size) == 2
                       else (size, size) if isinstance(size, (int, float))
-                      else (0, 0))
+                      else DEFAULT_SIZE)
         self._movie = None
 
         self.update_from_filename(
@@ -221,7 +224,7 @@ class SyncImage(object):
 
         # also convert images that should not be movies to gif
         video_as_gif = (self._movie is not None
-                        and extension in ('mp4', 'avi', 'gif')
+                        and extension in MOVIE_EXTENSIONS
                         and (video_as_gif or self._type != 'video'))
 
         cache_key = (limit, video_as_gif)
@@ -231,7 +234,7 @@ class SyncImage(object):
 
         filename = self._filename
 
-        if extension in ('mp4', 'avi', 'gif') and self._meets_size_limit:
+        if extension in MOVIE_EXTENSIONS and self._meets_size_limit:
             filename_raw = filename.rsplit('.', 1)[0]
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -266,7 +269,7 @@ class SyncImage(object):
 
         extension = self._filename.lower().rsplit('.', 1)[-1]
 
-        if (self._movie is None and extension in ('mp4', 'avi', 'gif')
+        if (self._movie is None and extension in MOVIE_EXTENSIONS
                 and self._meets_size_limit):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -435,7 +438,10 @@ class SyncImage(object):
             return new_image_data
 
         extension = filename.rsplit('.', 1)[-1]
-        logger.debug((filename, extension))
+        if extension in MOVIE_EXTENSIONS and self._movie is None:
+            # MovieConverter missing
+            return data, filename
+
         formating = FORMAT_MAPPING.get(extension)
         if formating is None and caller is None:
             # convert to PNG
@@ -443,8 +449,8 @@ class SyncImage(object):
             return self._get_resized(limit=limit, data=data, filename=filename,
                                      video_as_gif=video_as_gif, caller='self')
 
-        if (limit < 1 or (self._size[0] < limit and self._size[1] < limit) or
-                (extension in ('avi', 'mp4', 'gif') and self._movie is None)):
+        if (limit < 1 or self._size != DEFAULT_SIZE
+                and (self._size[0] < limit and self._size[1] < limit)):
             # no valid new size limit or the image already meets the criteria
             return data, filename
 

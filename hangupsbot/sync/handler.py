@@ -499,6 +499,34 @@ class SyncHandler(handlers.EventHandler):
             self._cache_conv_user.add(conv_id, filtered_users)
         return filtered_users
 
+    async def find_user(self, term, conv_id=None):
+        """find a user in a single or all conversations
+
+        example:
+        >> loop.run_until_complate(sync_handler.find_user('NAME'))
+        {'hangouts': [<SyncUser ...>,]}
+
+        Args:
+            term (str): search term: name, platform, nickname, chat_id
+
+        Returns:
+            dict: keys are platforms, values are lists of `user.SyncUser`s
+        """
+        conv_ids = (tuple(self.bot.conversations.catalog) if conv_id is None
+                    else self.get_synced_conversations(conv_id=conv_id))
+        # performance: directly call the handlers, `get_users_in_conversations`
+        #   would try to extend the conv_ids first
+        raw_users = await asyncio.gather(
+            *(self._gen_handler_results('conv_user', conv_id_, False)
+              for conv_id_ in conv_ids))
+        users = collections.defaultdict(list)
+        for conv_users in raw_users:
+            for platform, platform_users in conv_users.items():
+                users[platform].extend(user for user in platform_users
+                                       if term in str(user))
+        return {platform: users_ for platform, users_ in users.items()
+                if users_}
+
     def register_handler(self, function, pluggable="message", priority=50):
         """register a handler for a single type
 

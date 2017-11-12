@@ -20,14 +20,14 @@ import hangups
 gettext.install("hangupsbot", localedir=os.path.join(os.path.dirname(__file__),
                                                      "locale"))
 
+from commands import command
 from exceptions import HangupsBotExceptions
+from hangups_conversation import HangupsConversation
 
 import config
 import handlers
 import permamem
 import plugins
-from commands import command    # import sequence is important here
-from hangups_conversation import HangupsConversation
 import tagging
 import sinks
 import utils
@@ -78,7 +78,7 @@ class HangupsBot(object):
         self._conv_list = None # hangups.ConversationList
         self._user_list = None # hangups.UserList
         self._handlers = None # handlers.py::EventHandler
-        self.tags = None # tagging.tags
+        self.tags = None # tagging.Tags
         self.conversations = None # permamem.ConversationMemory
         self.sync = None # sync.handler.SyncHandler
 
@@ -574,7 +574,7 @@ class HangupsBot(object):
         logger.debug("connected")
 
         self.shared = {}
-        self.tags = tagging.tags(self)
+        self.tags = tagging.Tags(self)
         self._handlers = handlers.EventHandler(self)
         handlers.handler.set_bot(self) # shim for handler decorator
 
@@ -797,7 +797,7 @@ class HangupsBot(object):
 
     def __del__(self):
         """help the gc with cleanup"""
-        for attr in dir(self):
+        for attr in self.__dict__:
             setattr(self, attr, None)
 
 

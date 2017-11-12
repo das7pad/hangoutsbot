@@ -37,18 +37,17 @@ class Config(collections.MutableMapping):
 
     @property
     def _changed(self):
-        """return weather the config changed since the last dump
+        """return whether the config changed since the last dump
 
         Returns:
             boolean, True if config matches with the last dump, otherwise False
         """
         try:
             current_state = json.dumps(self.config, indent=2, sort_keys=True)
-            return current_state != self._last_dump
-
         except TypeError:
             # currupt config
             return True
+        return current_state != self._last_dump
 
     def _make_failsafe_backup(self):
         """remove old backup files above the limit and create a new backup
@@ -97,15 +96,16 @@ class Config(collections.MutableMapping):
                 with open(recovery_filename, 'r') as file:
                     data = file.read()
                 self._loads(data)
-                self.save(delay=False)
-                self.logger.info("recovered %s successful from %s",
-                                 self.filename, recovery_filename)
                 return True
             except IOError:
                 self.logger.warning('Failed to remove %s, check permissions',
                                     recovery_filename)
             except ValueError:
                 self.logger.error("corrupted recovery: %s", self.filename)
+            else:
+                self.save(delay=False)
+                self.logger.info("recovered %s successful from %s",
+                                 self.filename, recovery_filename)
         return False
 
     def load(self):
@@ -121,20 +121,19 @@ class Config(collections.MutableMapping):
             with open(self.filename) as file:
                 data = file.read()
             self._loads(data)
-            self._last_dump = data
-            self.logger.info("%s read", self.filename)
-
         except IOError:
             if not os.path.isfile(self.filename):
                 self.config = {}
                 self.save(delay=False)
                 return
             raise
-
         except ValueError:
             if self.failsafe_backups and self._recover_from_failsafe():
                 return
             raise
+        else:
+            self._last_dump = data
+            self.logger.info("%s read", self.filename)
 
     def _loads(self, json_str):
         """Load config from JSON string
@@ -206,11 +205,11 @@ class Config(collections.MutableMapping):
         except (KeyError, ValueError):
             if not fallback:
                 raise
-            try:
-                return self._get_by_path(self.defaults, keys_list)
-            except (KeyError, ValueError):
-                raise KeyError('%s has no path %s and there is no default set' %
-                               (self.logger.name, keys_list))
+        try:
+            return self._get_by_path(self.defaults, keys_list)
+        except (KeyError, ValueError):
+            raise KeyError('%s has no path %s and there is no default set' %
+                           (self.logger.name, keys_list))
 
     def set_by_path(self, keys_list, value, create_path=True):
         """set an item in .config by path
@@ -304,9 +303,10 @@ class Config(collections.MutableMapping):
         """
         try:
             self.get_by_path(keys_list, fallback)
-            return True
         except (KeyError, TypeError):
             return False
+        else:
+            return True
 
     def ensure_path(self, path, base=None):
         """create a path of dicts if the given path does not exist
@@ -324,16 +324,24 @@ class Config(collections.MutableMapping):
         """
         if base is None:
             base = self.config
-        created = not self.exists(path)
+        try:
+            self._get_by_path(base, path)
+        except (KeyError, TypeError):
+            # the path does not exist
+            pass
+        else:
+            # the path exists, no need to create it again
+            return False
+
         last_key = None
-        for level in path:
-            try:
+        try:
+            for level in path:
                 base = base.setdefault(level, {})
                 last_key = level
-            except AttributeError:
-                raise AttributeError('%s has no dict at "%s" in the path %s' %
-                                     (self.logger.name, last_key, path))
-        return created
+        except AttributeError:
+            raise AttributeError('%s has no dict at "%s" in the path %s' %
+                                 (self.logger.name, last_key, path)) from None
+        return True
 
     def set_defaults(self, source, path=None):
         """ensure that the dict, path points to, has the structure of the source
