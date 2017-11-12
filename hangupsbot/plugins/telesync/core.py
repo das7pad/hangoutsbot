@@ -566,26 +566,31 @@ class TelegramBot(telepot.aio.Bot):
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
 
-                if mode != '' and msg.chat_type == 'supergroup':
-                    try:
-                        failed = await restrict_users(self, msg.chat_id, mode,
-                                                      (changed_member.usr_id,),
-                                                      silent=True)
-                        if failed:
-                            if mod_chat != '':
-                                self.send_html(
-                                    mod_chat, "<b>WARNING</b>: Rights for {} ({}) in TG <i>{}</i> could <b>not</b> be restricted, please check manually!".format(
-                                        changed_member.full_name,
-                                        changed_member.usr_id, chatname))
+        if type_ == 1 and mode != '' and msg.chat_type == 'supergroup':
+            try:
+                failed = await restrict_users(
+                    self, msg.chat_id, mode,
+                    (user.usr_id for user in changed_members),
+                    silent=True)
+                if failed:
+                    failed_names = ', '.join(
+                        '%s (%s)' % (user.full_name, user.usr_id)
+                        for user in changed_members)
+                    if mod_chat != '':
+                        self.send_html(
+                            mod_chat,
+                            "<b>WARNING</b>: Rights for {} in TG <i>{}</i> could <b>not</b> be restricted, please check manually!".format(
+                                failed_names,
+                                chatname))
 
-                            logger.warning('restricting rights for user %s in %s failed',
-                                           changed_member.usr_id, msg.chat_id)
-                    except ValueError as e:
-                        logger.error(e)
-                        if mod_chat != '':
-                            self.send_html(
-                                mod_chat, "<b>ERROR</b>: {} in <i>{}</i> ({})".format(
-                                    e, chatname, msg.chat_id))
+                    logger.warning('restricting rights for user %s in %s failed',
+                                   failed_names, msg.chat_id)
+            except ValueError as e:
+                logger.error(e)
+                if mod_chat != '':
+                    self.send_html(
+                        mod_chat, "<b>ERROR</b>: {} in <i>{}</i> ({})".format(
+                            e, chatname, msg.chat_id))
 
         bot.memory.save()
 
