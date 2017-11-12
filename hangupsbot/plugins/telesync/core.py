@@ -40,6 +40,7 @@ from .commands_tg import (
     command_chattitle,
     command_sync_config,
     command_restrict_user,
+    RESTRICT_OPTIONS,
 )
 
 from .commands_tg import restrict_users
@@ -585,12 +586,15 @@ class TelegramBot(telepot.aio.Bot):
 
                     logger.warning('restricting rights for user %s in %s failed',
                                    failed_names, msg.chat_id)
-            except ValueError as e:
-                logger.error(e)
+            except ValueError:
+                message = _(
+                    'Check the config value `restrict_users` for the chat '
+                    '{name} ({chat_id}), expected one of {valid_values}'
+                    ).format(name=chatname, chat_id=msg.chat_id,
+                             valid_values=', '.join(RESTRICT_OPTIONS))
+                logger.warning(message)
                 if mod_chat != '':
-                    self.send_html(
-                        mod_chat, "<b>ERROR</b>: {} in <i>{}</i> ({})".format(
-                            e, chatname, msg.chat_id))
+                    self.send_html(mod_chat, '<b>ERROR</b>: %s' % message)
 
         bot.memory.save()
 
