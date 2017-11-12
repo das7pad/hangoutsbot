@@ -128,7 +128,10 @@ def setup_config(bot):
 
             # id of a chat used to alert mods about important events
             'mod_chat': '',
-        }
+        },
+        # new chat users are unrestricted by default, possible values are:
+        # messages, media, sticker, websites, sticker+websites
+        'restrict_users': ''
     }
     bot.config.set_defaults(default_config)
 
