@@ -536,7 +536,7 @@ class TelegramBot(telepot.aio.Bot):
             return
         ho_conv_ids = bot.memory.get_by_path(['telesync', 'tg2ho', msg.chat_id])
         mod_chat = self.config('mod_chat')
-        chatname = bot.memory['telesync']['chat_data'][msg.chat_id]['name']
+        chatname = msg.get_group_name()
         # check for chat restrictions and apply later if necessary
         mode = bot.get_config_suboption('telesync:' + msg.chat_id,
                                         'restrict_users')
@@ -566,7 +566,7 @@ class TelegramBot(telepot.aio.Bot):
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
 
-                if mode != '' and msg['chat']['type'] == 'supergroup':
+                if mode != '' and msg.chat_type == 'supergroup':
                     try:
                         failed = await restrict_users(self, msg.chat_id, mode,
                                                       (changed_member.usr_id,),
