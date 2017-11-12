@@ -19,7 +19,6 @@ import plugins
 
 from sync.parser import get_formatted
 from sync.sending_queue import AsyncQueue, AsyncQueueCache
-from sync.utils import get_sync_config_entry
 
 from .commands_tg import (
     command_whoami,
@@ -40,14 +39,6 @@ from .commands_tg import (
     command_chattitle,
     command_sync_config,
     command_restrict_user,
-)
-
-from .commands_tg import (
-    NO_SENDING_RIGHTS,
-    NO_MEDIA_RIGHTS,
-    NO_STICKER_RIGHTS,
-    NO_WEBPREVIEW_RIGHTS,
-    NO_WEBPREVIEW_AND_STICKER_RIGHTS,
 )
 
 from .message import Message
@@ -565,34 +556,6 @@ class TelegramBot(telepot.aio.Bot):
             else:
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
-
-                # check for chat restrictions and apply if necessary
-                restrict = get_sync_config_entry(bot,
-                                                 'telesync:' + msg.chat_id,
-                                                 'restrict_user')
-                rights = (NO_SENDING_RIGHTS if restrict == 'messages' else
-                          NO_MEDIA_RIGHTS if restrict == 'media' else
-                          NO_STICKER_RIGHTS if restrict == 'sticker' else
-                          NO_WEBPREVIEW_RIGHTS if restrict == 'websites' else
-                          NO_WEBPREVIEW_AND_STICKER_RIGHTS if restrict == 'sticker+websites'
-                          else None)
-                if rights and msg['chat']['type'] == 'supergroup':
-                    result = await self.restrictChatMember(msg.chat_id,
-                                                           changed_member.usr_id,
-                                                           **rights)
-
-                    if result is not True:
-                        mod_chat = self.config('mod_chat') if 'mod_chat' in self.config() else None
-                        chatname = self.bot.memory['telesync']['chat_data'][msg.chat_id]['name']
-
-                        if mod_chat:
-                            self.send_html(
-                                mod_chat, "<b>WARNING</b>: Rights for {} ({}) in TG {} could <b>not</b> be restricted, please check manually!".format(
-                                    changed_member.full_name,
-                                    changed_member.usr_id, chatname))
-
-                        logger.warning('restricting rights for user %s in %s failed',
-                                       changed_member.usr_id, msg.chat_id)
 
         bot.memory.save()
 
