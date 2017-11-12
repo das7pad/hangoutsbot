@@ -567,8 +567,8 @@ class TelegramBot(telepot.aio.Bot):
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
 
-        if type_ == 1 and mode != '' and msg.chat_type == 'supergroup':
-            try:
+        if type_ == 1 and msg.chat_type == 'supergroup':
+            if mode in RESTRICT_OPTIONS:
                 failed = await restrict_users(
                     self, msg.chat_id, mode,
                     (user.usr_id for user in changed_members),
@@ -577,7 +577,7 @@ class TelegramBot(telepot.aio.Bot):
                     failed_names = ', '.join(
                         '%s (%s)' % (user.full_name, user.usr_id)
                         for user in changed_members)
-                    if mod_chat != '':
+                    if mod_chat:
                         self.send_html(
                             mod_chat,
                             "<b>WARNING</b>: Rights for {} in TG <i>{}</i> could <b>not</b> be restricted, please check manually!".format(
@@ -586,14 +586,14 @@ class TelegramBot(telepot.aio.Bot):
 
                     logger.warning('restricting rights for user %s in %s failed',
                                    failed_names, msg.chat_id)
-            except ValueError:
+            elif mode:
                 message = _(
                     'Check the config value `restrict_users` for the chat '
                     '{name} ({chat_id}), expected one of {valid_values}'
                     ).format(name=chatname, chat_id=msg.chat_id,
                              valid_values=', '.join(RESTRICT_OPTIONS))
                 logger.warning(message)
-                if mod_chat != '':
+                if mod_chat:
                     self.send_html(mod_chat, '<b>ERROR</b>: %s' % message)
 
         bot.memory.save()
