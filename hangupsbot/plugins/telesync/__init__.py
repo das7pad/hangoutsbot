@@ -126,6 +126,8 @@ def setup_config(bot):
             'start_message': _('Hello {name}! You are talking to @{botusername}'
                                ', known as {botname}.'),
 
+            # id of a chat used to alert mods about important events
+            'mod_chat': '',
         }
     }
     bot.config.set_defaults(default_config)
