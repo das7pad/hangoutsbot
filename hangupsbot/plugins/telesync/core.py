@@ -40,10 +40,9 @@ from .commands_tg import (
     command_chattitle,
     command_sync_config,
     command_restrict_user,
+    restrict_users,
     RESTRICT_OPTIONS,
 )
-
-from .commands_tg import restrict_users
 
 from .message import Message
 from .parsers import TelegramMessageSegment
