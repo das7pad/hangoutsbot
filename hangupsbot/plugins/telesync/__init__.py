@@ -126,7 +126,12 @@ def setup_config(bot):
             'start_message': _('Hello {name}! You are talking to @{botusername}'
                                ', known as {botname}.'),
 
-        }
+            # id of a chat used to alert mods about important events
+            'mod_chat': '',
+        },
+        # new chat users are unrestricted by default, possible values are:
+        # messages, media, sticker, websites, sticker+websites
+        'restrict_users': ''
     }
     bot.config.set_defaults(default_config)
 

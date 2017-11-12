@@ -42,6 +42,8 @@ from .commands_tg import (
     command_restrict_user,
 )
 
+from .commands_tg import restrict_users
+
 from .message import Message
 from .parsers import TelegramMessageSegment
 from .user import User
@@ -475,7 +477,7 @@ class TelegramBot(telepot.aio.Bot):
 
         if msg.content_type in ('new_chat_member', 'new_chat_members',
                                 'left_chat_member'):
-            self._on_membership_change(msg)
+            await self._on_membership_change(msg)
 
         else:
             await self._forward_content(msg)
@@ -522,7 +524,7 @@ class TelegramBot(telepot.aio.Bot):
                 reply=await msg.get_reply(), image=image,
                 title=msg.get_group_name(), edited=msg.edited))
 
-    def _on_membership_change(self, msg):
+    async def _on_membership_change(self, msg):
         """forward a membership change
 
         Args:
@@ -533,6 +535,11 @@ class TelegramBot(telepot.aio.Bot):
             # no sync target set for this chat
             return
         ho_conv_ids = bot.memory.get_by_path(['telesync', 'tg2ho', msg.chat_id])
+        mod_chat = self.config('mod_chat')
+        chatname = bot.memory['telesync']['chat_data'][msg.chat_id]['name']
+        # check for chat restrictions and apply later if necessary
+        mode = bot.get_config_suboption('telesync:' + msg.chat_id,
+                                        'restrict_users')
 
         if 'new_chat_members' in msg:
             raw_users = msg['new_chat_members']
@@ -558,6 +565,27 @@ class TelegramBot(telepot.aio.Bot):
             else:
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
+
+                if mode != '' and msg['chat']['type'] == 'supergroup':
+                    try:
+                        failed = await restrict_users(self, msg.chat_id, mode,
+                                                      (changed_member.usr_id,),
+                                                      silent=True)
+                        if failed:
+                            if mod_chat != '':
+                                self.send_html(
+                                    mod_chat, "<b>WARNING</b>: Rights for {} ({}) in TG <i>{}</i> could <b>not</b> be restricted, please check manually!".format(
+                                        changed_member.full_name,
+                                        changed_member.usr_id, chatname))
+
+                            logger.warning('restricting rights for user %s in %s failed',
+                                           changed_member.usr_id, msg.chat_id)
+                    except ValueError as e:
+                        logger.error(e)
+                        if mod_chat != '':
+                            self.send_html(
+                                mod_chat, "<b>ERROR</b>: {} in <i>{}</i> ({})".format(
+                                    e, chatname, msg.chat_id))
 
         bot.memory.save()
 
