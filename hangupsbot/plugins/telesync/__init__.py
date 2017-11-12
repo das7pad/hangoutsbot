@@ -127,11 +127,11 @@ def setup_config(bot):
                                ', known as {botname}.'),
 
             # id of a chat used to alert mods about important events
-            'mod_chat': '',
+            'mod_chat': None,
         },
         # new chat users are unrestricted by default, possible values are:
         # messages, media, sticker, websites, sticker+websites
-        'restrict_users': ''
+        'restrict_users': False,
     }
     bot.config.set_defaults(default_config)
 
