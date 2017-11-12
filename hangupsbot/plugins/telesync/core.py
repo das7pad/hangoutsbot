@@ -64,6 +64,10 @@ IGNORED_MESSAGE_TYPES = (
     'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
 )
 
+_RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
+                           '<i>{chatname}</i> could <b>not</b> be restricted, '
+                           'please check manually!')
+
 class TelegramBot(telepot.aio.Bot):
     """enhanced telepot bot with Hangouts sync
 
@@ -580,9 +584,8 @@ class TelegramBot(telepot.aio.Bot):
                     if mod_chat:
                         self.send_html(
                             mod_chat,
-                            "<b>WARNING</b>: Rights for {} in TG <i>{}</i> could <b>not</b> be restricted, please check manually!".format(
-                                failed_names,
-                                chatname))
+                            _RESTRICT_USERS_FAILED.format(names=failed_names,
+                                                          chatname=chatname))
 
                     logger.warning('restricting rights for user %s in %s failed',
                                    failed_names, msg.chat_id)
