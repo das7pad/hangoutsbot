@@ -320,7 +320,7 @@ class SyncImage(object):
                     self._data = io.BytesIO(await resp.read())
 
             return True
-        except (aiohttp.ClientError, AttributeError):
+        except (aiohttp.ClientError, AttributeError, TypeError):
             logger.exception('can not fetch image_data from %s', url)
             return False
 
