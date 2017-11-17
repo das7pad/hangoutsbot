@@ -311,6 +311,17 @@ class HangupsBot(object):
         asyncio.ensure_future(self._unload()).add_done_callback(
             lambda x: sys.exit(0))
 
+    def get_conversation(self, conv_id):
+        """get a HangupsConversation for a given conversation identifier
+
+        Args:
+            conv_id (str): conversation identifier
+
+        Returns:
+            HangupsConversation: a cached conv or permamem fallback
+        """
+        return self._conv_list.get(conv_id)
+
     def get_hangups_user(self, user_id):
         """get a user from the user list
 
@@ -453,7 +464,7 @@ class HangupsBot(object):
         if memory_1on1 is not None:
             logger.debug("get_1on1: remembered %s for %s",
                          memory_1on1, chat_id)
-            return HangupsConversation(self, memory_1on1)
+            return self.get_conversation(memory_1on1)
 
         # create a new 1-to-1 conversation with the designated chat id and send
         # an introduction message as the invitation text
@@ -492,7 +503,7 @@ class HangupsBot(object):
                 bot_cmd=self.command_prefix)
             await self.coro_send_message(new_conv_id, introduction)
 
-        return HangupsConversation(self, new_conv_id)
+        return conv
 
     def initialise_memory(self, key, datatype):
         """initialise the dict for a given key in the datatype in .memory
@@ -619,7 +630,7 @@ class HangupsBot(object):
             logger.debug("message sending: %s", response[0])
 
             # use a fake Hangups Conversation having a fallback to permamem
-            conv = HangupsConversation(self, response[0])
+            conv = self.get_conversation(response[0])
 
             await conv.send_message(response[1],
                                     image_id=response[2],

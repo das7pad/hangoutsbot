@@ -9,7 +9,6 @@ import logging
 
 from hangups import TYPING_TYPE_STARTED, TYPING_TYPE_PAUSED, ChatMessageEvent
 
-from hangupsbot.hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class GenericEvent:
     def __init__(self, conv_event, conv_id):
         self.conv_event = conv_event
         self.conv_id = conv_id
-        self.conv = HangupsConversation(self.bot, self.conv_id)
+        self.conv = self.bot.get_conversation(self.conv_id)
         self.event_id = None
         self.user_id = conv_event.user_id
         self.user = self.bot.get_hangups_user(self.user_id)

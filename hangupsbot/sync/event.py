@@ -8,8 +8,6 @@ import logging
 
 import hangups
 
-from hangupsbot import hangups_conversation
-
 from .exceptions import MissingArgument
 from .image import SyncImage
 from .parser import MessageSegment, get_formatted
@@ -76,7 +74,7 @@ class FakeEvent(object):
         self.event_id = 'fake_event{}'.format(self.timestamp)
 
         self.conv_id = conv_id
-        self.conv = hangups_conversation.HangupsConversation(self.bot, conv_id)
+        self.conv = self.bot.get_conversation(conv_id)
 
         if isinstance(user, str):
             self.user = self.bot.get_hangups_user(user)

@@ -7,7 +7,6 @@ import re
 
 import hangups
 
-from hangupsbot.hangups_conversation import HangupsConversation
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +53,7 @@ def load_missing_entrys(bot):
         loaded_users[user_id] = user
 
     for conv_id in bot.conversations:
-        conv = HangupsConversation(bot, conv_id)
-        bot._conv_list._conv_dict[conv_id] = conv
+        bot.get_conversation(conv_id)
 
 async def initialise(bot):
     """load cache from memory and update it with new data from hangups
