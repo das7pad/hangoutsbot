@@ -119,6 +119,19 @@ class HangupsConversation(hangups.conversation.Conversation):
         """
         return self.bot.conversations.get_name(self)
 
+    def add_event(self, event_):
+        """process an event for the conversation
+
+        drops the memory leak in hangups from storing all events permanent
+
+        Args:
+            event_ (hangups.hangouts_pb2.Event): message, membership, etc.
+
+        Returns:
+            hangups.ConversationEvent: the derived conv_event
+        """
+        return self._wrap_event(event_)
+
     async def send_message(self, message, image_id=None, context=None):
         """send a message to Hangouts
 
