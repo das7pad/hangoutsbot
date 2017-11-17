@@ -14,25 +14,16 @@ class HangupsConversation(hangups.conversation.Conversation):
     """Conversation with fallback to permamem
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, Hangouts conversation identifier
+        see `hangups.conversation.Conversation`
     """
-    __slots__ = ('bot', '_client', '_user_list', '_conv_list')
+    bot = None
 
-    def __init__(self, bot, conv_id):
-        # pylint: disable=protected-access
-
-        self.bot = bot
-        self._client = bot._client
-        self._user_list = bot._user_list
-        self._conv_list = bot._conv_list
-        # retrieve the conversation record from hangups, if available
-        try:
-            conversation = self._conv_list.get(conv_id)._conversation
-            super().__init__(self._client, self._user_list, conversation, [])
-            return
-        except KeyError:
-            logger.debug("%s not found in conv list", conv_id)
+    @classmethod
+    def from_permamem(cls, bot, conv_id):
+        # pylint:disable=protected-access
+        client = bot._client
+        user_list = bot._user_list
+        # pylint:enable=protected-access
 
         # retrieve the conversation record from permamem
         try:
@@ -92,7 +83,7 @@ class HangupsConversation(hangups.conversation.Conversation):
             read_state=read_state,
 
             self_conversation_state=hangouts_pb2.UserConversationState(
-                client_generated_id=str(self._client.get_client_generated_id()),
+                client_generated_id=str(client.get_client_generated_id()),
                 self_read_state=hangouts_pb2.UserReadState(
                     latest_read_timestamp=now,
                     participant_id=hangouts_pb2.ParticipantId(
@@ -117,7 +108,7 @@ class HangupsConversation(hangups.conversation.Conversation):
                 if permamem_conv['link_sharing'] else
                 hangouts_pb2.GROUP_LINK_SHARING_STATUS_OFF))
 
-        super().__init__(self._client, self._user_list, conversation, [])
+        return cls(client, user_list, conversation, [])
 
     @property
     def name(self):

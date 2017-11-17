@@ -117,6 +117,8 @@ class HangupsBot(object):
         except NotImplementedError:
             pass
 
+        HangupsConversation.bot = self
+
     @property
     def command_prefix(self):
         """get a prefix for bot commands issued via chat
