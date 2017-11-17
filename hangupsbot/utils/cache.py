@@ -75,12 +75,8 @@ class Cache(dict):
 
         # loading and dumping depends on a configured intervall and dump path
         if self._dump_config is not None:
-            path = self._dump_config[1]
-            self.bot.memory.ensure_path(path)
-
-            # restore old entrys
-            for identifier, value in self.bot.memory.get_by_path(path).items():
-                self.add(identifier, *value)
+            self._load_entrys()
+            self.bot.memory.on_reload.add_observer(self._load_entrys)
 
             plugins.start_asyncio_task(self._periodic_dump)
 
@@ -161,6 +157,14 @@ class Cache(dict):
         except asyncio.CancelledError:
             return
 
+    def _load_entrys(self):
+        """load cache entrys from memory"""
+        path = self._dump_config[1]
+        self.bot.memory.ensure_path(path)
+
+        for identifier, value in self.bot.memory.get_by_path(path).items():
+            self.add(identifier, *value)
+
     async def _periodic_dump(self, dummy=None):
         """load the last cache state from memory and schedule dumping to memory
 
@@ -203,6 +207,10 @@ class Cache(dict):
         except asyncio.CancelledError:
             logger.info('flushing [%s]', self._name)
             _dump(path, only_on_new_itmes=False)
+
+    def __del__(self):
+        """explicit cleanup"""
+        self.bot.memory.on_reload.remove_observer(self._load_entrys)
 
     def __missing__(self, identifier):
         """may be overwritten"""
