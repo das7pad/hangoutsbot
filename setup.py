@@ -1,7 +1,5 @@
 """pip setup for the hangupsbot"""
 
-# TODO(das7pad): copy localisation
-
 import glob
 import json
 import os
