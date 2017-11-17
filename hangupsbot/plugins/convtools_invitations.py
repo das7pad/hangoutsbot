@@ -9,7 +9,7 @@ import hangups
 
 from hangupsbot import plugins
 from hangupsbot.commands import command, Help
-from hangupsbot.hangups_conversation import HangupsConversation
+
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ async def _claim_invite(bot, invite_code, user_id):
         conv_id = invitation["group_id"]
         logger.debug("_claim_invite: adding %s to %s",
                      user_id, conv_id)
-        conv = HangupsConversation(bot, conv_id)
+        conv = bot.get_conversation(conv_id)
         try:
             await conv.add_users(
                 hangups.user.UserID(chat_id=user_id, gaia_id=user_id))

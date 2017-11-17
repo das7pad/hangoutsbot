@@ -18,7 +18,10 @@ from hangupsbot import tagging
 from hangupsbot import sinks
 from hangupsbot.commands import command
 from hangupsbot.exceptions import HangupsBotExceptions
-from hangupsbot.hangups_conversation import HangupsConversation
+from hangupsbot.hangups_conversation import (
+    HangupsConversation,
+    HangupsConversationList,
+)
 from hangupsbot.sync.handler import SyncHandler
 from hangupsbot.sync.sending_queue import AsyncQueue
 
@@ -116,6 +119,8 @@ class HangupsBot(object):
                 # lambda necessary here as we overwrite the method .stop
         except NotImplementedError:
             pass
+
+        HangupsConversation.bot = self
 
     @property
     def command_prefix(self):
@@ -306,6 +311,17 @@ class HangupsBot(object):
         asyncio.ensure_future(self._unload()).add_done_callback(
             lambda x: sys.exit(0))
 
+    def get_conversation(self, conv_id):
+        """get a HangupsConversation for a given conversation identifier
+
+        Args:
+            conv_id (str): conversation identifier
+
+        Returns:
+            HangupsConversation: a cached conv or permamem fallback
+        """
+        return self._conv_list.get(conv_id)
+
     def get_hangups_user(self, user_id):
         """get a user from the user list
 
@@ -448,7 +464,7 @@ class HangupsBot(object):
         if memory_1on1 is not None:
             logger.debug("get_1on1: remembered %s for %s",
                          memory_1on1, chat_id)
-            return HangupsConversation(self, memory_1on1)
+            return self.get_conversation(memory_1on1)
 
         # create a new 1-to-1 conversation with the designated chat id and send
         # an introduction message as the invitation text
@@ -471,16 +487,13 @@ class HangupsBot(object):
 
         # remember the conversation so we do not have to do this again
         self.user_memory_set(chat_id, "1on1", new_conv_id)
-        try:
-            self._conv_list.get(new_conv_id)
+        if new_conv_id in self._conv_dict:
+            conv = self._conv_list.get(new_conv_id)
             # do not send the introduction as hangups already knows the conv
 
-        except KeyError:
-            conv = hangups.conversation.Conversation(
+        else:
+            conv = HangupsConversation(
                 self._client, self._user_list, response.conversation)
-
-            # add to hangups cache
-            self._conv_list._conv_dict[new_conv_id] = conv #pylint:disable=W0212
 
             # create the permamem entry for the conversation
             await self.conversations.update(conv, source="1to1creation")
@@ -490,7 +503,7 @@ class HangupsBot(object):
                 bot_cmd=self.command_prefix)
             await self.coro_send_message(new_conv_id, introduction)
 
-        return HangupsConversation(self, new_conv_id)
+        return conv
 
     def initialise_memory(self, key, datatype):
         """initialise the dict for a given key in the datatype in .memory
@@ -546,7 +559,8 @@ class HangupsBot(object):
         #  e.g. adding new functionality into hangups library
 
         self._user_list, self._conv_list = (
-            await hangups.build_user_conversation_list(self._client))
+            await hangups.build_user_conversation_list(
+                self._client, conv_list_cls=HangupsConversationList))
 
         self._conv_list.on_event.add_observer(_retry_reset)
 
@@ -616,7 +630,7 @@ class HangupsBot(object):
             logger.debug("message sending: %s", response[0])
 
             # use a fake Hangups Conversation having a fallback to permamem
-            conv = HangupsConversation(self, response[0])
+            conv = self.get_conversation(response[0])
 
             await conv.send_message(response[1],
                                     image_id=response[2],
