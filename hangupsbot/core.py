@@ -18,7 +18,10 @@ from hangupsbot import tagging
 from hangupsbot import sinks
 from hangupsbot.commands import command
 from hangupsbot.exceptions import HangupsBotExceptions
-from hangupsbot.hangups_conversation import HangupsConversation
+from hangupsbot.hangups_conversation import (
+    HangupsConversation,
+    HangupsConversationList,
+)
 from hangupsbot.sync.handler import SyncHandler
 from hangupsbot.sync.sending_queue import AsyncQueue
 
@@ -548,7 +551,8 @@ class HangupsBot(object):
         #  e.g. adding new functionality into hangups library
 
         self._user_list, self._conv_list = (
-            await hangups.build_user_conversation_list(self._client))
+            await hangups.build_user_conversation_list(
+                self._client, conv_list_cls=HangupsConversationList))
 
         self._conv_list.on_event.add_observer(_retry_reset)
 

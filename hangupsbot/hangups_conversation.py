@@ -201,3 +201,7 @@ class HangupsConversation(hangups.conversation.Conversation):
         except hangups.NetworkError as err:
             logger.error('%s on sending to %s:\n%s\nimage=%s\n',
                          repr(err), self.id_, serialised_segments, image_id)
+
+
+class HangupsConversationList(hangups.conversation.ConversationList):
+    conv_cls = HangupsConversation
