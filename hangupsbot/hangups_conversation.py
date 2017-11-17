@@ -205,3 +205,22 @@ class HangupsConversation(hangups.conversation.Conversation):
 
 class HangupsConversationList(hangups.conversation.ConversationList):
     conv_cls = HangupsConversation
+
+    def get(self, conv_id):
+        """Get a conversation gracefully by its identifier.
+
+        Args:
+            conv_id (str): conversation identifier of conversation to return.
+
+        Returns:
+            HangupsConversation: a cached conv or permamem fallback
+        """
+        if conv_id in self._conv_dict:
+            return self._conv_dict[conv_id]
+
+        conv = self.conv_cls.from_permamem(self, conv_id)
+        self._conv_dict[conv_id] = conv
+        return conv
+
+    def __iter__(self):
+        return iter(self._conv_dict)

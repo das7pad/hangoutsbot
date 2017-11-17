@@ -476,16 +476,13 @@ class HangupsBot(object):
 
         # remember the conversation so we do not have to do this again
         self.user_memory_set(chat_id, "1on1", new_conv_id)
-        try:
-            self._conv_list.get(new_conv_id)
+        if new_conv_id in self._conv_dict:
+            conv = self._conv_list.get(new_conv_id)
             # do not send the introduction as hangups already knows the conv
 
-        except KeyError:
-            conv = hangups.conversation.Conversation(
+        else:
+            conv = HangupsConversation(
                 self._client, self._user_list, response.conversation)
-
-            # add to hangups cache
-            self._conv_list._conv_dict[new_conv_id] = conv #pylint:disable=W0212
 
             # create the permamem entry for the conversation
             await self.conversations.update(conv, source="1to1creation")
