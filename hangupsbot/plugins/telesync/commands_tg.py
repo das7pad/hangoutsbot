@@ -381,6 +381,68 @@ async def command_sync_profile(tg_bot, msg, *dummys):
 
     await tg_bot.profilesync_info(user_id)
 
+async def command_set_sync_profile(tg_bot, msg, *args):
+    """init a profilesync for a different user
+
+    /setsyncprofile <tgID> <G+ID> [1on1split]
+
+    Args:
+        tg_bot (core.TelegramBot): the currently running instance
+        msg (message.Message): a text message event
+        args (tuple): a tuple of str, arguments that were passed to the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+
+    if not ensure_args(tg_bot, msg.chat_id, args, between=(2, 3)):
+        return
+
+    bot = tg_bot.bot
+    base_path = ['profilesync', 'telesync']
+    tg_id = args[0]
+    g_id = args[1]
+    # assume that G+ user ids [22digits] are longer than telegram user ids [<10]
+    if len(tg_id) > len(g_id):
+        tg_id, g_id = g_id, tg_id
+
+    split_1on1 = ('1on1split' in args
+                  or '1to1split' in args
+                  or '[1on1split]' in args)
+
+    if not (tg_id.isdigit() and g_id.isdigit()):
+        text = _('Check command arguments, expected two user ids:\n'
+                 '`/setsyncprofile <tgID> <G+ID> [1on1split]`')
+        tg_bot.send_html(msg.chat_id, text)
+        return
+
+    if bot.memory.exists(base_path + ['2ho', tg_id]):
+        text = _('The profile is already linked to a G+Profile')
+        tg_bot.send_html(msg.chat_id, text)
+        return
+
+    if not bot.memory.exists(base_path + ['pending_2ho', tg_id]):
+        bot.sync.start_profile_sync('telesync', tg_id)
+
+    token = bot.memory.get_by_path(base_path + ['pending_2ho', tg_id])
+    conv_1on1 = await bot.get_1to1(g_id, force=True)
+    user = bot.get_hangups_user(g_id)
+    event = FakeEvent(conv_id=conv_1on1.id_, user=user, text='')
+    cmd_args = 'syncprofile', token
+    if split_1on1:
+        cmd_args = cmd_args + ('split',)
+    await command.run(tg_bot.bot, event, *cmd_args)
+
+    if bot.memory.exists(['telesync', 'user_data', tg_id]):
+        tg_name = (await tg_bot.get_tg_user(tg_id)).full_name
+    else:
+        tg_name = 'unknown'
+
+    text = _('Synced the profile of G+ User <b>{gplus_name}</b> [{g_id}] to '
+             'Telegram User <b>{tg_name}</b> [{tg_id}].').format(
+                 tg_id=tg_id, tg_name=tg_name,
+                 g_id=g_id, gplus_name=user.full_name)
+    tg_bot.send_html(msg.chat_id, text)
+
 async def command_unsync_profile(tg_bot, msg, *dummys):
     """split tg and ho-profile
 
