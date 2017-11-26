@@ -2,6 +2,7 @@
 __author__ = 'das7pad@outlook.com'
 
 import asyncio
+import functools
 import time
 import logging
 from collections import namedtuple
@@ -55,7 +56,7 @@ class Cache(dict):
             path: list of strings, path in memory to the location to dump into
     """
     __slots__ = ('bot', '_name', '_default_timeout', '_increase_on_access',
-                 '_dump_config')
+                 '_dump_config', '_reload_listener')
     def __init__(self, default_timeout, name=None, increase_on_access=True,
                  dump_config=None):
         super().__init__()
@@ -63,6 +64,7 @@ class Cache(dict):
         self._default_timeout = default_timeout
         self._increase_on_access = increase_on_access
         self._dump_config = dump_config
+        self._reload_listener = None
         self.bot = plugins.tracking.bot
 
     ############################################################################
@@ -76,7 +78,8 @@ class Cache(dict):
         # loading and dumping depends on a configured intervall and dump path
         if self._dump_config is not None:
             self._load_entrys()
-            self.bot.memory.on_reload.add_observer(self._load_entrys)
+            self._reload_listener = functools.wraps(self._load_entrys)
+            self.bot.memory.on_reload.add_observer(self._reload_listener)
 
             plugins.start_asyncio_task(self._periodic_dump)
 
@@ -210,7 +213,8 @@ class Cache(dict):
 
     def __del__(self):
         """explicit cleanup"""
-        self.bot.memory.on_reload.remove_observer(self._load_entrys)
+        if self._reload_listener is not None:
+            self.bot.memory.on_reload.remove_observer(self._reload_listener)
 
     def __missing__(self, identifier):
         """may be overwritten"""
