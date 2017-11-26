@@ -765,9 +765,3 @@ class HangupsBot(object):
         if attr and attr[0] != "_" and hasattr(self._client, attr):
             return getattr(self._client, attr)
         raise NotImplementedError()
-
-
-    def __del__(self):
-        """help the gc with cleanup"""
-        for attr in self.__dict__:
-            setattr(self, attr, None)
