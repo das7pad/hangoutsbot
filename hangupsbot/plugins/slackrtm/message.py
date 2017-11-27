@@ -22,7 +22,8 @@ emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = (
     emoji.EMOJI_UNICODE[':smiling_face:'])
 
 TYPES_TO_SKIP = (
-    'file_created', 'file_shared', 'file_public', 'file_change',
+    'file_created', 'file_public', 'file_change',
+    'file_shared', 'file_unshared',
     'file_comment_added', 'file_comment_deleted', 'file_comment_edited',
     'message_deleted',
 )

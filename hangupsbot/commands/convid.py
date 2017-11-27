@@ -8,7 +8,6 @@ import hangups
 from hangupsbot import plugins
 
 from hangupsbot.commands import Help
-from hangupsbot.hangups_conversation import HangupsConversation
 
 
 logger = logging.getLogger(__name__)
@@ -85,7 +84,7 @@ async def convrename(bot, dummy, *args):
             return _('No conversation matched "%s"') % posix_args[0]
         # only act on the first matching conversation
         conv_id = list(convlist)[0]
-        conv = HangupsConversation(bot, conv_id)
+        conv = bot.get_conversation(conv_id)
         try:
             await conv.rename(title)
         except hangups.NetworkError:

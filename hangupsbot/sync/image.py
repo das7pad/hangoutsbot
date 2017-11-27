@@ -320,8 +320,8 @@ class SyncImage(object):
                     self._data = io.BytesIO(await resp.read())
 
             return True
-        except (aiohttp.ClientError, AttributeError):
-            logger.exception('can not fetch image_data from %s', url)
+        except (aiohttp.ClientError, AttributeError, TypeError) as err:
+            logger.error('can not fetch image data from %s: %s', url, repr(err))
             return False
 
     def _get_resized(self, *, limit, data, filename, video_as_gif, caller=None):

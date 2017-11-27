@@ -126,12 +126,18 @@ def setup_config(bot):
             'start_message': _('Hello {name}! You are talking to @{botusername}'
                                ', known as {botname}.'),
 
+            # id of a chat used to alert mods about important events
+            'mod_chat': None,
+
             # delay between location updates in seconds
             'location_sharing_update_delay': 30,
 
             # remove the edit-tag from live-locations
             'location_sharing_remove_edit_tag': True,
-        }
+        },
+        # new chat users are unrestricted by default, possible values are:
+        # messages, media, sticker, websites, sticker+websites
+        'restrict_users': False,
     }
     bot.config.set_defaults(default_config)
 

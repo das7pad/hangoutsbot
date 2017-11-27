@@ -1,5 +1,6 @@
 {
     "hangupsbot": [
-        "config.json"
+        "config.json",
+        "locale/*/LC_MESSAGES/hangupsbot.*"
     ]
 }
