@@ -11,6 +11,7 @@ from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
 from hangupsbot.commands import command
 from hangupsbot.sync import SYNC_CONFIG_KEYS
 from hangupsbot.sync.event import FakeEvent
+from hangupsbot.sync.exceptions import ProfilesyncAlreadyCompleted
 from hangupsbot.sync.utils import get_sync_config_entry
 from hangupsbot.sync.user import SyncUser
 
@@ -398,7 +399,6 @@ async def command_set_sync_profile(tg_bot, msg, *args):
         return
 
     bot = tg_bot.bot
-    base_path = ['profilesync', 'telesync']
     tg_id = args[0]
     g_id = args[1]
     # assume that G+ user ids [22digits] are longer than telegram user ids [<10]
@@ -415,32 +415,26 @@ async def command_set_sync_profile(tg_bot, msg, *args):
         tg_bot.send_html(msg.chat_id, text)
         return
 
-    if bot.memory.exists(base_path + ['2ho', tg_id]):
+    try:
+        await bot.sync.complete_profile_sync(
+            platform='telesync', chat_id=g_id, remote_user=tg_id,
+            split_1on1s=split_1on1)
+    except ProfilesyncAlreadyCompleted:
         text = _('The profile is already linked to a G+Profile')
         tg_bot.send_html(msg.chat_id, text)
         return
-
-    if not bot.memory.exists(base_path + ['pending_2ho', tg_id]):
-        bot.sync.start_profile_sync('telesync', tg_id)
-
-    token = bot.memory.get_by_path(base_path + ['pending_2ho', tg_id])
-    conv_1on1 = await bot.get_1to1(g_id, force=True)
-    user = bot.get_hangups_user(g_id)
-    event = FakeEvent(conv_id=conv_1on1.id_, user=user, text='')
-    cmd_args = 'syncprofile', token
-    if split_1on1:
-        cmd_args = cmd_args + ('split',)
-    await command.run(tg_bot.bot, event, *cmd_args)
 
     if bot.memory.exists(['telesync', 'user_data', tg_id]):
         tg_name = (await tg_bot.get_tg_user(tg_id)).full_name
     else:
         tg_name = 'unknown'
 
+    gplus_name = bot.get_hangups_user(g_id).full_name
+
     text = _('Synced the profile of G+ User <b>{gplus_name}</b> [{g_id}] to '
              'Telegram User <b>{tg_name}</b> [{tg_id}].').format(
                  tg_id=tg_id, tg_name=tg_name,
-                 g_id=g_id, gplus_name=user.full_name)
+                 g_id=g_id, gplus_name=gplus_name)
     tg_bot.send_html(msg.chat_id, text)
 
 async def command_unsync_profile(tg_bot, msg, *dummys):
