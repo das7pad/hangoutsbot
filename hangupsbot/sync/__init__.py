@@ -591,22 +591,12 @@ async def syncprofile(bot, event, *args):
     chat_id = event.user_id.chat_id
     split = args[-1].lower() == 'split'
 
-    conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
+    path = ['profilesync', platform, 'pending_ho2', token]
+    remote_user = bot.memory.get_by_path(path)
 
-    base_path = ['profilesync', platform]
-
-    # cleanup
-    remote_user = bot.memory.pop_by_path(base_path + ['pending_ho2', token])
-    bot.memory.pop_by_path(base_path + ['pending_2ho', remote_user])
-
-    # profile sync
-    bot.memory.set_by_path(base_path + ['2ho', remote_user], chat_id)
-    bot.memory.set_by_path(base_path + ['ho2', chat_id], remote_user)
-    bot.memory.save()
-
-    await bot.sync.run_pluggable_omnibus(
-        'profilesync', bot=bot, platform=platform, remote_user=remote_user,
-        conv_1on1=conv_1on1, split_1on1s=split)
+    await bot.sync.complete_profile_sync(
+        platform=platform, chat_id=chat_id, remote_user=remote_user,
+        split_1on1s=split)
 
 async def sync1to1(bot, event, *args):
     """change the setting for 1on1 syncing to a platform
