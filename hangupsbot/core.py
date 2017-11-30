@@ -487,7 +487,7 @@ class HangupsBot(object):
 
         # remember the conversation so we do not have to do this again
         self.user_memory_set(chat_id, "1on1", new_conv_id)
-        if new_conv_id in self._conv_dict:
+        if new_conv_id in self._conv_list:
             conv = self._conv_list.get(new_conv_id)
             # do not send the introduction as hangups already knows the conv
 
