@@ -203,18 +203,37 @@ class HangupsBot(object):
 
             Returns:
                 dict, a dict of cookies to authenticate at Google
+
+            Raises:
+                SystemExit: login failed
             """
             try:
                 return hangups.get_auth_stdin(self._cookies_path)
 
             except hangups.GoogleAuthError as err:
                 logger.error("LOGIN FAILED: %s", repr(err))
-                return False
-
-        cookies = _login()
-        if not cookies:
             logger.critical("Valid login required, exiting")
             sys.exit(1)
+
+        def _delay_restart():
+            """sleep async to delay a restart but keep the bot responsive"""
+            delay = self.__retry * 5
+            logger.info("Waiting %s seconds", delay)
+            task = asyncio.ensure_future(asyncio.sleep(delay))
+
+            # a KeyboardInterrupt should cancel the delay task instead
+            self.stop = task.cancel
+
+            try:
+                loop.run_until_complete(task)
+            except asyncio.CancelledError:
+                logger.critical("bot is exiting")
+                sys.exit()
+            else:
+                # restore the functionality to stop the bot on KeyboardInterrupt
+                self.stop = self._schedule_stop
+
+        cookies = _login()
 
         # Start asyncio event loop
         loop = asyncio.get_event_loop()
@@ -263,26 +282,11 @@ class HangupsBot(object):
                 # the final retry failed, do not delay the exit
                 break
 
-            delay = self.__retry * 5
-            logger.info("Waiting %s seconds", delay)
-            task = asyncio.ensure_future(asyncio.sleep(delay))
-
-            # a KeyboardInterrupt should cancel the delay task instead
-            self.stop = task.cancel
-
-            try:
-                loop.run_until_complete(task)
-            except asyncio.CancelledError:
-                logger.critical("bot is exiting")
-                return
-
-            # restore the functionality to stop the bot on KeyboardInterrupt
-            self.stop = self._schedule_stop
-
+            _delay_restart()
             logger.warning("Trying to connect again (try %s of %s)",
                            self.__retry, self._max_retries)
 
-        logger.critical("Maximum number of retries reached! Exiting...")
+        logger.critical("Maximum number of retries reached! Exiting.")
         sys.exit(1)
 
     async def _unload(self):
