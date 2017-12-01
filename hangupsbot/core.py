@@ -32,6 +32,9 @@ DEFAULT_CONFIG = {
                           "private messages and alerts. For help, type "
                           "<b>{bot_cmd} help</b>.\nTo keep me quiet, reply with"
                           " <b>{bot_cmd} optout</b>.</i>"),
+
+    "language": os.environ.get("HANGOUTSBOT_LOCALE"),
+
     # count
     "memory-failsafe_backups": 3,
     # in seconds
@@ -83,10 +86,8 @@ class HangupsBot(object):
         self.config.set_defaults(DEFAULT_CONFIG)
         self.get_config_option = self.config.get_option
 
-        # set localisation if any defined in
-        #  config[language] or ENV[HANGOUTSBOT_LOCALE]
-        _language = (self.config.get_option("language")
-                     or os.environ.get("HANGOUTSBOT_LOCALE"))
+        # set localisation if any defined
+        _language = self.config.get_option("language")
         if _language:
             self.set_locale(_language)
 
