@@ -553,11 +553,6 @@ class HangupsBot(object):
         self.sync = SyncHandler(self, self._handlers)
         await self.sync.setup()
 
-        # monkeypatch plugins go heere
-        # # plugins.load(self, "monkeypatch.something")
-        # use only in extreme circumstances
-        #  e.g. adding new functionality into hangups library
-
         self._user_list, self._conv_list = (
             await hangups.build_user_conversation_list(
                 self._client, conv_list_cls=HangupsConversationList))
