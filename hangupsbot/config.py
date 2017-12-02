@@ -22,13 +22,13 @@ class Config(collections.MutableMapping):
 
     Args:
         path: string, file path of the config file
-        default: any type, default value for missing data
         failsafe_backups: int, ammount of backups that should be kept
         save_delay: int, time in second a dump should be delayed
     """
-    def __init__(self, path, default=None, failsafe_backups=0, save_delay=0):
+    default = None
+
+    def __init__(self, path, failsafe_backups=0, save_delay=0):
         self.filename = path
-        self.default = default
         self.config = {}
         self.defaults = {}
         self.failsafe_backups = failsafe_backups
