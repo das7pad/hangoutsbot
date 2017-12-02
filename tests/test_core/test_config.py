@@ -17,6 +17,7 @@ from tests.constants import (
 )
 
 CONFIG_DEFAULT = object()
+# pylint:disable=redefined-outer-name, protected-access
 
 @pytest.fixture
 def config():
@@ -27,12 +28,11 @@ def config():
     Returns:
         hangupsbot.config.Config: loaded instance
     """
-    cfg = hangupsbot.config.Config(path=CONFIG_PATH, default=CONFIG_DEFAULT)
+    cfg = hangupsbot.config.Config(path=CONFIG_PATH)
+    cfg.default = CONFIG_DEFAULT
     cfg.config = CONFIG_DATA.copy()
     cfg._last_dump = CONFIG_DATA_DUMPED
     return cfg
-
-# pylint:disable=redefined-outer-name, protected-access
 
 def test_config_changed(config):
     assert not config._changed
