@@ -18,7 +18,11 @@ from hangupsbot.exceptions import SuppressEventHandling
 from hangupsbot.utils.cache import Cache
 
 from . import DEFAULT_CONFIG, SYNCPROFILE_HELP
-from .exceptions import MissingArgument, UnRegisteredProfilesync
+from .exceptions import (
+    MissingArgument,
+    UnRegisteredProfilesync,
+    ProfilesyncAlreadyCompleted,
+)
 from .event import FakeEvent, SyncEvent, SyncEventMembership, SyncReply
 from .image import SyncImage
 from .parser import MessageSegment
@@ -606,6 +610,53 @@ class SyncHandler(handlers.EventHandler):
 
         self.bot.memory.save()
         return token
+
+    async def complete_profile_sync(self, *, platform, chat_id, remote_user,
+                                    split_1on1s):
+        """finish a profile sync for a user
+
+        Args:
+            platform (str): remote platform identifier
+            chat_id (str): G+ user id
+            remote_user (str): user id at the fiven platform
+            split_1on1s (bool): toggle a sync of the private chats with the bot
+
+        Raises:
+            ProfilesyncAlreadyCompleted: the user must unlink his profile first
+            UnRegisteredProfilesync: the given platforms plugin must be loaded
+        """
+        if platform not in self.profilesync_cmds:
+            raise UnRegisteredProfilesync(
+                ('{} is not known, perform bot.sync.register_profile_sync on'
+                 'plugin init to use this method').format(platform))
+
+        bot = self.bot
+        base_path = ['profilesync', platform]
+
+        if bot.memory.exists(base_path + ['2ho', remote_user]):
+            raise ProfilesyncAlreadyCompleted()
+
+        path = base_path + ['pending_2ho', remote_user]
+        if bot.memory.exists(path):
+            token = bot.memory.get_by_path(path)
+        else:
+            token = self.start_profile_sync(platform, remote_user)
+
+        conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
+
+        # cleanup
+        bot.memory.pop_by_path(base_path + ['pending_ho2', token])
+        bot.memory.pop_by_path(base_path + ['pending_2ho', remote_user])
+
+        # profile sync
+        bot.memory.set_by_path(base_path + ['2ho', remote_user], chat_id)
+        bot.memory.set_by_path(base_path + ['ho2', chat_id], remote_user)
+        bot.memory.save()
+
+        await bot.sync.run_pluggable_omnibus(
+            'profilesync', bot=bot, platform=platform,
+            remote_user=remote_user,
+            conv_1on1=conv_1on1, split_1on1s=split_1on1s)
 
     def deregister_plugin(self, module_path):
         """remove previously registered handlers and profilesyncs

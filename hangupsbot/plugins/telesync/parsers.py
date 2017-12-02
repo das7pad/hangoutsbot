@@ -37,6 +37,9 @@ class TelegramMessageParser(MessageParser):
             segments.extend(super().parse(text[last_pos:len(text)]))
         return segments
 
+    def unescape_markdown(self, text):
+        return text
+
 class TelegramMessageSegment(MessageSegment):
     """messae segment for telegram messages"""
     _parser = TelegramMessageParser()

@@ -32,6 +32,9 @@ DEFAULT_CONFIG = {
                           "private messages and alerts. For help, type "
                           "<b>{bot_cmd} help</b>.\nTo keep me quiet, reply with"
                           " <b>{bot_cmd} optout</b>.</i>"),
+
+    "language": os.environ.get("HANGOUTSBOT_LOCALE"),
+
     # count
     "memory-failsafe_backups": 3,
     # in seconds
@@ -83,10 +86,8 @@ class HangupsBot(object):
         self.config.set_defaults(DEFAULT_CONFIG)
         self.get_config_option = self.config.get_option
 
-        # set localisation if any defined in
-        #  config[language] or ENV[HANGOUTSBOT_LOCALE]
-        _language = (self.config.get_option("language")
-                     or os.environ.get("HANGOUTSBOT_LOCALE"))
+        # set localisation if any defined
+        _language = self.config.get_option("language")
         if _language:
             self.set_locale(_language)
 
@@ -203,18 +204,37 @@ class HangupsBot(object):
 
             Returns:
                 dict, a dict of cookies to authenticate at Google
+
+            Raises:
+                SystemExit: login failed
             """
             try:
                 return hangups.get_auth_stdin(self._cookies_path)
 
             except hangups.GoogleAuthError as err:
                 logger.error("LOGIN FAILED: %s", repr(err))
-                return False
-
-        cookies = _login()
-        if not cookies:
             logger.critical("Valid login required, exiting")
             sys.exit(1)
+
+        def _delay_restart():
+            """sleep async to delay a restart but keep the bot responsive"""
+            delay = self.__retry * 5
+            logger.info("Waiting %s seconds", delay)
+            task = asyncio.ensure_future(asyncio.sleep(delay))
+
+            # a KeyboardInterrupt should cancel the delay task instead
+            self.stop = task.cancel
+
+            try:
+                loop.run_until_complete(task)
+            except asyncio.CancelledError:
+                logger.critical("bot is exiting")
+                sys.exit()
+            else:
+                # restore the functionality to stop the bot on KeyboardInterrupt
+                self.stop = self._schedule_stop
+
+        cookies = _login()
 
         # Start asyncio event loop
         loop = asyncio.get_event_loop()
@@ -263,26 +283,11 @@ class HangupsBot(object):
                 # the final retry failed, do not delay the exit
                 break
 
-            delay = self.__retry * 5
-            logger.info("Waiting %s seconds", delay)
-            task = asyncio.ensure_future(asyncio.sleep(delay))
-
-            # a KeyboardInterrupt should cancel the delay task instead
-            self.stop = task.cancel
-
-            try:
-                loop.run_until_complete(task)
-            except asyncio.CancelledError:
-                logger.critical("bot is exiting")
-                return
-
-            # restore the functionality to stop the bot on KeyboardInterrupt
-            self.stop = self._schedule_stop
-
+            _delay_restart()
             logger.warning("Trying to connect again (try %s of %s)",
                            self.__retry, self._max_retries)
 
-        logger.critical("Maximum number of retries reached! Exiting...")
+        logger.critical("Maximum number of retries reached! Exiting.")
         sys.exit(1)
 
     async def _unload(self):
@@ -490,7 +495,7 @@ class HangupsBot(object):
 
         # remember the conversation so we do not have to do this again
         self.user_memory_set(chat_id, "1on1", new_conv_id)
-        if new_conv_id in self._conv_dict:
+        if new_conv_id in self._conv_list:
             conv = self._conv_list.get(new_conv_id)
             # do not send the introduction as hangups already knows the conv
 
@@ -555,11 +560,6 @@ class HangupsBot(object):
 
         self.sync = SyncHandler(self, self._handlers)
         await self.sync.setup()
-
-        # monkeypatch plugins go heere
-        # # plugins.load(self, "monkeypatch.something")
-        # use only in extreme circumstances
-        #  e.g. adding new functionality into hangups library
 
         self._user_list, self._conv_list = (
             await hangups.build_user_conversation_list(
