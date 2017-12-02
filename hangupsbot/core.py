@@ -16,6 +16,7 @@ from hangupsbot import permamem
 from hangupsbot import plugins
 from hangupsbot import tagging
 from hangupsbot import sinks
+from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 from hangupsbot.exceptions import HangupsBotExceptions
 from hangupsbot.hangups_conversation import (
@@ -120,7 +121,7 @@ class HangupsBot(object):
         except NotImplementedError:
             pass
 
-        HangupsConversation.bot = self
+        BotMixin.set_bot(self)
 
     @property
     def command_prefix(self):
@@ -247,8 +248,7 @@ class HangupsBot(object):
         sinks.start(self)
 
         # initialise plugin and command registration
-        plugins.tracking.set_bot(self)
-        command.set_bot(self)
+        command.setup()
 
         # retries for the hangups longpolling request
         max_retries_longpolling = (self._max_retries
@@ -547,14 +547,13 @@ class HangupsBot(object):
         logger.debug("connected")
 
         self.shared = {}
-        self.tags = tagging.Tags(self)
-        self._handlers = handlers.EventHandler(self)
-        handlers.handler.set_bot(self) # shim for handler decorator
+        self.tags = tagging.Tags()
+        self._handlers = handlers.EventHandler()
 
         # release the global sending block
         AsyncQueue.release_block()
 
-        self.sync = SyncHandler(self, self._handlers)
+        self.sync = SyncHandler(self._handlers)
         await self.sync.setup()
 
         self._user_list, self._conv_list = (

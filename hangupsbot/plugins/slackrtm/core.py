@@ -6,7 +6,7 @@ import logging
 import aiohttp
 
 from hangupsbot import plugins
-
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.sending_queue import AsyncQueueCache
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.sync.utils import get_sync_config_entry
@@ -48,11 +48,10 @@ _RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '
                      'the Hangout to *{new_name}*_')
 
 
-class SlackRTM(object):
+class SlackRTM(BotMixin):
     """hander for a single slack team
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
         sink_config (dict): basic configuration including the api `key`, a
             `name` for the team and `admins` a list of slack user ids
 
@@ -66,11 +65,10 @@ class SlackRTM(object):
     # tracker for concurrent api_calls, unique per instance
     _tracker = 0
 
-    def __init__(self, bot, sink_config):
+    def __init__(self, sink_config):
         if  not isinstance(sink_config, dict) or 'key' not in sink_config:
             raise SlackConfigError('API-`key` is missing in config %s'
                                    % repr(sink_config))
-        self.bot = SlackMessage.bot = bot
         self.apikey = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}

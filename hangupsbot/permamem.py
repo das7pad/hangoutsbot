@@ -7,6 +7,7 @@ import re
 
 import hangups
 
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ async def initialise(bot):
     Returns:
         ConversationMemory instance
     """
-    permamem = ConversationMemory(bot)
+    permamem = ConversationMemory()
 
     permamem.standardise_memory()
     await permamem.load_from_hangups()
@@ -80,18 +81,17 @@ async def initialise(bot):
     return permamem
 
 
-class ConversationMemory(object):
+class ConversationMemory(BotMixin):
     """cache conversation data that might be missing on bot start
 
     Args:
         bot: HangupsBot instance
     """
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self.catalog = {}
 
-        bot.memory.on_reload.add_observer(self.standardise_memory)
-        bot.memory.on_reload.add_observer(self.load_from_memory)
+        self.bot.memory.on_reload.add_observer(self.standardise_memory)
+        self.bot.memory.on_reload.add_observer(self.load_from_memory)
 
     def __del__(self):
         """explicit cleanup"""

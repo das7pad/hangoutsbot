@@ -23,7 +23,7 @@ from .exceptions import (
     UnRegisteredProfilesync,
     ProfilesyncAlreadyCompleted,
 )
-from .event import FakeEvent, SyncEvent, SyncEventMembership, SyncReply
+from .event import SyncEvent, SyncEventMembership
 from .image import SyncImage
 from .parser import MessageSegment
 from .user import SyncUser
@@ -33,9 +33,6 @@ logger = logging.getLogger(__name__)
 
 # character used to generate tokens for the profile sync
 TOKEN_CHAR = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-CLASSES_TO_INIT = (FakeEvent, SyncEvent, SyncEventMembership,
-                   SyncImage, SyncReply)
 
 SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'user_kick', 'profilesync',
                    'allmessages_once', 'message_once', 'membership_once')
@@ -61,40 +58,36 @@ class SyncHandler(handlers.EventHandler):
     bot_command = property(lambda self: self._bot_handlers.bot_command,
                            lambda self, value: None)
 
-    def __init__(self, bot, handlers_):
+    def __init__(self, handlers_):
         self._bot_handlers = handlers_
-        super().__init__(bot)
+        super().__init__()
 
         # add more handler categories
         for pluggable in SYNC_PLUGGABLES:
             self.pluggables[pluggable] = []
 
-        # set the bot class valiables
-        for obj in CLASSES_TO_INIT:
-            obj.bot = bot
-
-        bot.config.set_defaults(DEFAULT_CONFIG)
-        bot.memory.validate(DEFAULT_MEMORY)
+        self.bot.config.set_defaults(DEFAULT_CONFIG)
+        self.bot.memory.validate(DEFAULT_MEMORY)
 
         # image upload cache
-        image_timeout = min(bot.config[key] for key in
+        image_timeout = min(self.bot.config[key] for key in
                             ('sync_cache_timeout_photo',
                              'sync_cache_timeout_gif',
                              'sync_cache_timeout_video',
                              'sync_cache_timeout_sticker'))
-        image_dump_intervall = bot.config['sync_cache_dump_image']
+        image_dump_intervall = self.bot.config['sync_cache_dump_image']
         image_dump = (image_dump_intervall, ['cache', 'image_upload_info'])
         self._cache_image = Cache(image_timeout, name='Image Upload',
                                   dump_config=image_dump)
 
         # conv user cache
-        conv_user_timeout = bot.config['sync_cache_timeout_conv_user']
+        conv_user_timeout = self.bot.config['sync_cache_timeout_conv_user']
         self._cache_conv_user = Cache(conv_user_timeout, name='User Lists',
                                       increase_on_access=False)
 
         # sending queues
         self._cache_sending_queue = AsyncQueueCache(
-            'hangouts', bot.coro_send_message, bot=bot)
+            'hangouts', self.bot.coro_send_message)
 
         self.profilesync_cmds = {}
         self.profilesync_provider = {}

@@ -5,19 +5,18 @@ import time
 import hangups
 from hangups import hangouts_pb2
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.parser import MessageSegmentHangups
 
 logger = logging.getLogger(__name__)
 
 
-class HangupsConversation(hangups.conversation.Conversation):
+class HangupsConversation(hangups.conversation.Conversation, BotMixin):
     """Conversation with fallback to permamem
 
     Args:
         see `hangups.conversation.Conversation`
     """
-    bot = None
-
     @classmethod
     def from_permamem(cls, conv_id):
         bot = cls.bot

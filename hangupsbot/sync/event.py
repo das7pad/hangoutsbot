@@ -8,6 +8,8 @@ import logging
 
 import hangups
 
+from hangupsbot.base_models import BotMixin
+
 from .exceptions import MissingArgument
 from .image import SyncImage
 from .parser import MessageSegment, get_formatted
@@ -56,7 +58,7 @@ class FakeConvEvent(object):
         return '\n'.join(lines)
 
 
-class FakeEvent(object):
+class FakeEvent(BotMixin):
     """Dummy Event to provide Hangups Event like access to Data around a Message
 
     Args:
@@ -67,7 +69,6 @@ class FakeEvent(object):
         text: string or list, the message as text or in segments in a list
         attachments: list, urls of images for example
     """
-    bot = None
 
     def __init__(self, conv_id=None, user=None, text=None, attachments=None):
         self.timestamp = datetime.now()
@@ -105,7 +106,6 @@ class SyncEvent(FakeEvent):
         notified_users: set, object to track user that were notified for the
             message content
     """
-    bot = None
 
     def __init__(self, *, identifier=None, conv_id, user, text=None,
                  targets=None, reply=None, title=None, edited=None, image=None,
@@ -428,7 +428,6 @@ class SyncEventMembership(SyncEvent):
         notified_users: set, object to track user that were notified for the
             message content
     """
-    bot = None
 
     def __init__(self, *, identifier=None, conv_id=None, title=None, user=None,
                  text=None, targets=None, type_=None, participant_user=None,
@@ -529,7 +528,7 @@ class SyncEventMembership(SyncEvent):
         return get_formatted(text, style, internal_source=True)
 
 
-class SyncReply(object):
+class SyncReply(BotMixin):
     """wrapper for reply messages
 
     Args:
@@ -539,7 +538,6 @@ class SyncReply(object):
         offset: int, message count between the original message and the reply
         image: SyncImage instance, the image one replys to or None
     """
-    bot = None
 
     def __init__(self, *, identifier=None, user=None, text=None, offset=None,
                  image=None):

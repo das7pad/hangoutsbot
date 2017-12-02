@@ -5,6 +5,7 @@ import logging
 
 import telepot
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.utils.cache import Cache
@@ -37,7 +38,7 @@ _LOCATION_CACHE = _LocationCache(
 _LOCATION_CACHE.start()
 
 
-class Message(dict):
+class Message(dict, BotMixin):
     """parse the message once
 
     keep value accessing via dict
@@ -48,7 +49,6 @@ class Message(dict):
     Raises:
         IgnoreMessage: the message should not be synced
     """
-    bot = None
     tg_bot = None
     _last_messages = {}
 

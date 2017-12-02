@@ -1,13 +1,14 @@
 import logging
 import re
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 
 
 logger = logging.getLogger(__name__)
 
 
-class Tags(object):
+class Tags(BotMixin):
     regex_allowed = r"a-z0-9._\-" # +command.deny_prefix
 
     wildcard = {"conversation": "*",
@@ -15,11 +16,9 @@ class Tags(object):
                 "group": "GROUP",
                 "one2one": "ONE_TO_ONE"}
 
-    bot = None
     indices = {}
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self.refresh_indices()
 
     def _load_from_memory(self, key, tag_type):

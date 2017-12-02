@@ -20,6 +20,8 @@ import imageio
 imageio.plugins.ffmpeg.download()
 from moviepy.editor import VideoFileClip
 
+from hangupsbot.base_models import BotMixin
+
 from .exceptions import MissingArgument
 
 VALID_IMAGE_TYPES = ('photo', 'sticker', 'gif', 'video')
@@ -121,7 +123,7 @@ class MovieConverter(VideoFileClip):
         self.cleanup()
 
 
-class SyncImage(object):
+class SyncImage(BotMixin):
     """store info to a synced image in one object and convert movies to gif
 
     provide either a public url or image data and a filename
@@ -140,7 +142,6 @@ class SyncImage(object):
         MissingArgument: no url/data were given
     """
     # pylint: disable=too-many-instance-attributes
-    bot = None
 
     # an incomplete init should not break __del__
     _data = None

@@ -5,6 +5,7 @@ import re
 
 import emoji
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.parser import get_formatted
 
@@ -113,7 +114,7 @@ def parse_text(slackrtm, text):
     return segments, image_url
 
 
-class SlackMessage(object):
+class SlackMessage(BotMixin):
     """parse the response from slack to form a message for syncing
 
     Args:
@@ -124,7 +125,6 @@ class SlackMessage(object):
         IgnoreMessage: the message should not be synced
         ParseError: the message content could not be parsed
     """
-    bot = None
     _last_messages = {}
 
     def __init__(self, slackrtm, reply):

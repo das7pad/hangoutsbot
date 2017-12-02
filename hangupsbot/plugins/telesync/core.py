@@ -16,6 +16,7 @@ import telepot.exception
 from telepot.loop import _extract_message
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.parser import get_formatted
 from hangupsbot.sync.sending_queue import AsyncQueueCache
 
@@ -68,7 +69,7 @@ _RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
                            '<i>{chatname}</i> could <b>not</b> be restricted, '
                            'please check manually!')
 
-class TelegramBot(telepot.aio.Bot):
+class TelegramBot(telepot.aio.Bot, BotMixin):
     """enhanced telepot bot with Hangouts sync
 
     Args:
@@ -76,7 +77,6 @@ class TelegramBot(telepot.aio.Bot):
     """
 
     def __init__(self, ho_bot):
-        self.bot = Message.bot = ho_bot
         Message.tg_bot = self
         self.user = None
         self._receive_next_updates = 0
