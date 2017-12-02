@@ -99,9 +99,8 @@ class HangupsBot(object):
                     memory_path, _failsafe_backups, _save_delay)
         self.memory = config.Config(memory_path,
                                     failsafe_backups=_failsafe_backups,
-                                    save_delay=_save_delay)
-        self.memory.logger = logging.getLogger("hangupsbot.memory")
-        self.memory.on_reload = hangups.event.Event('Memory reload')
+                                    save_delay=_save_delay,
+                                    name="hangupsbot.memory")
         try:
             self.memory.load()
         except (OSError, IOError, ValueError):

@@ -24,10 +24,11 @@ class Config(collections.MutableMapping):
         path: string, file path of the config file
         failsafe_backups: int, ammount of backups that should be kept
         save_delay: int, time in second a dump should be delayed
+        name (str): custom name for the logger and reload event
     """
     default = None
 
-    def __init__(self, path, failsafe_backups=0, save_delay=0):
+    def __init__(self, path, failsafe_backups=0, save_delay=0, name=__name__):
         self.filename = path
         self.config = {}
         self.defaults = {}
@@ -35,8 +36,8 @@ class Config(collections.MutableMapping):
         self.save_delay = save_delay
         self._last_dump = None
         self._timer_save = None
-        self.on_reload = hangups.event.Event('Config reload')
-        self.logger = logging.getLogger(__name__)
+        self.on_reload = hangups.event.Event('%s reload' % name)
+        self.logger = logging.getLogger(name)
 
     @property
     def _changed(self):
