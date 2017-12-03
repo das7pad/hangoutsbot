@@ -2,10 +2,10 @@
 
 import re
 
-from hangupsbot.base_models import BotMixin
+from hangupsbot.base_models import BotMixin, TrackingMixin
 
 
-class ArgumentsParser(BotMixin):
+class ArgumentsParser(BotMixin, TrackingMixin):
     """resolve `#` and `@` tagged arguments to `chat_id`s and `conversation_id`s
 
     * one_chat_id (also resolves #conv)
@@ -26,7 +26,6 @@ class ArgumentsParser(BotMixin):
       * @user@wxyz
     """
     def __init__(self):
-        self._tracking = None
         self._preprocessors = {
             "inbuilt": {
                 r"^(#?[\w|]+[^#]\|)?@[\w]+[^@]$": self._one_chat_id,
@@ -35,18 +34,10 @@ class ArgumentsParser(BotMixin):
 
         }
 
-    def set_tracking(self, tracking):
-        """register the plugin tracking for commands
-
-        Args:
-            tracking (hangupsbot.plugins.Tracker): the current instance
-        """
-        self._tracking = tracking
-
     def register_preprocessor_group(self, name, preprocessors):
         name_lower = name.lower()
         self._preprocessors[name_lower] = preprocessors
-        self._tracking.register_command_argument_preprocessors_group(
+        self.tracking.register_command_argument_preprocessors_group(
             name_lower)
 
     def deregister_preprocessor_group(self, name):

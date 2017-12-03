@@ -7,23 +7,15 @@ import ssl
 
 from aiohttp import web
 
+from hangupsbot.base_models import TrackingMixin
 from hangupsbot.utils import class_from_name
 
 from .base_bot_request_handler import AsyncRequestHandler
 
 logger = logging.getLogger(__name__)
 
-class ServerStorage(list):
+class ServerStorage(list, TrackingMixin):
     """storage for running aiohttp servers"""
-    tracking = None
-
-    def set_tracking(self, tracking):
-        """store the plugin tracking
-
-        Args:
-            thracking (plugins.Tracker): the current instance
-        """
-        self.tracking = tracking
 
     def register_aiohttp_web(self, group):
         """add a single group to the plugin tracking

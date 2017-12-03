@@ -3,6 +3,7 @@ __author__ = 'das7pad@outlook.com'
 
 __all__ = (
     'BotMixin',
+    'TrackingMixin',
 )
 
 
@@ -32,3 +33,29 @@ class BotMixin:
             bot (core.HangupsBot): the running instance
         """
         _STORAGE['bot'] = bot
+
+
+class TrackingMixin:
+    """Mixin which has a `plugins.tracking` reference during runtime
+
+    The reference is available at `.tracking` as an instance attribute only.
+    """
+    __slots__ = ()
+    _STORAGE['tracking'] = None
+    @property
+    def tracking(self):
+        """get the current tracking
+
+        Returns:
+            plugins.Tracker: the current instance
+        """
+        return _STORAGE['tracking']
+
+    @staticmethod
+    def set_tracking(tracking):
+        """register the plugin tracking
+
+        Args:
+            tracking (plugins.Tracker): the current instance
+        """
+        _STORAGE['tracking'] = tracking
