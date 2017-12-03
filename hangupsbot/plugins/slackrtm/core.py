@@ -867,7 +867,7 @@ class SlackRTM(BotMixin):
             event (event.ConversationEvent): instance to be handled
         """
         name = bot.conversations.get_name(event.conv)
-        user = SyncUser(bot, user_id=event.user_id.chat_id)
+        user = SyncUser(user_id=event.user_id.chat_id)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):
             channel_tag = '%s:%s' % (self.identifier, sync['channelid'])

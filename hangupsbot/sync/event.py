@@ -113,7 +113,7 @@ class SyncEvent(FakeEvent):
 
         # validate user or create one
         user = (user if isinstance(user, SyncUser)
-                else SyncUser(self.bot, identifier=identifier, user=user))
+                else SyncUser(identifier=identifier, user=user))
 
         self.identifier = identifier
         self.targets = targets if isinstance(targets, list) else []
@@ -452,7 +452,7 @@ class SyncEventMembership(SyncEvent):
         self.participant_user = []
         for p_user in participant_user:
             if not isinstance(p_user, SyncUser):
-                p_user = SyncUser(self.bot, identifier=identifier, user=p_user)
+                p_user = SyncUser(identifier=identifier, user=p_user)
             self.participant_user.append(p_user)
 
         self.conv_event.type_ = self.type_ = type_
@@ -544,7 +544,7 @@ class SyncReply(BotMixin):
 
         # validate user or create one
         if not isinstance(user, SyncUser):
-            user = SyncUser(self.bot, identifier=identifier, user=user)
+            user = SyncUser(identifier=identifier, user=user)
 
         self.user = user
         self.text = text

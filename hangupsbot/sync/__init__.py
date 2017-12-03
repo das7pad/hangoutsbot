@@ -701,7 +701,7 @@ async def _config_check_users(bot, *args, conv_id=None, targets=None):
     if edit:
         lines = [_('allowed users in %s:') % conv_id]
         lines.extend(['%s (%s)' % (chat_id,
-                                   SyncUser(bot, user_id=chat_id)
+                                   SyncUser(user_id=chat_id)
                                    .get_displayname(conv_id, text_only=True))
                       for chat_id in allowed_users])
         lines.append(_('%s users in total' % len(allowed_users)))
@@ -780,7 +780,7 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
 
         summery.append(_('Users added:'))
         for item in new_user:
-            user = SyncUser(bot, user_id=item)
+            user = SyncUser(user_id=item)
             summery.append(' '*3 + user.get_displayname(conv_id, True))
             summery.append(' '*3 + user.user_link)
 

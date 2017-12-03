@@ -335,7 +335,8 @@ class SyncHandler(handlers.EventHandler):
             self._cache_image.add(image_hash, upload_info, image_cache)
             return upload_info
 
-    def get_sync_user(self, *, identifier=None, user=None, user_id=None,
+    @staticmethod
+    def get_sync_user(*, identifier=None, user=None, user_id=None,
                       user_name=None, user_link=None, user_photo=None,
                       user_nick=None, user_is_self=False):
         """get a SyncUser object
@@ -356,7 +357,7 @@ class SyncHandler(handlers.EventHandler):
         if isinstance(user, SyncUser):
             return user
 
-        return SyncUser(self.bot, identifier=identifier, user=user,
+        return SyncUser(identifier=identifier, user=user,
                         user_id=user_id, user_name=user_name,
                         user_link=user_link, user_photo=user_photo,
                         user_nick=user_nick, user_is_self=user_is_self)
@@ -813,7 +814,7 @@ class SyncHandler(handlers.EventHandler):
         chat_ids = bot.conversations[conv_id]['participants']
         users = []
         for chat_id in chat_ids:
-            users.append(SyncUser(bot, identifier='hangouts:' + conv_id,
+            users.append(SyncUser(identifier='hangouts:' + conv_id,
                                   user_id=chat_id))
         return users
 

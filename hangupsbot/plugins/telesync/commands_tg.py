@@ -346,7 +346,7 @@ async def command_tldr(tg_bot, msg, *args):
     if msg.user.id_.chat_id == 'sync':
         # a valid chat_id is required to run commands
         chat_id = tg_bot.bot.user_self()['chat_id']
-        msg.user = SyncUser(tg_bot.bot, user_id=chat_id)
+        msg.user = SyncUser(user_id=chat_id)
         msg.user.is_self = False
 
     # sync the message text to get the tldr

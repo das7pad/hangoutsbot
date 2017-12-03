@@ -5,6 +5,8 @@ import logging
 
 import hangups.user
 
+from hangupsbot.base_models import BotMixin
+
 from .utils import get_sync_config_entry
 
 logger = logging.getLogger(__name__)
@@ -12,11 +14,10 @@ logger = logging.getLogger(__name__)
 G_PLUS_URL = 'https://plus.google.com/'
 
 
-class SyncUser(hangups.user.User):
+class SyncUser(hangups.user.User, BotMixin):
     """a hangups.user.User-like object with builtin access to profilesyncs
 
     Args:
-        bot: HangupsBot instance
         identifier: string, source plugin name
         user: hangups.user.User instance or string as fallback
         user_id: string or hangups.user.UserID, G+ID or platform id
@@ -26,12 +27,11 @@ class SyncUser(hangups.user.User):
         user_nick: string, custom nickname
         user_is_self: boolean, True if messages should be issued as the bot user
     """
-    __slots__ = ('bot', 'identifier', 'nickname', 'user_link')
+    __slots__ = ('identifier', 'nickname', 'user_link')
 
-    def __init__(self, bot, *, identifier=None, user=None, user_id=None,
+    def __init__(self, *, identifier=None, user=None, user_id=None,
                  user_name=None, user_link=None, user_photo=None,
                  user_nick=None, user_is_self=False):
-        self.bot = bot
         if isinstance(user, str):
             user_name = user_name or user
         elif isinstance(user, hangups.user.UserID):

@@ -141,7 +141,7 @@ class Message(dict, BotMixin):
             r_user, text = self.reply.text.split(separator, 1)
             # might be a reply as well
             r_user = r_user.rsplit('\n', 1)[-1]
-            user = SyncUser(self.bot, identifier='telesync', user_name=r_user)
+            user = SyncUser(identifier='telesync', user_name=r_user)
         else:
             user = self.reply.user
             text = self.reply.text
