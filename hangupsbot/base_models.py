@@ -5,15 +5,30 @@ __all__ = (
     'BotMixin',
 )
 
-class BotMixin:
-    """Mixin which has a `core.HangupsBot` reference during runtime"""
-    bot = None
 
-    @classmethod
-    def set_bot(cls, bot):
+_STORAGE = {}
+
+class BotMixin:
+    """Mixin which has a `core.HangupsBot` reference during runtime
+
+    The reference is available at `.bot` as an instance attribute only.
+    """
+    __slots__ = ()
+    _STORAGE['bot'] = None
+    @property
+    def bot(self):
+        """get the running HangupsBot
+
+        Returns:
+            core.HangupsBot: the running instance
+        """
+        return _STORAGE['bot']
+
+    @staticmethod
+    def set_bot(bot):
         """register the running HangupsBot instance
 
         Args:
             bot (core.HangupsBot): the running instance
         """
-        cls.bot = bot
+        _STORAGE['bot'] = bot

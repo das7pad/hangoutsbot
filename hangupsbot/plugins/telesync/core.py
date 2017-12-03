@@ -425,7 +425,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                              text, tg_chat_id, repr(err))
 
         else:
-            Message.add_message(tg_chat_id, msg.get('message_id'))
+            Message.add_message(self.bot, tg_chat_id, msg.get('message_id'))
             status = True
 
         finally:

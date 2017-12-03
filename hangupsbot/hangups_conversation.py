@@ -18,9 +18,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
         see `hangups.conversation.Conversation`
     """
     @classmethod
-    def from_permamem(cls, conv_id):
-        bot = cls.bot
-
+    def from_permamem(cls, bot, conv_id):
         # pylint:disable=protected-access
         client = bot._client
         user_list = bot._user_list
@@ -217,7 +215,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
                          repr(err), self.id_, serialised_segments, image_id)
 
 
-class HangupsConversationList(hangups.conversation.ConversationList):
+class HangupsConversationList(hangups.conversation.ConversationList, BotMixin):
     conv_cls = HangupsConversation
 
     def get(self, conv_id):
@@ -232,7 +230,7 @@ class HangupsConversationList(hangups.conversation.ConversationList):
         if conv_id in self._conv_dict:
             return self._conv_dict[conv_id]
 
-        conv = self.conv_cls.from_permamem(conv_id)
+        conv = self.conv_cls.from_permamem(self.bot, conv_id)
         self._conv_dict[conv_id] = conv
         return conv
 

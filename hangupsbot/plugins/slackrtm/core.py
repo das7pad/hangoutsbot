@@ -270,7 +270,7 @@ class SlackRTM(BotMixin):
                 # already logged
                 return False
             channel_tag = self.identifier + ':' + kwargs['channel']
-            SlackMessage.track_message(channel_tag, reply)
+            SlackMessage.track_message(self.bot, channel_tag, reply)
             return True
 
         async def _register_handler():
@@ -765,7 +765,7 @@ class SlackRTM(BotMixin):
         try:
             msg = SlackMessage(self, reply)
             channel_tag = '%s:%s' % (self.identifier, msg.channel)
-            SlackMessage.track_message(channel_tag, reply)
+            SlackMessage.track_message(self.bot, channel_tag, reply)
 
             error_message = 'error in command handling\nreply=%s'
             error_is_critical = False

@@ -237,10 +237,11 @@ class SlackMessage(BotMixin):
             headers={'Authorization': 'Bearer ' + slackrtm.apikey})
 
     @classmethod
-    def track_message(cls, channel_tag, reply):
+    def track_message(cls, bot, channel_tag, reply):
         """add a message id to the last message and delete old items
 
         Args:
+            bot (HangupsBot): the running instance
             channel_tag (str): identifier for a channel of a slack team
             reply (dict): message response from slack
         """
@@ -249,7 +250,7 @@ class SlackMessage(BotMixin):
 
         messages.append(int(float(timestamp)))
         messages.sort(reverse=True)
-        for i in range(2 * cls.bot.config['sync_reply_spam_offset'],
+        for i in range(2 * bot.config['sync_reply_spam_offset'],
                        len(messages)):
             messages.pop(i)
 
