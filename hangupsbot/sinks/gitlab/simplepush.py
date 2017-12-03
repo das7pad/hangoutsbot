@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 class WebhookReceiver(AsyncRequestHandler):
     """Receive REST API posts from GitLab"""
-    _bot = None
 
     async def process_request(self, path, dummy_query_string, content):
         """Process a received POST to a given converstation"""
