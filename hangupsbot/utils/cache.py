@@ -8,6 +8,7 @@ import logging
 from collections import namedtuple
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class CacheItem(CacheItemBase):
         return CacheItem(self.value, self.timeout, time.time() + self.timeout)
 
 
-class Cache(dict):
+class Cache(dict, BotMixin):
     """store items for a given timeout which could be extended on access
 
     Args:
@@ -55,7 +56,7 @@ class Cache(dict):
             intervall: int, time in seconds the cache should be dumped
             path: list of strings, path in memory to the location to dump into
     """
-    __slots__ = ('bot', '_name', '_default_timeout', '_increase_on_access',
+    __slots__ = ('_name', '_default_timeout', '_increase_on_access',
                  '_dump_config', '_reload_listener')
     def __init__(self, default_timeout, name=None, increase_on_access=True,
                  dump_config=None):
@@ -65,7 +66,6 @@ class Cache(dict):
         self._increase_on_access = increase_on_access
         self._dump_config = dump_config
         self._reload_listener = None
-        self.bot = plugins.tracking.bot
 
     ############################################################################
     # PUBLIC METHODS
