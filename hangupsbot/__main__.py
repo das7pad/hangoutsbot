@@ -27,6 +27,9 @@ def configure_logging(args):
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
+            "service": {
+                "format": "%(levelname)s %(name)s: %(message)s",
+            },
             "default": {
                 "format": "%(asctime)s %(levelname)s %(name)s: %(message)s",
             }
@@ -36,7 +39,7 @@ def configure_logging(args):
                 "class": "logging.StreamHandler",
                 "stream": "ext://sys.stdout",
                 "level": "DEBUG" if args.debug else "WARNING",
-                "formatter": "default"
+                "formatter": "service" if args.service else "default",
             },
             "file": {
                 "class": "logging.FileHandler",
@@ -106,6 +109,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-d", "--debug", action="store_true",
                         help=_("log detailed debugging messages"))
+    parser.add_argument("-s", "--service", action="store_true",
+                        help=_("strip the timestamp from the stdout-log"))
     parser.add_argument("--log", default=default_log_path,
                         help=_("log file path"))
     parser.add_argument("--cookies", default=default_cookies_path,
