@@ -36,7 +36,7 @@ _YOUTUBE_ID = re.compile(
 _HAS_PROTOCOLL = re.compile("https?://")
 
 _CLEANUP_CHAR = re.compile(
-    r"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚‘]+\s*")
+    r"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚]+\s*")
 _CLEANUP_HASHTAG_MENTION = re.compile(r"(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)")
 _CLEANUP_FOLLOWING = ("official", "with", "prod", "by", "from")
 _CLEANUP_REMOVE = ("freestyle", "acoustic", "original", "&")
