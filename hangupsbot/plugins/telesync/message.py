@@ -240,5 +240,6 @@ class Message(dict, BotMixin):
         elif self.content_type == 'location':
             self.text = _create_gmaps_url()
 
-        else:
+        elif self.content_type not in ('new_chat_member', 'new_chat_members',
+                                       'left_chat_member'):
             raise IgnoreMessage()
