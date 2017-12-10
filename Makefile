@@ -81,7 +81,7 @@ venv-dev: venv-create
 install: venv-create
 	@echo "Install: started"
 	@rm -rf `find hangupsbot -name __pycache__`
-	@$(pip) install -q . --process-dependency-links
+	@$(pip) install -q . --process-dependency-links --upgrade
 	@echo "Install: finished"
 
 .PHONY: localization
