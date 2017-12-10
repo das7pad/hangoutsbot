@@ -309,7 +309,7 @@ async def sync_config(bot, event, *args):
     except (KeyError, TypeError) as err:
         return err.args[0]
     else:
-        return _('{sync_option} updated for conversation "{conv-id}" '
+        return _('{sync_option} updated for conversation "{conv_id}" '
                  'from "{old}" to "{new}"').format(
                      sync_option=key, conv_id=conv_id, old=last_value,
                      new=new_value)
