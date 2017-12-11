@@ -57,7 +57,7 @@ simplejson==3.13.2
 six==1.11.0
 soundcloud==0.5.0
 spotipy==2.4.4
-telepot==12.4
+telepot==12.5
 tld==0.7.9
 tqdm==4.11.2
 twitterapi==2.4.6
