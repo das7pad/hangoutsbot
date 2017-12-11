@@ -78,7 +78,7 @@ class Cache(dict, BotMixin):
         # loading and dumping depends on a configured intervall and dump path
         if self._dump_config is not None:
             self._load_entrys()
-            self._reload_listener = functools.wraps(self._load_entrys)
+            self._reload_listener = functools.partial(self._load_entrys)
             self.bot.memory.on_reload.add_observer(self._reload_listener)
 
             plugins.start_asyncio_task(self._periodic_dump)
