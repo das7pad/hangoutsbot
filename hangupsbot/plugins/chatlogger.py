@@ -19,12 +19,10 @@ def _initialise(bot):
 
 
 class FileWriter(object):
-    bot = None
     paths = []
     initialised = False
 
     def __init__(self, bot):
-        self.bot = bot
         self.paths = []
         self.initialised = False
 

@@ -5,6 +5,7 @@ import re
 
 import emoji
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.parser import get_formatted
 
@@ -22,7 +23,8 @@ emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = (
     emoji.EMOJI_UNICODE[':smiling_face:'])
 
 TYPES_TO_SKIP = (
-    'file_created', 'file_shared', 'file_public', 'file_change',
+    'file_created', 'file_public', 'file_change',
+    'file_shared', 'file_unshared',
     'file_comment_added', 'file_comment_deleted', 'file_comment_edited',
     'message_deleted',
 )
@@ -112,7 +114,7 @@ def parse_text(slackrtm, text):
     return segments, image_url
 
 
-class SlackMessage(object):
+class SlackMessage(BotMixin):
     """parse the response from slack to form a message for syncing
 
     Args:
@@ -123,7 +125,6 @@ class SlackMessage(object):
         IgnoreMessage: the message should not be synced
         ParseError: the message content could not be parsed
     """
-    bot = None
     _last_messages = {}
 
     def __init__(self, slackrtm, reply):
@@ -131,7 +132,7 @@ class SlackMessage(object):
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
 
         self.channel = reply.get('channel') or reply.get('group')
-        if self.channel is None:
+        if not isinstance(self.channel, str):
             raise ParseError('no channel found in reply')
 
         self.user = None
@@ -236,10 +237,11 @@ class SlackMessage(object):
             headers={'Authorization': 'Bearer ' + slackrtm.apikey})
 
     @classmethod
-    def track_message(cls, channel_tag, reply):
+    def track_message(cls, bot, channel_tag, reply):
         """add a message id to the last message and delete old items
 
         Args:
+            bot (HangupsBot): the running instance
             channel_tag (str): identifier for a channel of a slack team
             reply (dict): message response from slack
         """
@@ -248,7 +250,7 @@ class SlackMessage(object):
 
         messages.append(int(float(timestamp)))
         messages.sort(reverse=True)
-        for i in range(2 * cls.bot.config['sync_reply_spam_offset'],
+        for i in range(2 * bot.config['sync_reply_spam_offset'],
                        len(messages)):
             messages.pop(i)
 

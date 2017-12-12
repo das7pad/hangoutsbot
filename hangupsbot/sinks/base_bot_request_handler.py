@@ -6,18 +6,17 @@ from urllib.parse import urlparse, parse_qs
 
 from aiohttp import web
 
+from hangupsbot.base_models import BotMixin
+
 logger = logging.getLogger(__name__)
 
 
-class AsyncRequestHandler:
-    bot = None
+class AsyncRequestHandler(BotMixin):
     _bot = None # ensure backward compatibility for legacy subclasses
 
     def __init__(self, *args):
         self.sinkname = self.__class__.__name__
-        if (args[0]):
-            self.bot = args[0]
-            self._bot = self.bot # backward-compatibility
+        self._bot = self.bot # backward-compatibility
 
     def addroutes(self, router):
         router.add_route("POST", "/{convid}", self.adapter_do_post)

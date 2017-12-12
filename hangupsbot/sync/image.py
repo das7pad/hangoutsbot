@@ -20,6 +20,8 @@ import imageio
 imageio.plugins.ffmpeg.download()
 from moviepy.editor import VideoFileClip
 
+from hangupsbot.base_models import BotMixin
+
 from .exceptions import MissingArgument
 
 VALID_IMAGE_TYPES = ('photo', 'sticker', 'gif', 'video')
@@ -121,7 +123,7 @@ class MovieConverter(VideoFileClip):
         self.cleanup()
 
 
-class SyncImage(object):
+class SyncImage(BotMixin):
     """store info to a synced image in one object and convert movies to gif
 
     provide either a public url or image data and a filename
@@ -140,7 +142,6 @@ class SyncImage(object):
         MissingArgument: no url/data were given
     """
     # pylint: disable=too-many-instance-attributes
-    bot = None
 
     # an incomplete init should not break __del__
     _data = None
@@ -320,8 +321,8 @@ class SyncImage(object):
                     self._data = io.BytesIO(await resp.read())
 
             return True
-        except (aiohttp.ClientError, AttributeError):
-            logger.exception('can not fetch image_data from %s', url)
+        except (aiohttp.ClientError, AttributeError, TypeError) as err:
+            logger.error('can not fetch image data from %s: %s', url, repr(err))
             return False
 
     def _get_resized(self, *, limit, data, filename, video_as_gif, caller=None):

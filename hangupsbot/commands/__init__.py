@@ -6,6 +6,7 @@ import re
 
 import hangups
 
+from hangupsbot.base_models import BotMixin, TrackingMixin
 from hangupsbot.commands.arguments_parser import ArgumentsParser
 
 logger = logging.getLogger(__name__)
@@ -34,15 +35,13 @@ class Help(Exception):
     pass
 
 
-class CommandDispatcher(object):
+class CommandDispatcher(BotMixin, TrackingMixin):
     """Register commands and run them"""
     def __init__(self):
-        self.bot = None
         self.commands = {}
         self.admin_commands = []
         self.unknown_command = None
         self.blocked_command = None
-        self.tracking = None
 
         self.command_tagsets = {}
 
@@ -60,23 +59,9 @@ class CommandDispatcher(object):
         """
         return self._arguments_parser
 
-    def set_bot(self, bot):
-        """extended init
-
-        Args:
-            bot: HangupsBot instance
-        """
-        self.bot = bot
-        self._arguments_parser.set_bot(bot)
-        bot.config.set_defaults(DEFAULT_CONFIG)
-
-    def set_tracking(self, tracking):
-        """register the plugin tracking for commands
-
-        Args:
-            tracking: plugins.Tracker instance
-        """
-        self.tracking = tracking
+    def setup(self):
+        """extended init"""
+        self.bot.config.set_defaults(DEFAULT_CONFIG)
 
     def register_tags(self, command_name, tagsets):
         if command_name not in self.command_tagsets:

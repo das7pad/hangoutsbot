@@ -5,6 +5,7 @@ import logging
 
 import telepot
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.utils.cache import Cache
@@ -37,7 +38,7 @@ _LOCATION_CACHE = _LocationCache(
 _LOCATION_CACHE.start()
 
 
-class Message(dict):
+class Message(dict, BotMixin):
     """parse the message once
 
     keep value accessing via dict
@@ -48,7 +49,6 @@ class Message(dict):
     Raises:
         IgnoreMessage: the message should not be synced
     """
-    bot = None
     tg_bot = None
     _last_messages = {}
 
@@ -61,7 +61,7 @@ class Message(dict):
         self.user = User(self.tg_bot, msg)
         self.image_info = None
         self._set_content()
-        self.add_message(self.chat_id, self.msg_id)
+        self.add_message(self.bot, self.chat_id, self.msg_id)
 
         base_path = ['telesync', 'chat_data', self.chat_id]
         user_path = base_path + ['user', self.user.usr_id]
@@ -87,10 +87,11 @@ class Message(dict):
         return str(self['message_id'])
 
     @classmethod
-    def add_message(cls, chat_id, msg_id):
+    def add_message(cls, bot, chat_id, msg_id):
         """add a message id to the last message and delete old items
 
         Args:
+            bot (HangupsBot): the running instance
             identifier: string, identifier for a chat
             msg_id: int or string, the unique id of the message
         """
@@ -101,7 +102,7 @@ class Message(dict):
 
         messages.append(int(msg_id or 0))
         messages.sort(reverse=True)
-        for i in range(2 * cls.bot.config['sync_reply_spam_offset'],
+        for i in range(2 * bot.config['sync_reply_spam_offset'],
                        len(messages)):
             messages.pop(i)
 
@@ -140,7 +141,7 @@ class Message(dict):
             r_user, text = self.reply.text.split(separator, 1)
             # might be a reply as well
             r_user = r_user.rsplit('\n', 1)[-1]
-            user = SyncUser(self.bot, identifier='telesync', user_name=r_user)
+            user = SyncUser(identifier='telesync', user_name=r_user)
         else:
             user = self.reply.user
             text = self.reply.text
@@ -239,5 +240,6 @@ class Message(dict):
         elif self.content_type == 'location':
             self.text = _create_gmaps_url()
 
-        else:
+        elif self.content_type not in ('new_chat_member', 'new_chat_members',
+                                       'left_chat_member'):
             raise IgnoreMessage()

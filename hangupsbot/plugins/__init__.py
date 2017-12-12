@@ -11,8 +11,9 @@ import os
 import sys
 
 from hangupsbot import utils
+from hangupsbot.base_models import BotMixin, TrackingMixin
 from hangupsbot.commands import command
-from hangupsbot.sinks import aiohttp_servers, aiohttp_terminate
+from hangupsbot.sinks import aiohttp_terminate
 
 
 logger = logging.getLogger(__name__)
@@ -37,25 +38,17 @@ class NotLoaded(utils.FormatBaseException):
                  'already got unloaded')
 
 
-class Tracker(object):
+class Tracker(BotMixin):
     """used by the plugin loader to keep track of loaded commands
     designed to accommodate the dual command registration model (via function or
     decorator)
     """
     def __init__(self):
-        self.bot = None
         self.list = {}
         self._current = {}
         self._running = False
         self.reset()
-
-    def set_bot(self, bot):
-        """register the running HangupsBot
-
-        Args:
-            bot: HangupsBot instance
-        """
-        self.bot = bot
+        TrackingMixin.set_tracking(self)
 
     def reset(self):
         """clear the entrys of the current plugin registration"""
@@ -234,8 +227,6 @@ class Tracker(object):
 
 
 tracking = Tracker()                               # pylint:disable=invalid-name
-aiohttp_servers.set_tracking(tracking)
-command.set_tracking(tracking)
 
 
 # helpers, used by loaded plugins to register commands

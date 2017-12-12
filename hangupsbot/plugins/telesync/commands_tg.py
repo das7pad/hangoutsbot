@@ -11,6 +11,7 @@ from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
 from hangupsbot.commands import command
 from hangupsbot.sync import SYNC_CONFIG_KEYS
 from hangupsbot.sync.event import FakeEvent
+from hangupsbot.sync.exceptions import ProfilesyncAlreadyCompleted
 from hangupsbot.sync.utils import get_sync_config_entry
 from hangupsbot.sync.user import SyncUser
 
@@ -345,7 +346,7 @@ async def command_tldr(tg_bot, msg, *args):
     if msg.user.id_.chat_id == 'sync':
         # a valid chat_id is required to run commands
         chat_id = tg_bot.bot.user_self()['chat_id']
-        msg.user = SyncUser(tg_bot.bot, user_id=chat_id)
+        msg.user = SyncUser(user_id=chat_id)
         msg.user.is_self = False
 
     # sync the message text to get the tldr
@@ -380,6 +381,61 @@ async def command_sync_profile(tg_bot, msg, *dummys):
     bot.sync.start_profile_sync('telesync', user_id)
 
     await tg_bot.profilesync_info(user_id)
+
+async def command_set_sync_profile(tg_bot, msg, *args):
+    """init a profilesync for a different user
+
+    /setsyncprofile <tgID> <G+ID> [1on1split]
+
+    Args:
+        tg_bot (core.TelegramBot): the currently running instance
+        msg (message.Message): a text message event
+        args (tuple): a tuple of str, arguments that were passed to the command
+    """
+    if not ensure_admin(tg_bot, msg):
+        return
+
+    if not ensure_args(tg_bot, msg.chat_id, args, between=(2, 3)):
+        return
+
+    bot = tg_bot.bot
+    tg_id = args[0]
+    g_id = args[1]
+    # assume that G+ user ids [22digits] are longer than telegram user ids [<10]
+    if len(tg_id) > len(g_id):
+        tg_id, g_id = g_id, tg_id
+
+    split_1on1 = ('1on1split' in args
+                  or '1to1split' in args
+                  or '[1on1split]' in args)
+
+    if not (tg_id.isdigit() and g_id.isdigit()):
+        text = _('Check command arguments, expected two user ids:\n'
+                 '`/setsyncprofile <tgID> <G+ID> [1on1split]`')
+        tg_bot.send_html(msg.chat_id, text)
+        return
+
+    try:
+        await bot.sync.complete_profile_sync(
+            platform='telesync', chat_id=g_id, remote_user=tg_id,
+            split_1on1s=split_1on1)
+    except ProfilesyncAlreadyCompleted:
+        text = _('The profile is already linked to a G+Profile')
+        tg_bot.send_html(msg.chat_id, text)
+        return
+
+    if bot.memory.exists(['telesync', 'user_data', tg_id]):
+        tg_name = (await tg_bot.get_tg_user(tg_id)).full_name
+    else:
+        tg_name = 'unknown'
+
+    gplus_name = bot.get_hangups_user(g_id).full_name
+
+    text = _('Synced the profile of G+ User <b>{gplus_name}</b> [{g_id}] to '
+             'Telegram User <b>{tg_name}</b> [{tg_id}].').format(
+                 tg_id=tg_id, tg_name=tg_name,
+                 g_id=g_id, gplus_name=gplus_name)
+    tg_bot.send_html(msg.chat_id, text)
 
 async def command_unsync_profile(tg_bot, msg, *dummys):
     """split tg and ho-profile

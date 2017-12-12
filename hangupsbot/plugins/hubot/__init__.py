@@ -5,6 +5,7 @@ import logging
 import aiohttp
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sinks import aiohttp_start
 from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
 
@@ -18,10 +19,9 @@ REQUIRED_ENTRYS = {
     "synced_conversations": list,
 }
 
-class HubotBridge():
+class HubotBridge(BotMixin):
     configuration = []
-    def __init__(self, bot, configkey, handler_class=IncomingRequestHandler):
-        self.bot = self._bot = bot
+    def __init__(self, configkey, handler_class=IncomingRequestHandler):
         self.configkey = configkey
         self.handler_class = handler_class
 
@@ -30,7 +30,7 @@ class HubotBridge():
                         self.configkey)
             return
 
-        self._start_sinks(bot)
+        self._start_sinks()
 
         plugins.register_handler(self._handle_websync)
 
@@ -64,10 +64,10 @@ class HubotBridge():
         self.configuration = valid_configs
         return bool(valid_configs)
 
-    def _start_sinks(self, bot):
+    def _start_sinks(self):
         for listener in self.configuration:
             aiohttp_start(
-                bot=bot,
+                bot=self.bot,
                 name=listener["name"],
                 port=listener["port"],
                 certfile=listener["certfile"],
@@ -124,5 +124,5 @@ class IncomingMessages(IncomingRequestHandler):
         yield from self.send_data(conversation_id, payload["message"])
 
 
-def _initialise(bot):
-    HubotBridge(bot, "hubot", IncomingMessages)
+def _initialise():
+    HubotBridge("hubot", IncomingMessages)

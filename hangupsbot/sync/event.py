@@ -8,7 +8,7 @@ import logging
 
 import hangups
 
-from hangupsbot import hangups_conversation
+from hangupsbot.base_models import BotMixin
 
 from .exceptions import MissingArgument
 from .image import SyncImage
@@ -58,7 +58,7 @@ class FakeConvEvent(object):
         return '\n'.join(lines)
 
 
-class FakeEvent(object):
+class FakeEvent(BotMixin):
     """Dummy Event to provide Hangups Event like access to Data around a Message
 
     Args:
@@ -69,14 +69,13 @@ class FakeEvent(object):
         text: string or list, the message as text or in segments in a list
         attachments: list, urls of images for example
     """
-    bot = None
 
     def __init__(self, conv_id=None, user=None, text=None, attachments=None):
         self.timestamp = datetime.now()
         self.event_id = 'fake_event{}'.format(self.timestamp)
 
         self.conv_id = conv_id
-        self.conv = hangups_conversation.HangupsConversation(self.bot, conv_id)
+        self.conv = self.bot.get_conversation(conv_id)
 
         if isinstance(user, str):
             self.user = self.bot.get_hangups_user(user)
@@ -107,7 +106,6 @@ class SyncEvent(FakeEvent):
         notified_users: set, object to track user that were notified for the
             message content
     """
-    bot = None
 
     def __init__(self, *, identifier=None, conv_id, user, text=None,
                  targets=None, reply=None, title=None, edited=None, image=None,
@@ -115,7 +113,7 @@ class SyncEvent(FakeEvent):
 
         # validate user or create one
         user = (user if isinstance(user, SyncUser)
-                else SyncUser(self.bot, identifier=identifier, user=user))
+                else SyncUser(identifier=identifier, user=user))
 
         self.identifier = identifier
         self.targets = targets if isinstance(targets, list) else []
@@ -430,7 +428,6 @@ class SyncEventMembership(SyncEvent):
         notified_users: set, object to track user that were notified for the
             message content
     """
-    bot = None
 
     def __init__(self, *, identifier=None, conv_id=None, title=None, user=None,
                  text=None, targets=None, type_=None, participant_user=None,
@@ -455,7 +452,7 @@ class SyncEventMembership(SyncEvent):
         self.participant_user = []
         for p_user in participant_user:
             if not isinstance(p_user, SyncUser):
-                p_user = SyncUser(self.bot, identifier=identifier, user=p_user)
+                p_user = SyncUser(identifier=identifier, user=p_user)
             self.participant_user.append(p_user)
 
         self.conv_event.type_ = self.type_ = type_
@@ -531,7 +528,7 @@ class SyncEventMembership(SyncEvent):
         return get_formatted(text, style, internal_source=True)
 
 
-class SyncReply(object):
+class SyncReply(BotMixin):
     """wrapper for reply messages
 
     Args:
@@ -541,14 +538,13 @@ class SyncReply(object):
         offset: int, message count between the original message and the reply
         image: SyncImage instance, the image one replys to or None
     """
-    bot = None
 
     def __init__(self, *, identifier=None, user=None, text=None, offset=None,
                  image=None):
 
         # validate user or create one
         if not isinstance(user, SyncUser):
-            user = SyncUser(self.bot, identifier=identifier, user=user)
+            user = SyncUser(identifier=identifier, user=user)
 
         self.user = user
         self.text = text

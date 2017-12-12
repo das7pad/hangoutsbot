@@ -2,11 +2,13 @@
 __author__ = 'das7pad@outlook.com'
 
 import asyncio
+import functools
 import time
 import logging
 from collections import namedtuple
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ class CacheItem(CacheItemBase):
         return CacheItem(self.value, self.timeout, time.time() + self.timeout)
 
 
-class Cache(dict):
+class Cache(dict, BotMixin):
     """store items for a given timeout which could be extended on access
 
     Args:
@@ -54,8 +56,8 @@ class Cache(dict):
             intervall: int, time in seconds the cache should be dumped
             path: list of strings, path in memory to the location to dump into
     """
-    __slots__ = ('bot', '_name', '_default_timeout', '_increase_on_access',
-                 '_dump_config')
+    __slots__ = ('_name', '_default_timeout', '_increase_on_access',
+                 '_dump_config', '_reload_listener')
     def __init__(self, default_timeout, name=None, increase_on_access=True,
                  dump_config=None):
         super().__init__()
@@ -63,7 +65,7 @@ class Cache(dict):
         self._default_timeout = default_timeout
         self._increase_on_access = increase_on_access
         self._dump_config = dump_config
-        self.bot = plugins.tracking.bot
+        self._reload_listener = None
 
     ############################################################################
     # PUBLIC METHODS
@@ -75,12 +77,9 @@ class Cache(dict):
 
         # loading and dumping depends on a configured intervall and dump path
         if self._dump_config is not None:
-            path = self._dump_config[1]
-            self.bot.memory.ensure_path(path)
-
-            # restore old entrys
-            for identifier, value in self.bot.memory.get_by_path(path).items():
-                self.add(identifier, *value)
+            self._load_entrys()
+            self._reload_listener = functools.partial(self._load_entrys)
+            self.bot.memory.on_reload.add_observer(self._reload_listener)
 
             plugins.start_asyncio_task(self._periodic_dump)
 
@@ -161,6 +160,14 @@ class Cache(dict):
         except asyncio.CancelledError:
             return
 
+    def _load_entrys(self):
+        """load cache entrys from memory"""
+        path = self._dump_config[1]
+        self.bot.memory.ensure_path(path)
+
+        for identifier, value in self.bot.memory.get_by_path(path).items():
+            self.add(identifier, *value)
+
     async def _periodic_dump(self, dummy=None):
         """load the last cache state from memory and schedule dumping to memory
 
@@ -203,6 +210,11 @@ class Cache(dict):
         except asyncio.CancelledError:
             logger.info('flushing [%s]', self._name)
             _dump(path, only_on_new_itmes=False)
+
+    def __del__(self):
+        """explicit cleanup"""
+        if self._reload_listener is not None:
+            self.bot.memory.on_reload.remove_observer(self._reload_listener)
 
     def __missing__(self, identifier):
         """may be overwritten"""

@@ -16,9 +16,13 @@ from hangupsbot import permamem
 from hangupsbot import plugins
 from hangupsbot import tagging
 from hangupsbot import sinks
+from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 from hangupsbot.exceptions import HangupsBotExceptions
-from hangupsbot.hangups_conversation import HangupsConversation
+from hangupsbot.hangups_conversation import (
+    HangupsConversation,
+    HangupsConversationList,
+)
 from hangupsbot.sync.handler import SyncHandler
 from hangupsbot.sync.sending_queue import AsyncQueue
 
@@ -29,6 +33,9 @@ DEFAULT_CONFIG = {
                           "private messages and alerts. For help, type "
                           "<b>{bot_cmd} help</b>.\nTo keep me quiet, reply with"
                           " <b>{bot_cmd} optout</b>.</i>"),
+
+    "language": os.environ.get("HANGOUTSBOT_LOCALE"),
+
     # count
     "memory-failsafe_backups": 3,
     # in seconds
@@ -80,10 +87,8 @@ class HangupsBot(object):
         self.config.set_defaults(DEFAULT_CONFIG)
         self.get_config_option = self.config.get_option
 
-        # set localisation if any defined in
-        #  config[language] or ENV[HANGOUTSBOT_LOCALE]
-        _language = (self.config.get_option("language")
-                     or os.environ.get("HANGOUTSBOT_LOCALE"))
+        # set localisation if any defined
+        _language = self.config.get_option("language")
         if _language:
             self.set_locale(_language)
 
@@ -95,9 +100,8 @@ class HangupsBot(object):
                     memory_path, _failsafe_backups, _save_delay)
         self.memory = config.Config(memory_path,
                                     failsafe_backups=_failsafe_backups,
-                                    save_delay=_save_delay)
-        self.memory.logger = logging.getLogger("hangupsbot.memory")
-        self.memory.on_reload = hangups.event.Event('Memory reload')
+                                    save_delay=_save_delay,
+                                    name="hangupsbot.memory")
         try:
             self.memory.load()
         except (OSError, IOError, ValueError):
@@ -116,6 +120,8 @@ class HangupsBot(object):
                 # lambda necessary here as we overwrite the method .stop
         except NotImplementedError:
             pass
+
+        BotMixin.set_bot(self)
 
     @property
     def command_prefix(self):
@@ -198,18 +204,37 @@ class HangupsBot(object):
 
             Returns:
                 dict, a dict of cookies to authenticate at Google
+
+            Raises:
+                SystemExit: login failed
             """
             try:
                 return hangups.get_auth_stdin(self._cookies_path)
 
             except hangups.GoogleAuthError as err:
                 logger.error("LOGIN FAILED: %s", repr(err))
-                return False
-
-        cookies = _login()
-        if not cookies:
             logger.critical("Valid login required, exiting")
             sys.exit(1)
+
+        def _delay_restart():
+            """sleep async to delay a restart but keep the bot responsive"""
+            delay = self.__retry * 5
+            logger.info("Waiting %s seconds", delay)
+            task = asyncio.ensure_future(asyncio.sleep(delay))
+
+            # a KeyboardInterrupt should cancel the delay task instead
+            self.stop = task.cancel
+
+            try:
+                loop.run_until_complete(task)
+            except asyncio.CancelledError:
+                logger.critical("bot is exiting")
+                sys.exit()
+            else:
+                # restore the functionality to stop the bot on KeyboardInterrupt
+                self.stop = self._schedule_stop
+
+        cookies = _login()
 
         # Start asyncio event loop
         loop = asyncio.get_event_loop()
@@ -223,8 +248,7 @@ class HangupsBot(object):
         sinks.start(self)
 
         # initialise plugin and command registration
-        plugins.tracking.set_bot(self)
-        command.set_bot(self)
+        command.setup()
 
         # retries for the hangups longpolling request
         max_retries_longpolling = (self._max_retries
@@ -258,26 +282,11 @@ class HangupsBot(object):
                 # the final retry failed, do not delay the exit
                 break
 
-            delay = self.__retry * 5
-            logger.info("Waiting %s seconds", delay)
-            task = asyncio.ensure_future(asyncio.sleep(delay))
-
-            # a KeyboardInterrupt should cancel the delay task instead
-            self.stop = task.cancel
-
-            try:
-                loop.run_until_complete(task)
-            except asyncio.CancelledError:
-                logger.critical("bot is exiting")
-                return
-
-            # restore the functionality to stop the bot on KeyboardInterrupt
-            self.stop = self._schedule_stop
-
+            _delay_restart()
             logger.warning("Trying to connect again (try %s of %s)",
                            self.__retry, self._max_retries)
 
-        logger.critical("Maximum number of retries reached! Exiting...")
+        logger.critical("Maximum number of retries reached! Exiting.")
         sys.exit(1)
 
     async def _unload(self):
@@ -306,34 +315,16 @@ class HangupsBot(object):
         asyncio.ensure_future(self._unload()).add_done_callback(
             lambda x: sys.exit(0))
 
-    def list_conversations(self):
-        """List all active conversations"""
-        convs = []
-        check_ids = []
-        missing = []
+    def get_conversation(self, conv_id):
+        """get a HangupsConversation for a given conversation identifier
 
-        try:
-            for conv_id in self.conversations.catalog:
-                convs.append(HangupsConversation(self, conv_id))
-                check_ids.append(conv_id)
+        Args:
+            conv_id (str): conversation identifier
 
-            hangups_conv_list = self._conv_list.get_all()
-
-            # XXX: run consistency check on reportedly missing conversations from catalog
-            for conv in hangups_conv_list:
-                if conv.id_ not in check_ids:
-                    missing.append(conv.id_)
-
-            logger.info("list_conversations: "
-                        "%s from permamem, %s from hangups - discrepancies: %s",
-                        len(convs), len(hangups_conv_list),
-                        ", ".join(missing) or "none")
-
-        except:
-            logger.exception("LIST_CONVERSATIONS: failed")
-            raise
-
-        return convs
+        Returns:
+            HangupsConversation: a cached conv or permamem fallback
+        """
+        return self._conv_list.get(conv_id)
 
     def get_hangups_user(self, user_id):
         """get a user from the user list
@@ -477,7 +468,7 @@ class HangupsBot(object):
         if memory_1on1 is not None:
             logger.debug("get_1on1: remembered %s for %s",
                          memory_1on1, chat_id)
-            return HangupsConversation(self, memory_1on1)
+            return self.get_conversation(memory_1on1)
 
         # create a new 1-to-1 conversation with the designated chat id and send
         # an introduction message as the invitation text
@@ -500,16 +491,13 @@ class HangupsBot(object):
 
         # remember the conversation so we do not have to do this again
         self.user_memory_set(chat_id, "1on1", new_conv_id)
-        try:
-            self._conv_list.get(new_conv_id)
+        if new_conv_id in self._conv_list:
+            conv = self._conv_list.get(new_conv_id)
             # do not send the introduction as hangups already knows the conv
 
-        except KeyError:
-            conv = hangups.conversation.Conversation(
+        else:
+            conv = HangupsConversation(
                 self._client, self._user_list, response.conversation)
-
-            # add to hangups cache
-            self._conv_list._conv_dict[new_conv_id] = conv #pylint:disable=W0212
 
             # create the permamem entry for the conversation
             await self.conversations.update(conv, source="1to1creation")
@@ -519,7 +507,7 @@ class HangupsBot(object):
                 bot_cmd=self.command_prefix)
             await self.coro_send_message(new_conv_id, introduction)
 
-        return HangupsConversation(self, new_conv_id)
+        return conv
 
     def initialise_memory(self, key, datatype):
         """initialise the dict for a given key in the datatype in .memory
@@ -559,23 +547,18 @@ class HangupsBot(object):
         logger.debug("connected")
 
         self.shared = {}
-        self.tags = tagging.Tags(self)
-        self._handlers = handlers.EventHandler(self)
-        handlers.handler.set_bot(self) # shim for handler decorator
+        self.tags = tagging.Tags()
+        self._handlers = handlers.EventHandler()
 
         # release the global sending block
         AsyncQueue.release_block()
 
-        self.sync = SyncHandler(self, self._handlers)
+        self.sync = SyncHandler(self._handlers)
         await self.sync.setup()
 
-        # monkeypatch plugins go heere
-        # # plugins.load(self, "monkeypatch.something")
-        # use only in extreme circumstances
-        #  e.g. adding new functionality into hangups library
-
         self._user_list, self._conv_list = (
-            await hangups.build_user_conversation_list(self._client))
+            await hangups.build_user_conversation_list(
+                self._client, conv_list_cls=HangupsConversationList))
 
         self._conv_list.on_event.add_observer(_retry_reset)
 
@@ -645,7 +628,7 @@ class HangupsBot(object):
             logger.debug("message sending: %s", response[0])
 
             # use a fake Hangups Conversation having a fallback to permamem
-            conv = HangupsConversation(self, response[0])
+            conv = self.get_conversation(response[0])
 
             await conv.send_message(response[1],
                                     image_id=response[2],
@@ -780,9 +763,3 @@ class HangupsBot(object):
         if attr and attr[0] != "_" and hasattr(self._client, attr):
             return getattr(self._client, attr)
         raise NotImplementedError()
-
-
-    def __del__(self):
-        """help the gc with cleanup"""
-        for attr in self.__dict__:
-            setattr(self, attr, None)

@@ -1,7 +1,10 @@
 .cache
 *.py[cod]
+*.egg-info/
 
 *.*~
 .~*
 
 venv
+
+\.idea/

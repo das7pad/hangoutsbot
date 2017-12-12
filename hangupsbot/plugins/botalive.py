@@ -8,6 +8,7 @@ import time
 
 import hangups.exceptions
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def _initialise(bot):
             not ('admins' in config_botalive or 'groups' in config_botalive)):
         return
 
-    watermark_updater = WatermarkUpdater(bot)
+    watermark_updater = WatermarkUpdater()
 
     if 'admins' in config_botalive:
         if config_botalive['admins'] < 60:
@@ -73,7 +74,7 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
         return
 
 
-class WatermarkUpdater:
+class WatermarkUpdater(BotMixin):
     """use a queue to update the watermarks sequentially instead of all-at-once
 
     .add(<conv id>, overwrite=<boolean>) queue conversations for a watermark
@@ -91,16 +92,15 @@ class WatermarkUpdater:
         bot: HangupsBot instance
     """
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self._lock = asyncio.Lock()
 
         self.queue = set()
         self.failed = dict() # track errors
         self.failed_permanent = set() # track conv_ids that failed 5 times
 
-        bot.config.set_defaults({'maxfuzz': 10, 'permafail': 5},
-                                path=['botalive'])
+        self.bot.config.set_defaults({'maxfuzz': 10, 'permafail': 5},
+                                     path=['botalive'])
 
     def add(self, conv_id, overwrite=False):
         """schedule a conversation for watermarking and filter blacklisted

@@ -11,9 +11,9 @@ import hangups
 import hangups.parsers
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 from hangupsbot.event import (
-    GenericEvent,
     TypingEvent,
     WatermarkEvent,
     ConversationEvent
@@ -24,14 +24,9 @@ from hangupsbot.utils.cache import Cache
 logger = logging.getLogger(__name__)
 
 
-class EventHandler(object):
-    """Handle Hangups conversation events
-
-    Args:
-        bot: HangupsBot instance
-    """
-    def __init__(self, bot):
-        self.bot = GenericEvent.bot = bot
+class EventHandler(BotMixin):
+    """Handle Hangups conversation events"""
+    def __init__(self):
         self.bot_command = ['/bot']
 
         self.pluggables = {"allmessages": [],
@@ -493,14 +488,8 @@ class EventHandler(object):
             pluggable, self.bot, event, command))
 
 
-class HandlerBridge:
+class HandlerBridge(BotMixin):
     """shim for xmikosbot handler decorator"""
-    def __init__(self):
-        self.bot = None
-
-    def set_bot(self, bot):
-        """reference to the bot's actual EventHandler to register handlers"""
-        self.bot = bot
 
     def register(self, *args, priority=10, event=None):
         """Decorator for registering event handler"""

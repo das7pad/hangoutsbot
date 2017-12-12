@@ -4,11 +4,12 @@ import logging.handlers
 import sys
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
 
-def _initialise(bot):
+def _initialise():
     plugins.register_admin_command(["lograise", "logconfig"])
 
     root_logger = logging.getLogger()
@@ -17,11 +18,11 @@ def _initialise(bot):
             logger.info("ChatMessageLogger already attached")
             return
 
-    chathandler = ChatMessageLogger(bot)
+    chathandler = ChatMessageLogger()
 
     chathandler.setFormatter(logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
     chathandler.setLevel(logging.WARNING)
-    chathandler.addFilter(PluginFilter(bot))
+    chathandler.addFilter(PluginFilter())
 
     root_logger.addHandler(chathandler)
 
@@ -84,10 +85,7 @@ def lograise(dummy0, dummy1, *args):
         logger.debug("This is a DEBUG log message")
 
 
-class PluginFilter(logging.Filter):
-    def __init__(self, bot):
-        self.bot = bot
-        logging.Filter.__init__(self)
+class PluginFilter(logging.Filter, BotMixin):
 
     def filter(self, record):
         logging_cfg = self.bot.get_config_option("logging") or {}
@@ -103,10 +101,7 @@ class PluginFilter(logging.Filter):
         return True
 
 
-class ChatMessageLogger(logging.Handler):
-    def __init__(self, bot):
-        self.bot = bot
-        logging.Handler.__init__(self)
+class ChatMessageLogger(logging.Handler, BotMixin):
 
     def emit(self, record):
         message = self.format(record)

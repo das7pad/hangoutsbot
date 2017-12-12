@@ -1,4 +1,5 @@
 venv = venv
+python=python3
 pip = $(venv)/bin/pip
 # raise non-zero exit codes in pipes
 SHELL=/bin/bash -o pipefail
@@ -9,7 +10,7 @@ venv: install-requirements
 .PHONY: venv-create
 venv-create:
 	@if [ ! -d $(venv) ]; then \
-		echo "Creating venv" && python3 -m venv $(venv); fi
+		echo "Creating venv" && ${python} -m venv $(venv); fi
 
 .PHONY: .gen-requirements
 .gen-requirements: venv-create
@@ -80,7 +81,7 @@ venv-dev: venv-create
 install: venv-create
 	@echo "Install: started"
 	@rm -rf `find hangupsbot -name __pycache__`
-	@$(pip) install -q . --process-dependency-links
+	@$(pip) install -q . --process-dependency-links --upgrade
 	@echo "Install: finished"
 
 .PHONY: localization

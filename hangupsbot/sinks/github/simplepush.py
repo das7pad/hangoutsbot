@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class WebhookReceiver(AsyncRequestHandler):
-    _bot = None
 
     async def process_request(self, path, query_string, content):
         path = path.split("/")

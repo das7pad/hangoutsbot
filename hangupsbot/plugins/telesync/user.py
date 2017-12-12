@@ -23,12 +23,11 @@ class User(SyncUser):
     """
     # Fallback for Telegram-channel with redacted publishers
     FALLBACK = {'id': 0, 'first_name': '~'}
-    __slots__ = ('bot', 'tg_bot', 'usr_id', 'full_name', 'username',
+    __slots__ = ('tg_bot', 'usr_id', 'full_name', 'username',
                  'photo_url', 'is_self')
 
     def __init__(self, tg_bot, msg, chat_action='from', gpluslink=False):
         self.tg_bot = tg_bot
-        self.bot = tg_bot.bot
         if chat_action not in msg:
             msg[chat_action] = self.FALLBACK
 
@@ -48,7 +47,7 @@ class User(SyncUser):
         user_link = self.get_user_link() if not gpluslink else None
 
         identifier = 'telesync:' + str(msg['chat']['id'])
-        super().__init__(self.bot, identifier=identifier, user_id=self.usr_id,
+        super().__init__(identifier=identifier, user_id=self.usr_id,
                          user_name=self.full_name, user_link=user_link,
                          user_nick=self.username)
 

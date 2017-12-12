@@ -16,6 +16,7 @@ import telepot.exception
 from telepot.loop import _extract_message
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.parser import get_formatted
 from hangupsbot.sync.sending_queue import AsyncQueueCache
 
@@ -28,6 +29,7 @@ from .commands_tg import (
     command_add_admin,
     command_remove_admin,
     command_sync_profile,
+    command_set_sync_profile,
     command_unsync_profile,
     command_tldr,
     command_get_me,
@@ -39,6 +41,8 @@ from .commands_tg import (
     command_chattitle,
     command_sync_config,
     command_restrict_user,
+    restrict_users,
+    RESTRICT_OPTIONS,
 )
 
 from .exceptions import IgnoreMessage
@@ -61,7 +65,11 @@ IGNORED_MESSAGE_TYPES = (
     'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
 )
 
-class TelegramBot(telepot.aio.Bot):
+_RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
+                           '<i>{chatname}</i> could <b>not</b> be restricted, '
+                           'please check manually!')
+
+class TelegramBot(telepot.aio.Bot, BotMixin):
     """enhanced telepot bot with Hangouts sync
 
     Args:
@@ -69,7 +77,6 @@ class TelegramBot(telepot.aio.Bot):
     """
 
     def __init__(self, ho_bot):
-        self.bot = Message.bot = ho_bot
         Message.tg_bot = self
         self.user = None
         self._receive_next_updates = 0
@@ -89,6 +96,7 @@ class TelegramBot(telepot.aio.Bot):
                           '/addadmin': command_add_admin,
                           '/removeadmin': command_remove_admin,
                           '/syncprofile': command_sync_profile,
+                          '/setsyncprofile': command_set_sync_profile,
                           '/unsyncprofile': command_unsync_profile,
                           '/tldr': command_tldr,
                           '/getme': command_get_me,
@@ -417,7 +425,7 @@ class TelegramBot(telepot.aio.Bot):
                              text, tg_chat_id, repr(err))
 
         else:
-            Message.add_message(tg_chat_id, msg.get('message_id'))
+            Message.add_message(self.bot, tg_chat_id, msg.get('message_id'))
             status = True
 
         finally:
@@ -479,7 +487,7 @@ class TelegramBot(telepot.aio.Bot):
 
         if msg.content_type in ('new_chat_member', 'new_chat_members',
                                 'left_chat_member'):
-            self._on_membership_change(msg)
+            await self._on_membership_change(msg)
 
         else:
             await self._forward_content(msg)
@@ -526,7 +534,7 @@ class TelegramBot(telepot.aio.Bot):
                 reply=await msg.get_reply(), image=image,
                 title=msg.get_group_name(), edited=msg.edited))
 
-    def _on_membership_change(self, msg):
+    async def _on_membership_change(self, msg):
         """forward a membership change
 
         Args:
@@ -565,6 +573,9 @@ class TelegramBot(telepot.aio.Bot):
 
         bot.memory.save()
 
+        if type_ == 1:
+            await self._restrict_new_user(msg, changed_members)
+
         participant_user = ([] if (len(changed_members) == 1 and
                                    msg.user.usr_id == changed_members[0].usr_id)
                             else changed_members)
@@ -580,6 +591,47 @@ class TelegramBot(telepot.aio.Bot):
                 identifier='telesync:' + msg.chat_id, conv_id=conv_id,
                 user=msg.user, title=msg.get_group_name(), type_=type_,
                 participant_user=participant_user))
+
+    async def _restrict_new_user(self, msg, changed_members):
+        """restrict new members in supergroups as configured
+
+        Args:
+            msg (Message): a membership change message
+            changed_members (list): a list of `telesync.user.User`s
+        """
+        if msg.chat_type != 'supergroup':
+            return
+        mod_chat = self.config('mod_chat')
+        chatname = msg.get_group_name()
+        mode = self.bot.get_config_suboption('telesync:' + msg.chat_id,
+                                             'restrict_users')
+
+        if mode in RESTRICT_OPTIONS:
+            failed = await restrict_users(
+                self, msg.chat_id, mode,
+                (user.usr_id for user in changed_members),
+                silent=True)
+            if failed:
+                failed_names = ', '.join(
+                    '%s (%s)' % (user.full_name, user.usr_id)
+                    for user in changed_members)
+                if mod_chat:
+                    self.send_html(
+                        mod_chat,
+                        _RESTRICT_USERS_FAILED.format(names=failed_names,
+                                                      chatname=chatname))
+
+                logger.warning('restricting rights for users %s in %s failed',
+                               failed_names, msg.chat_id)
+        elif mode:
+            message = _(
+                'Check the config value `restrict_users` for the chat '
+                '{name} ({chat_id}), expected one of {valid_values}').format(
+                    name=chatname, chat_id=msg.chat_id,
+                    valid_values=', '.join(RESTRICT_OPTIONS))
+            logger.warning(message)
+            if mod_chat:
+                self.send_html(mod_chat, '<b>ERROR</b>: %s' % message)
 
     def _on_supergroup_upgrade(self, msg):
         """migrate all old data to a new chat id

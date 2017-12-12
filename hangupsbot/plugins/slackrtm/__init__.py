@@ -81,7 +81,7 @@ def _initialise(bot):
 
     for sink_config in bot.get_config_option('slackrtm'):
         try:
-            slackrtm = SlackRTM(bot, sink_config)
+            slackrtm = SlackRTM(sink_config)
         except SlackConfigError as err:
             logger.error(repr(err))
         else:

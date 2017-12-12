@@ -18,8 +18,12 @@ from hangupsbot.exceptions import SuppressEventHandling
 from hangupsbot.utils.cache import Cache
 
 from . import DEFAULT_CONFIG, SYNCPROFILE_HELP
-from .exceptions import MissingArgument, UnRegisteredProfilesync
-from .event import FakeEvent, SyncEvent, SyncEventMembership, SyncReply
+from .exceptions import (
+    MissingArgument,
+    UnRegisteredProfilesync,
+    ProfilesyncAlreadyCompleted,
+)
+from .event import SyncEvent, SyncEventMembership
 from .image import SyncImage
 from .parser import MessageSegment
 from .user import SyncUser
@@ -29,9 +33,6 @@ logger = logging.getLogger(__name__)
 
 # character used to generate tokens for the profile sync
 TOKEN_CHAR = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-CLASSES_TO_INIT = (FakeEvent, SyncEvent, SyncEventMembership,
-                   SyncImage, SyncReply)
 
 SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'user_kick', 'profilesync',
                    'allmessages_once', 'message_once', 'membership_once')
@@ -57,40 +58,36 @@ class SyncHandler(handlers.EventHandler):
     bot_command = property(lambda self: self._bot_handlers.bot_command,
                            lambda self, value: None)
 
-    def __init__(self, bot, handlers_):
+    def __init__(self, handlers_):
         self._bot_handlers = handlers_
-        super().__init__(bot)
+        super().__init__()
 
         # add more handler categories
         for pluggable in SYNC_PLUGGABLES:
             self.pluggables[pluggable] = []
 
-        # set the bot class valiables
-        for obj in CLASSES_TO_INIT:
-            obj.bot = bot
-
-        bot.config.set_defaults(DEFAULT_CONFIG)
-        bot.memory.validate(DEFAULT_MEMORY)
+        self.bot.config.set_defaults(DEFAULT_CONFIG)
+        self.bot.memory.validate(DEFAULT_MEMORY)
 
         # image upload cache
-        image_timeout = min(bot.config[key] for key in
+        image_timeout = min(self.bot.config[key] for key in
                             ('sync_cache_timeout_photo',
                              'sync_cache_timeout_gif',
                              'sync_cache_timeout_video',
                              'sync_cache_timeout_sticker'))
-        image_dump_intervall = bot.config['sync_cache_dump_image']
+        image_dump_intervall = self.bot.config['sync_cache_dump_image']
         image_dump = (image_dump_intervall, ['cache', 'image_upload_info'])
         self._cache_image = Cache(image_timeout, name='Image Upload',
                                   dump_config=image_dump)
 
         # conv user cache
-        conv_user_timeout = bot.config['sync_cache_timeout_conv_user']
+        conv_user_timeout = self.bot.config['sync_cache_timeout_conv_user']
         self._cache_conv_user = Cache(conv_user_timeout, name='User Lists',
                                       increase_on_access=False)
 
         # sending queues
         self._cache_sending_queue = AsyncQueueCache(
-            'hangouts', bot.coro_send_message, bot=bot)
+            'hangouts', self.bot.coro_send_message)
 
         self.profilesync_cmds = {}
         self.profilesync_provider = {}
@@ -338,7 +335,8 @@ class SyncHandler(handlers.EventHandler):
             self._cache_image.add(image_hash, upload_info, image_cache)
             return upload_info
 
-    def get_sync_user(self, *, identifier=None, user=None, user_id=None,
+    @staticmethod
+    def get_sync_user(*, identifier=None, user=None, user_id=None,
                       user_name=None, user_link=None, user_photo=None,
                       user_nick=None, user_is_self=False):
         """get a SyncUser object
@@ -359,7 +357,7 @@ class SyncHandler(handlers.EventHandler):
         if isinstance(user, SyncUser):
             return user
 
-        return SyncUser(self.bot, identifier=identifier, user=user,
+        return SyncUser(identifier=identifier, user=user,
                         user_id=user_id, user_name=user_name,
                         user_link=user_link, user_photo=user_photo,
                         user_nick=user_nick, user_is_self=user_is_self)
@@ -607,6 +605,53 @@ class SyncHandler(handlers.EventHandler):
         self.bot.memory.save()
         return token
 
+    async def complete_profile_sync(self, *, platform, chat_id, remote_user,
+                                    split_1on1s):
+        """finish a profile sync for a user
+
+        Args:
+            platform (str): remote platform identifier
+            chat_id (str): G+ user id
+            remote_user (str): user id at the fiven platform
+            split_1on1s (bool): toggle a sync of the private chats with the bot
+
+        Raises:
+            ProfilesyncAlreadyCompleted: the user must unlink his profile first
+            UnRegisteredProfilesync: the given platforms plugin must be loaded
+        """
+        if platform not in self.profilesync_cmds:
+            raise UnRegisteredProfilesync(
+                ('{} is not known, perform bot.sync.register_profile_sync on'
+                 'plugin init to use this method').format(platform))
+
+        bot = self.bot
+        base_path = ['profilesync', platform]
+
+        if bot.memory.exists(base_path + ['2ho', remote_user]):
+            raise ProfilesyncAlreadyCompleted()
+
+        path = base_path + ['pending_2ho', remote_user]
+        if bot.memory.exists(path):
+            token = bot.memory.get_by_path(path)
+        else:
+            token = self.start_profile_sync(platform, remote_user)
+
+        conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
+
+        # cleanup
+        bot.memory.pop_by_path(base_path + ['pending_ho2', token])
+        bot.memory.pop_by_path(base_path + ['pending_2ho', remote_user])
+
+        # profile sync
+        bot.memory.set_by_path(base_path + ['2ho', remote_user], chat_id)
+        bot.memory.set_by_path(base_path + ['ho2', chat_id], remote_user)
+        bot.memory.save()
+
+        await bot.sync.run_pluggable_omnibus(
+            'profilesync', bot=bot, platform=platform,
+            remote_user=remote_user,
+            conv_1on1=conv_1on1, split_1on1s=split_1on1s)
+
     def deregister_plugin(self, module_path):
         """remove previously registered handlers and profilesyncs
 
@@ -769,7 +814,7 @@ class SyncHandler(handlers.EventHandler):
         chat_ids = bot.conversations[conv_id]['participants']
         users = []
         for chat_id in chat_ids:
-            users.append(SyncUser(bot, identifier='hangouts:' + conv_id,
+            users.append(SyncUser(identifier='hangouts:' + conv_id,
                                   user_id=chat_id))
         return users
 

@@ -3,3 +3,4 @@
 !docker-entrypoint.sh
 !Makefile
 !setup.py
+!requirements.txt

@@ -6,10 +6,20 @@ import logging
 import aiohttp
 
 from hangupsbot import plugins
-
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.sending_queue import AsyncQueueCache
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.sync.utils import get_sync_config_entry
+
+from .constants import (
+    CACHE_UPDATE_USERS,
+    CACHE_UPDATE_GROUPS,
+    CACHE_UPDATE_GROUPS_HIDDEN,
+    CACHE_UPDATE_CHANNELS,
+    CACHE_UPDATE_CHANNELS_HIDDEN,
+    SYSTEM_MESSAGES,
+    CACHE_UPDATE_TEAM,
+)
 
 from .commands_slack import slack_command_handler
 from .exceptions import (
@@ -37,33 +47,11 @@ from .storage import (
 _RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '
                      'the Hangout to *{new_name}*_')
 
-# Slack RTM event (sub-)types
-_CACHE_UPDATE_USERS = ('team_join', 'user_change')
-_CACHE_UPDATE_GROUPS = ('group_join', 'group_leave', 'group_close',
-                        'group_open', 'group_rename', 'group_name',
-                        'group_archive', 'group_unarchive')
-_CACHE_UPDATE_GROUPS_HIDDEN = ('group_close', 'group_open',
-                               'group_rename', 'group_name',
-                               'group_archive', 'group_unarchive')
-_CACHE_UPDATE_CHANNELS = ('channel_join', 'channel_leave',
-                          'channel_created', 'channel_deleted',
-                          'channel_rename', 'channel_archive',
-                          'channel_unarchive', 'member_joined_channel')
-_CACHE_UPDATE_CHANNELS_HIDDEN = ('channel_created', 'channel_deleted',
-                                 'channel_rename', 'channel_archive',
-                                 'channel_unarchive', 'member_joined_channel')
-_SYSTEM_MESSAGES = ('hello', 'pong', 'reconnect_url', 'goodbye',
-                    'bot_added', 'bot_changed', 'dnd_updated_user',
-                    'emoji_changed', 'desktop_notification',
-                    'presence_change', 'user_typing')
-_CACHE_UPDATE_TEAM = ('team_rename', 'team_domain_changed')
 
-
-class SlackRTM(object):
+class SlackRTM(BotMixin):
     """hander for a single slack team
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
         sink_config (dict): basic configuration including the api `key`, a
             `name` for the team and `admins` a list of slack user ids
 
@@ -77,11 +65,10 @@ class SlackRTM(object):
     # tracker for concurrent api_calls, unique per instance
     _tracker = 0
 
-    def __init__(self, bot, sink_config):
+    def __init__(self, sink_config):
         if  not isinstance(sink_config, dict) or 'key' not in sink_config:
             raise SlackConfigError('API-`key` is missing in config %s'
                                    % repr(sink_config))
-        self.bot = SlackMessage.bot = bot
         self.apikey = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}
@@ -283,7 +270,7 @@ class SlackRTM(object):
                 # already logged
                 return False
             channel_tag = self.identifier + ':' + kwargs['channel']
-            SlackMessage.track_message(channel_tag, reply)
+            SlackMessage.track_message(self.bot, channel_tag, reply)
             return True
 
         async def _register_handler():
@@ -738,17 +725,17 @@ class SlackRTM(object):
             Returns:
                 boolean: True if the reply triggered an update only
             """
-            if event_type in _CACHE_UPDATE_USERS:
+            if event_type in CACHE_UPDATE_USERS:
                 await self.update_cache('users')
-            elif event_type in _CACHE_UPDATE_CHANNELS:
+            elif event_type in CACHE_UPDATE_CHANNELS:
                 await self.update_cache('channels')
-                return event_type in _CACHE_UPDATE_CHANNELS_HIDDEN
-            elif event_type in _CACHE_UPDATE_GROUPS:
+                return event_type in CACHE_UPDATE_CHANNELS_HIDDEN
+            elif event_type in CACHE_UPDATE_GROUPS:
                 await self.update_cache('groups')
-                return event_type in _CACHE_UPDATE_GROUPS_HIDDEN
-            elif event_type in _SYSTEM_MESSAGES:
+                return event_type in CACHE_UPDATE_GROUPS_HIDDEN
+            elif event_type in SYSTEM_MESSAGES:
                 return True
-            elif event_type in _CACHE_UPDATE_TEAM:
+            elif event_type in CACHE_UPDATE_TEAM:
                 await self.update_cache('team')
                 await self.rebuild_base()
             else:
@@ -778,7 +765,7 @@ class SlackRTM(object):
         try:
             msg = SlackMessage(self, reply)
             channel_tag = '%s:%s' % (self.identifier, msg.channel)
-            SlackMessage.track_message(channel_tag, reply)
+            SlackMessage.track_message(self.bot, channel_tag, reply)
 
             error_message = 'error in command handling\nreply=%s'
             error_is_critical = False
@@ -786,7 +773,10 @@ class SlackRTM(object):
 
             error_message = 'error while parsing the SyncReply\nreply=%s'
             sync_reply = await msg.get_sync_reply(self, reply)
-        except (ParseError, IgnoreMessage) as err:
+        except ParseError as err:
+            self.logger.error('%s\nreply=%s', repr(err), reply)
+            return
+        except IgnoreMessage as err:
             self.logger.debug(repr(err))
             return
         except SlackAuthError as err:
@@ -877,7 +867,7 @@ class SlackRTM(object):
             event (event.ConversationEvent): instance to be handled
         """
         name = bot.conversations.get_name(event.conv)
-        user = SyncUser(bot, user_id=event.user_id.chat_id)
+        user = SyncUser(user_id=event.user_id.chat_id)
 
         for sync in self.get_syncs(hangoutid=event.conv_id):
             channel_tag = '%s:%s' % (self.identifier, sync['channelid'])

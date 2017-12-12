@@ -309,7 +309,7 @@ async def sync_config(bot, event, *args):
     except (KeyError, TypeError) as err:
         return err.args[0]
     else:
-        return _('{sync_option} updated for conversation "{conv-id}" '
+        return _('{sync_option} updated for conversation "{conv_id}" '
                  'from "{old}" to "{new}"').format(
                      sync_option=key, conv_id=conv_id, old=last_value,
                      new=new_value)
@@ -591,22 +591,12 @@ async def syncprofile(bot, event, *args):
     chat_id = event.user_id.chat_id
     split = args[-1].lower() == 'split'
 
-    conv_1on1 = (await bot.get_1to1(chat_id, force=True)).id_
+    path = ['profilesync', platform, 'pending_ho2', token]
+    remote_user = bot.memory.get_by_path(path)
 
-    base_path = ['profilesync', platform]
-
-    # cleanup
-    remote_user = bot.memory.pop_by_path(base_path + ['pending_ho2', token])
-    bot.memory.pop_by_path(base_path + ['pending_2ho', remote_user])
-
-    # profile sync
-    bot.memory.set_by_path(base_path + ['2ho', remote_user], chat_id)
-    bot.memory.set_by_path(base_path + ['ho2', chat_id], remote_user)
-    bot.memory.save()
-
-    await bot.sync.run_pluggable_omnibus(
-        'profilesync', bot=bot, platform=platform, remote_user=remote_user,
-        conv_1on1=conv_1on1, split_1on1s=split)
+    await bot.sync.complete_profile_sync(
+        platform=platform, chat_id=chat_id, remote_user=remote_user,
+        split_1on1s=split)
 
 async def sync1to1(bot, event, *args):
     """change the setting for 1on1 syncing to a platform
@@ -711,7 +701,7 @@ async def _config_check_users(bot, *args, conv_id=None, targets=None):
     if edit:
         lines = [_('allowed users in %s:') % conv_id]
         lines.extend(['%s (%s)' % (chat_id,
-                                   SyncUser(bot, user_id=chat_id)
+                                   SyncUser(user_id=chat_id)
                                    .get_displayname(conv_id, text_only=True))
                       for chat_id in allowed_users])
         lines.append(_('%s users in total' % len(allowed_users)))
@@ -790,7 +780,7 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
 
         summery.append(_('Users added:'))
         for item in new_user:
-            user = SyncUser(bot, user_id=item)
+            user = SyncUser(user_id=item)
             summery.append(' '*3 + user.get_displayname(conv_id, True))
             summery.append(' '*3 + user.user_link)
 
