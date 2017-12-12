@@ -229,8 +229,9 @@ class WebFramework:
                     else:
                         # Couldn't match the user's name to the message text.
                         # Possible mismatch between permamem and Hangouts?
-                        logger.warn("/me message: couldn't match name '{}' ({}) with message text"
-                                    .format(name, user_id))
+                        logger.warning("/me message: couldn't match name '%s' "
+                                       "(%s) with message text",
+                                       name, user_id)
 
             attach = None
             if hasattr(event, "conv_event") and getattr(event.conv_event, "attachments"):
