@@ -83,14 +83,14 @@ def configure_logging(args):
     # logging before bringing anything else up. There is no race internally,
     # if logging() is called before configured, it outputs to stderr, and
     # we will configure it soon enough
-    bootcfg = config.Config(args.config)
+    boot_config = config.Config(args.config)
     try:
-        bootcfg.load()
+        boot_config.load()
     except (OSError, IOError, ValueError):
         pass
     else:
-        if bootcfg.exists(["logging.system"]):
-            logging_config = bootcfg["logging.system"]
+        if boot_config.exists(["logging.system"]):
+            logging_config = boot_config["logging.system"]
 
     logging.config.dictConfig(logging_config)
 

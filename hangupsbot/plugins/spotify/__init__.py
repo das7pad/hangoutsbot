@@ -33,7 +33,7 @@ _DETECT_LINKS = re.compile(
      r"([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
 _YOUTUBE_ID = re.compile(
     r"^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*")
-_HAS_PROTOCOLL = re.compile("https?://")
+_HAS_PROTOCOL = re.compile("https?://")
 
 _CLEANUP_CHAR = re.compile(
     r"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚]+\s*")
@@ -224,7 +224,7 @@ def extract_music_links(text):
     links = ["".join(link) for link in links]
 
     # Turn all URIs into URLs (necessary for the Spotify API).
-    return [l if _HAS_PROTOCOLL.match(l) else "https://" + l for l in links]
+    return [l if _HAS_PROTOCOL.match(l) else "https://" + l for l in links]
 
 
 def add_to_spotify(bot, event, query):
@@ -316,7 +316,7 @@ def _search(bot, groups):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        groups (list): a list of string, expect tracktitle and artist
+        groups (list): a list of string, expect track title and artist
 
     Returns:
         list: a list of `SpotifyTrack`s
@@ -536,7 +536,7 @@ def get_spotify_client(bot):
     Spotify access requires user authorization. The refresh token is stored
     in memory to circumvent logging in after the initial authorization.
 
-    Auth is captured via stdin
+    Auth is captured via console input
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance

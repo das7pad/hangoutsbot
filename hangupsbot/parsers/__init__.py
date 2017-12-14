@@ -12,7 +12,7 @@ from hangupsbot.sync.parser import get_formatted
 from hangupsbot.sync.parser import MessageSegmentHangups
 
 def simple_parse_to_segments(formatted_text):
-    """deprecated: parse text to hangups.ChatMessageSegements
+    """deprecated: parse text to hangups.ChatMessageSegments
 
     Args:
         formatted_text: string, html or markdown formatted text

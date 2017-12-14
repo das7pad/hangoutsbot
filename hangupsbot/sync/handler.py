@@ -54,7 +54,7 @@ class SyncHandler(handlers.EventHandler):
         bot: HangupsBot instance
         handlers_: handler.EventHandler instance, the base event handler
     """
-    # forward the call to the main event handler, ignore attibute setting
+    # forward the call to the main event handler, ignore attribute setting
     bot_command = property(lambda self: self._bot_handlers.bot_command,
                            lambda self, value: None)
 
@@ -75,8 +75,8 @@ class SyncHandler(handlers.EventHandler):
                              'sync_cache_timeout_gif',
                              'sync_cache_timeout_video',
                              'sync_cache_timeout_sticker'))
-        image_dump_intervall = self.bot.config['sync_cache_dump_image']
-        image_dump = (image_dump_intervall, ['cache', 'image_upload_info'])
+        image_dump_interval = self.bot.config['sync_cache_dump_image']
+        image_dump = (image_dump_interval, ['cache', 'image_upload_info'])
         self._cache_image = Cache(image_timeout, name='Image Upload',
                                   dump_config=image_dump)
 
@@ -346,7 +346,7 @@ class SyncHandler(handlers.EventHandler):
             user: hangups.user.User instance or string as fallback
             user_id: string or hangups.user.UserID, G+ID, or platform id
             user_name: string, Fullname
-            user_link: string, advaned identifier for cross platform sync
+            user_link: string, advanced identifier for cross platform sync
             user_photo: string, url to the user's profile picture
             user_nick: string, custom nickname
             user_is_self: boolean, simulate the bot user is certain cases
@@ -486,8 +486,8 @@ class SyncHandler(handlers.EventHandler):
         if not unique_users:
             return list(flat_users)
         # use a dict with keys fullname, chat_id to filter the user
-        # using the userlink as key would catch platform specific links that
-        #  would result in two users for a single G+ User
+        # (using the users link as key could catch platform specific links that
+        #  would result in two users for a single G+ User in the final list)
         filtered_users = list(
             {(user.full_name,
               user.id_.chat_id): user for user in flat_users}.values())
@@ -500,7 +500,7 @@ class SyncHandler(handlers.EventHandler):
         """find a user in a single or all conversations
 
         example:
-        >> loop.run_until_complate(sync_handler.find_user('NAME'))
+        >> loop.run_until_complete(sync_handler.find_user('NAME'))
         {'hangouts': [<SyncUser ...>,]}
 
         Args:
@@ -528,7 +528,7 @@ class SyncHandler(handlers.EventHandler):
         """register a handler for a single type
 
         Args:
-            function: callable, the handling function/coro
+            function: callable, the handling function/coroutine
             pluggable: string, a pluggable of .pluggables
 
         Raises:
@@ -612,7 +612,7 @@ class SyncHandler(handlers.EventHandler):
         Args:
             platform (str): remote platform identifier
             chat_id (str): G+ user id
-            remote_user (str): user id at the fiven platform
+            remote_user (str): user id at the given platform
             split_1on1s (bool): toggle a sync of the private chats with the bot
 
         Raises:

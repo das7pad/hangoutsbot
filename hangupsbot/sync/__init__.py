@@ -46,7 +46,7 @@ DEFAULT_CONFIG = {
     "sync_process_animated_max_size": 4096,
 
     ############################################################################
-    # the next entrys are set global, to be then able to set them also per conv
+    # the next entries are set global, to be then able to set them also per conv
     # as access is similar to bot.get_config_suboption(conv_id, key)
 
     'sync_nicknames': True,
@@ -121,7 +121,7 @@ DEFAULT_CONFIG = {
     'sync_reply': True,
     # after n char cut and add '...'
     'sync_reply_limit': 50,
-    # do not relay a replys text if less then x messages passed since the
+    # do not relay a replies text if less then x messages passed since the
     #  original message was sent
     'sync_reply_spam_offset': 10,
 
@@ -138,7 +138,7 @@ DEFAULT_MEMORY = {
     'check_users': {}
 }
 
-# exclude those from beeing changed without effect by sync_config()
+# exclude those from being changed without effect by sync_config()
 GLOBAL_KEYS = ('sync_cache_dump_image', 'sync_cache_timeout_conv_user',
                'sync_cache_timeout_gif', 'sync_cache_timeout_photo',
                'sync_cache_timeout_sending_queue', 'sync_cache_timeout_sticker',
@@ -158,7 +158,7 @@ HELP = {
                   'inverts the current setting'),
 
     'chattitle': _('Update the synced title for a conversation, specify a '
-                   'conversation identifer to update the tag of another '
+                   'conversation identifier to update the tag of another '
                    'conversation.\n{bot_cmd} chattitle [<conv id>] <new title>'
                    '\nThe custom chattitle will be sent with a message from the'
                    ' specified conversation\n'
@@ -199,7 +199,7 @@ HELP = {
                      'joined via invite-url; Telegram: chat setting may not be '
                      '"all users are admins"\nAdmins on each platform and the '
                      'bot user are whitelisted on each platform.\nExamples ~ '
-                     'explaination:\n{bot_cmd} check_users\n~ check current '
+                     'explanation:\n{bot_cmd} check_users\n~ check current '
                      'conv with the last userlist or kick everyone\n{bot_cmd} '
                      'check_users UgyiJIGTDLfz6d5cLVp4AaABAQ '
                      '012345678910111213141 123456789101112131415 kick_only\n'
@@ -211,7 +211,7 @@ HELP = {
     'sync_config': _('Change a per conversation config entry for the current '
                      'conversation, another Hangouts conversation or a platform'
                      ' chat that has initialised by the other platform:\n'
-                     '{bot_cmd} sync_config [<conv identifer>] key <new value>'
+                     '{bot_cmd} sync_config [<conv identifier>] key <new value>'
                      '\nTo get list of available conv identifier, use\n'
                      '{bot_cmd} sync_config list\nThis list does not include '
                      'regular Hangouts conv ids as these can be received via\n'
@@ -224,7 +224,7 @@ SYNCPROFILE_HELP = _(
     'can use the bot commands and all other plugins of the bot as if you are on'
     ' Hangouts and send from there. In addition synced messages can be posted '
     'with your G+ Name, and the configured custom nickname from <b>{bot_cmd} '
-    'setnickname</b>. Unlease that power and start from your platform of choice'
+    'setnickname</b>. Unleash that power and start from your platform of choice'
     ' with\n{platform_cmds}\n\nIf the platform provides syncing of private '
     'chats and <i>split</i>  is not sent with your token, my private messages '
     'like mentions/subscribes/... will appear on the other platform as well.\n'
@@ -233,7 +233,7 @@ SYNCPROFILE_HELP = _(
 
 
 def _initialise(bot):
-    """register commands and ensure an existing target for hangouts chattitles
+    """register commands and ensure an existing target for hangouts chat titles
 
     Args:
         bot: HangupsBot instance
@@ -319,7 +319,7 @@ def _sync_config(bot, conversation, key, value):
 
     Args:
         bot: HangupsBot instance
-        conversation: string, conversation identifer to update the config for
+        conversation: string, conversation identifier to update the config for
         key: string, config key to set a different value on conversation level
         value: any type, the new value
 
@@ -388,8 +388,8 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
         args: additional text as tuple
         platform: string, platform identifier
         source: iterable, used to check if the first arg is set to a valid
-            conversation identifer on the given platform
-        fallback: string, conversation identifer if no other is specified in the
+            conversation identifier on the given platform
+        fallback: string, conversation identifier if no other is specified in the
             args
 
     Returns:
@@ -486,17 +486,18 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
                                                                text_only=True)
 
 
-                lines.append('{spacer} {gplustag}{label}'.format(
+                lines.append('{spacer} {is_g_plus}{label}'.format(
                     spacer=' '*6,
-                    # do not show a G+ tag if the (G+)userlink is shown anyways
-                    gplustag='' if (user.id_.chat_id == 'sync' or parsed['ids']
-                                    or not parsed['nolinks']) else '<b>G+ </b>',
+                    # do not show a G+ tag if the (G+)user link is shown anyways
+                    is_g_plus='' if (user.id_.chat_id == 'sync' or
+                                     parsed['ids'] or
+                                     not parsed['nolinks']) else '<b>G+ </b>',
                     label=label))
 
                 if parsed['nolinks'] or user.user_link is None:
                     continue
 
-                # (first) userlink
+                # (first) user link
                 lines.append('{}{}'.format(' '*9, user.user_link))
 
                 if (user.id_.chat_id != 'sync' and
@@ -539,7 +540,7 @@ async def finduser(bot, event, *args):
     if not users:
         return _('No users match "%s".') % term
 
-    entrys = set()
+    entries = set()
     chat_ids = set()
     for platform, users in users.items():
         for user in users:
@@ -555,10 +556,10 @@ async def finduser(bot, event, *args):
                 entry += '\n   https://plus.google.com/%s' % chat_id
             if user.user_link:
                 entry += '\n   %s' % (user.user_link)
-            entrys.add(entry)
+            entries.add(entry)
     lines = []
     lines.append(_('Users matching "%s":') % term)
-    lines.extend(sorted(entrys))
+    lines.extend(sorted(entries))
     return '\n'.join(lines)
 
 async def syncprofile(bot, event, *args):
@@ -739,7 +740,7 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
                                                      unique_users=False)
 
     kicked = []
-    # kick sequentially to lower the possibility of getting ratelimited
+    # kick sequentially to lower the possibility of getting rate limited
     for user in users:
         if user.id_.chat_id in allowed_users:
             continue

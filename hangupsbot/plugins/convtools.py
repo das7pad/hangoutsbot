@@ -127,15 +127,15 @@ async def addusers(bot, event, *args):
     list_add = []
     target_conv = event.conv_id
 
-    state = ["adduser"]
+    state = ["add_user"]
 
     for parameter in args:
         if parameter == "into":
-            state.append("targetconv")
+            state.append("target_conv")
         else:
-            if state[-1] == "adduser":
+            if state[-1] == "add_user":
                 list_add.append(parameter)
-            elif state[-1] == "targetconv":
+            elif state[-1] == "target_conv":
                 target_conv = parameter
                 state.pop()
             else:
@@ -197,13 +197,13 @@ async def refresh(bot, event, *args):
         event: event.ConversationEvent instance
         args: tuple, additional words passed to the command
     """
-    #TODO(das7pad): refactor into smaller functions
+    # TODO(das7pad): refactor into smaller functions
     parameters = list(args)
 
     test = False
     quietly = False
     source_conv = False
-    renameold = True
+    rename_old = True
     list_removed = []
     list_added = []
 
@@ -211,25 +211,25 @@ async def refresh(bot, event, *args):
 
     for parameter in parameters:
         if parameter == _("remove") or parameter == _("without"):
-            state.append("removeuser")
+            state.append("remove_user")
         elif parameter == _("add") or parameter == _("with"):
-            state.append("adduser")
+            state.append("add_user")
         elif parameter == _("conversation"):
             state.append("conversation")
         elif parameter == _("quietly"):
             quietly = True
-            renameold = False
+            rename_old = False
         elif parameter == _("test"):
             test = True
         elif parameter == _("norename"):
-            renameold = False
+            rename_old = False
         else:
-            if state[-1] == "adduser":
+            if state[-1] == "add_user":
                 list_added.append(parameter)
                 if parameter in list_removed:
                     list_removed.remove(parameter)
 
-            elif state[-1] == "removeuser":
+            elif state[-1] == "remove_user":
                 list_removed.append(parameter)
                 if parameter in list_added:
                     list_added.remove(parameter)
@@ -273,7 +273,7 @@ async def refresh(bot, event, *args):
                  "<b>removed {}:</b> {}\n"
                  "<b>added {}:</b> {}").format(
                      source_conv,
-                     old_title if renameold else _("<em>unchanged</em>"),
+                     old_title if rename_old else _("<em>unchanged</em>"),
                      len(text_removed_users),
                      ", ".join(text_removed_users) or _("<em>none</em>"),
                      len(list_added),
@@ -300,7 +300,7 @@ async def refresh(bot, event, *args):
     await commands.command.run(
         bot, event, *["convrename", "id:" + new_conversation_id, new_title])
 
-    if renameold:
+    if rename_old:
         await commands.command.run(
             bot, event, *["convrename", "id:" + source_conv, old_title])
 

@@ -79,29 +79,29 @@ def sethoalias(bot, event, *args):
         raise Help(_('Check Arguments'))
 
     alias_list = bot.memory['hoalias']
-    newalias = args[0].lower()
+    new_alias = args[0].lower()
     conv_id = event.conv_id if len(args) == 1 else args[1]
 
-    oldalias = get_alias(bot, conv_id)
-    if bot.memory.exists(['hoalias', oldalias]):
-        alias_list.pop(oldalias)
+    old_alias = get_alias(bot, conv_id)
+    if bot.memory.exists(['hoalias', old_alias]):
+        alias_list.pop(old_alias)
 
-    if newalias != 'none':
-        alias_list[newalias] = conv_id
+    if new_alias != 'none':
+        alias_list[new_alias] = conv_id
     bot.memory.save()
 
-    if newalias == 'none':
+    if new_alias == 'none':
         if conv_id == event.conv_id:
             return _('<i>HO alias deleted</i>')
         return _('<i>HO alias for</i>  {conv_id} <i>deleted</i>').format(
             conv_id=conv_id)
 
     elif conv_id == event.conv_id:
-        return _('<i>HO alias set to</i>  <b>{newalias}</b>').format(
-            newalias=newalias)
+        return _('<i>HO alias set to</i>  <b>{new_alias}</b>').format(
+            new_alias=new_alias)
 
     return _('<i>HO alias for</i>  {conv_id} <i>is set to</i>  <b>'
-             '{newalias}</b>').format(conv_id=conv_id, newalias=newalias)
+             '{new_alias}</b>').format(conv_id=conv_id, new_alias=new_alias)
 
 def gethoalias(bot, event, *args):
     """get the alias for the current or given conversation

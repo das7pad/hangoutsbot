@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 async def _initialise(bot):
     """init bot for telesync, create and start a TelegramBot, register handler
 
-    setup config and memory entrys, create TelegramBot and initialise it before
+    setup config and memory entries, create TelegramBot and initialise it before
     starting the message loop, add commands to the hangupsbot, register handlers
     for HO-messages and sync tasks
 
@@ -111,13 +111,13 @@ def setup_config(bot):
             # enable the sync
             'enabled': False,
 
-            # number of repeated lowlevel-errors until the message loop dies
+            # number of repeated low level-errors until the message loop dies
             'message_loop_retries': 5,
 
             # remind the user on the pending sync every n hours
             'profilesync_reminder': 36,
 
-            # intervall in hours to update the user profiles
+            # interval in hours to update the user profiles
             'profile_update_interval': 5,
 
             # html message a user receives on /start
@@ -176,7 +176,7 @@ def setup_memory(bot):
     bot.memory.validate(default_memory)
 
     def _migrate_20170609():
-        """unbreak 1:1 chat-sync, cleanup profilesync"""
+        """split 1:1 chat-sync, cleanup profilesync"""
         telesync_data = bot.memory['telesync']
         if telesync_data['version'] >= 20170609:
             return
@@ -209,7 +209,7 @@ def telesync(bot, event, *args):
         args: additional text as tuple
 
     Raises:
-        commands.Help: no subcommand such as `remove`, `add` or `show` provided
+        commands.Help: no sub command such as `remove`, `add` or `show` provided
     """
     def _set_message_format(channel_id, remove_name=True):
         """remove or add the username from a forwarded message to a channel
@@ -504,7 +504,7 @@ async def _handle_message(bot, event):
 
         Args:
             tg_chat_id_: string, telegram chat identifier
-            chat_tag_: string, identifier to receive config entrys of the chat
+            chat_tag_: string, identifier to receive config entries of the chat
             image_: sync.image.SyncImage instance
             image_data_: io.BytesIO instance, the resized image data
             filename_: string, file name of the image
@@ -578,7 +578,7 @@ async def _handle_message(bot, event):
             'Media' if image_data is not None else '',
             event.conv_id, tg_chat_id)
 
-        # let the event decide whether it is nessesary to add one
+        # let the event decide whether it is necessary to add one
         add_tag = None
 
         if image_data is not None:

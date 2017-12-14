@@ -22,7 +22,7 @@ class SyncUser(hangups.user.User, BotMixin):
         user: hangups.user.User instance or string as fallback
         user_id: string or hangups.user.UserID, G+ID or platform id
         user_name: string, Fullname
-        user_link: string, advaned identifier for cross platform sync
+        user_link: string, advanced identifier for cross platform sync
         user_photo: string, url to the user's profile picture
         user_nick: string, custom nickname
         user_is_self: boolean, True if messages should be issued as the bot user
@@ -47,7 +47,7 @@ class SyncUser(hangups.user.User, BotMixin):
                     '`user` is a hangups.user.User-like object, got %s, dir=%s',
                     type(user), dir(user))
 
-        # get the synced G+ ID, if a platform is registerd for the identifier
+        # get the synced G+ ID, if a platform is registered for the identifier
         platform = (identifier.rsplit(':', 1)[0] if isinstance(identifier, str)
                     else None)
         if (user_id is not None and platform is not None and
@@ -96,7 +96,7 @@ class SyncUser(hangups.user.User, BotMixin):
         self.user_link = user_link
 
     def get_displayname(self, conv_id, text_only=False):
-        """get either the fullname or firstname plus nickname
+        """get either the fullname or first name plus nickname
 
         set global/per conv 'sync_nicknames' in config to allow nicknames
 

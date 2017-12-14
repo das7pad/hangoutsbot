@@ -55,7 +55,7 @@ async def _handle_autoreply(bot, event):
     else:
         raise RuntimeError("unhandled event type")
 
-    # get_config_suboption returns the convo specific autoreply settings. If none set, it returns the global settings.
+    # get_config_suboption returns the conv specific autoreply settings. If none set, it returns the global settings.
     autoreplies_list = bot.get_config_suboption(event.conv_id, 'autoreplies')
 
     # option to merge per-conversation and global autoreplies, by:
@@ -84,9 +84,9 @@ async def _handle_autoreply(bot, event):
             add_to_autoreplies = []
 
             # If the two are different, then iterate through each of the triggers in the global list and if they
-            # match any of the triggers in the convo list then discard them.
+            # match any of the triggers in the conv list then discard them.
             # Any remaining at the end of the loop are added to the first list to form a consolidated list
-            # of per-convo and global triggers & replies, with per-convo taking precident.
+            # of per-conv and global triggers & replies, with per-conv taking precedent.
 
             # Loop through list of global triggers e.g. ["hi","hello","hey"],["baf","BAF"].
             for kwds_gbl, sentences_gbl in autoreplies_list_global:
@@ -98,7 +98,7 @@ async def _handle_autoreply(bot, event):
                 if not overlap:
                     add_to_autoreplies.extend([[kwds_gbl, sentences_gbl]])
 
-            # Extend original list with non-disgarded entries.
+            # Extend original list with non-discarded entries.
             autoreplies_list.extend(add_to_autoreplies)
 
     if autoreplies_list:
@@ -190,9 +190,9 @@ def _words_in_text(word, text):
     else:
         word = re.escape(word)
 
-    regexword = r"(?<!\w)" + word + r"(?!\w)"
+    regex = r"(?<!\w)" + word + r"(?!\w)"
 
-    return True if re.search(regexword, text, re.IGNORECASE) else False
+    return True if re.search(regex, text, re.IGNORECASE) else False
 
 
 def autoreply(bot, event, cmd=None, *args):

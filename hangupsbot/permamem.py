@@ -31,7 +31,7 @@ def name_from_hangups_conversation(conv):
              if not user.is_self]
     return ', '.join(names)
 
-def load_missing_entrys(bot):
+def load_missing_entries(bot):
     """load users and conversations that are missing on bot start into hangups
 
     Args:
@@ -73,7 +73,7 @@ async def initialise(bot):
 
     # set the attribute here as a HangupsConversation might needs to access it
     bot.conversations = permamem
-    load_missing_entrys(bot)
+    load_missing_entries(bot)
 
     permamem.stats()
 
@@ -410,7 +410,7 @@ class ConversationMemory(BotMixin):
             dict, conv ids as keys and permamem entry of each conv as value
         """
         def parse_request(locals_):
-            """split multiple querys to their filter functions and queryvalue
+            """split multiple queries to their filter functions and queryvalue
 
             Args:
                 locals_: dict, locals of .get to access all filter functions
@@ -418,7 +418,7 @@ class ConversationMemory(BotMixin):
             Returns:
                 list, a list of tuple,
                 (operator : string, query: string, <filter func> : callable)
-                invalid filter querys result in a string as filter func
+                invalid filter queries result in a string as filter func
             """
             raw_filter = (kwargs.get('filter') or search).strip()
             terms = []

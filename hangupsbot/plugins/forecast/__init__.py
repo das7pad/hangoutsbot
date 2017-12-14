@@ -137,13 +137,13 @@ async def _lookup_address(location):
                      google_map_url, repr(response))
         return None
 
-async def _lookup_weather(coords):
+async def _lookup_weather(coordinates):
     """
     Retrieve the current forecast for the specified coordinates from darksky.net
     Limit of 1,000 requests a day
     """
 
-    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_INTERNAL['forecast_api_key'], coords['lat'], coords['lng'])
+    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_INTERNAL['forecast_api_key'], coordinates['lat'], coordinates['lng'])
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(forecast_io_url) as response:
@@ -154,7 +154,7 @@ async def _lookup_weather(coords):
             'summary': raw['currently']['summary'],
             'temperature': Decimal(raw['currently']['temperature']),
             'feelsLike': Decimal(raw['currently']['apparentTemperature']),
-            'units': _get_forcast_units(raw),
+            'units': _get_forecast_units(raw),
             'humidity': int(raw['currently']['humidity']*100),
             'windspeed' : Decimal(raw['currently']['windSpeed']),
             'windbearing' : raw['currently']['windBearing'],
@@ -200,7 +200,7 @@ async def _get_weather(bot, event, params):
 
     return {}
 
-def _get_forcast_units(result):
+def _get_forecast_units(result):
     """
     Checks to see what uni the results were passed back as and sets the display units accordingly
     """

@@ -98,7 +98,7 @@ class SyncEvent(FakeEvent):
         text: string or segment list, raw message from any platform
         targets: list of strings, conversation identifier of relay targets
         previous_targets: list of strings, conv identifier of previous targets
-        reply: tuple, orignal sender and original text of the reply
+        reply: tuple, original sender and original text of the reply
         title: string, Chat Title of the source conversation
         edited: boolean, True if the message is an edited message
         image: SyncImage instance, already wrapped image info
@@ -166,7 +166,7 @@ class SyncEvent(FakeEvent):
         """get a public url to the image that is connected to this event
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id: string, a custom identifier to pick the config entries from
 
         Returns:
             string, a cached url or error message, None if no image is available
@@ -182,7 +182,7 @@ class SyncEvent(FakeEvent):
         """get an upload id of the resized image connected to the event
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id: string, a custom identifier to pick the config entries from
 
         Returns:
             int, the upload id or None if no image is available
@@ -201,8 +201,8 @@ class SyncEvent(FakeEvent):
         """get the image connected to the event with resized image data
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
-            video_as_gif: boolean, toogle to get videos as gif
+            conv_id: string, a custom identifier to pick the config entries from
+            video_as_gif: boolean, toggle to get videos as gif
 
         Returns:
             tuple: SyncImage instance, the resized image data in a file-like
@@ -261,10 +261,10 @@ class SyncEvent(FakeEvent):
             title: string, override the original title of the chat
             name: string, override the original sender of the message
             add_photo_tag: boolean, True/False forces the prefix with image tag
-                defaults to the existance of an image
+                defaults to the existence of an image
             names_text_only: boolean, on True do not include a url into the name
             conv_id: string, identifier for a conversation to pick the config
-                entrys from
+                entries from
 
         Returns:
             string, final text
@@ -344,7 +344,7 @@ class SyncEvent(FakeEvent):
         the main image first and ignore the reply image then
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id: string, a custom identifier to pick the config entries from
 
         Returns:
             tuple: (SyncImage, int), the image or None if no image is available
@@ -381,13 +381,13 @@ class SyncEvent(FakeEvent):
         """perform the base image upload
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id: string, a custom identifier to pick the config entries from
             video_as_gif: boolean, set to True to get videos as gif
 
         Returns:
             None: the upload failed or the event has no image
             string: no image data is available, a custom error message
-            hangups.client.UploadedImage instance: on a succesful image upload
+            hangups.client.UploadedImage instance: on a successful image upload
         """
         image, image_data, filename = await self.get_image(
             conv_id=conv_id, video_as_gif=video_as_gif)
@@ -477,7 +477,7 @@ class SyncEventMembership(SyncEvent):
                 edited, name, reply, separator, text, title
             names_text_only: boolean, on True do not include a url into the name
             conv_id: string, identifier for a conversation to pick the config
-                entrys from
+                entries from
 
         Returns:
             string, final text; or None if no text should be send
@@ -536,7 +536,7 @@ class SyncReply(BotMixin):
         user: string or SyncUser instance, sender of the original message
         text: string, original message
         offset: int, message count between the original message and the reply
-        image: SyncImage instance, the image one replys to or None
+        image: SyncImage instance, the image one replies to or None
     """
 
     def __init__(self, *, identifier=None, user=None, text=None, offset=None,

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    """set defaut config entry"""
+    """set default config entry"""
     bot.config.set_defaults({"conversations": {}})
 
 def _tagshortcuts(event, type_, conv_id):
@@ -122,8 +122,8 @@ def tagscommand(bot, _event, *args):
             tags[text_match].append("plugin")
         if match in config_root:
             tags[text_match].append("config: root")
-        for convid, tagsets in config_conv.items():
-            if match in tagsets:
+        for convid, tag_sets in config_conv.items():
+            if match in tag_sets:
                 tags[text_match].append("config: {}".format(convid))
 
     lines = []

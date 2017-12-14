@@ -66,7 +66,7 @@ IGNORED_MESSAGE_TYPES = (
 )
 
 _RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
-                           '<i>{chatname}</i> could <b>not</b> be restricted, '
+                           '<i>{chat_name}</i> could <b>not</b> be restricted, '
                            'please check manually!')
 
 class TelegramBot(telepot.aio.Bot, BotMixin):
@@ -137,7 +137,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         self.user = User(self, {'bot': bot_user, 'chat': {'id': None}},
                          chat_action='bot')
-        logger.info('Botuser: id: %s, name: %s, username: %s',
+        logger.info('Bot user: id: %s, name: %s, username: %s',
                     self.user.usr_id, self.user.first_name, self.user.username)
 
         tasks = [
@@ -602,7 +602,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         if msg.chat_type != 'supergroup':
             return
         mod_chat = self.config('mod_chat')
-        chatname = msg.get_group_name()
+        chat_name = msg.get_group_name()
         mode = self.bot.get_config_suboption('telesync:' + msg.chat_id,
                                              'restrict_users')
 
@@ -619,7 +619,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     self.send_html(
                         mod_chat,
                         _RESTRICT_USERS_FAILED.format(names=failed_names,
-                                                      chatname=chatname))
+                                                      chat_name=chat_name))
 
                 logger.warning('restricting rights for users %s in %s failed',
                                failed_names, msg.chat_id)
@@ -627,7 +627,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             message = _(
                 'Check the config value `restrict_users` for the chat '
                 '{name} ({chat_id}), expected one of {valid_values}').format(
-                    name=chatname, chat_id=msg.chat_id,
+                    name=chat_name, chat_id=msg.chat_id,
                     valid_values=', '.join(RESTRICT_OPTIONS))
             logger.warning(message)
             if mod_chat:
@@ -678,7 +678,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         except asyncio.CancelledError:
             return
         except:                                    # pylint: disable=bare-except
-            logger.exception('lowlevel error in periodic profilesync reminder')
+            logger.exception('low level error in periodic profilesync reminder')
 
     async def _periodic_profile_updater(self):
         """update the telesync data periodically
@@ -686,7 +686,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         sleep for x hours after each update run
         x determined by telesync config entry 'profile_update_interval'
 
-        this could likely end in a ratelimit, delay each query by 10-20 seconds
+        this could likely end in a rate limit, delay each query by 10-20 seconds
         """
         data_path = ['telesync', 'user_data']
         chat_path = ['telesync', 'chat_data']
@@ -709,7 +709,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         except asyncio.CancelledError:
             return
         except:                                    # pylint: disable=bare-except
-            logger.exception('lowlevel error in profile updater')
+            logger.exception('low level error in profile updater')
 
     async def _message_loop(self):
         """long polling for updates and handle errors gracefully

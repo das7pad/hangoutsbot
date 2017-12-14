@@ -15,7 +15,7 @@ def print_to_logger(*args, **dummys):
     """redirect the input to a logger with the name of the last entry in stack
 
     Args:
-        args: tuple with entrys of any type
+        args: tuple with entries of any type
         dummys: dict, print kwargs that are not used
     """
     caller = traceback.extract_stack()[-2]
@@ -37,7 +37,7 @@ def class_from_name(module_name, class_name):
     """adapted from http://stackoverflow.com/a/13808375
 
     Args:
-        module_name: string, modulepath relative to the main script
+        module_name: string, module path relative to the main script
         class_name: string, class name in the module
 
     Returns:

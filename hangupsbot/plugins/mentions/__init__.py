@@ -468,8 +468,8 @@ def bemorespecific(bot, event, *dummys):
 def setnickname(bot, event, *args):
     """allow users to set a nickname for mentions and sync relays"""
 
-    truncatelength = 16 # What should the maximum length of the nickname be?
-    minlength = 2 # What should the minimum length of the nickname be?
+    truncate_length = 16 # What should the maximum length of the nickname be?
+    min_length = 2 # What should the minimum length of the nickname be?
 
     chat_id = event.user_id.chat_id
 
@@ -479,12 +479,12 @@ def setnickname(bot, event, *args):
     nickname = re.sub('[^0-9a-zA-Z-_]+', '', nickname)
 
     # Truncate nickname
-    nickname = nickname[0:truncatelength]
+    nickname = nickname[0:truncate_length]
 
-    if nickname and len(nickname) < minlength: # Check minimum length
+    if nickname and len(nickname) < min_length: # Check minimum length
         return _("Error: Minimum length of nickname is {} characters. "
                  "Only alphabetical and numeric characters allowed."
-                ).format(minlength)
+                ).format(min_length)
 
     # perform hard-coded substitution on words that trigger easter eggs
     for original in EASTER_EGGS:

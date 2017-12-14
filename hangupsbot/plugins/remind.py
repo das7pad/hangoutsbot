@@ -1,4 +1,4 @@
-"""schedule a reminder in a pubilc or private conversation"""
+"""schedule a reminder in a public or private conversation"""
 import asyncio
 
 from hangupsbot import plugins
@@ -16,7 +16,7 @@ HELP = {
 }
 
 def _initialise():
-    """register the commands and their help entrys"""
+    """register the commands and their help entries"""
     plugins.register_user_command(["remindme", "remindall"])
     plugins.register_help(HELP)
 

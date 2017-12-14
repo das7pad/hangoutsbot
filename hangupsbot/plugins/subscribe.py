@@ -121,10 +121,10 @@ def _populate_keywords(bot):
     Args:
         bot: HangupsBot instance
     """
-    for userchatid in bot.memory.get_option("user_data"):
-        userkeywords = bot.user_memory_get(userchatid, 'keywords')
-        if userkeywords:
-            _KEYWORDS[userchatid] = re.compile(r'|'.join(userkeywords))
+    for user_chat_id in bot.memory.get_option("user_data"):
+        user_keywords = bot.user_memory_get(user_chat_id, 'keywords')
+        if user_keywords:
+            _KEYWORDS[user_chat_id] = re.compile(r'|'.join(user_keywords))
     _GLOBAL_KEYWORDS.update(bot.memory['hosubscribe'])
 
 def _is_ignored_command(event):
@@ -299,7 +299,7 @@ async def subscribe(bot, event, *args):
     regex = _escape_keyword(keyword)
 
     chat_id = event.user_id.chat_id
-    userkeywords = bot.user_memory_get(chat_id, 'keywords')
+    user_keywords = bot.user_memory_get(chat_id, 'keywords')
 
     conv_1on1 = await bot.get_1to1(chat_id)
     if not conv_1on1:
@@ -307,33 +307,33 @@ async def subscribe(bot, event, *args):
 
     lines = []
     if keyword:
-        if userkeywords is None:
+        if user_keywords is None:
             # first one ever
-            userkeywords = []
+            user_keywords = []
             lines.append(USER_NOTE_SELF_MENTION)
             lines.append('')
 
-        elif regex in userkeywords:
+        elif regex in user_keywords:
             # Duplicate!
             return _("Already subscribed to '{}'!").format(keyword)
 
-        userkeywords.append(regex)
-        _KEYWORDS[chat_id] = re.compile(r'|'.join(userkeywords))
+        user_keywords.append(regex)
+        _KEYWORDS[chat_id] = re.compile(r'|'.join(user_keywords))
 
         # Save to file
-        bot.user_memory_set(chat_id, 'keywords', userkeywords)
+        bot.user_memory_set(chat_id, 'keywords', user_keywords)
 
     else:
         # user might need help
         lines.append(_("Usage: {bot_cmd} subscribe [keyword]").format(
             bot_cmd=bot.command_prefix))
 
-    if userkeywords:
-        # Note: print each keyword into one line to differeniate between
+    if user_keywords:
+        # Note: print each keyword into one line to differentiate between
         # "'keyword1', 'keyword2'" and "'keyword1, keyword1', 'keyword2'"
         # second happens as users try to add more than one keyword at once
         lines.append(_("Subscribed to:"))
-        lines += [repr(_unescape_regex(entry)) for entry in userkeywords]
+        lines += [repr(_unescape_regex(entry)) for entry in user_keywords]
 
     return '\n'.join(lines)
 
@@ -346,9 +346,9 @@ def unsubscribe(bot, event, *args):
         *args: tuple of strings, additional words as the keyword to unsubscribe
     """
     chat_id = event.user_id.chat_id
-    userkeywords = bot.user_memory_get(chat_id, 'keywords')
+    user_keywords = bot.user_memory_get(chat_id, 'keywords')
 
-    if not userkeywords:
+    if not user_keywords:
         return _('No subscribes found for you')
 
     keyword = ' '.join(args).lower()
@@ -356,23 +356,23 @@ def unsubscribe(bot, event, *args):
 
     if not keyword:
         lines = [_("Unsubscribing all keywords:")]
-        lines += [repr(_unescape_regex(entry)) for entry in userkeywords]
+        lines += [repr(_unescape_regex(entry)) for entry in user_keywords]
         text = '\n'.join(lines)
         _KEYWORDS.pop(chat_id)
-        userkeywords = []
+        user_keywords = []
 
-    elif regex in userkeywords:
+    elif regex in user_keywords:
         text = _("Unsubscribing from keyword '{}'").format(keyword)
-        userkeywords.remove(regex)
-        if userkeywords:
-            _KEYWORDS[chat_id] = re.compile(r'|'.join(userkeywords))
+        user_keywords.remove(regex)
+        if user_keywords:
+            _KEYWORDS[chat_id] = re.compile(r'|'.join(user_keywords))
         else:
             _KEYWORDS.pop(chat_id)
 
     else:
         return _('keyword "%s" not found') % keyword
 
-    bot.user_memory_set(chat_id, 'keywords', userkeywords)
+    bot.user_memory_set(chat_id, 'keywords', user_keywords)
     return text
 
 async def testsubscribe(bot, event, *dummys):

@@ -133,7 +133,7 @@ MARKDOWN_UNESCAPE = re.compile(r'\\([%s])' % MARKDOWN_START_CHAR)
 class MessageParser(ChatMessageParser):
     """parser for markdown and html environments
 
-    unescapes markdown in parsed segments with .unescape_markdown
+    unescape markdown in parsed segments with .unescape_markdown
 
     Args:
         tokens: list of reparser.Token instances
@@ -304,7 +304,7 @@ def get_formatted(segments, raw_style, *, internal_source=False):
         internal_source: boolean, set to True to disable markdown escape
 
     Returns:
-        string, formated segment text
+        string, formatted segment text
 
     Raises:
         ValueError: invalid style provided
@@ -360,7 +360,7 @@ def get_formatted(segments, raw_style, *, internal_source=False):
             continue
 
         if raw_style != 'internal':
-            # unescape the quoted special charater and escape as needed
+            # unescape the quoted special character and escape as needed
             text = urllib.parse.unquote(text)
             text = (html_module.escape(text, quote=False)
                     if style['escape_html'] else text)

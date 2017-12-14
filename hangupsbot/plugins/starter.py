@@ -7,7 +7,7 @@ HELP = {
     'iamspartacus': _('announce to the bot that you are spartacus aka the first'
                       ' bot-admin'),
 
-    'file': _('list bot file paths'),
+    'files': _('list bot file paths'),
 
     'verifyme': _('verify that the user has a 1-to-1 conversation with the bot.'
                   '\noptionally, supply a user chat id to test a user other '

@@ -32,18 +32,18 @@ whether it is an admin command or not.
 Security notes:
 
 While some attempt at security has been made, it's neither guaranteed or
-complete.  If you're running the bot as a privlieged user, you get what
+complete.  If you're running the bot as a privileged user, you get what
 you deserve when you get hacked, and we will all laugh at you when you
 share your sad story.
 
 If `allow_args` has been set to true, any arguments passed in by the user
 are also passed to the program.  *Use this with caution*, and also consider
-ending your commands with '--' to avoid allowing users to masqurade
+ending your commands with '--' to avoid allowing users to masquerade
 arguments as options, should that be an issue for a particular command.
 
-While the shell is bypassed, so no file redirection or command chanining
+While the shell is bypassed, so no file redirection or command chaining
 is allowed (e.g. `/bot motd ; rm -rf /` will fail), if `allow_args` is
-true, you are passing unsanitised arguments off to a command.  Even if,
+true, you are passing unsanitized arguments off to a command.  Even if,
 as in the `motd` example above, where the command has '--' as part of it,
 so that the user cannot pass in any additional switch based arguments,
 unintended consequences can occur:
@@ -165,10 +165,10 @@ async def _spawn(bot, event, *args):
 
     environment.update(dict(os.environ))
 
-    proc = await asyncio.create_subprocess_exec(*executable, stdout=PIPE, stderr=PIPE,
-                                                env=environment)
+    process = await asyncio.create_subprocess_exec(
+        *executable, stdout=PIPE, stderr=PIPE, env=environment)
 
-    (stdout_data, stderr_data) = await proc.communicate()
+    (stdout_data, stderr_data) = await process.communicate()
     stdout_str = stdout_data.decode().rstrip()
     stderr_str = stderr_data.decode().rstrip()
 

@@ -16,7 +16,7 @@ class WebhookReceiver(AsyncRequestHandler):
     """Receive REST API posts from GitLab"""
 
     async def process_request(self, path, dummy_query_string, content):
-        """Process a received POST to a given converstation"""
+        """Process a received POST to a given conversation"""
         path = path.split("/")
         conv_or_user_id = path[1]
         if conv_or_user_id is None:

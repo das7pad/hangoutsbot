@@ -25,9 +25,9 @@ HELP = {
 
     'perform_drawing': _(
         'draw handling:\n<i>/me draw[s] [a[n]] number[s]</i>\n'
-        '  draws from "number", "numbers" or "numberes"'
+        '  draws from "number" or "numbers"'
         '<i>/me draw[s] [a[n]] sticks[s]</i>\n'
-        '  draws from "stick", "sticks" or "stickses"\n'
+        '  draws from "stick" or "sticks"\n'
         '<i>/me draws[s]<unrecognised></i>\n'
         '  draws from "default"\n\nnote: to prepare lotteries/drawings, see '
         '<b>{bot_cmd} prepare ...</b>'),
@@ -46,7 +46,7 @@ async def _handle_me_action(bot, event, command):
         await command.run(bot, event, *["perform_drawing"])
 
 
-def _get_global_lottery_name(bot, conversation_id, listname):
+def _get_global_lottery_name(bot, conversation_id, list_name):
     # support for syncrooms plugin
     if bot.config.get_option('syncing_enabled'):
         syncouts = bot.config.get_option('sync_rooms')
@@ -59,7 +59,7 @@ def _get_global_lottery_name(bot, conversation_id, listname):
                     conversation_id = ":".join(_linked_rooms)
                     logger.debug("joint room keys %s", conversation_id)
 
-    return conversation_id + ":" + listname
+    return conversation_id + ":" + list_name
 
 
 def _load_lottery_state(bot):
@@ -82,12 +82,12 @@ def prepare(bot, event, *args):
 
     max_items = 100
 
-    listname = "default"
-    listdef = args[0]
+    list_name = "default"
+    list_def = args[0]
     if len(args) == 2:
-        listname = args[0]
-        listdef = args[1]
-    global_draw_name = _get_global_lottery_name(bot, event.conv.id_, listname)
+        list_name = args[0]
+        list_def = args[1]
+    global_draw_name = _get_global_lottery_name(bot, event.conv.id_, list_name)
 
     draw_lists = _load_lottery_state(bot) # load any existing draws
 
@@ -96,18 +96,18 @@ def prepare(bot, event, *args):
     # special types
     #     /bot prepare [thing] COMPASS - 4 cardinal + 4 ordinal
     # XXX: add more useful shortcuts here!
-    if listdef == "COMPASS":
-        listdef = "north,north-east,east,south-east,south,south-west,west,north-west"
+    if list_def == "COMPASS":
+        list_def = "north,north-east,east,south-east,south,south-west,west,north-west"
 
-    # parse listdef
+    # parse list_def
 
-    if "," in listdef:
+    if "," in list_def:
         # comma-separated single tokens
-        draw_lists[global_draw_name]["box"] = listdef.split(",")
+        draw_lists[global_draw_name]["box"] = list_def.split(",")
 
-    elif re.match(r"\d+-\d+", listdef):
+    elif re.match(r"\d+-\d+", list_def):
         # sequential range: <integer> to <integer>
-        _range = listdef.split("-")
+        _range = list_def.split("-")
         min_ = int(_range[0])
         max_ = int(_range[1])
         if min_ == max_:
@@ -120,23 +120,23 @@ def prepare(bot, event, *args):
     else:
         # numberTokens: <integer><name>
         pattern = re.compile(r"((\d+)([a-z\-_]+))", re.IGNORECASE)
-        matches = pattern.findall(listdef)
+        matches = pattern.findall(list_def)
         if len(matches) > 1:
-            for tokendef in matches:
-                tcount = int(tokendef[1])
-                tname = tokendef[2]
-                for dummy in range(0, tcount):
-                    draw_lists[global_draw_name]["box"].append(tname)
+            for token_def in matches:
+                t_count = int(token_def[1])
+                t_name = token_def[2]
+                for dummy in range(0, t_count):
+                    draw_lists[global_draw_name]["box"].append(t_name)
 
         else:
-            raise Help(_("prepare: unrecognised match (!csv, !range, !numberToken): {}").format(listdef))
+            raise Help(_("prepare: unrecognised match (!csv, !range, !numberToken): {}").format(list_def))
 
     if len(draw_lists[global_draw_name]["box"]) > max_items:
         del draw_lists[global_draw_name]
-        message = _("Wow! Too many items to draw in <b>{}</b> lottery. Try {} items or less...").format(listname, max_items)
+        message = _("Wow! Too many items to draw in <b>{}</b> lottery. Try {} items or less...").format(list_name, max_items)
     elif draw_lists[global_draw_name]["box"]:
         shuffle(draw_lists[global_draw_name]["box"])
-        message = _("The <b>{}</b> lottery is ready: {} items loaded and shuffled into the box.").format(listname, len(draw_lists[global_draw_name]["box"]))
+        message = _("The <b>{}</b> lottery is ready: {} items loaded and shuffled into the box.").format(list_name, len(draw_lists[global_draw_name]["box"]))
     else:
         raise Help(_("prepare: {} was initialised empty").format(global_draw_name))
 
@@ -152,19 +152,19 @@ def perform_drawing(bot, event, *dummys):
 
     pattern = re.compile(r".+ draws?( +(a +|an +|from +)?([a-z0-9\-_]+))?$", re.IGNORECASE)
     if pattern.match(event.text):
-        listname = "default"
+        list_name = "default"
 
         matches = pattern.search(event.text)
         groups = matches.groups()
         if groups[2] is not None:
-            listname = groups[2]
+            list_name = groups[2]
 
         # XXX: TOTALLY WRONG way to handle english plurals!
         # motivation: botmins prepare "THINGS" for a drawing, but users draw a (single) "THING"
-        if listname.endswith("s"):
-            _plurality = (listname[:-1], listname, listname + "es")
+        if list_name.endswith("s"):
+            _plurality = (list_name[:-1], list_name, list_name + "es")
         else:
-            _plurality = (listname, listname + "s", listname + "es")
+            _plurality = (list_name, list_name + "s", list_name + "es")
         # seek a matching draw name based on the hacky english singular-plural spellings
         global_draw_name = None
         word = None

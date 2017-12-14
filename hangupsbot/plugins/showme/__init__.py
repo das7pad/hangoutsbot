@@ -3,7 +3,7 @@
 a source for snapshots can be either security cameras or other URL's accessible
 to the hangupsbot server
 
-Config must specify aliases and urls which should include any nessisary auth.
+Config must specify aliases and urls which should include any necessary auth.
 """
 __LICENSE__ = """
 The BSD License
@@ -51,7 +51,7 @@ HELP = {
                 ' {bot_cmd} showme all'),
 }
 
-def _initalize(bot):
+def _initialize(bot):
     """register the showme command if sources are configured in config
 
     Args:
@@ -64,13 +64,13 @@ def _initalize(bot):
         logger.info('SHOWME: config["showme"] dict required')
 
 async def _send_source(bot, event, name, img_link):
-    """fetch the provided source and reupload the image and send a message
+    """fetch the provided source, upload the image and send a message
 
     Args:
         bot: HangupsBot instance
         event: event.ConversationEvent instance
         name: string, source label
-        img_link: string, url to a shared webcam
+        img_link: string, url to a shared web cam
     """
     logger.info("Getting %s", img_link)
     async with aiohttp.ClientSession() as session:

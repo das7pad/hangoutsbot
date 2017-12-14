@@ -55,7 +55,7 @@ class HangupsBot(object):
         cookies_path: string, path on disk to stored auth-cookies
         config_path: string, path on disk to the bot configuration json
         memory_path: string, path on disk to the bot memory json
-        max_retries: integer, retry count for lowlevel errors
+        max_retries: integer, retry count for low level errors
     """
 
     def __init__(self, cookies_path, config_path, memory_path, max_retries):
@@ -443,7 +443,8 @@ class HangupsBot(object):
             chat_id: string, G+ id of the user
             context: dict, additional info to the request,
                 include "initiator_convid" to catch per conv optout
-            force: boolean, toggle to get the conv even if the user has optedout
+            force: boolean, toggle to get the 1on1 conv even if the user has
+                opted out
 
         Returns:
             the HangupsConversation instance of the 1on1, None if no conv can be
@@ -564,7 +565,6 @@ class HangupsBot(object):
 
         self.conversations = await permamem.initialise(self)
 
-        # init the shareds, start caches for reprocessing and start listening
         await self._handlers.setup(self._conv_list)
 
         await plugins.load(self, "sync")
@@ -646,7 +646,7 @@ class HangupsBot(object):
 
         Returns:
             boolean, True if the message was sent,
-                otherwise False - unknown user, optouted or error on .get_1to1()
+                otherwise False - unknown user, opt out or error on .get_1to1()
         """
         if not self.memory.exists(["user_data", chat_id, "_hangups"]):
             logger.info("%s is not a valid user", chat_id)

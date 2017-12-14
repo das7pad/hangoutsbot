@@ -45,7 +45,7 @@ def migrate_on_domain_change(slackrtm, old_domain):
 
     Args:
         slackrtm (core.SlackRTM): a running instance
-        old_domain (str): recent slackdomain of the team
+        old_domain (str): recent slack domain of the team
     """
     new_domain = slackrtm.slack_domain
     # cover a missing `domain` entry in slackrtm.config
@@ -116,7 +116,7 @@ def _migrate_data(bot):
     bot.memory.save()
 
 def _migrate_20170319(bot):
-    """unbreak slackrtm memory.json usage
+    """split slackrtm memory.json usage
 
     previously, this plugin abused 'user_data' to store its internal team config
 

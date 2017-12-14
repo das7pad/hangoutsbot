@@ -16,7 +16,7 @@ HELP = {
 }
 
 def _initialise():
-    """register the message handler, commands and the help entrys"""
+    """register the message handler, commands and the help entries"""
     plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_user_command(["diceroll", "coinflip"])
     plugins.register_help(HELP)
@@ -32,7 +32,7 @@ async def _handle_me_action(bot, event):
         return
 
     if any(item in event.text for item in ["roll dice", "rolls dice",
-                                           "rolles a dice", "rolled dice"]):
+                                           "rolls a dice", "rolled dice"]):
         await diceroll(bot, event)
 
     elif any(item in event.text for item in ["flips a coin", "flips coin",
