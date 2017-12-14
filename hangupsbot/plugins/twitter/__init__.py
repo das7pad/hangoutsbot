@@ -27,9 +27,10 @@ HELP = {
                        'meant to be kept secret!'),
 }
 
-def pretty_date(diff):
+def pretty_date(date):
+    diff = datetime.datetime.now(tz=datetime.timezone.utc) - date
     sec = diff.seconds
-    output = (diff.strftime('%d %b %y') if diff.days > 7 or diff.days < 0 else
+    output = (date.strftime('%b %d %y') if diff.days > 7 or diff.days < 0 else
               '1 day ago' if diff.days == 1 else
               '{} days ago'.format(diff.days) if diff.days > 1 else
               'just now' if sec <= 1 else
@@ -99,8 +100,8 @@ async def _watch_twitter_link(bot, event):
         tweet = json.loads(api.request('statuses/show/:{}'.format(tweet_id)).text)
         text = re.sub(r'(\W)@(\w{1,15})(\W)', r'\1<a href="https://twitter.com/\2">@\2</a>\3', tweet['text'])
         text = re.sub(r'(\W)#(\w{1,15})(\W)', r'\1<a href="https://twitter.com/hashtag/\2">#\2</a>\3', text)
-        time = tweet['created_at']
-        time_ago = pretty_date(datetime.datetime.now(tz=datetime.timezone.utc) - datetime.datetime.strptime(time, '%a %b %d %H:%M:%S %z %Y'))
+        date = datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S %z %Y')
+        time_ago = pretty_date(date)
         username = tweet['user']['name']
         twitter_handle = tweet['user']['screen_name']
         user_url = "https://twitter.com/intent/user?user_id={}".format(tweet['user']['id'])
