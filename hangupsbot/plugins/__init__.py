@@ -717,12 +717,12 @@ async def unload(bot, module_path):
     logger.debug("%s unloaded", module_path)
     return True
 
-SENTINALS = {}
+SENTINELS = {}
 
 async def reload_plugin(bot, module_path):
     """reload a plugin and keep track of multiple reloads
 
-    Note: the plugin may reset the sentinal on a successfull internal load
+    Note: the plugin may reset the sentinel on a successful internal load
 
     Args:
         module_path: string, plugin path on disk relative to the main script
@@ -733,10 +733,10 @@ async def reload_plugin(bot, module_path):
     if module_path in tracking.list:
         await unload(bot, module_path)
 
-    repeat = SENTINALS.setdefault(module_path, 0)
+    repeat = SENTINELS.setdefault(module_path, 0)
     if repeat >= 3:
         logger.critical('too many reloads of %s, enter failstate', module_path)
         return False
-    SENTINALS[module_path] += 1
+    SENTINELS[module_path] += 1
     await load(bot, module_path)
     return True

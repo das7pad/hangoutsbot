@@ -62,9 +62,9 @@ async def _initialise(bot):
     if not await bot.tg_bot.is_running(retry=False):
         raise RuntimeError('Can not connect to the Telegram API')
 
-    if __name__ in plugins.SENTINALS:
+    if __name__ in plugins.SENTINELS:
         # cleanup after a pluginreload
-        plugins.SENTINALS.pop(__name__, None)
+        plugins.SENTINELS.pop(__name__, None)
 
     plugins.register_help(HELP)
 
