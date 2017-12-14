@@ -248,10 +248,10 @@ class SyncEvent(FakeEvent):
 
         return self.conv_event.segments
 
-    def get_formated_text(self, *, style='hangouts', template=None, text=None,
-                          title=None, name=None, add_photo_tag=None,
-                          names_text_only=False, conv_id=None):
-        """create a formated text for the event with applied style
+    def get_formatted_text(self, *, style='hangouts', template=None, text=None,
+                           title=None, name=None, add_photo_tag=None,
+                           names_text_only=False, conv_id=None):
+        """create a formatted text for the event with applied style
 
         Args:
             style: string or dict, target style key in STYLE_MAPPING or own dict
@@ -325,13 +325,13 @@ class SyncEvent(FakeEvent):
             conv_id: target conversation
 
         Returns:
-            string, formated reply text or empty string if no reply is available
+            string, formatted reply text or empty string if no reply is available
         """
         # skip if no reply is available or should be synced to the given conv
         if self.reply is None:
             return ''
 
-        return self.reply.get_formated_text(conv_id)
+        return self.reply.get_formatted_text(conv_id)
 
     ############################################################################
     # PRIVATE METHODS
@@ -463,10 +463,10 @@ class SyncEventMembership(SyncEvent):
                                            if p_user.id_.chat_id != 'sync']
 
     #pylint:disable=arguments-differ
-    def get_formated_text(self, *, style='hangouts', text=None, title=None,
-                          name=None, template=None, names_text_only=False,
-                          conv_id=None):
-        """create a formated text for the event with applied style
+    def get_formatted_text(self, *, style='hangouts', text=None, title=None,
+                           name=None, template=None, names_text_only=False,
+                           conv_id=None):
+        """create a formatted text for the event with applied style
 
         Args:
             style: string or dict, target style key in STYLE_MAPPING or own dict
@@ -555,14 +555,14 @@ class SyncReply(BotMixin):
         # validate a given image or unset it
         self.image = image if isinstance(image, SyncImage) else None
 
-    def get_formated_text(self, conv_id):
-        """check the sender user and create the formated reply message
+    def get_formatted_text(self, conv_id):
+        """check the sender user and create the formatted reply message
 
         Args:
             conv_id: string, target conversation
 
         Returns:
-            string, the formated message
+            string, the formatted message
         """
         bot = self.bot
         if not get_sync_config_entry(bot, conv_id, 'sync_reply'):

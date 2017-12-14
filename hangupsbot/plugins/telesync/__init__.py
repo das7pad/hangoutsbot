@@ -514,7 +514,7 @@ async def _handle_message(bot, event):
         """
         # TG-Photo-Captions are not allowed to contain html,
         # do not send the event text as caption
-        text_photo = event.get_formated_text(
+        text_photo = event.get_formatted_text(
             style='text', text='', add_photo_tag=True,
             names_text_only=True, conv_id=chat_tag_,
             template=('{title}{image_tag}'
@@ -602,7 +602,7 @@ async def _handle_message(bot, event):
                                             image, image_data, filename)
 
         if has_text:
-            text = event.get_formated_text(
+            text = event.get_formatted_text(
                 style='internal', add_photo_tag=add_tag, conv_id=chat_tag)
             tg_bot.send_html(tg_chat_id, text)
 
@@ -627,7 +627,7 @@ async def _handle_membership_change(bot, event):
             return
         event.previous_targets.add(chat_tag)
 
-        text = event.get_formated_text(style='internal', conv_id=chat_tag)
+        text = event.get_formatted_text(style='internal', conv_id=chat_tag)
         if text is None:
             return
 

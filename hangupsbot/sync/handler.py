@@ -869,7 +869,7 @@ class SyncHandler(handlers.EventHandler):
             return
         event.previous_targets.add(ho_tag)
 
-        text = event.get_formated_text(names_text_only=True)
+        text = event.get_formatted_text(names_text_only=True)
         if text is None:
             return
 

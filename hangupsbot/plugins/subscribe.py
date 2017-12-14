@@ -247,14 +247,14 @@ async def _send_notification(bot, event, matches, user):
 
     phrases = '</b>", "<b>'.join(matches)
     template = MENTION_TEMPLATE % (phrases, event.display_title)
-    raw_text = event.get_formated_text(template='{text}', style='internal')
+    raw_text = event.get_formatted_text(template='{text}', style='internal')
 
     highlighted = raw_text
     for phrase in matches:
         highlighted = highlighted.replace(phrase, '<b>%s</b>' % phrase)
 
-    text = event.get_formated_text(template=template, names_text_only=True,
-                                   text=highlighted)
+    text = event.get_formatted_text(template=template, names_text_only=True,
+                                    text=highlighted)
 
     await bot.coro_send_message(conv_1on1, text)
     logger.info("%s (%s) alerted via 1on1 (%s)",

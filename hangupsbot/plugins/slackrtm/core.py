@@ -820,8 +820,8 @@ class SlackRTM(BotMixin):
                 continue
             event.previous_targets.add(channel_tag)
 
-            message = event.get_formated_text(style=SLACK_STYLE,
-                                              conv_id=channel_tag)
+            message = event.get_formatted_text(style=SLACK_STYLE,
+                                               conv_id=channel_tag)
 
             image_url = await event.get_image_url(channel_tag)
             if image_url is not None:
@@ -851,8 +851,8 @@ class SlackRTM(BotMixin):
                 continue
             event.previous_targets.add(channel_tag)
 
-            message = event.get_formated_text(style=SLACK_STYLE,
-                                              conv_id=channel_tag)
+            message = event.get_formatted_text(style=SLACK_STYLE,
+                                               conv_id=channel_tag)
             if message is None:
                 # membership change should not be synced to this channel
                 return
