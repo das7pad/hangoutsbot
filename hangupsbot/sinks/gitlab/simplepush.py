@@ -27,6 +27,7 @@ class WebhookReceiver(AsyncRequestHandler):
             payload = json.loads(content)
         except json.JSONDecodeError as err:
             logger.exception("invalid payload @%d:%d: %s", err.lineno, err.colno, err)
+            return
 
         logger.error("GitLab message: %s", json.dumps(payload))
 

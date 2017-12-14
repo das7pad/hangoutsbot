@@ -20,6 +20,7 @@ class WebhookReceiver(AsyncRequestHandler):
             payload = json.loads(content)
         except ValueError:
             logger.exception("invalid payload")
+            return
 
         if all(key in payload for key in ('repository', 'commits', 'pusher')):
             html = '<b>{}</b> has <a href="{}">pushed</a> {} commit{}\n'.format(

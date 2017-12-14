@@ -71,6 +71,7 @@ async def get_places(location, client_id, secret, section=None):
     else:
         return None
 
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:

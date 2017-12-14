@@ -40,6 +40,7 @@ async def lookup(bot, event, *args):
     logger.debug("%s (%s) has requested to lookup '%s'",
                  event.user.full_name, event.user_id.chat_id, keyword)
 
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(spreadsheet_url) as response:

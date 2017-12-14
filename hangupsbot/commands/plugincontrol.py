@@ -247,9 +247,9 @@ async def removeplugin(bot, dummy, *args):
         return "plugin does not exist: {}".format(plugin.replace("_", "\\_"))
 
     if plugin in loaded_plugins:
+        module_path = "plugins.{}".format(plugin)
+        escaped_module_path = module_path.replace("_", "\\_")
         try:
-            module_path = "plugins.{}".format(plugin)
-            escaped_module_path = module_path.replace("_", "\\_")
             await plugins.unload(bot, module_path)
             lines.append('* **unloaded: {}**'.format(escaped_module_path))
         except (RuntimeError, KeyError) as err:

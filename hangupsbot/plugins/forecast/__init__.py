@@ -116,6 +116,7 @@ async def _lookup_address(location):
     """
     google_map_url = 'https://maps.googleapis.com/maps/api/geocode/json'
     payload = {'address': location}
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(google_map_url,
@@ -144,6 +145,7 @@ async def _lookup_weather(coordinates):
     """
 
     forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_INTERNAL['forecast_api_key'], coordinates['lat'], coordinates['lng'])
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(forecast_io_url) as response:

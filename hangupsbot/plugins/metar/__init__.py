@@ -38,6 +38,7 @@ def _initialize():
 
 async def _api_lookup(target, station):
     api_url = "http://aviationweather.gov/adds/dataserver_current/httpparam?dataSource={0}s&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString={1}".format(target, station)
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(api_url) as response:
@@ -50,6 +51,7 @@ async def _api_lookup(target, station):
         return None
     except aiohttp.ClientError:
         logger.info("METAR Error: %s", repr(response))
+        return None
     return raw
 
 async def metar(dummy0, dummy1, *args):

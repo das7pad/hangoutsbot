@@ -151,6 +151,7 @@ def perform_drawing(bot, event, *dummys):
     draw_lists = _load_lottery_state(bot) # load in any existing lotteries
 
     pattern = re.compile(r".+ draws?( +(a +|an +|from +)?([a-z0-9\-_]+))?$", re.IGNORECASE)
+    message = None
     if pattern.match(event.text):
         list_name = "default"
 
@@ -202,8 +203,6 @@ def perform_drawing(bot, event, *dummys):
                     text_finished = _("You drew a {} previously.").format(draw_lists[global_draw_name]["users"][event.user.id_.chat_id])
 
                 message = text_finished
-        else:
-            message = None
 
     _save_lottery_state(bot, draw_lists) # persist lottery drawings
     return message

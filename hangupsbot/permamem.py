@@ -273,6 +273,7 @@ class ConversationMemory(BotMixin):
             "is_definitive": is_definitive,
         }
 
+        key = None
         changed = True
         if cached:
             try:
@@ -344,6 +345,7 @@ class ConversationMemory(BotMixin):
                         conv_title, conv.id_, _users_to_fetch)
             await self.get_users_from_query(_users_to_fetch)
 
+        key = ''
         conv_changed = True
         if cached:
             memory["participants"].sort()
@@ -360,7 +362,6 @@ class ConversationMemory(BotMixin):
                 conv_changed = False
         else:
             message = "%snew conv %s (%s)"
-            key = ''
 
         if conv_changed:
             logger.info(message, key, conv_title, conv.id_)

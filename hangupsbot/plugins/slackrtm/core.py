@@ -374,6 +374,8 @@ class SlackRTM(BotMixin):
             delay = kwargs.pop('delay')
             self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
             await asyncio.sleep(delay)
+        else:
+            delay = 0
         parsed = None
         try:
             async with await asyncio.shield(self._session.post(
@@ -396,11 +398,6 @@ class SlackRTM(BotMixin):
             delay += parsed.get('Retry-After', 30)
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
-            try:
-                parsed = parsed or (await resp.text())
-            except (NameError, aiohttp.ClientError):
-                pass
-
             self.logger.error(
                 'api_call %s: failed with %s, method=%s, kwargs=%s, parsed=%s',
                 tracker, repr(err), method, kwargs, parsed)

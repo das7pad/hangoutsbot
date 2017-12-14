@@ -142,6 +142,8 @@ async def _watch_for_music_link(bot, event):
                 query = get_title_from_youtube(bot, link)
             elif "soundcloud" in link:
                 query = get_title_from_soundcloud(bot, link)
+            else:
+                query = None
 
             if query:
                 try:

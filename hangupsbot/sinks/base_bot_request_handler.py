@@ -51,6 +51,7 @@ class AsyncRequestHandler(BotMixin):
         if "echo" in payload:
             text = payload["echo"]
 
+        image_raw = None
         image_data = None
         image_filename = None
         if "image" in payload:

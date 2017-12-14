@@ -187,7 +187,7 @@ class SyncHandler(handlers.EventHandler):
                 'allmessages_once', self.bot, target_event, command,
                 _run_concurrent_=True))
 
-        if not sync_event.from_bot:
+        if not target_event.from_bot:
             await self._ignore_handler_suppressor(
                 self.run_pluggable_omnibus(
                     'message_once', self.bot, target_event, command,

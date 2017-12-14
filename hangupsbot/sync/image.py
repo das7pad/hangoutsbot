@@ -388,9 +388,9 @@ class SyncImage(BotMixin):
                 io.BytesIO instance with the image data, it may not be resized
                     if it already matches the required size or an error occurred
             """
+            message = 'open %s'
+            logger.debug(message, filename)
             try:
-                message = 'open %s'
-                logger.debug(message, filename)
                 if self._movie is not None:
                     image = self._movie
                     resize_arg = None

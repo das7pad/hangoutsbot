@@ -555,6 +555,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         else:
             changed_members = [User(self, msg, chat_action=msg.content_type)]
 
+        type_ = 2
         for changed_member in changed_members:
             path_chat = ['telesync', 'chat_data', msg.chat_id, 'user',
                          changed_member.usr_id]
