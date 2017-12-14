@@ -167,7 +167,6 @@ def perform_drawing(bot, event, *dummys):
             _plurality = (listname, listname + "s", listname + "es")
         # seek a matching draw name based on the hacky english singular-plural spellings
         global_draw_name = None
-        _test_name = None
         word = None
         for word in _plurality:
             _test_name = _get_global_lottery_name(bot, event.conv.id_, word)

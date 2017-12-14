@@ -40,8 +40,6 @@ def _initialise():
 
 
 def _botkeeper_list(bot, conv_id):
-    botkeepers = []
-
     # users can be tagged as botkeeper
     tagged_botkeeper = list(bot.tags.userlist(conv_id, "botkeeper").keys())
 

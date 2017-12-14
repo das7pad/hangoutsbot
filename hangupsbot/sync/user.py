@@ -107,7 +107,6 @@ class SyncUser(hangups.user.User, BotMixin):
         Returns:
             string
         """
-        name = self.full_name
         user_link = self.user_link
 
         if (self.nickname is not None and

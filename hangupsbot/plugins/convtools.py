@@ -142,7 +142,6 @@ async def addusers(bot, event, *args):
                 raise commands.Help("UNKNOWN STATE: {}".format(state[-1]))
 
     list_add = list(set(list_add))
-    added = 0
     if list_add:
         added = await _batch_add_users(bot, target_conv, list_add)
         logger.info("addusers: %s added to %s", added, target_conv)

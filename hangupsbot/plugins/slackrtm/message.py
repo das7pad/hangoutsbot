@@ -57,7 +57,6 @@ def parse_text(slackrtm, text):
         Returns:
             str: the item to display
         """
-        out = ''
         linktext = ''
         if match.group(5) == '|':
             linktext = match.group(6)

@@ -807,7 +807,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 delay += _log_http_error(delay,
                                          (err, err.error_code, err.description))
 
-            except Exception as err:              # pylint: disable=broad-except
+            except Exception:                     # pylint: disable=broad-except
                 logger.exception('unexpected error in message loop')
             finally:
                 self._receive_next_updates = 0

@@ -72,7 +72,6 @@ def echo(bot, event, *args):
     if not args:
         raise Help(_('supply a message!'))
 
-    text = None
     if len(args) > 1 and args[0] in bot.conversations:
         # /bot echo <convid> <text>
         # only admins can echo messages into other conversations
