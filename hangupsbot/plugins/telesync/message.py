@@ -23,7 +23,7 @@ class _LocationCache(Cache):
     values: last location data (tuple):
         `(<timestamp (int)>, (<pos_lat (int)>, <pos_lng (int)>))`
 
-    Note: we can not resolve a msg_id to a user_id without storing the orignial
+    Note: we can not resolve a msg_id to a user_id without storing the original
      message. The debug-mode logs complete messages.
     """
     def __missing__(self, identifier):
@@ -161,13 +161,13 @@ class Message(dict, BotMixin):
                          offset=offset, image=image)
 
     def _set_content(self):
-        """map content type to a propper message text and find images
+        """map content type to a proper message text and find images
 
         Raises:
             IgnoreMessage: the message should not be synced,
                 invalid type or duplicate location
         """
-        def _create_gmaps_url():
+        def _create_google_maps_url():
             """create Google Maps query from a location in the message
 
             Returns:
@@ -238,7 +238,7 @@ class Message(dict, BotMixin):
             self.image_info = self['video'], 'video'
 
         elif self.content_type == 'location':
-            self.text = _create_gmaps_url()
+            self.text = _create_google_maps_url()
 
         elif self.content_type not in ('new_chat_member', 'new_chat_members',
                                        'left_chat_member'):

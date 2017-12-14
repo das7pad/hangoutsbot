@@ -108,7 +108,7 @@ class MovieConverter(VideoFileClip):
         """delete a created file
 
         Args:
-            path: string, defaults to the source filepath
+            path: string, defaults to the source file path
         """
         if path is None:
             path = self._path
@@ -216,7 +216,7 @@ class SyncImage(BotMixin):
 
         Returns:
             tuple: io.BytesIO instance, the image data and string, the filename;
-            if no data is availlable return None, <string with reason>
+            if no data is available return None, <string with reason>
         """
         if self._data is None:
             return None, '[Image has no content]'
@@ -332,11 +332,11 @@ class SyncImage(BotMixin):
             limit: int, in px the new size
             data: io.BytesIO instance
             filename: string
-            video_as_gif: boolean, toogle to get a video wrapped in a gif
+            video_as_gif: boolean, toggle to get a video wrapped in a gif
             caller: any type: set to a non value to block a loop
 
         Returns:
-            tutple: a new io.BytesIO instance with the raw resized image data
+            tuple: a new io.BytesIO instance with the raw resized image data
             and the new filename
         """
         def _remove_background(data, filename):
@@ -386,7 +386,7 @@ class SyncImage(BotMixin):
 
             Returns:
                 io.BytesIO instance with the image data, it may not be resized
-                    if it already matches the required size or an error occutred
+                    if it already matches the required size or an error occurred
             """
             try:
                 message = 'open %s'
@@ -443,8 +443,8 @@ class SyncImage(BotMixin):
             # MovieConverter missing
             return data, filename
 
-        formating = FORMAT_MAPPING.get(extension)
-        if formating is None and caller is None:
+        formatting = FORMAT_MAPPING.get(extension)
+        if formatting is None and caller is None:
             # convert to PNG
             data, filename = _remove_background(data, filename)
             return self._get_resized(limit=limit, data=data, filename=filename,
@@ -459,7 +459,7 @@ class SyncImage(BotMixin):
 
     @property
     def _meets_size_limit(self):
-        """check the image size against the hardlimit for media processing
+        """check the image size against the hard limit for media processing
 
         Returns:
             boolean, True if size is below the limit, otherwise False

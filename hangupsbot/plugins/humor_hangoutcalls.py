@@ -11,18 +11,18 @@ async def on_hangout_call(bot, event):
     if event.conv_event.event_type == hangups.HANGOUT_EVENT_TYPE_END:
         lastcall = bot.conversation_memory_get(event.conv_id, "lastcall")
         if lastcall:
-            lastcaller = lastcall["caller"]
+            last_caller = lastcall["caller"]
             since = int(time.time() - lastcall["timestamp"])
 
 
             if since < 120:
-                humantime = "{} seconds".format(since)
+                human_time = "{} seconds".format(since)
             elif since < 7200:
-                humantime = "{} minutes".format(since // 60)
+                human_time = "{} minutes".format(since // 60)
             elif since < 172800:
-                humantime = "{} hours".format(since // 3600)
+                human_time = "{} hours".format(since // 3600)
             else:
-                humantime = "{} days".format(since // 86400)
+                human_time = "{} days".format(since // 86400)
 
             if bot.conversations[event.conv_id]["type"] == "ONE_TO_ONE":
                 # subsequent calls for a ONE_TO_ONE
@@ -30,14 +30,14 @@ async def on_hangout_call(bot, event):
                     event.conv_id,
                     _("<b>It's been {} since the last call. Lonely? I can't "
                       "reply you as I don't have speech synthesis (or speech "
-                      "recognition either!)</b>").format(humantime))
+                      "recognition either!)</b>").format(human_time))
 
             else:
                 # subsequent calls for a GROUP
                 await bot.coro_send_message(
                     event.conv_id,
                     _("<b>It's been {} since the last call. The last caller was"
-                      " <i>{}</i>.</b>").format(humantime, lastcaller))
+                      " <i>{}</i>.</b>").format(human_time, last_caller))
 
         else:
             # first ever call for any conversation

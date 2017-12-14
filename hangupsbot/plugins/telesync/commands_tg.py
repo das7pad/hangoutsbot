@@ -1,4 +1,4 @@
-"""Telegram-comamnds"""
+"""Telegram-commands"""
 __author__ = 'das7pad@outlook.com'
 
 import asyncio
@@ -83,8 +83,8 @@ def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
     Args:
         tg_chat_id: int
         args: list of strings
-        between: tuple of int, lower/higher limit for the ammount of args
-        at_least: int, ammount of args that are required at least
+        between: tuple of int, lower/higher limit for the amount of args
+        at_least: int, amount of args that are required at least
 
     Returns:
         boolean, True if the number is correct, otherwise False
@@ -100,7 +100,7 @@ def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
     return True
 
 async def command_start(tg_bot, msg, *args):
-    """answer with the start message and check for deeplinking, private only
+    """answer with the start message and check for deep linking, private only
 
     /start [syncprofile]
 
@@ -180,7 +180,7 @@ async def command_whois(tg_bot, msg, *args):
     tg_bot.send_html(msg.chat_id, text)
 
 async def command_set_sync_ho(tg_bot, msg, *args):
-    """set sync with given hoid if not already set
+    """setup s sync with a given hangout
 
     /setsyncho <hangout conv_id>
 
@@ -429,12 +429,12 @@ async def command_set_sync_profile(tg_bot, msg, *args):
     else:
         tg_name = 'unknown'
 
-    gplus_name = bot.get_hangups_user(g_id).full_name
+    g_plus_name = bot.get_hangups_user(g_id).full_name
 
-    text = _('Synced the profile of G+ User <b>{gplus_name}</b> [{g_id}] to '
+    text = _('Synced the profile of G+ User <b>{g_plus_name}</b> [{g_id}] to '
              'Telegram User <b>{tg_name}</b> [{tg_id}].').format(
                  tg_id=tg_id, tg_name=tg_name,
-                 g_id=g_id, gplus_name=gplus_name)
+                 g_id=g_id, g_plus_name=g_plus_name)
     tg_bot.send_html(msg.chat_id, text)
 
 async def command_unsync_profile(tg_bot, msg, *dummys):
@@ -498,7 +498,7 @@ async def command_get_me(tg_bot, msg, *dummys):
             username=tg_bot.user.username))
 
 async def command_get_admins(tg_bot, msg, *dummys):
-    """send back a formated list of Admins
+    """send back a formatted list of Admins
 
     /getadmins
 
@@ -517,7 +517,7 @@ async def command_get_admins(tg_bot, msg, *dummys):
         if len(sync_user.full_name) > max_name_length:
             max_name_length = len(sync_user.full_name)
 
-    lines = [_('<b>Telegram Botadmins:</b>')]
+    lines = [_('<b>Telegram Bot admins:</b>')]
     for admin in admin_users:
         lines.append(
             '~ TG: {tg_name:>{max_name_length}}'.format(
@@ -680,7 +680,7 @@ async def command_sync_config(tg_bot, msg, *args):
                     [[KeyboardButton(text='/sync_config ia %s %s' % (
                         args[1], key))
                      ] for key in SYNC_CONFIG_KEYS]))
-            text = _('available config entrys:')
+            text = _('available config entries:')
         else:
             keyboard = ReplyKeyboardMarkup(
                 resize_keyboard=True, selective=True, keyboard=(

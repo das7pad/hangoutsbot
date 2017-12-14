@@ -26,8 +26,8 @@ def _initialise(bot):
         # /<first name fragment>
         first_fragment = myself["full_name"].split()[0].lower()
         if first_fragment != "unknown":
-            alias_firstname = "/" + first_fragment
-            bot_command_aliases.append(alias_firstname)
+            alias_first_name = "/" + first_fragment
+            bot_command_aliases.append(alias_first_name)
 
         # /<chat_id>
         bot_command_aliases.append("/" + myself["chat_id"])

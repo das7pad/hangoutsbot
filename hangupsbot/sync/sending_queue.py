@@ -84,7 +84,7 @@ class Queue(list):
         return self._lock.locked()
 
     def schedule(self, *args, **kwargs):
-        """queue an item with the given args/kwargs for the coro
+        """queue an item with the given args/kwargs for the coroutine
 
         Returns:
             `Status` instance: the scheduled task sets a boolean result after
@@ -229,8 +229,8 @@ class Queue(list):
         """perform the sending of the scheduled content
 
         Args:
-            args: tuple, positional arguments for the coro
-            kwargs: dict, keyword arguments for the coro
+            args: tuple, positional arguments for the coroutine
+            kwargs: dict, keyword arguments for the coroutine
 
         Returns:
             any type
@@ -252,8 +252,8 @@ class AsyncQueue(Queue):
         """perform the sending of the scheduled content
 
         Args:
-            args: tuple, positional arguments for the coro
-            kwargs: dict, keyword arguments for the coro
+            args: tuple, positional arguments for the coroutine
+            kwargs: dict, keyword arguments for the coroutine
 
         Returns:
             any type

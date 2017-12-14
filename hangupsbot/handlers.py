@@ -1,4 +1,4 @@
-"""Hangups conversationevent handler with custom pluggables for plugins"""
+"""Hangups conversation event handler with custom pluggables for plugins"""
 # pylint:disable=wrong-import-order
 import asyncio
 import inspect
@@ -85,7 +85,7 @@ class EventHandler(BotMixin):
         """register an event handler
 
         Args:
-            function: callable, the handling function/coro
+            function: callable, the handling function/coroutine
             pluggable: string, a pluggable of .pluggables
             priority: int, lower priorities receive the event earlier
 
@@ -170,7 +170,7 @@ class EventHandler(BotMixin):
 
         Args:
             image_id: int, upload id of a previous upload
-            callback: coro, awaitable callable
+            callback: coroutine, awaitable callable
             args: tuple, positional arguments for the callback
             kwargs: dict, keyword arguments for the callback
 
@@ -182,7 +182,7 @@ class EventHandler(BotMixin):
         # there was no direct way to resolve an image_id to the public url
         # without posting it first via the api.
         # plugins and functions can establish a short-lived task to wait for the
-        # image id to be posted and retrieve the url in an asyncronous way
+        # image id to be posted and retrieve the url in an asynchronous way
 
         ticks = 0
         while ticks < 60:
@@ -212,7 +212,7 @@ class EventHandler(BotMixin):
     async def _handle_chat_message(self, event):
         """Handle an incoming conversation event
 
-        - auto-optin opt-outed users if the event is in a 1on1
+        - auto opt in opt-outed users if the event is in a 1on1
         - run connected event-reprocessor
         - forward the event to handlers:
             - allmessages, all events
@@ -265,7 +265,7 @@ class EventHandler(BotMixin):
                 logger.info("associating image_id=%s with %s",
                             _image_id, _image_uri)
 
-        # first occurence of an executable id needs to be handled as an event
+        # first occurrence of an executable id needs to be handled as an event
         if (event.passthru and event.passthru.get("executable") and
                 event.passthru["executable"] not in self._executables):
             original_message = event.passthru["original_request"]["message"]
@@ -489,13 +489,12 @@ class EventHandler(BotMixin):
 
 
 class HandlerBridge(BotMixin):
-    """shim for xmikosbot handler decorator"""
+    """shim for handler decorator"""
 
     def register(self, *args, priority=10, event=None):
         """Decorator for registering event handler"""
 
-        # make compatible with this bot fork
-        scaled_priority = priority * 10 # scale as xmikos uses just 1 to 10
+        scaled_priority = priority * 10 if 0 < priority < 10 else priority
         if event is hangups.ChatMessageEvent:
             event_type = "message"
         elif event is hangups.MembershipChangeEvent:

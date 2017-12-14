@@ -21,7 +21,7 @@ class GenericEvent(BotMixin):
     Args:
         conv_event: an event instance from hangups.conversation_event or
          one of hangups.parsers.{TypingStatusMessage, WatermarkNotification}
-        conv_id: string, conversation indentifier
+        conv_id: string, conversation identifier
     """
     def __init__(self, conv_event, conv_id):
         self.conv_event = conv_event

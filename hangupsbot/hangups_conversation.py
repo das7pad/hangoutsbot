@@ -111,7 +111,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
 
     @property
     def name(self):
-        """get the custom title or gernerate one from participant names
+        """get the custom title or generate one from participant names
 
         Returns:
             string
@@ -138,9 +138,9 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
             message: string, list of hangups.ChatMessageSegment or None,
                 the text part of the message which can be empty
             image_id: string or integer, the upload id of an image,
-                aquire one from ._client.upload_image(...)
-            context: dict, additional infomation about the message,
-                including 'reprocessor' or chatbridge entrys
+                acquire one from ._client.upload_image(...)
+            context: dict, additional information about the message,
+                including 'reprocessor' or chatbridge entries
 
         Raises:
             TypeError: invalid message text provided
@@ -156,7 +156,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
 
         elif ("parser" in context and context["parser"] is False and
               isinstance(message, str)):
-            # pre-formated string
+            # pre-formatted string
             segments = [hangups.ChatMessageSegment(message)]
 
         elif isinstance(message, str):

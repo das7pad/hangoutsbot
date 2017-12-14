@@ -14,9 +14,9 @@ HELP = {
 }
 
 def _initialise(bot):
-    _reuseable = functools.partial(_user_has_dnd, bot)
-    functools.update_wrapper(_reuseable, _user_has_dnd)
-    plugins.register_shared('dnd.user_check', _reuseable)
+    _reusable = functools.partial(_user_has_dnd, bot)
+    functools.update_wrapper(_reusable, _user_has_dnd)
+    plugins.register_shared('dnd.user_check', _reusable)
     plugins.register_user_command(["dnd"])
     plugins.register_help(HELP)
 
@@ -24,7 +24,7 @@ def _initialise(bot):
 def dnd(bot, event, *args):
     """allow users to toggle DND for ALL conversations (i.e. no @mentions)"""
 
-    # ensure dndlist is initialised
+    # ensure dnd list is initialised
     if not bot.memory.exists(["donotdisturb"]):
         bot.memory["donotdisturb"] = {}
 

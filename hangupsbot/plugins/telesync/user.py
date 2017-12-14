@@ -93,7 +93,7 @@ class User(SyncUser):
             photos = raw['photos'][0]
         except (AssertionError, IndexError, KeyError):
             # AssertionError: do not fetch pictures for the fallback user
-            # IndexError or KeyError: the user has no profilepicture
+            # IndexError or KeyError: the user has no profile picture
             return
         except telepot.exception.TelegramError as err:
             logger.debug('no profile picture available for %s\nReason: %s',

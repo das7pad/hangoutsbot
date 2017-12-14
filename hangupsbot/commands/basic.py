@@ -28,7 +28,7 @@ async def help(bot, event, cmd=None, *args):  # pylint:disable=redefined-builtin
     help_conv_id = event.conv_id
     commands = command.get_available_commands(bot, help_chat_id, help_conv_id)
     commands_admin = commands["admin"]
-    commands_nonadmin = commands["user"]
+    commands_non_admin = commands["user"]
 
     if (not cmd or
             (cmd == "impersonate" and event.user_id.chat_id in admins_list)):
@@ -46,9 +46,9 @@ async def help(bot, event, cmd=None, *args):  # pylint:disable=redefined-builtin
                                 '<b><i>{}</i></b>\n').format(help_chat_id,
                                                              help_conv_id))
 
-        if commands_nonadmin:
+        if commands_non_admin:
             help_lines.append(_('<b>User commands:</b>'))
-            help_lines.append(', '.join(sorted(commands_nonadmin)))
+            help_lines.append(', '.join(sorted(commands_non_admin)))
 
         if link_to_guide:
             help_lines.append('')
@@ -78,7 +78,7 @@ async def help(bot, event, cmd=None, *args):  # pylint:disable=redefined-builtin
     else:
         cmd = cmd.lower()
         if (cmd in command.commands and
-                (cmd in commands_admin or cmd in commands_nonadmin)):
+                (cmd in commands_admin or cmd in commands_non_admin)):
             func = command.commands[cmd]
         else:
             await command.unknown_command(bot, event)
@@ -221,7 +221,7 @@ def version(bot, event, *args):
         version_info.append(_('running in a virtual environment') if in_venv
                             else _('running outside a virtual environment'))
 
-        # depedencies
+        # dependencies
         modules = args or ["aiohttp", "appdirs", "emoji", "hangups", "telepot"]
         for module_name in modules:
             try:

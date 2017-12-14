@@ -35,7 +35,7 @@ class DummyEvent():
     pass
 
 def _initialise():
-    """register commands and the help entrys"""
+    """register commands and the help entries"""
     plugins.register_admin_command(["invite"])
     plugins.register_user_command(["rsvp"])
     plugins.register_handler(_issue_invite_on_exit, "membership")
@@ -176,8 +176,8 @@ def _get_invites(bot, filter_active=True, filter_user=False):
 
 
 def _get_user_list(bot, conv_id):
-    convlist = bot.conversations.get(conv_id)
-    return convlist[conv_id]["participants"]
+    permamem_conv = bot.conversations.get(conv_id)
+    return permamem_conv[conv_id]["participants"]
 
 
 async def invite(bot, event, *args):
@@ -193,8 +193,8 @@ async def invite(bot, event, *args):
     everyone = True
     wildcards = 0
 
-    targetconv = False
-    sourceconv = False
+    target_conv = False
+    source_conv = False
     list_users = []
 
     # special cases:
@@ -274,10 +274,10 @@ async def invite(bot, event, *args):
             state.append(parameter)
         else:
             if state[-1] == "to":
-                targetconv = parameter
+                target_conv = parameter
                 state.pop()
             elif state[-1] == "from":
-                sourceconv = parameter
+                source_conv = parameter
                 state.pop()
             elif state[-1] == "users":
                 list_users.append(parameter)
@@ -288,109 +288,109 @@ async def invite(bot, event, *args):
 
     # ensure supplied conversations are consistent
 
-    if not targetconv and not sourceconv:
+    if not target_conv and not source_conv:
         # from = None, to = None:
-        #     sourceconv = current
-        #     targetconv = new blank conversation
-        sourceconv = event.conv_id
-        targetconv = "NEW_GROUP"
+        #     source_conv = current
+        #     target_conv = new blank conversation
+        source_conv = event.conv_id
+        target_conv = "NEW_GROUP"
 
-    elif not targetconv:
+    elif not target_conv:
         # from = current, to = None:
-        #     sourceconv = current
-        #     targetconv = new blank conversation
+        #     source_conv = current
+        #     target_conv = new blank conversation
         # from = other, to = None:
-        #     sourceconv = other
-        #     targetconv = current (or new, if not GROUP)
-        if sourceconv == event.conv_id:
-            targetconv = "NEW GROUP"
+        #     source_conv = other
+        #     target_conv = current (or new, if not GROUP)
+        if source_conv == event.conv_id:
+            target_conv = "NEW GROUP"
         else:
             if bot.conversations[event.conv_id]["type"] != "GROUP":
-                targetconv = "NEW_GROUP"
+                target_conv = "NEW_GROUP"
             else:
-                targetconv = event.conv_id
+                target_conv = event.conv_id
 
-    elif not sourceconv:
+    elif not source_conv:
         # list_users = 0:
         #     from = None, to = current:
         #         ERROR
         #     from = None, to = other:
-        #         sourceconv = current
-        #         targetconv = other
+        #         source_conv = current
+        #         target_conv = other
         # list_users > 0:
-        #     sourceconv = None
-        #     targetconv = *
+        #     source_conv = None
+        #     target_conv = *
         if not list_users:
-            if targetconv == event.conv_id:
+            if target_conv == event.conv_id:
                 return _('<em>invite: specify "from" or explicit list of "users"</em>')
             else:
-                sourceconv = event.conv_id
+                source_conv = event.conv_id
 
     # sanity checking
 
-    if targetconv != "NEW_GROUP" and targetconv not in bot.conversations.get():
+    if target_conv != "NEW_GROUP" and target_conv not in bot.conversations.get():
         return _('<em>invite: could not identify target conversation')
 
     # invitation generation
 
-    invitation_log = [] # devnote: no more returns after this line!
+    invitation_log = [] # dev note: no more returns after this line!
 
-    invitation_log.append("source conv: {}, target conv: {}".format(sourceconv, targetconv))
+    invitation_log.append("source conv: {}, target conv: {}".format(source_conv, target_conv))
     invitation_log.append("user list = [{}]".format(len(list_users)))
 
     invitations = []
 
     if wildcards:
-        # wildcards can be used by any user to enter a targetconv
+        # wildcards can be used by any user to enter a target_conv
         invitations.append({
             "user_id": "*",
             "uses": wildcards})
 
         invitation_log.append("wildcard invites: {}".format(wildcards))
         logger.info("convtools_invitations: %s wildcard invite for %s",
-                    wildcards, targetconv)
+                    wildcards, target_conv)
 
     else:
         # shortlist users from source room, or explicit list_users
         shortlisted = []
-        if sourceconv:
-            sourceconv_users = _get_user_list(bot, sourceconv)
-            for chat_id in sourceconv_users:
+        if source_conv:
+            source_conv_users = _get_user_list(bot, source_conv)
+            for chat_id in source_conv_users:
                 if everyone or chat_id in list_users:
                     shortlisted.append(chat_id)
 
-            invitation_log.append("shortlisted: {}/{}".format(len(shortlisted), len(sourceconv_users)))
+            invitation_log.append("shortlisted: {}/{}".format(len(shortlisted), len(source_conv_users)))
             logger.info("convtools_invitations: shortlisted %s/%s from %s, "
                         "everyone=%s, list_users=[%s]",
-                        len(shortlisted), len(sourceconv_users),
-                        sourceconv, everyone, len(list_users))
+                        len(shortlisted), len(source_conv_users),
+                        source_conv, everyone, len(list_users))
 
         else:
             shortlisted = list_users
 
             invitation_log.append("direct list: {}".format(len(shortlisted)))
             logger.info("%s convtools_invitations: shortlisted %s",
-                        len(shortlisted), sourceconv)
+                        len(shortlisted), source_conv)
 
         # exclude users who are already in the target conversation
-        if targetconv == "NEW_GROUP":
+        if target_conv == "NEW_GROUP":
             # fake user list - _new_group_conversation() always creates group with bot and initiator
-            targetconv_users = [event.user.id_.chat_id, bot.user_self()["chat_id"]]
+            target_conv_users = [event.user.id_.chat_id, bot.user_self()["chat_id"]]
         else:
-            targetconv_users = _get_user_list(bot, targetconv)
+            target_conv_users = _get_user_list(bot, target_conv)
         invited_users = []
         for uid in shortlisted:
-            if uid not in targetconv_users:
+            if uid not in target_conv_users:
                 invited_users.append(uid)
             else:
                 invitation_log.append("excluding existing: {}".format(uid))
                 logger.info(
                     "convtools_invitations: rejecting %s, already in %s",
-                    uid, targetconv)
+                    uid, target_conv)
         invited_users = list(set(invited_users))
 
         logger.info("convtools_invitations: inviting %s to %s",
-                    len(invited_users), targetconv)
+                    len(invited_users), target_conv)
 
         for uid in invited_users:
             invitations.append({
@@ -408,21 +408,21 @@ async def invite(bot, event, *args):
     else:
         # create new conversation (if required)
 
-        if targetconv == "NEW_GROUP":
+        if target_conv == "NEW_GROUP":
             invitation_log.append("create new group")
             if not test:
-                targetconv = await _new_group_conversation(bot, event.user.id_.chat_id)
+                target_conv = await _new_group_conversation(bot, event.user.id_.chat_id)
 
         # issue the invites
 
         invitation_ids = []
         for new_invite in invitations:
             invitation_log.append("invite {} to {}, uses: {}".format(
-                new_invite["user_id"], targetconv, new_invite["uses"]))
+                new_invite["user_id"], target_conv, new_invite["uses"]))
             if not test:
                 # invites are not created in test mode
                 invitation_ids.append(
-                    _issue_invite(bot, new_invite["user_id"], targetconv, new_invite["uses"]))
+                    _issue_invite(bot, new_invite["user_id"], target_conv, new_invite["uses"]))
 
         if invitation_ids:
             await bot.coro_send_message(

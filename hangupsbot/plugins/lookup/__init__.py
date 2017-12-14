@@ -35,7 +35,7 @@ async def lookup(bot, event, *args):
         counter_max = 5
         keyword = ' '.join(args)
 
-    htmlmessage = _('Results for keyword <b>{}</b>:\n').format(keyword)
+    message = _('Results for keyword <b>{}</b>:\n').format(keyword)
 
     logger.debug("%s (%s) has requested to lookup '%s'",
                  event.user.full_name, event.user_id.chat_id, keyword)
@@ -72,15 +72,15 @@ async def lookup(bot, event, *args):
 
     for row in data:
         for cell in row:
-            cellcontent_raw = str(cell).lower().strip()
-            cellcontent_ascii = unicode_to_ascii(cellcontent_raw)
+            cell_content_raw = str(cell).lower().strip()
+            cell_content_ascii = unicode_to_ascii(cell_content_raw)
 
-            if keyword_raw in cellcontent_raw or keyword_ascii in cellcontent_ascii:
+            if keyword_raw in cell_content_raw or keyword_ascii in cell_content_ascii:
                 if counter < counter_max:
-                    htmlmessage += _('\nRow {}: ').format(counter+1)
-                    for datapoint in row:
-                        htmlmessage += '{} | '.format(datapoint)
-                    htmlmessage += '\n'
+                    message += _('\nRow {}: ').format(counter+1)
+                    for data_point in row:
+                        message += '{} | '.format(data_point)
+                    message += '\n'
                     counter += 1
                     break # prevent multiple subsequent cell matches appending identical rows
                 else:
@@ -88,11 +88,11 @@ async def lookup(bot, event, *args):
                     counter += 1
 
     if counter > counter_max:
-        htmlmessage += _('\n{0} rows found. Only returning first {1}.').format(counter, counter_max)
+        message += _('\n{0} rows found. Only returning first {1}.').format(counter, counter_max)
         if counter_max == 5:
-            htmlmessage += _('\nHint: Use <b>/bot lookup <{0} {1}</b> to view {0} rows').format(counter_max*2, keyword)
+            message += _('\nHint: Use <b>/bot lookup <{0} {1}</b> to view {0} rows').format(counter_max*2, keyword)
 
     if counter == 0:
-        htmlmessage += _('No match found')
+        message += _('No match found')
 
-    return htmlmessage
+    return message

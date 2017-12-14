@@ -26,7 +26,7 @@ HELP = {
         '   replace the specified entry with the new <text>\n'
         '- {bot_cmd} tldr clear <number>\n'
         '   clear specified numbered entry\n'
-        '   <i>specialcase: {bot_cmd} tldr clear all\n'
+        '   <i>special case: {bot_cmd} tldr clear all\n'
         '     clear all entries</i>')
 }
 

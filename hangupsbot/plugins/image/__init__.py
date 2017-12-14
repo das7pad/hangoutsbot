@@ -88,7 +88,7 @@ async def image_upload_single(image_uri):
             async with session.request('get', image_uri) as res:
                 content_type = res.headers['Content-Type']
 
-                image_handling = False # must == True if valid image, can contain additonal directives
+                image_handling = False # must == True if valid image, can contain additional directives
 
                 # image handling logic for specific image types
                 #  - if necessary, guess by extension
@@ -157,13 +157,13 @@ async def image_convert_to_png(image):
     cmd = (path_imagemagick, "-", "png:-")
 
     try:
-        proc = await asyncio.create_subprocess_exec(
+        process = await asyncio.create_subprocess_exec(
             *cmd,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
 
-        (stdout_data, dummy) = await proc.communicate(input=image)
+        (stdout_data, dummy) = await process.communicate(input=image)
 
         return stdout_data
 

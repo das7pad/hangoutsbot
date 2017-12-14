@@ -1,4 +1,4 @@
-"""basic commmands for the HangupsBot"""
+"""basic commands for the HangupsBot"""
 import re
 import json
 import logging
@@ -50,7 +50,7 @@ HELP = {
 _INTERNAL = {"broadcast": {"message": "", "conversations": []}} # /bot broadcast
 
 def _initialise():
-    """register the commands and their help entrys"""
+    """register the commands and their help entries"""
     plugins.register_admin_command(["broadcast", "users", "user", "hangouts",
                                     "rename", "leave", "reload", "quit",
                                     "config", "whereami"])
@@ -107,9 +107,9 @@ async def broadcast(bot, dummy, *args):
     """
     if not args:
         raise Help(_('Your request is missing'))
-    subcmd = args[0]
+    sub_cmd = args[0]
     parameters = args[1:]
-    if subcmd == "info":
+    if sub_cmd == "info":
         # display broadcast data such as message and target rooms
 
         conv_info = ["<b><i>{name}</i></b> ... <i>{conv_id}</i>".format(
@@ -127,7 +127,7 @@ async def broadcast(bot, dummy, *args):
                     _("<b>to:</b>")]
             text.extend(conv_info)
 
-    elif subcmd == "message":
+    elif sub_cmd == "message":
         # set broadcast message
         message = ' '.join(parameters)
         if message:
@@ -135,9 +135,9 @@ async def broadcast(bot, dummy, *args):
             text = [_("{} saved").format(message)]
 
         else:
-            text = [_("broadcast: message must be supplied after subcommand")]
+            text = [_("broadcast: message must be supplied after sub command")]
 
-    elif subcmd == "add":
+    elif sub_cmd == "add":
         # add conversations to a broadcast
         if parameters[0] == "groups":
             # add all groups
@@ -162,7 +162,7 @@ async def broadcast(bot, dummy, *args):
         text = [_("broadcast: {conv_count} conversation(s)").format(
             conv_count=len(_INTERNAL["broadcast"]["conversations"]))]
 
-    elif subcmd == "remove":
+    elif sub_cmd == "remove":
         if parameters[0].lower() == "all":
             # remove all conversations from broadcast
             _INTERNAL["broadcast"]["conversations"] = []
@@ -184,7 +184,7 @@ async def broadcast(bot, dummy, *args):
             text = [_("broadcast: removed {conv_tags}".format(
                 conv_tags=", ".join(removed)))]
 
-    elif subcmd == "NOW":
+    elif sub_cmd == "NOW":
         # send the broadcast
         context = {"syncroom_no_repeat": True} # prevent echos across syncrooms
         for convid in _INTERNAL["broadcast"]["conversations"]:
@@ -227,14 +227,14 @@ def user(bot, dummy, *args):
     for usr in sorted(all_known_users.values(), key=lambda x: x.full_name.split()[-1]):
         fullname_lower = usr.full_name.lower()
         fullname_upper = usr.full_name.upper()
-        unspaced_lower = re.sub(r'\s+', '', fullname_lower)
-        unspaced_upper = re.sub(r'\s+', '', usr.full_name.upper())
+        non_spaced_lower = re.sub(r'\s+', '', fullname_lower)
+        non_spaced_upper = re.sub(r'\s+', '', usr.full_name.upper())
 
         if (search_lower in fullname_lower
-                or search_lower in unspaced_lower
-                # XXX: turkish alphabet special case: converstion works better when uppercase
+                or search_lower in non_spaced_lower
+                # XXX: turkish alphabet special case: conversation works better when uppercase
                 or search_upper in remove_accents(fullname_upper)
-                or search_upper in remove_accents(unspaced_upper)):
+                or search_upper in remove_accents(non_spaced_upper)):
 
             link = 'https://plus.google.com/u/0/{}/about'.format(usr.id_.chat_id)
             segments.append(hangups.ChatMessageSegment(usr.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
@@ -251,12 +251,12 @@ def user(bot, dummy, *args):
 
 
 def hangouts(bot, dummy, *args):
-    """retrieve a list of hangouts, supply a searchterm in args to filter
+    """retrieve a list of hangouts, supply a search term in args to filter
 
     Args:
         bot: HangupsBot instance
         dummy: unused
-        args: tuple of strings, additional words as the searchterm
+        args: tuple of strings, additional words as the search term
 
     Returns:
         string
@@ -350,7 +350,7 @@ def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
 
 
 async def config(bot, event, cmd=None, *args):
-    """retrive or edit a config entry
+    """retrieve or edit a config entry
 
     Args:
         bot: HangupsBot instance

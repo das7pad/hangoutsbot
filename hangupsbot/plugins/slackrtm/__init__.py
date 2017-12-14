@@ -36,7 +36,7 @@ You can set up as many slack teams per bot as you like by extending the list.
 Once the team(s) are configured, and the hangupsbot is restarted, invite the
 newly created Slack user into any channel or group that you want to sync, and
 then use the command from any slack channel:
-    @hobot syncto <hangoutsid>
+    @hobot syncto <hangouts id>
 
 Use "@hobot help" for more help on the Slack side.
 """

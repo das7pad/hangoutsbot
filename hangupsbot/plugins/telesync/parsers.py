@@ -11,7 +11,7 @@ class TelegramMessageParser(MessageParser):
         super().__init__(Tokens.basic)
 
     def parse(self, text):
-        """unbreak entities
+        """split entities
 
         Args:
             text: tuple of string and list of dicts, message text and entities
@@ -41,5 +41,5 @@ class TelegramMessageParser(MessageParser):
         return text
 
 class TelegramMessageSegment(MessageSegment):
-    """messae segment for telegram messages"""
+    """message segment for telegram messages"""
     _parser = TelegramMessageParser()

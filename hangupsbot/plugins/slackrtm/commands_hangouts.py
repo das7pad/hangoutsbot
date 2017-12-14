@@ -29,41 +29,41 @@ HELP = {
 }
 
 
-def _get_slackrtm(bot, slackname):
+def _get_slackrtm(bot, slack_name):
     """scan all running slackrtms for a matching name
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        slackname (str): user input as a search query
+        slack_name (str): user input as a search query
 
     Returns:
         core.SlackRTM: the requested team instance
 
     Raises:
-        Help: no or multiple SlackRTMs match the seach query
+        Help: no or multiple SlackRTMs match the search query
     """
     matches = []
     for slackrtm in SLACKRTMS:
-        if slackname in slackrtm.name:
+        if slack_name in slackrtm.name:
             matches.append(slackrtm)
     if len(matches) == 1:
         return matches[0]
     elif matches:
         raise Help(_('these slack teams match "%s", be more specific!') %
-                   (slackname, ', '.join([slackrtm.name
-                                          for slackrtm in matches])))
+                   (slack_name, ', '.join([slackrtm.name
+                                           for slackrtm in matches])))
     raise Help(_('there is no slack team with name "{slack_name}", use '
                  '<i>{bot_cmd} slacks</i> to list all teams').format(
                      bot_cmd=bot.command_prefix,
-                     slack_name=slackname))
+                     slack_name=slack_name))
 
-def _get_slackrtm_and_channel(bot, slackname, channel):
+def _get_slackrtm_and_channel(bot, slack_name, channel):
     """scan all running slackrtms and their channel for a match
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        slackname (str): seach query for a slack team/SlackRTM
-        channel (str): channel id of the team specified with slackname
+        slack_name (str): search query for a slack team/SlackRTM
+        channel (str): channel id of the team specified with `slack_name`
 
     Returns:
         tuple: `(<core.SlackRTM>, <str>)`, requested team instance and channel
@@ -71,14 +71,14 @@ def _get_slackrtm_and_channel(bot, slackname, channel):
     Raises:
         Help: no matching slackrtm or channel is not in slackrtm
     """
-    slackrtm = _get_slackrtm(bot, slackname)
-    channelname = slackrtm.get_chatname(channel)
-    if channelname is not None:
-        return slackrtm, channelname
+    slackrtm = _get_slackrtm(bot, slack_name)
+    channel_name = slackrtm.get_chatname(channel)
+    if channel_name is not None:
+        return slackrtm, channel_name
 
     raise Help(_('there is no channel with name "{channel}" in "{slack_name}", '
                  'use <i>{bot_cmd} slack_channels {slack_name}</i> to list all '
-                 'channels').format(channel=channel, slack_name=slackname,
+                 'channels').format(channel=channel, slack_name=slack_name,
                                     bot_cmd=bot.command_prefix))
 
 
@@ -151,13 +151,13 @@ def slack_users(bot, dummy, *args):
 
     slackname = args[0]
     channel = args[1]
-    slackrtm, channelname = _get_slackrtm_and_channel(bot, slackname, channel)
+    slackrtm, channel_name = _get_slackrtm_and_channel(bot, slackname, channel)
 
-    lines = ['<b>Slack users in channel {}</b>:'.format(channelname)]
+    lines = ['<b>Slack users in channel {}</b>:'.format(channel_name)]
 
     users = slackrtm.get_channel_users(channel)
-    for username, realname in sorted(users.items()):
-        lines.append('- @{}: {}'.format(username, realname))
+    for username, real_name in sorted(users.items()):
+        lines.append('- @{}: {}'.format(username, real_name))
 
     return '\n'.join(lines)
 
@@ -175,13 +175,13 @@ def slack_listsyncs(bot, *dummys):
 
     for slackrtm in SLACKRTMS:
         for sync in slackrtm.syncs:
-            hangoutname = bot.conversations.get_name(sync['hangoutid'],
-                                                     'unknown')
+            hangout_name = bot.conversations.get_name(sync['hangoutid'],
+                                                      'unknown')
             lines.append('{} : {} ({})\n  {} ({})\n'.format(
                 slackrtm.name,
                 slackrtm.get_chatname(sync['channelid']),
                 sync['channelid'],
-                hangoutname,
+                hangout_name,
                 sync['hangoutid']))
 
     return '\n'.join(lines)
@@ -205,15 +205,15 @@ def slack_syncto(bot, event, *args):
 
     slackname = args[0]
     channel = args[1]
-    slackrtm, channelname = _get_slackrtm_and_channel(bot, slackname, channel)
+    slackrtm, channel_name = _get_slackrtm_and_channel(bot, slackname, channel)
 
     try:
         slackrtm.config_syncto(channel, event.conv_id)
     except AlreadySyncingError:
         return _('hangout already synced with {teamname}:{channel}').format(
-            teamname=slackname, channel=channelname)
+            teamname=slackname, channel=channel_name)
 
-    return 'this hangout synced with {}:{}'.format(slackname, channelname)
+    return 'this hangout synced with {}:{}'.format(slackname, channel_name)
 
 def slack_disconnect(bot, event, *args):
     """stop syncing the current hangout with given slack team and channel
@@ -234,12 +234,12 @@ def slack_disconnect(bot, event, *args):
 
     slackname = args[0]
     channel = args[1]
-    slackrtm, channelname = _get_slackrtm_and_channel(bot, slackname, channel)
+    slackrtm, channel_name = _get_slackrtm_and_channel(bot, slackname, channel)
 
     try:
         slackrtm.config_disconnect(channel, event.conv_id)
     except NotSyncingError:
         return _('current hangout not previously synced with {}:{}').format(
-            slackname, channelname)
+            slackname, channel_name)
 
-    return 'this hangout disconnected from {}:{}'.format(slackname, channelname)
+    return 'this hangout disconnected from {}:{}'.format(slackname, channel_name)

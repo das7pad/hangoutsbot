@@ -1,6 +1,6 @@
 """registration of plugin features"""
 
-# TODO(das7pad): add the support for a plugin selfunload function
+# TODO(das7pad): add the support for a plugin self unload function
 # TODO(das7pad): add a context manager for the Tracker
 
 import asyncio
@@ -51,7 +51,7 @@ class Tracker(BotMixin):
         TrackingMixin.set_tracking(self)
 
     def reset(self):
-        """clear the entrys of the current plugin registration"""
+        """clear the entries of the current plugin registration"""
         self._current = {
             "commands": {
                 "admin": [],
@@ -124,7 +124,7 @@ class Tracker(BotMixin):
                     current_module['commands']['tagged_registered'].append(
                         command_)
 
-                    # prioritse admin-linked tags if both exist
+                    # priories admin-linked tags if both exist
                     break
 
         self.reset() # remove current data from the registration
@@ -176,13 +176,13 @@ class Tracker(BotMixin):
         commands_tagged.setdefault(command_name, {})
         commands_tagged[command_name].setdefault(type_, set())
 
-        tagsets = set([frozenset(item if isinstance(item, list)
-                                 else [item]) for item in tags])
+        tag_sets = set([frozenset(item if isinstance(item, list)
+                                  else [item]) for item in tags])
 
         # registration might be called repeatedly,
-        #  so only add the tagsets if it doesnt exist
-        if tagsets > commands_tagged[command_name][type_]:
-            commands_tagged[command_name][type_] |= tagsets
+        #  so only add the tag_sets if it doesnt exist
+        if tag_sets > commands_tagged[command_name][type_]:
+            commands_tagged[command_name][type_] |= tag_sets
 
         logger.debug("%s - [%s] tags: %s", command_name, type_, tags)
 
@@ -209,7 +209,7 @@ class Tracker(BotMixin):
             self._current["aiohttp.web"].append(group)
 
     def register_asyncio_task(self, task):
-        """add a single asnycio.Task to the plugin tracking"""
+        """add a single asyncio.Task to the plugin tracking"""
         self._current["asyncio.task"].append(task)
 
     def register_arg_preprocessor_group(self, name):
@@ -218,7 +218,7 @@ class Tracker(BotMixin):
             self._current["commands"]["argument.preprocessors"].append(name)
 
     def register_aiohttp_session(self, session):
-        """register a session that will be closed on pluginunload
+        """register a session that will be closed on plugin unload
 
         Args:
             session: aio.client.ClientSession-like instance
@@ -329,7 +329,7 @@ def register_commands_argument_preprocessor_group(name, preprocessors):
     command.register_arg_preprocessor_group(name, preprocessors)
 
 def register_aiohttp_session(session):
-    """register a session that will be closed on pluginunload
+    """register a session that will be closed on plugin unload
 
     Args:
         session: aio.client.ClientSession-like instance
@@ -346,7 +346,7 @@ def retrieve_all_plugins(plugin_path=None, must_start_with=None,
         . or __ will be ignored unconditionally
         _ will be ignored, unless allow_underscore=True
     * folders containing plugins must have at least an empty __init__.py file
-    * sub-plugin files (additional plugins inside a subfolder) must be prefixed
+    * sub-plugin files (additional plugins inside a sub-folder) must be prefixed
         with the EXACT plugin/folder name for it to be retrieved, matching
         starting _ is optional if allow_underscore=True
     """
@@ -426,12 +426,12 @@ def get_configured_plugins(bot):
         plugin_name_not_found = []
 
         for item_no, configured in enumerate(config_plugins):
-            dotconfigured = "." + configured
+            dot_configured = "." + configured
 
             matches = []
             for found in plugins_excluded:
-                fullfound = "hangupsbot.plugins." + found
-                if fullfound.endswith(dotconfigured):
+                full_path = "hangupsbot.plugins." + found
+                if full_path.endswith(dot_configured):
                     matches.append(found)
             num_matches = len(matches)
 
@@ -546,7 +546,7 @@ async def load(bot, module_path, module_name=None):
 
     candidate_commands = []
 
-    # run optional callable _initialise or _initialize and cature
+    # gather functions and run optional callable _initialise or _initialize
     try:
         for function_name, the_function in public_functions:
             if function_name not in ("_initialise", "_initialize"):
@@ -557,8 +557,8 @@ async def load(bot, module_path, module_name=None):
                 continue
 
             # accepted function signatures:
-            # coro/function()
-            # coro/function(bot) - parameter must be named "bot"
+            # coroutine/function()
+            # coroutine/function(bot) - parameter must be named "bot"
             expected = list(inspect.signature(the_function).parameters)
             if len(expected) > 1 or (expected and expected[0] != "bot"):
                 # plugin not updated since v2.4
@@ -717,12 +717,12 @@ async def unload(bot, module_path):
     logger.debug("%s unloaded", module_path)
     return True
 
-SENTINALS = {}
+SENTINELS = {}
 
 async def reload_plugin(bot, module_path):
     """reload a plugin and keep track of multiple reloads
 
-    Note: the plugin may reset the sentinal on a successfull internal load
+    Note: the plugin may reset the sentinel on a successful internal load
 
     Args:
         module_path: string, plugin path on disk relative to the main script
@@ -733,10 +733,10 @@ async def reload_plugin(bot, module_path):
     if module_path in tracking.list:
         await unload(bot, module_path)
 
-    repeat = SENTINALS.setdefault(module_path, 0)
+    repeat = SENTINELS.setdefault(module_path, 0)
     if repeat >= 3:
-        logger.critical('too many reloads of %s, enter failstate', module_path)
+        logger.critical('too many reloads of %s, enter fail state', module_path)
         return False
-    SENTINALS[module_path] += 1
+    SENTINELS[module_path] += 1
     await load(bot, module_path)
     return True

@@ -78,16 +78,16 @@ def plugininfo(dummy0, dummy1, *args):
             lines.append("<b>tagged via plugin module:</b>")
             for command_name, type_tags in plugin["commands"]["tagged"].items():
                 if 'admin' in type_tags:
-                    plugin_tagsets = type_tags['admin']
+                    plugin_tags = type_tags['admin']
                 else:
-                    plugin_tagsets = type_tags['user']
+                    plugin_tags = type_tags['user']
 
                 matches = []
-                for tagset in plugin_tagsets:
-                    if isinstance(tagset, frozenset):
-                        matches.append("[ {} ]".format(', '.join(tagset)))
+                for tags in plugin_tags:
+                    if isinstance(tags, frozenset):
+                        matches.append("[ {} ]".format(', '.join(tags)))
                     else:
-                        matches.append(tagset)
+                        matches.append(tags)
 
                 lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(command_name, ', '.join(matches)))
 

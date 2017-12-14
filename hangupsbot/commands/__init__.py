@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
 
     'commands.tags.escalate': False,
 
-    # default timeout for command-coros to return: 5minutes
+    # default timeout for command-coroutines to return: 5minutes
     'command_timeout': 5*60,
 }
 
@@ -63,14 +63,14 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         """extended init"""
         self.bot.config.set_defaults(DEFAULT_CONFIG)
 
-    def register_tags(self, command_name, tagsets):
+    def register_tags(self, command_name, tags):
         if command_name not in self.command_tagsets:
             self.command_tagsets[command_name] = set()
 
-        if isinstance(tagsets, str):
-            tagsets = set([tagsets])
+        if isinstance(tags, str):
+            tags = set([tags])
 
-        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tagsets
+        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tags
 
     @property
     def deny_prefix(self):

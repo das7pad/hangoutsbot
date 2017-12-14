@@ -48,12 +48,12 @@ class Cache(dict, BotMixin):
 
     Args:
         default_timeout: int, timeout for each item if no other is given, this
-            value also sets the intervall for the cleanup
-        name: string, a custom identifier for the log entrys
+            value also sets the interval for the cleanup
+        name: string, a custom identifier for the log entries
         increase_on_access: boolean, change store behavior, If True an item will
             be stored further the given timeout if one accessed the items value
-        dump_config: tuple, (intervall, path)
-            intervall: int, time in seconds the cache should be dumped
+        dump_config: tuple, (interval, path)
+            interval: int, time in seconds the cache should be dumped
             path: list of strings, path in memory to the location to dump into
     """
     __slots__ = ('_name', '_default_timeout', '_increase_on_access',
@@ -72,13 +72,13 @@ class Cache(dict, BotMixin):
     ############################################################################
 
     def start(self):
-        """start the cleanup, restore old entrys and start dumping to memory"""
+        """start the cleanup, restore old entries and start dumping to memory"""
         plugins.start_asyncio_task(self._periodic_cleanup)
 
-        # loading and dumping depends on a configured intervall and dump path
+        # loading and dumping depends on a configured interval and dump path
         if self._dump_config is not None:
-            self._load_entrys()
-            self._reload_listener = functools.partial(self._load_entrys)
+            self._load_entries()
+            self._reload_listener = functools.partial(self._load_entries)
             self.bot.memory.on_reload.add_observer(self._reload_listener)
 
             plugins.start_asyncio_task(self._periodic_dump)
@@ -89,7 +89,7 @@ class Cache(dict, BotMixin):
         Args:
             identifier: string, unique id for a cache entry
             pop: boolean, toggle to remove the item from cache
-            ignore_timeout: boolean, toogle to also get outdated items
+            ignore_timeout: boolean, toggle to also get outdated items
 
         Returns:
             cached entry with no specific type, or the result of .__missing__
@@ -145,7 +145,7 @@ class Cache(dict, BotMixin):
     ############################################################################
 
     async def _periodic_cleanup(self, dummy=None):
-        """remove old cache entrys, sleep ._default_timeout before each run
+        """remove old cache entries, sleep ._default_timeout before each run
 
         Args:
             dummy: unused
@@ -160,8 +160,8 @@ class Cache(dict, BotMixin):
         except asyncio.CancelledError:
             return
 
-    def _load_entrys(self):
-        """load cache entrys from memory"""
+    def _load_entries(self):
+        """load cache entries from memory"""
         path = self._dump_config[1]
         self.bot.memory.ensure_path(path)
 
@@ -174,12 +174,12 @@ class Cache(dict, BotMixin):
         Args:
             dummy: unused
         """
-        def _dump(path, only_on_new_itmes=True):
+        def _dump(path, only_on_new_items=True):
             """export the currently cached items to memory
 
             Args:
                 path: list of string, path in the memory as target for the dump
-                only_on_new_itmes: boolean, set to False to dump also if
+                only_on_new_items: boolean, set to False to dump also if
                  items got removed or timeouts have changed
             """
             mem = self.bot.memory.get_by_path(path)
@@ -189,27 +189,27 @@ class Cache(dict, BotMixin):
             if items_mem == items_dump:
                 logger.debug('[%s] matches with ["%s"]',
                              self._name, '"]["'.join(path))
-                if only_on_new_itmes:
+                if only_on_new_items:
                     # ignore outdated items
                     return
             else:
-                logger.debug('[%s@"%s"] changed: %s -> %s entrys',
+                logger.debug('[%s@"%s"] changed: %s -> %s entries',
                              self._name, '"]["'.join(path), len(mem), len(dump))
-                if not items_dump - items_mem and only_on_new_itmes:
+                if not items_dump - items_mem and only_on_new_items:
                     # ignore removed items
                     return
 
             self.bot.memory.set_by_path(path, dump)
             self.bot.memory.save()
 
-        intervall, path = self._dump_config
+        interval, path = self._dump_config
         try:
             while True:
-                await asyncio.sleep(intervall)
+                await asyncio.sleep(interval)
                 _dump(path)
         except asyncio.CancelledError:
             logger.info('flushing [%s]', self._name)
-            _dump(path, only_on_new_itmes=False)
+            _dump(path, only_on_new_items=False)
 
     def __del__(self):
         """explicit cleanup"""

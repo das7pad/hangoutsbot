@@ -27,7 +27,7 @@ HELP = {
                        'meant to be kept secret!'),
 }
 
-def prettydate(diff):
+def pretty_date(diff):
     sec = diff.seconds
     output = (diff.strftime('%d %b %y') if diff.days > 7 or diff.days < 0 else
               '1 day ago' if diff.days == 1 else
@@ -100,19 +100,19 @@ async def _watch_twitter_link(bot, event):
         text = re.sub(r'(\W)@(\w{1,15})(\W)', r'\1<a href="https://twitter.com/\2">@\2</a>\3', tweet['text'])
         text = re.sub(r'(\W)#(\w{1,15})(\W)', r'\1<a href="https://twitter.com/hashtag/\2">#\2</a>\3', text)
         time = tweet['created_at']
-        timeago = prettydate(datetime.datetime.now(tz=datetime.timezone.utc) - datetime.datetime.strptime(time, '%a %b %d %H:%M:%S %z %Y'))
+        time_ago = pretty_date(datetime.datetime.now(tz=datetime.timezone.utc) - datetime.datetime.strptime(time, '%a %b %d %H:%M:%S %z %Y'))
         username = tweet['user']['name']
-        twhandle = tweet['user']['screen_name']
-        userurl = "https://twitter.com/intent/user?user_id={}".format(tweet['user']['id'])
-        message = "<b><u><a href='{}'>@{}</a> ({})</u></b>: {} <i>{}</i>".format(userurl, twhandle, username, text, timeago)
+        twitter_handle = tweet['user']['screen_name']
+        user_url = "https://twitter.com/intent/user?user_id={}".format(tweet['user']['id'])
+        message = "<b><u><a href='{}'>@{}</a> ({})</u></b>: {} <i>{}</i>".format(user_url, twitter_handle, username, text, time_ago)
         try:
             images = tweet['extended_entities']['media']
             for image in images:
                 if image['type'] == 'photo':
-                    imagelink = image['media_url']
-                    filename = os.path.basename(imagelink)
+                    image_link = image['media_url']
+                    filename = os.path.basename(image_link)
                     async with aiohttp.ClientSession() as session:
-                        async with session.request('get', imagelink) as res:
+                        async with session.request('get', image_link) as res:
                             raw = await res.read()
                     image_data = io.BytesIO(raw)
                     image_id = await bot.upload_image(image_data,
@@ -137,7 +137,7 @@ async def _watch_twitter_link(bot, event):
 
         username = re.match(r".+twitter\.com/([a-zA-Z0-9_]+)/", url).group(1)
         soup = BeautifulSoup(body, "lxml")
-        twhandle = soup.title.text.split(" on Twitter: ")[0].strip()
+        twitter_handle = soup.title.text.split(" on Twitter: ")[0].strip()
         tweet = re.sub(r"#([a-zA-Z0-9]*)", r"<a href='https://twitter.com/hashtag/\1'>#\1</a>", soup.title.text.split(" on Twitter: ")[1].strip())
-        message = "<b><a href='{}'>@{}</a> [{}]</b>: {}".format("https://twitter.com/{}".format(username), username, twhandle, tweet)
+        message = "<b><a href='{}'>@{}</a> [{}]</b>: {}".format("https://twitter.com/{}".format(username), username, twitter_handle, tweet)
         await bot.coro_send_message(event.conv, message)
