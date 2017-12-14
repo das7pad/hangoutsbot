@@ -684,7 +684,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """update the telesync data periodically
 
         sleep for x hours after each update run
-        x determined by telesync config entry 'profile_update_intervall'
+        x determined by telesync config entry 'profile_update_interval'
 
         this could likely end in a ratelimit, delay each query by 10-20 seconds
         """
@@ -705,7 +705,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     await asyncio.sleep(random.randint(10, 20))
 
                 await asyncio.sleep(
-                    3600 * self.config('profile_update_intervall'))
+                    3600 * self.config('profile_update_interval'))
         except asyncio.CancelledError:
             return
         except:                                    # pylint: disable=bare-except

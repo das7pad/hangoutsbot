@@ -118,7 +118,7 @@ def setup_config(bot):
             'profilesync_reminder': 36,
 
             # intervall in hours to update the user profiles
-            'profile_update_intervall': 5,
+            'profile_update_interval': 5,
 
             # html message a user receives on /start
             # available keys:
