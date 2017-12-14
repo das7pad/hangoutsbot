@@ -42,7 +42,7 @@ DEFAULT_CONFIG = {
     "memory-save_delay": 1,
 
     # timeout in second
-    "message_queque_unload_timeout": 3,
+    "message_queue_unload_timeout": 3,
 
     # number of threads for parallel execution
     "max_threads": 10,
@@ -300,7 +300,7 @@ class HangupsBot(object):
             self.__retry_resetter.cancel()
 
         await AsyncQueue.global_stop(
-            self.config["message_queque_unload_timeout"])
+            self.config["message_queue_unload_timeout"])
 
         await plugins.unload_all(self)
 
