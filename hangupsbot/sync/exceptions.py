@@ -10,3 +10,6 @@ class UnRegisteredProfilesync(KeyError):
 
 class ProfilesyncAlreadyCompleted(utils.FormatBaseException):
     """The user has completed his profilesync already"""
+
+class HandlerFailed(RuntimeError):
+    """a handler raised an Exception"""

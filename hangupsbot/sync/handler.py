@@ -22,6 +22,7 @@ from .exceptions import (
     MissingArgument,
     UnRegisteredProfilesync,
     ProfilesyncAlreadyCompleted,
+    HandlerFailed,
 )
 from .event import SyncEvent, SyncEventMembership
 from .image import SyncImage
@@ -933,18 +934,18 @@ class SyncHandler(handlers.EventHandler):
                 handler: coroutine function
 
             Raises:
-                AssertionError: any exception was raised inside the handler
+                HandlerFailed: any exception was raised inside the handler
             """
             try:
                 result = handler(self.bot, *args)
                 if asyncio.iscoroutinefunction(handler):
                     return await result
                 return result
-            except:                                # pylint: disable=bare-except
+            except Exception:                     # pylint: disable=broad-except
                 logger.exception('%s: %s with args=%s',
                                  pluggable, handler.__name__,
                                  str([str(arg) for arg in args]))
-                raise AssertionError()
+                raise HandlerFailed()
 
         handlers_ = self.pluggables[pluggable].copy()
         results_unmapped = await asyncio.gather(*[_run(handler[0])
@@ -956,7 +957,7 @@ class SyncHandler(handlers.EventHandler):
             meta_data = handler[2]
             key = meta_data.get('identifier') or meta_data.get('module.path')
             results[key] = results_unmapped.pop(0)
-            if isinstance(results[key], Exception):
+            if isinstance(results[key], HandlerFailed):
                 results.pop(key)
 
         if return_flat is True:
@@ -982,15 +983,15 @@ class SyncHandler(handlers.EventHandler):
                 handler: coroutine function
 
             Raises:
-                AssertionError: any exception was raised inside the handler
+                HandlerFailed: any exception was raised inside the handler
             """
             try:
                 return handler(self.bot, *args)
-            except:                                # pylint: disable=bare-except
+            except Exception:                     # pylint: disable=broad-except
                 logger.exception('%s: %s with args=%s',
                                  pluggable, handler.__name__,
                                  str([str(arg) for arg in args]))
-                raise AssertionError()
+                raise HandlerFailed()
 
         results = {}
         for handler in self.pluggables[pluggable].copy():
@@ -998,7 +999,7 @@ class SyncHandler(handlers.EventHandler):
             key = meta.get('identifier') or meta.get('module.path')
             try:
                 results[key] = _run(function)
-            except AssertionError:
+            except HandlerFailed:
                 pass
         if return_flat is True:
             return tuple(itertools.chain.from_iterable(results.values()))
