@@ -191,7 +191,7 @@ def whois(slack_bot, msg, args):
     """
     if not args:
         return '1on1', _('%s: sorry, but you have to specify a username for '
-                         'command `whois`') % (msg.user.username)
+                         'command `whois`') % msg.user.username
 
     search = args[0][1:] if args[0][0] == '@' else args[0]
     for uid in slack_bot.users:
@@ -369,7 +369,7 @@ def _get_hangout_name(bot, conv_id):
     """
     name = bot.conversations.get_name(conv_id, None)
     return name, _('sorry, but I\'m not a member of a Hangout with Id %s'
-                  ) % (conv_id)
+                  ) % conv_id
 
 def syncto(slack_bot, msg, args):
     """admin-only: sync messages from current channel/group to specified hangout

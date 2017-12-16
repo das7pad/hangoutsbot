@@ -576,7 +576,7 @@ async def finduser(bot, event, *args):
             if chat_id != 'sync' and chat_id not in user.user_link:
                 entry += '\n   https://plus.google.com/%s' % chat_id
             if user.user_link:
-                entry += '\n   %s' % (user.user_link)
+                entry += '\n   %s' % user.user_link
             entries.add(entry)
     lines = []
     lines.append(_('Users matching "%s":') % term)

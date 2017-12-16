@@ -91,7 +91,7 @@ def echo(bot, event, *args):
         convid = event.conv_id
         text = args
 
-    return (convid, " ".join(text))
+    return convid, " ".join(text)
 
 
 async def broadcast(bot, dummy, *args):

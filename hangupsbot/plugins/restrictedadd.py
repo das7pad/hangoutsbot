@@ -10,7 +10,7 @@ from hangupsbot.commands import Help
 logger = logging.getLogger(__name__)
 
 
-class _InternalVars():
+class _InternalVars:
     def __init__(self):
         self.last_verified = {}
 

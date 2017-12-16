@@ -199,7 +199,7 @@ async def createconversation(bot, dummy, *args):
                         for chat_id in user_ids]))
     new_conversation_id = _response.conversation.conversation_id.id
 
-    return (new_conversation_id, _("<i>conversation created</i>"))
+    return new_conversation_id, _("<i>conversation created</i>")
 
 async def refresh(bot, event, *args):
     """recreate a conversation and remove or add certain users

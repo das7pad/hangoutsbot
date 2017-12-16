@@ -30,7 +30,7 @@ HELP = {
 
 EXPIRE_IN = 2592000
 
-class DummyEvent():
+class DummyEvent:
     """used to run the rename command"""
     pass
 
