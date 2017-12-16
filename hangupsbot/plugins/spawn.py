@@ -145,7 +145,7 @@ async def _spawn(bot, event, *args):
         return
 
     if cmd_config.get("allow_args"):
-        executable = executable + list(args)
+        executable += list(args)
 
     executable = tuple(executable)
     logger.info("%s executing: %s", event.user.full_name, executable)

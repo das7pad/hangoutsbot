@@ -229,7 +229,7 @@ class Tags(BotMixin):
         if remove:
             for args in remove:
                 if self.remove(*args):
-                    records_removed = records_removed + 1
+                    records_removed += 1
 
         return records_removed
 

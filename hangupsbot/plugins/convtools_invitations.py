@@ -115,7 +115,7 @@ async def _claim_invite(bot, invite_code, user_id):
                              invite_code, user_id)
             return
 
-        invitation["uses"] = invitation["uses"] - 1
+        invitation["uses"] -= 1
 
         if invitation["uses"]:
             bot.memory.set_by_path(memory_path, invitation)

@@ -51,7 +51,7 @@ class WebFramework:
 
         if self.uid is None:
             self.uid = "%s-%s" % (self.plugin_name, self.instance_number)
-            WebFramework.instance_number = WebFramework.instance_number + 1
+            WebFramework.instance_number += 1
 
         asyncio.ensure_future(self._register_handlers())
         self.start_listening(bot)

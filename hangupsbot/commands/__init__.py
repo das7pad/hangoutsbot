@@ -149,10 +149,10 @@ class CommandDispatcher(BotMixin, TrackingMixin):
                         denied_commands.add(command_name)
                         break
 
-            admin_commands = admin_commands - denied_commands
-            user_commands = user_commands - denied_commands
+            admin_commands -= denied_commands
+            user_commands -= denied_commands
 
-        user_commands = user_commands - admin_commands # ensure no overlap
+        user_commands -= admin_commands  # ensure no overlap
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 

@@ -65,7 +65,7 @@ async def get_places(location, client_id, secret, section=None):
     url = "https://api.foursquare.com/v2/venues/explore?client_id={}&client_secret={}&limit=10&v=20160503&near={}".format(client_id, secret, location)
     types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
     if section in types:
-        url = url + "&section={}".format(section)
+        url += "&section={}".format(section)
     elif section is None:
         pass
     else:

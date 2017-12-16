@@ -197,7 +197,7 @@ class SyncImage(BotMixin):
             filename = self._filename or (str(time.time()) + '.jpg')
 
         if self._type not in VALID_IMAGE_TYPES:
-            filename = filename + '.jpg'
+            filename += '.jpg'
             self.cache = 1
 
         self.cache = (self.cache if isinstance(self.cache, int) else

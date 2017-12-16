@@ -80,7 +80,7 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
                         id=conv_id),
                     client_generated_id=bot.get_client_generated_id())))
 
-        users_added = users_added + len(partial_list)
+        users_added += len(partial_list)
         await asyncio.sleep(0.5)
 
     return users_added

@@ -114,7 +114,7 @@ def prepare(bot, event, *args):
             raise Help(_("prepare: min and max are the same ({})").format(min_))
         if max_ < min_:
             min_, max_ = max_, min_
-        max_ = max_ + 1 # inclusive
+        max_ += 1  # inclusive
         draw_lists[global_draw_name]["box"] = list(range(min_, max_))
 
     else:

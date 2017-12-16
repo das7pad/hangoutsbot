@@ -63,7 +63,7 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 
         if "imgur.com" in image_uri:
             if not image_uri.endswith((".jpg", ".gif", "gifv", "webm", "png")):
-                image_uri = image_uri + ".gif"
+                image_uri += ".gif"
             image_uri = "https://i.imgur.com/" + os.path.basename(image_uri)
 
             # imgur wraps animations in player, force the actual image resource

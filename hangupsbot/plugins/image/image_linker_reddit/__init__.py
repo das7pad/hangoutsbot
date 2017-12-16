@@ -46,7 +46,7 @@ async def _scan_for_triggers(bot, event):
         pattern = r'\\b' + trigger + r'\.(jpg|png|gif|bmp)\\b'
         if re.search(pattern, text):
             image_links.add(_get_a_link(trigger))
-            count = count + 1
+            count += 1
             if count >= limit:
                 break
 

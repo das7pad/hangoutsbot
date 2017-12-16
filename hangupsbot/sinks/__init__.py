@@ -86,7 +86,7 @@ def start(bot):
                 requesthandlerclass=handler_class,
                 group="json-rpc")
 
-            aiohttp_count = aiohttp_count + 1
+            aiohttp_count += 1
 
         else:
             logger.critical(
