@@ -236,35 +236,35 @@ def _get_wind_direction(degrees):
     0 degrees is true north
     """
     direction_text = "N"
-    if degrees >= 5 and degrees < 40:
+    if 5 <= degrees < 40:
         direction_text = "NNE"
-    elif degrees >= 40 and degrees < 50:
+    elif 40 <= degrees < 50:
         direction_text = "NE"
-    elif degrees >= 50 and degrees < 85:
+    elif 50 <= degrees < 85:
         direction_text = "ENE"
-    elif degrees >= 85 and degrees < 95:
+    elif 85 <= degrees < 95:
         direction_text = "E"
-    elif degrees >= 95 and degrees < 130:
+    elif 95 <= degrees < 130:
         direction_text = "ESE"
-    elif degrees >= 130 and degrees < 140:
+    elif 130 <= degrees < 140:
         direction_text = "SE"
-    elif degrees >= 140 and degrees < 175:
+    elif 140 <= degrees < 175:
         direction_text = "SSE"
-    elif degrees >= 175 and degrees < 185:
+    elif 175 <= degrees < 185:
         direction_text = "S"
-    elif degrees >= 185 and degrees < 220:
+    elif 185 <= degrees < 220:
         direction_text = "SSW"
-    elif degrees >= 220 and degrees < 230:
+    elif 220 <= degrees < 230:
         direction_text = "SW"
-    elif degrees >= 230 and degrees < 265:
+    elif 230 <= degrees < 265:
         direction_text = "WSW"
-    elif degrees >= 265 and degrees < 275:
+    elif 265 <= degrees < 275:
         direction_text = "W"
-    elif degrees >= 275 and degrees < 310:
+    elif 275 <= degrees < 310:
         direction_text = "WNW"
-    elif degrees >= 310 and degrees < 320:
+    elif 310 <= degrees < 320:
         direction_text = "NW"
-    elif degrees >= 320 and degrees < 355:
+    elif 320 <= degrees < 355:
         direction_text = "NNW"
 
     return direction_text

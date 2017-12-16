@@ -298,8 +298,7 @@ async def mention(bot, event, *args):
                     exact_fragment_matches[0].full_name)
         mention_list = exact_fragment_matches
 
-    elif (len(exact_fragment_matches) > 1 and
-          len(exact_fragment_matches) < len(mention_list)):
+    elif (1 < len(exact_fragment_matches) < len(mention_list)):
         logger.info(
             "prioritising multiple case-sensitive fragment match for %s",
             exact_fragment_matches[0].full_name)
