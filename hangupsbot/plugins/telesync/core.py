@@ -598,7 +598,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         Args:
             msg (Message): a membership change message
-            changed_members (list): a list of `telesync.user.User`s
+            changed_members (list[telesync.user.User]): the members to restrict
         """
         if msg.chat_type != 'supergroup':
             return

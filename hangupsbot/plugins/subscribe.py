@@ -224,7 +224,7 @@ async def _send_notification(bot, event, matches, user):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event: sync.event.SyncEvent instance
-        matches (set): a set of str, keywords that were found in the message
+        matches (set[str]): keywords that were found in the message
         user: sync.user.SyncUser instance, user who subscribe to the phrase
     """
     logger.info("keywords %s in '%s' (%s)",

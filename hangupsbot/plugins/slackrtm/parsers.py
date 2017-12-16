@@ -70,7 +70,7 @@ class SlackMessageSegment(MessageSegment):
             text (str): the text to parse
 
         Returns:
-            list: a list of `SlackMessageSegment` instances
+            list[SlackMessageSegment]: parsed formatting segments
         """
         segments = []
         split = text.split('\n')

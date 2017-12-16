@@ -121,8 +121,9 @@ class SyncHandler(handlers.EventHandler):
             edited (bool): True if the message is an edited message
             image (sync.image.SyncImage): already wrapped image info
             context (dict): optional information about the message
-            previous_targets (set): a set of str, conversation identifiers
-            notified_users (set): a set of str, user chat ids
+            previous_targets (set[str]): conversation identifiers
+            notified_users (set[str]): object to track users that were notified
+                for the message content
         """
         # pylint:disable=too-many-locals
         logger.info('received a message from %s for %s', identifier, conv_id)
@@ -221,10 +222,10 @@ class SyncHandler(handlers.EventHandler):
             text (mixed): str or segment list, raw message from any platform,
                 by default, this text is not used for the membership event
             title (str): chat title of source chat
-            participant_user: list or users, a user could be a hangups.user.User
-                like object or a string, representing a username or chat_id
-            previous_targets (set): a set of str, conversation identifiers
-            notified_users (set): a set of str, user chat ids
+            participant_user (mixed): see sync.event.SyncEventMembership
+            previous_targets (set[str]): conversation identifiers
+            notified_users (set[str]): object to track users that were notified
+                for the message content
 
         Raises:
             AssertionError: the given membership change type is not 1 or 2
@@ -287,8 +288,11 @@ class SyncHandler(handlers.EventHandler):
             conv_id (str): conversation identifier
 
         Returns:
-            set: results from all platforms, expect the items None: ignored,
-                False: kick failed, True: kicked, 'whitelisted'
+            set[mixed]: results from all platforms, expect the items
+                None: ignored,
+                False: kick failed,
+                True: kicked,
+                'whitelisted': user is admin, bot
         """
         conv_ids = self.get_synced_conversations(conv_id=conv_id,
                                                  include_source_id=True)
@@ -812,7 +816,7 @@ class SyncHandler(handlers.EventHandler):
             dummy (bool): unused
 
         Returns:
-            list: a list of sync.user.SyncUser
+            list[sync.user.SyncUser]: users participating in the conversation
         """
         if conv_id not in bot.conversations:
             return []
@@ -899,8 +903,8 @@ class SyncHandler(handlers.EventHandler):
             identifier (str): platform identifier to skip the event on receive
             conv_id (str): target Conversation ID for the message
             user (sync.user.SyncUser): instance of the sender
-            previous_targets (set): a set of strings, conversation identifiers
-            notified_users (set): a set of strings, user chat ids
+            previous_targets (set[str]): conversation identifiers
+            notified_users (set[str]): user chat ids
 
         Returns:
             tuple: user, targets, previous_targets, notified_users

@@ -270,7 +270,7 @@ class Tags(BotMixin):
             conv_id (str): a Hangout ID to fetch tags for a single conv
 
         Returns:
-            list: a list of str, matching tags for user and conversation
+            list[str]: matching tags for user and conversation
         """
         if chat_id == "sync":
             return []

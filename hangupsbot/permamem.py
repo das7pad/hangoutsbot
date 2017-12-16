@@ -209,7 +209,7 @@ class ConversationMemory(BotMixin):
         """retrieve definitive user data by requesting it from the server
 
         Args:
-            chat_ids (list): a list of str, a list of G+ ids
+            chat_ids (list[str]): a list of G+ ids
 
         Returns:
             int: number of updated users
@@ -416,7 +416,7 @@ class ConversationMemory(BotMixin):
                 locals_ (dict): locals of .get to access all filter functions
 
             Returns:
-                list: a list of tuple,
+                list[tuple[mixed]]:
                 (operator : string, query: string, <filter func> : callable)
                 invalid filter queries result in a string as filter func
 

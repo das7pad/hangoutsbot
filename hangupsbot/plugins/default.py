@@ -67,7 +67,7 @@ def echo(bot, event, *args):
         args (str): request body
 
     Returns:
-        tuple: a tuple of str, the conversation target and the message
+        tuple[str]: the conversation target and the message
 
     Raises:
         Help: invalid request
@@ -217,7 +217,7 @@ def user(bot, dummy, *args):
         args (str): additional words passed to the command
 
     Returns:
-        list: a list of `hangups.ChatMessageSegment`s
+        list[hangups.ChatMessageSegment]: formatted command output
 
     Raises:
         Help: invalid request

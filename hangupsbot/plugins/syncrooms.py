@@ -15,7 +15,7 @@ def _get_targets(bot, source_id, caller):
         caller (str): identifier to allow recursive calls
 
     Returns:
-        list: with conversation ids that are in a syncroom with the source_id
+        list[str]: conversation ids that are in a syncroom with the source_id
     """
     identifier = 'plugins.syncrooms'
     if caller == identifier:

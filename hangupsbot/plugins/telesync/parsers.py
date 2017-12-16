@@ -17,7 +17,7 @@ class TelegramMessageParser(MessageParser):
             text (tuple): `(<str>, <list of dict>)`, message text and entities
 
         Returns:
-            list: a list of reparser.Segment instances
+            list[reparser.Segment]: parsed formatting segments
         """
         text, entities = text
         segments = []

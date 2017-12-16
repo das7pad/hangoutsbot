@@ -355,7 +355,7 @@ class HangupsBot(object):
             conv_ids (mixed): str or list, a single conv or multiple conv_ids
 
         Returns:
-            list: a list of unique hangups.User instances
+            list[hangups.User]: users in the given conversations
         """
         if isinstance(conv_ids, str):
             conv_ids = [conv_ids]

@@ -15,7 +15,7 @@ def _get_targets(bot, source_id, caller):
         caller (str): identifier to allow recursive calls
 
     Returns:
-        list: conv_ids of Hangouts which get messages from source_id replayed
+        list[str]: conversation ids which get messages from source_id relayed
     """
     identifier = 'plugins.forwarding'
     if caller == identifier:

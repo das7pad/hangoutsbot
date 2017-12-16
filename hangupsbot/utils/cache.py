@@ -55,7 +55,7 @@ class Cache(dict, BotMixin):
             be stored further the given timeout if one accessed the items value
         dump_config (tuple): (interval, path)
             interval (int): time in seconds the cache should be dumped
-            path (list): a list of str, path in memory to the location to dump into
+            path (list[str]): path in memory to the location to dump into
     """
     __slots__ = ('_name', '_default_timeout', '_increase_on_access',
                  '_dump_config', '_reload_listener')
@@ -179,7 +179,7 @@ class Cache(dict, BotMixin):
             """export the currently cached items to memory
 
             Args:
-                path (list): list of str, path in the memory as the dump target
+                path (list[str]): path in the memory as the dump target
                 only_on_new_items (bool): set to False to dump also if
                  items got removed or timeouts have changed
             """

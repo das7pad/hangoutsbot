@@ -132,7 +132,7 @@ def help(slack_bot, msg, args):                # pylint:disable=redefined-builti
         args (str): additional arguments as strings
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     if args and (args[0] in COMMANDS_USER or args[0] in COMMANDS_ADMIN):
         command = args[0].lower()
@@ -173,7 +173,7 @@ def whoami(dummy, msg, dummys):
         dummys (tuple): a tuple of string, ignored
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     return '1on1', _('@{user_name}: your userid is {user_id}').format(
         user_name=msg.user.username, user_id=msg.user.usr_id)
@@ -187,7 +187,7 @@ def whois(slack_bot, msg, args):
         args (str): additional arguments as strings
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     if not args:
         return '1on1', _('%s: sorry, but you have to specify a username for '
@@ -216,7 +216,7 @@ def admins(slack_bot, msg, dummys):
         dummys (tuple): a tuple of string, ignored
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     message = ['<@%s>: my admins are:' % msg.user.usr_id]
     for admin in slack_bot.admins:
@@ -234,7 +234,7 @@ async def syncprofile(slack_bot, msg, dummys):
         dummys (tuple): a tuple of string, ignored
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     bot = slack_bot.bot
     user_id = msg.user.usr_id
@@ -285,7 +285,7 @@ async def unsyncprofile(slack_bot, msg, dummys):
         dummys (tuple): a tuple of string, ignored
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     user_id = msg.user.usr_id
     private_chat = await slack_bot.get_slack1on1(user_id)
@@ -326,7 +326,7 @@ async def hangouts(slack_bot, msg, dummys):
         dummys (tuple): a tuple of string, ignored
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     lines = []
     lines.append('@%s: list of active hangouts:\n' % msg.user.username)
@@ -345,7 +345,7 @@ def listsyncs(slack_bot, msg, dummys):
         dummys (tuple): a tuple of string, ignored
 
     Returns:
-        tuple: a tuple of two strings, the channel target and the command output
+        tuple[str]: the channel target and the command output
     """
     lines = []
     lines.append('@%s: current syncs with this slack team:' % msg.user.username)
@@ -365,7 +365,7 @@ def _get_hangout_name(bot, conv_id):
         conv_id (str): a possible hangouts conversation identifier
 
     Returns:
-        tuple: a tuple of two str: the found name or None and a error message
+        tuple[str]: the found name or None and a error message
     """
     name = bot.conversations.get_name(conv_id, None)
     return name, _('sorry, but I\'m not a member of a Hangout with Id %s'

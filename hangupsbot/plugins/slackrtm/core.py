@@ -114,7 +114,7 @@ class SlackRTM(BotMixin):
         """get the configured admins
 
         Returns:
-            list: a list of slack user ids (str)
+            list[str]: a list of slack user ids
         """
         return self.config.get('admins', [])
 
@@ -123,7 +123,7 @@ class SlackRTM(BotMixin):
         """access the memory entry with configured syncs of the current team
 
         Returns:
-            list: a list of dicts, each has two keys `hangoutid`, `channelid`
+            list[dict]: each has two keys `hangoutid` and `channelid`
         """
         return self.bot.memory.get_by_path(
             ['slackrtm', self.slack_domain, 'synced_conversations'])
@@ -610,7 +610,7 @@ class SlackRTM(BotMixin):
             hangoutid (str): hangouts conversation identifier
 
         Returns:
-            list: a list of dicts, each has two keys `channelid`, `hangoutid`
+            list[dict]: each has two keys `channelid` and `hangoutid`
         """
         syncs = []
         for sync in self.syncs:
@@ -883,7 +883,7 @@ class SlackRTM(BotMixin):
             profilesync_only (bool): only include users synced to a G+ profile
 
         Returns:
-            list: a list of `user.SlackUser`s
+            list[user.SlackUser]: users participating in the conversation
         """
         users = []
         for sync in self.get_syncs(hangoutid=conv_id):

@@ -85,7 +85,7 @@ def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
     Args:
         tg_bot (core.TelegramBot): the running instance
         tg_chat_id (mixed): str or int, conversation identifier
-        args (tuple): a tuple of str
+        args (tuple[str]): command tokens
         between (tuple): tuple of int, lower/higher limit for the amount of args
         at_least (int): amount of args that are required at least
 

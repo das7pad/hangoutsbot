@@ -394,7 +394,7 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        args (tuple): a tuple of str, additional words passed to the command
+        args (tuple[str]): additional words passed to the command
         platform (str): platform identifier
         source (iterable): a list, tuple, dict of conversation ids of the
             given platform, used to validate the first argument
@@ -452,7 +452,7 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        args (tuple): a tuple of str, additional words passed to the command
+        args (tuple[str]): additional words passed to the command
         conv_id (str): fallback if no conversation is specified in the args
         user_id (hangups.user.UserID): the user who sent the request
 
@@ -700,7 +700,7 @@ async def _config_check_users(bot, *args, conv_id=None, targets=None):
         bot (hangupsbot.HangupsBot): the running instance
         args (str): additional words passed with the command
         conv_id (str): default conversation if none specified in the args
-        targets (list): a list of str, conversation identifier of relay targets
+        targets (list[str]): conversation identifier of relay targets
 
     Returns:
         str: the command output
@@ -754,7 +754,7 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
         conv_id (str): conversation identifier
         kick_only (bool): toggle to ignore missing/left users
         verbose (bool): toggle to get whitelisted users in the output
-        targets (list): a list of str, conversation identifier of relay targets
+        targets (list[str]): conversation identifier of relay targets
 
     Returns:
         str: a status message

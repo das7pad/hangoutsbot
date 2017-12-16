@@ -205,7 +205,7 @@ class Config(collections.MutableMapping):
         """Get an item from .config by path
 
         Args:
-            keys_list (list): a list of strings, describing the path to the value
+            keys_list (list[str]): describing the path to the value
             fallback (bool): use the default values as fallback for missing
                 entries
 
@@ -231,7 +231,7 @@ class Config(collections.MutableMapping):
         """set an item in .config by path
 
         Args:
-            keys_list (list): a list of strings, describing the path to the value
+            keys_list (list[str]): describing the path to the value
             value (mixed): the new value
             create_path (bool): toggle to ensure an existing path
 
@@ -247,7 +247,7 @@ class Config(collections.MutableMapping):
         """remove an item in .config found with the given path
 
         Args:
-            keys_list (list): a list of strings, describing the path to the value
+            keys_list (list[str]): describing the path to the value
 
         Returns:
             mixed: the removed value
@@ -263,7 +263,7 @@ class Config(collections.MutableMapping):
 
         Args:
             source (dict): `.config` or `.defaults`
-            path (list): a list of strings, describing the path to the value
+            path (list[str]): describing the path to the value
 
         Returns:
             mixed: the requested value
@@ -312,7 +312,7 @@ class Config(collections.MutableMapping):
         """check if a path exists in the dict
 
         Args:
-            keys_list (list): a list of strings describing the path
+            keys_list (list[str]): describing the path
             fallback (bool): use the default values as fallback for missing
                 entries
 
@@ -330,7 +330,7 @@ class Config(collections.MutableMapping):
         """create a path of dicts if the given path does not exist
 
         Args:
-            path (list): a list of strings describing the path
+            path (list[str]): describing the path
             base (dict): the source to create the path in
 
         Returns:
@@ -368,7 +368,7 @@ class Config(collections.MutableMapping):
 
         Args:
             source (dict): structure with values
-            path (list): a list of keys to the dict to update with defaults
+            path (list[str]): path of the target for the defaults in the config
 
         Raises:
             ValueError: the path could not be created as it would override an
@@ -398,7 +398,7 @@ class Config(collections.MutableMapping):
 
         Args:
             source (dict): default dict structure with values
-            path (list): list of keys to the dict to validate
+            path (list[str]): list of keys to the dict to validate
 
         Raises:
             ValueError: the path could not be created as it would override an

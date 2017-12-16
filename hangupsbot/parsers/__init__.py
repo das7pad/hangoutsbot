@@ -18,7 +18,7 @@ def simple_parse_to_segments(formatted_text):
         formatted_text (str): html or markdown formatted text
 
     Returns:
-        list: a list of hangups.ChatMessageSegment
+        list[hangups.ChatMessageSegment]: parsed formatting segments
     """
     return MessageSegmentHangups.from_str(formatted_text)
 

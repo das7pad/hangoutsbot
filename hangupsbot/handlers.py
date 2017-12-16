@@ -369,7 +369,7 @@ class EventHandler(BotMixin):
                 function(mixed): func or coroutine, the handler func
                 meta (dict): meta data from the plugin registration
                 expected (mappingproxy): ordered mapping of inspect.Parameter
-                names (list): a list of str, keys in expected
+                names (list[str]): keys in expected
 
             Raises:
                 SuppressAllHandlers:

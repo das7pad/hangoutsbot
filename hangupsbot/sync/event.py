@@ -25,7 +25,7 @@ class FakeConvEvent(object):
     Args:
         fake_event (FakeEvent): base instance
         text (mixed): the message as text or in segments in a list
-        attachments (list): urls to media
+        attachments (list[str]): urls to media
     """
     def __init__(self, fake_event, text, attachments=None):
         self.timestamp = fake_event.timestamp
@@ -67,7 +67,7 @@ class FakeEvent(BotMixin):
             str, the G+ ID of the sender
             hangups.user.User like object, the sender
         text (mixed): the message as text or in segments in a list
-        attachments (list): urls of images for example
+        attachments (list[str]): urls of images for example
     """
 
     def __init__(self, conv_id=None, user=None, text=None, attachments=None):
@@ -96,15 +96,15 @@ class SyncEvent(FakeEvent):
         conv_id (str): target Conversation ID for the message
         user (SyncUser): instance of the sender
         text (mixed): str or segment list, raw message from any platform
-        targets (list): a list of str, conversation identifier of relay targets
-        previous_targets (list): a list of str, conv identifier of previous targets
+        targets (list[str]): conversation identifier of relay targets
+        previous_targets (list[str]): conv identifier of previous targets
         reply (SyncReply): wrapper with a message to reply
         title (str): Chat Title of the source conversation
         edited (bool): True if the message is an edited message
         image (SyncImage): already wrapped image info
         context (dict): optional information about the message
-        notified_users (set): object to track user that were notified for the
-            message content
+        notified_users (set[str]): object to track users that were notified for
+            the message content
     """
 
     def __init__(self, *, identifier=None, conv_id, user, text=None,
@@ -238,7 +238,7 @@ class SyncEvent(FakeEvent):
             text (mixed): string or list of hangups.ChatMessageSegments
 
         Returns:
-            list: a list of hangups.ChatMessageSegment
+            list[hangups.ChatMessageSegment]: parsed formatting segments
         """
         if isinstance(text, str):
             return MessageSegment.from_str(text)
@@ -421,13 +421,16 @@ class SyncEventMembership(SyncEvent):
         title (str): Chat Title of the source conversation
         user (sync.user.SyncUser): instance of the sender
         text (mixed): str or segment list, raw message from any platform
-        targets (list): a list of str, conversation identifier of relay targets
-        previous_targets (list): a list of str, conv identifier
+        targets (list[str]): conversation identifier of relay targets
+        previous_targets (list[str]): conv identifier
         type_ (int): 1: join, 2: leave - same as the hangups values
-        participant_user (list): a list of sync.user.SyncUser like objects or
-            a list of strings: representing each a username or chat_id
-        notified_users (set): object to track user that were notified for the
-            message content
+        participant_user (mixed): the changed members
+            None: self add or leave,
+            SyncUser: one user added or kicked,
+            list[SyncUser]: multiple users added or kicked,
+            or list[str]: representing each a username or chat_id
+        notified_users (set[str]): object to track users that were notified for
+            the message content
     """
 
     def __init__(self, *, identifier=None, conv_id=None, title=None, user=None,

@@ -420,7 +420,7 @@ def get_configured_plugins(bot):
         bot (hangupsbot.HangupsBot): the running instance
 
     Returns:
-        list: a list of str, a list of module paths
+        list[str]: a list of module paths
     """
     config_plugins = bot.config.get_option('plugins')
 

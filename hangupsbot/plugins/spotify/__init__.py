@@ -221,7 +221,7 @@ def extract_music_links(text):
         text (str): the source event text
 
     Returns:
-        list: a list of strings, the found media urls
+        list[str]: the found media urls
     """
     links = _DETECT_LINKS.findall(text)
     links = ["".join(link) for link in links]
@@ -300,7 +300,7 @@ def _clean(query):
         query (str): noisy track title with extras
 
     Returns:
-        list: a list of string, expected items: the track title and artist
+        list[str]: expected items: the track title and artist
     """
     # Split into groups.
     groups = list(filter(None, _CLEANUP_CHAR.split(query)))
@@ -320,7 +320,7 @@ def _search(bot, groups):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        groups (list): a list of string, expect track title and artist
+        groups (list[str]): expect track title and artist
 
     Returns:
         SpotifyTrack: a single track wrapper

@@ -237,7 +237,7 @@ class MessageSegmentHangups(hangups.ChatMessageSegment):
             text (str): text to parse
 
         Returns:
-            list: a list of ChatMessageSegment instances
+            list[MessageSegmentHangups]: parsed formatting segments
         """
         return [cls(segment.text, **segment.params)
                 for segment in cls._parser.parse(text)]
@@ -278,10 +278,10 @@ class MessageSegment(MessageSegmentHangups):
          and subclass will be used to escape markdown and create new instances
 
         Args:
-            segments (list): a list of MessageSegment instances
+            segments (list[MessageSegment]): the raw segments
 
         Returns:
-            list: a new list of MessageSegments with escaped markdown
+            list[MessageSegment]: new segments with escaped markdown
         """
         # do not alter the original segments
         return [cls(seg.text,

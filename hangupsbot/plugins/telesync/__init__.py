@@ -468,7 +468,7 @@ async def _handle_conv_user(bot, conv_id, profilesync_only):
         profilesync_only (bool): only include users synced to a G+ profile
 
     Returns:
-        list: a list of sync.user.SyncUser
+        list[user.User]: users participating in this conversation
     """
     path = ['telesync', 'ho2tg', conv_id]
     tg_bot = bot.tg_bot

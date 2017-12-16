@@ -47,7 +47,7 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         conv_id (str): conversation identifier
-        chat_ids (list): a list of str, a list of G+ User Ids
+        chat_ids (list[str]): a list of G+ User Ids
         batch_max (int): number of users to be added at once
 
     Returns:
@@ -94,7 +94,7 @@ async def _batch_remove_users(bot, target_conv, chat_ids):
         chat_ids (iterable): with strings, G+Ids
 
     Returns:
-        set: users that could not be removed
+        set[str]: user ids that could not be removed
     """
     chat_ids = set(chat_ids)
     remove = set()
@@ -177,7 +177,7 @@ async def createconversation(bot, dummy, *args):
         args (str):additional words passed to the command
 
     Returns:
-        tuple: target conversation (str), command output (str)
+        tuple[str]: target conversation, command output
 
     Raises:
         commands.Help: invalid request
