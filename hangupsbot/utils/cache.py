@@ -27,9 +27,6 @@ class CacheItem(CacheItemBase):
         destroy_timeout (int): unix timestamp as end of life for the item
     """
     __slots__ = ()
-    def __new__(cls, value, timeout, destroy_timeout):
-        self = super().__new__(cls, value, timeout, destroy_timeout)
-        return self
 
     def update_timeout(self):
         """increases the destroy timeout with the configured timeout
