@@ -122,11 +122,10 @@ class SyncEvent(FakeEvent):
         self.context = context if isinstance(context, dict) else {}
 
         # keep the reference of notified_users, to track them in all other convs
-        self.notified_users = (notified_users if notified_users is not None else
-                               set((user.id_.chat_id,)))
-        self.previous_targets = (previous_targets
-                                 if previous_targets is not None else
-                                 set((identifier,)))
+        self.notified_users = (
+            {user.id_.chat_id} if notified_users is None else notified_users)
+        self.previous_targets = (
+            {identifier} if previous_targets is None else previous_targets)
         self.user_list = None
         self.syncroom_no_repeat = False
 

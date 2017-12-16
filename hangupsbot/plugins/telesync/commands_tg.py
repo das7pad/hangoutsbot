@@ -201,7 +201,7 @@ async def command_set_sync_ho(tg_bot, msg, *args):
 
     one_way = _('oneway') in args
     channel = _('channel') in args
-    args = (tuple(set(args) - set((_('oneway'), _('channel'))))
+    args = (tuple(set(args) - {_('oneway'), _('channel')})
             if one_way or channel else args)
 
     if not ensure_args(tg_bot, msg.chat_id, args):
@@ -249,7 +249,7 @@ async def command_clear_sync_ho(tg_bot, msg, *args):
     lines = []
     one_way = _('oneway') in args
     channel = _('channel') in args
-    args = (tuple(set(args) - set((_('oneway'), _('channel'))))
+    args = (tuple(set(args) - {_('oneway'), _('channel')})
             if one_way or channel else args)
 
     tg2ho = bot.memory.get_by_path(['telesync', ('channel2ho' if channel
@@ -818,7 +818,7 @@ async def restrict_users(tg_bot, tg_chat_id, mode, user_ids, silent=False):
         raise ValueError('"%s" is not a valid restrict `mode`' % repr(mode))
 
     # filter the bot users user_id
-    user_ids = tuple(set(user_ids) - set((tg_bot.user.usr_id,)))
+    user_ids = tuple(set(user_ids) - {tg_bot.user.usr_id})
 
     rights = (NO_SENDING_RIGHTS if mode == 'messages' else
               NO_MEDIA_RIGHTS if mode == 'media' else

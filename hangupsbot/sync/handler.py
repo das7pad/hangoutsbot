@@ -736,7 +736,7 @@ class SyncHandler(handlers.EventHandler):
             conv_id, text, image_id = message
             title = bot.conversations.get_name(conv_id, '')
             if image_id is None:
-                previous_targets = targets - set(('hangouts:' + conv_id,))
+                previous_targets = targets - {'hangouts:' + conv_id}
                 # skip direct sending and add it to the message queue instead
                 broadcast_targets.remove(message)
             else:
@@ -915,10 +915,10 @@ class SyncHandler(handlers.EventHandler):
 
         previous_targets = (previous_targets
                             if isinstance(previous_targets, set)
-                            else set((identifier,)))
+                            else {identifier})
 
         notified_users = (notified_users if isinstance(notified_users, set)
-                          else set((user.id_.chat_id,)))
+                          else {user.id_.chat_id})
 
         return user, targets, previous_targets, notified_users
 

@@ -300,7 +300,7 @@ def telesync(bot, event, *args):
     args = args if args else (_('show'),)
     one_way = _('oneway') in args
     channel = _('channel') in args
-    args = (tuple(set(args) - set((_('oneway'), _('channel'))))
+    args = (tuple(set(args) - {_('oneway'), _('channel')})
             if one_way or channel else args)
 
     if len(args) > 1:

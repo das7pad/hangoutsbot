@@ -551,7 +551,7 @@ async def finduser(bot, event, *args):
     """
     conv_id, params = _convid_from_args(bot, args)
     unique = 'unique' in params
-    params = set(params) - set(('unique',))
+    params = set(params) - {'unique'}
     if not params:
         raise Help('search term is missing!')
 

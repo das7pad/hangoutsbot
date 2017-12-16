@@ -26,12 +26,12 @@ _GLOBAL_KEYWORDS = {}
 MENTION_TEMPLATE = (
     '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
 
-IGNORED_COMMANDS = set((
+IGNORED_COMMANDS = {
     'subscribe',
     'unsubscribe',
     'global_subscribe',
     'global_unsubscribe',
-))
+}
 
 HELP = {
     'subscribe': _('allow users to subscribe to phrases, only one input at a '

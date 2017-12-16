@@ -68,7 +68,7 @@ class CommandDispatcher(BotMixin, TrackingMixin):
             self.command_tagsets[command_name] = set()
 
         if isinstance(tags, str):
-            tags = set([tags])
+            tags = {tags}
 
         self.command_tagsets[command_name] = self.command_tagsets[command_name] | tags
 
