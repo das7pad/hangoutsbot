@@ -16,7 +16,7 @@ def _initialise(bot):
     """setup watermarking plugin
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     config_botalive = bot.get_config_option('botalive')
 
@@ -45,8 +45,9 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
     """add conv_ids to the watermark_updater queue and start to process it
 
     Args:
-        bot: hangupsbot instance
-        target: 'admins' to add admin 1on1 ids, 'groups' to add group conv_ids
+        bot (hangupsbot.HangupsBot): the running instance
+        target (str): 'admins' to enqueue chats with admins or 'groups' to
+            enqueue group chats
     """
     last_run = time.time()
 
@@ -87,9 +88,6 @@ class WatermarkUpdater(BotMixin):
     to prevent the processor from being consumed entirely and also to not act
         too much as a bot, we sleep 5 to T seconds after each watermark update
         T is set in config with the key 'maxfuzz' and defaults to 10 seconds
-
-    Args:
-        bot: HangupsBot instance
     """
 
     def __init__(self):
@@ -106,8 +104,8 @@ class WatermarkUpdater(BotMixin):
         """schedule a conversation for watermarking and filter blacklisted
 
         Args:
-            conv_id: string, id of a conversation
-            overwrite: boolean, toggle to update the watermark even when there
+            conv_id (str): id of a conversation
+            overwrite (bool): toggle to update the watermark even when there
                 were no new events in the conversations
         """
         if conv_id not in self.failed_permanent:

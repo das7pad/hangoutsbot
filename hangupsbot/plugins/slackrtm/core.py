@@ -357,7 +357,7 @@ class SlackRTM(BotMixin):
 
         Args:
             method (str): the api-method to call
-            kwargs (dict): optional kwargs passed with api-method
+            kwargs (mixed): optional kwargs passed with api-method
 
         Returns:
             dict: pre-parsed json response
@@ -522,10 +522,10 @@ class SlackRTM(BotMixin):
         Args:
             user (str): user_id
             key (str): data entry in the user data
-            default (unknown): value for missing user
+            default (mixed): value for missing user
 
         Returns:
-            unknown: or the default value
+            mixed: dict with user data or the default value
         """
         if user not in self.users:
             self.logger.debug('user %s not found, reloading users', user)
@@ -539,7 +539,7 @@ class SlackRTM(BotMixin):
         Args:
             channel (str): channel or group identifier
             key (str): data entry in the channel data
-            default (unknown): return value if no data is available
+            default (mixed): return value if no data is available
 
         Returns:
             dict: requested channel entry or the default value
@@ -556,7 +556,7 @@ class SlackRTM(BotMixin):
 
         Args:
             user (str): user_id
-            default (unknown): value for missing user or no available name
+            default (mixed): value for missing user or no available name
 
         Returns:
             str: the real name or the default value in case of a missing user
@@ -568,7 +568,7 @@ class SlackRTM(BotMixin):
 
         Args:
             user (str): user_id
-            default (unknown): value for missing user
+            default (mixed): value for missing user
 
         Returns:
             str: the nickname or the default value in case of a missing user
@@ -580,7 +580,7 @@ class SlackRTM(BotMixin):
 
         Args:
             user (str): user_id
-            default (unknown): value for missing user
+            default (mixed): value for missing user
 
         Returns:
             str: the image url or the default value in case of a missing user
@@ -592,7 +592,7 @@ class SlackRTM(BotMixin):
 
         Args:
             channel (str): a slack channel/group/dm
-            default (unknown): the fallback for a missing channel in the cache
+            default (mixed): the fallback for a missing channel in the cache
 
         Returns:
             str: the chattitle or the default value in case of a missing chat

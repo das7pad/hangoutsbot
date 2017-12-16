@@ -14,10 +14,10 @@ class TelegramMessageParser(MessageParser):
         """split entities
 
         Args:
-            text: tuple of string and list of dicts, message text and entities
+            text (tuple): `(<str>, <list of dict>)`, message text and entities
 
         Returns:
-            list, a list of reparser.Segment instances
+            list: a list of reparser.Segment instances
         """
         text, entities = text
         segments = []

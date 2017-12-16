@@ -14,8 +14,7 @@ profile=no
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-# TODO(das7pad): add `pylint.extensions.docparams`
-#load-plugins=
+load-plugins=pylint.extensions.docparams
 
 
 [MESSAGES CONTROL]

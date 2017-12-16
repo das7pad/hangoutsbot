@@ -129,7 +129,7 @@ def help(slack_bot, msg, args):                # pylint:disable=redefined-builti
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (tuple): a tuple of string, additional arguments as strings
+        args (str): additional arguments as strings
 
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
@@ -184,7 +184,7 @@ def whois(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (tuple): a tuple of string, additional arguments as strings
+        args (str): additional arguments as strings
 
     Returns:
         tuple: a tuple of two strings, the channel target and the command output
@@ -377,7 +377,7 @@ def syncto(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (tuple): a tuple of string, additional arguments as strings
+        args (str): additional arguments as strings
 
     Returns:
         str: command output
@@ -412,7 +412,7 @@ def disconnect(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (tuple): a tuple of string, additional arguments as strings
+        args (str): additional arguments as strings
 
     Returns:
         str: command output
@@ -446,7 +446,7 @@ def chattitle(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (tuple): a tuple of string, additional arguments as strings
+        args (str): additional arguments as strings
 
     Returns:
         str: command output
@@ -461,7 +461,7 @@ def sync_config(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (tuple): a tuple of string, additional arguments as strings
+        args (str): additional arguments as strings
 
     Returns:
         str: command output

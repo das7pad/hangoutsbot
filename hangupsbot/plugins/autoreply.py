@@ -199,13 +199,13 @@ def autoreply(bot, event, cmd=None, *args):
     """adds or removes an autoreply from config.
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        cmd: string, the first argument passed after the command
-        args: tuple of strings, additional words as the new/old autoreply entry
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        cmd (str): the first argument passed after the command
+        args (str): the new/old autoreply entry
 
     Returns:
-        string
+        str: command output
     """
     argument = " ".join(args)
     html = None

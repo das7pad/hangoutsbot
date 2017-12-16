@@ -74,7 +74,7 @@ class Tracker(BotMixin):
         """start gathering new plugin functionality, extend existing data
 
         Args:
-            metadata: dict, required keys: 'module' and 'module.path'
+            metadata (dict): required keys: 'module' and 'module.path'
         """
         waited = 0
         while self._running and waited < 100:
@@ -98,7 +98,7 @@ class Tracker(BotMixin):
         """merge admin and user plugins and return the current registration
 
         Returns:
-            dict
+            dict: gathered data of the current plugin, see .reset() for details
         """
         self._current["commands"]["all"] = list(
             set(self._current["commands"]["admin"] +
@@ -194,8 +194,8 @@ class Tracker(BotMixin):
         """track a registered shared
 
         Args:
-            identifier: string, a unique identifier for the objectref
-            objectref: any type, the shared object
+            identifier (str): a unique identifier for the objectref
+            objectref (mixed): the shared object
         """
         self._current["shared"].append((identifier, objectref))
 
@@ -221,7 +221,7 @@ class Tracker(BotMixin):
         """register a session that will be closed on plugin unload
 
         Args:
-            session: aio.client.ClientSession-like instance
+            session (aiohttp.ClientSession): a session to track
         """
         self._current["aiohttp.session"].append(session)
 
@@ -246,10 +246,13 @@ def register_admin_command(command_names, tags=None):
 def register_help(source, name=None):
     """help content registration
 
+    e.g. register_help('my text', name='my_cmd')
+         register_help({'my_cmd': 'my text', 'my_second_cmd': 'other text'})
+
     Args:
-        source: string or dict, a single text or multiple in a dict with command
-            names as keys
-        name: string, the command name of the single text
+        source (mixed): string or dict, a single text entry
+            or multiple entries in a dict with command names as keys
+        name (str): the command name of the single text
 
     Raises:
         ValueError: bad args, provide a dict with cmds or specify the cmd name
@@ -264,10 +267,15 @@ def register_help(source, name=None):
 def register_handler(function, pluggable="message", priority=50):
     """register external message handler
 
+    signature: function(bot, event, command)
+               function(bot, event)
+               function(bot)
+               function()
+
     Args:
-        function: callable, with signature: function(bot, event, command)
-        pluggable: string, key in handler.EventHandler.pluggables, handler type
-        priority: int, change the sequence of handling the event
+        function (callable): with signature: function(bot, event, command)
+        pluggable (str): key in handler.EventHandler.pluggables, event type
+        priority (int): change the sequence of handling the event
     """
     # pylint:disable=protected-access
     bot_handlers = tracking.bot._handlers
@@ -277,10 +285,15 @@ def register_handler(function, pluggable="message", priority=50):
 def register_sync_handler(function, name="message", priority=50):
     """register external sync handler
 
+    signature: function(bot, event, command)
+               function(bot, event)
+               function(bot)
+               function()
+
     Args:
-        function: callable, with signature: function(bot, event, command)
-        name: string, key in bot.sync.pluggables, event type
-        priority: int, change the sequence of handling the event
+        function (mixed): function or coroutine, see doc body for footprint
+        name (str): key in bot.sync.pluggables, event type
+        priority (int): change the sequence of handling the event, ignored
     """
     tracking.bot.sync.register_handler(function, name, priority)
 
@@ -288,35 +301,35 @@ def register_shared(identifier, objectref):
     """register a shared object to be called later
 
     Args:
-        identifier: string, a unique identifier for the objectref
-        objectref: any type, the object to be shared
+        identifier (str): a unique identifier for the objectref
+        objectref (mixed): the object to be shared
 
     Raises:
         RuntimeError: the identifier is already in use
     """
     tracking.bot.register_shared(identifier, objectref)
 
-def start_asyncio_task(function, *args, **kwargs):
+def start_asyncio_task(coro, *args, **kwargs):
     """start an async callable and track its execution
 
     Args:
-        function: callable, async coroutine or coroutine_function
-        args: tuple, positional arguments for the function
-        kwargs: dict, keyword arguments for the function
+        coro (coroutine): a coroutine function
+        args (mixed): positional arguments for the function
+        kwargs (mixed): keyword arguments for the function
 
     Returns:
-        asyncio.Task instance for the execution of the function
+        asyncio.Task: wrapper for the execution of the coroutine
 
     Raises:
-        RuntimeError: the function is not a coroutine or coroutine_function
+        RuntimeError: the function is not a coroutine or coroutine function
     """
     loop = asyncio.get_event_loop()
-    if asyncio.iscoroutinefunction(function) or asyncio.iscoroutine(function):
-        expected = inspect.signature(function).parameters
+    if asyncio.iscoroutinefunction(coro) or asyncio.iscoroutine(coro):
+        expected = inspect.signature(coro).parameters
         if (expected and tuple(expected)[0] == 'bot'
                 and tracking.bot not in args[:1]):
             args = (tracking.bot, ) + args
-        task = asyncio.ensure_future(function(*args, **kwargs),
+        task = asyncio.ensure_future(coro(*args, **kwargs),
                                      loop=loop)
     else:
         raise RuntimeError("coroutine function must be supplied")
@@ -332,7 +345,7 @@ def register_aiohttp_session(session):
     """register a session that will be closed on plugin unload
 
     Args:
-        session: aio.client.ClientSession-like instance
+        session (aiohttp.ClientSession): a session to track
     """
     tracking.register_aiohttp_session(session)
 
@@ -404,10 +417,10 @@ def get_configured_plugins(bot):
     """get the configured and also available plugins to load
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
 
     Returns:
-        list of strings, a list of module paths
+        list: a list of str, a list of module paths
     """
     config_plugins = bot.config.get_option('plugins')
 
@@ -476,7 +489,10 @@ async def load_user_plugins(bot):
     """loads all user plugins
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
+
+    Raises:
+        CancelledError: shutdown in progress
     """
     plugin_list = get_configured_plugins(bot)
 
@@ -493,7 +509,7 @@ async def unload_all(bot):
     """unload user plugins
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     all_plugins = tracking.list.copy()
     done = await asyncio.gather(*[unload(bot, module_path)
@@ -514,12 +530,12 @@ async def load(bot, module_path, module_name=None):
     """loads a single plugin-like object as identified by module_path
 
     Args:
-        bot: HangupsBot instance
-        module_path: string, python import style relative to the main script
-        module_name: string, custom name
+        bot (hangupsbot.HangupsBot): the running instance
+        module_path (str): python import style relative to the main script
+        module_name (str): custom name
 
     Returns:
-        boolean, True if the plugin was loaded successfully
+        bool: True if the plugin was loaded successfully
 
     Raises:
         AlreadyLoaded: the plugin is already loaded
@@ -611,10 +627,10 @@ def load_module(module_path):
     """(re) load an external module
 
     Args:
-        module_path: string, the path to the module relative to the main script
+        module_path (str): the path to the module relative to the main script
 
     Returns:
-        boolean, True if no Exception was raised on (re)load, otherwise False
+        bool: True if no Exception was raised on (re)load, otherwise False
     """
     message = "search for plugin in sys.modules"
     module_path = 'hangupsbot.' + module_path
@@ -636,10 +652,11 @@ async def unload(bot, module_path):
     """unload a plugin including all external registered resources
 
     Args:
-        module_path: string, plugin path on disk relative to the main script
+        bot (hangupsbot.HangupsBot): the running instance
+        module_path (str): plugin path on disk relative to the main script
 
     Returns:
-        boolean, True if the plugin was fully unloaded
+        bool: True if the plugin was fully unloaded
 
     Raises:
         RuntimeError: the plugin has registered threads
@@ -725,10 +742,11 @@ async def reload_plugin(bot, module_path):
     Note: the plugin may reset the sentinel on a successful internal load
 
     Args:
-        module_path: string, plugin path on disk relative to the main script
+        bot (hangupsbot.HangupsBot): the running instance
+        module_path (str): plugin path on disk relative to the main script
 
     Returns:
-        boolean, False if the plugin may not be reloaded again, otherwise True
+        bool: False if the plugin may not be reloaded again, otherwise True
     """
     if module_path in tracking.list:
         await unload(bot, module_path)

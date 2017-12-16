@@ -104,7 +104,7 @@ async def slack_channels(bot, dummy, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         dummy (event.ConversationEvent): ignored
-        args (tuple): a tuple of str, the slackrtm name to query channels from
+        args (str): the slackrtm name to query channels from
 
     Returns:
         str: command output
@@ -138,7 +138,7 @@ def slack_users(bot, dummy, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         dummy (event.ConversationEvent): ignored
-        args (tuple): a tuple of str, slackrtm name and a channel of it
+        args (str): slackrtm name and a channel of it
 
     Returns:
         str: command output
@@ -192,7 +192,7 @@ def slack_syncto(bot, event, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
-        args (tuple): a tuple of str, slackrtm name and a channel of it
+        args (str): slackrtm name and a channel of it
 
     Returns:
         str: command output
@@ -221,7 +221,7 @@ def slack_disconnect(bot, event, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
-        args (tuple): a tuple of str, slackrtm name and a channel of it
+        args (str): slackrtm name and a channel of it
 
     Returns:
         str: command output

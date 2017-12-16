@@ -59,7 +59,7 @@ class SlackMessageParser(MessageParser):
 
 
 class SlackMessageSegment(MessageSegment):
-    """messae segment for text with slack markdown formatting"""
+    """message segment for text with slack markdown formatting"""
     _parser = SlackMessageParser()
 
     @classmethod

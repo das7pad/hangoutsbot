@@ -62,12 +62,15 @@ def echo(bot, event, *args):
     """echo a message back to the current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        dummy: event.ConversationEvent instance, not needed
-        args: tuple, a tuple of strings, request body
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message wrapper
+        args (str): request body
 
     Returns:
-        tuple of strings, the conversation target and the message
+        tuple: a tuple of str, the conversation target and the message
+
+    Raises:
+        Help: invalid request
     """
     if not args:
         raise Help(_('supply a message!'))
@@ -95,15 +98,15 @@ async def broadcast(bot, dummy, *args):
     """broadcast a message to multiple chats, schedule here
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
         dummy: event.ConversationEvent instance, not needed
-        args: tuple, a tuple of strings, request body
+        args (str): request body
 
     Returns:
-        string, user output
+        str: user output
 
     Raises:
-        commands.Help: bad request
+        Help: bad request
     """
     if not args:
         raise Help(_('Your request is missing'))
@@ -206,7 +209,19 @@ async def users(bot, event, *dummys):
 
 
 def user(bot, dummy, *args):
-    """find people by name"""
+    """find people by name
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): not used
+        args (str): additional words passed to the command
+
+    Returns:
+        list: a list of `hangups.ChatMessageSegment`s
+
+    Raises:
+        Help: invalid request
+    """
 
     search = " ".join(args)
 
@@ -254,12 +269,12 @@ def hangouts(bot, dummy, *args):
     """retrieve a list of hangouts, supply a search term in args to filter
 
     Args:
-        bot: HangupsBot instance
-        dummy: unused
-        args: tuple of strings, additional words as the search term
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): not used
+        args (str): the search term
 
     Returns:
-        string
+        str: the command output
     """
     text_search = " ".join(args)
 
@@ -286,9 +301,9 @@ async def rename(bot, event, *args):
     """rename the current conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, additional words as the new chat title
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the new chat title
 
     Returns:
         string
@@ -301,9 +316,9 @@ async def leave(bot, event, *args):
     """leave the current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, a different conv_id, 'quietly' to skip an output
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): a different conv_id, 'quietly' to skip an output
     """
     parameters = set(args)
     if "quietly" in args:
@@ -325,9 +340,9 @@ async def reload(bot, event, *dummys):
     """reload .config and .memory from file
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
     """
     await bot.coro_send_message(event.conv, "<b>reloading config.json</b>")
     bot.config.load()
@@ -340,9 +355,9 @@ def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
     """kill the bot
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
     """
     logger.warning('HangupsBot killed by user %s from conversation %s',
                    event.user.full_name, event.conv.name)
@@ -353,15 +368,16 @@ async def config(bot, event, cmd=None, *args):
     """retrieve or edit a config entry
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, additional words to for a request
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        cmd (str): optional sub command
+        args (str): additional words to for a request
 
     Returns:
-        string, request result or None if the output was redirected to a pHO
+        str: request result or None if the output was redirected to a pHO
 
     Raises:
-        command.Help: invalid request
+        Help: invalid request
         KeyError: the given path does not exist
         ValueError: the given value is not a valid json
     """
@@ -485,12 +501,12 @@ def whoami(bot, event, *dummys):
     """retrieve the users G+id
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
 
     Returns:
-        string
+        str: a status message
     """
     path = ['user_data', event.user_id.chat_id, "label"]
     if bot.memory.exists(path):
@@ -506,12 +522,12 @@ def whereami(dummy, event, *dummys):
     """retrieve the current conversation identifier
 
     Args:
-        dummy: HangupsBot instance not used
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        dummy (hangupsbot.HangupsBot): the running instance, not used
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
 
     Returns:
-        string
+        str: a status message
     """
     return _("You are at <b><i>{conv_name}</i></b>, "
              "conv_id = <i>{conv_id}</i>").format(conv_name=event.conv.name,

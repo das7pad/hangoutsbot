@@ -110,11 +110,11 @@ def _compose_load_message(module_path, result):
     """get a formatted message
 
     Args:
-        module_path: string, plugin path
-        result: string, result of the load function
+        module_path (str): plugin path
+        result (str): result of the load function
 
     Returns:
-        string, the formatted message
+        str: the formatted message
     """
     return "<b><i>%s</i></b> : <b>%s</b>" % (module_path, result)
 

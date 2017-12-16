@@ -24,13 +24,13 @@ def _get_delay(args):
     """check if enough args are specified and whether a valid delay is given
 
     Args:
-        args: tuple of string, argument passed to the command
+        args (tuple): a tuple of str, arguments passed to the command
 
     Returns:
-        float, the specified delay
+        float: the specified delay
 
     Raises:
-        commands.Help: not enough args specified or invalid delay given
+        Help: not enough args specified or invalid delay given
     """
     if len(args) < 2:
         raise Help(_("specify delay and message"))
@@ -45,12 +45,12 @@ async def remindme(bot, event, *args):
     """schedule a message for the private chat with the bot
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, delay and message content
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): delay and message content
 
     Returns:
-        string, confirmation of the schedules message
+        str: confirmation of the schedules message
 
     Raises:
         commands.Help: invalid request, either too few args or invalid delay
@@ -69,12 +69,12 @@ async def remindall(bot, event, *args):
     """schedule a message in the current conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, delay and message content
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): delay and message content
 
     Returns:
-        string, confirmation of the schedules message
+        str: confirmation of the schedules message
 
     Raises:
         commands.Help: invalid request, either too few args or invalid delay
@@ -89,10 +89,10 @@ async def _reminder(bot, conv_id, delay, args):
     """detached execution of a remind/remindall request
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, Hangouts conversation identifier
-        delay: float, time in seconds to sleep before sending the reminder
-        args: tuple of strings, reminder text
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): Hangouts conversation identifier
+        delay (float): time in seconds to sleep before sending the reminder
+        args (tuple): reminder text
     """
     try:
         await asyncio.sleep(delay)

@@ -42,8 +42,8 @@ class Queue(list):
     """a queue to schedule synced calls and remain the sequence in processing
 
     Args:
-        group: string, identifier for a platform
-        func: callable, will be called with the scheduled args/kwargs
+        group (str): identifier for a platform
+        func (callable): will be called with the scheduled args/kwargs
     """
     __slots__ = ('_logger', '_func', '_group', '_lock', '_instance_block')
     _loop = asyncio.get_event_loop()
@@ -68,7 +68,7 @@ class Queue(list):
         """check for a global, local or instance sending block
 
         Returns:
-            True if any block got applied otherwise False
+            bool: True if any block got applied otherwise False
         """
         return (self._instance_block
                 or self._blocks['__global__']
@@ -79,7 +79,7 @@ class Queue(list):
         """check if a queue processor is already running
 
         Returns:
-            boolean, True if a queue processor is running, otherwise False
+            bool: True if a queue processor is running, otherwise False
         """
         return self._lock.locked()
 
@@ -87,7 +87,7 @@ class Queue(list):
         """queue an item with the given args/kwargs for the coroutine
 
         Returns:
-            `Status` instance: the scheduled task sets a boolean result after
+            Status: the scheduled task sets a boolean result after
             being processed in the Status
             `await queue.schedule(...)` returns True on success otherwise False
         """
@@ -103,7 +103,7 @@ class Queue(list):
         the instance-block is permanent, use with care
 
         Args:
-            timeout: int, time in seconds to wait for pending tasks to complete
+            timeout (int): time in seconds to wait for pending tasks to complete
         """
         self._instance_block = True
         while timeout > 0:
@@ -124,7 +124,7 @@ class Queue(list):
         Queue(group).local_stop()
 
         Args:
-            timeout: int, time in seconds to wait for pending tasks to complete
+            timeout (int): time in seconds to wait for pending tasks to complete
         """
         self._blocks[self._group] = True
         if self._pending_tasks[self._group] > 0:
@@ -146,7 +146,7 @@ class Queue(list):
         """apply a submit-block to all queues and wait for pending tasks
 
         Args:
-            timeout: int, time in seconds to wait for pending tasks to complete
+            timeout (int): time in seconds to wait for pending tasks to complete
         """
         cls._blocks['__global__'] = True
         pending = {group: tasks
@@ -165,7 +165,7 @@ class Queue(list):
         """unset a sending block
 
         Args:
-            group: string, platform identifier or None to release globally
+            group (str): platform identifier or None to release globally
         """
         if group is None:
             cls._blocks.clear()
@@ -229,11 +229,11 @@ class Queue(list):
         """perform the sending of the scheduled content
 
         Args:
-            args: tuple, positional arguments for the coroutine
-            kwargs: dict, keyword arguments for the coroutine
+            args (mixed): positional arguments for the func
+            kwargs (dict): keyword arguments for the func
 
         Returns:
-            any type
+            mixed: expect a boolean
         """
         wrapped = functools.partial(self._func, *args, **kwargs)
         return await self._loop.run_in_executor(None, wrapped)
@@ -243,8 +243,9 @@ class AsyncQueue(Queue):
     """a queue to schedule async calls and remain the sequence in processing
 
     Args:
-        group: string, identifier for a platform
-        func: coroutine function, will be called with the scheduled args/kwargs
+        group (str): identifier for a platform
+        func (coroutine): coroutine function, will be called with the scheduled
+            args/kwargs
     """
     __slots__ = ()
 
@@ -252,11 +253,11 @@ class AsyncQueue(Queue):
         """perform the sending of the scheduled content
 
         Args:
-            args: tuple, positional arguments for the coroutine
-            kwargs: dict, keyword arguments for the coroutine
+            args (mixed): positional arguments for the coroutine
+            kwargs (dict): keyword arguments for the coroutine
 
         Returns:
-            any type
+            mixed: expect a boolean
         """
         return await self._func(*args, **kwargs)
 
@@ -268,10 +269,11 @@ class QueueCache(Cache):
     otherwise the sync.DEFAULT_CONFIG entry for queue caches is used
 
     Args:
-        group: string, identifier for a platform to separate queues for
-        func: non-coroutine function, will be called with scheduled args/kwargs
-        timeout: integer, optional, time in seconds for a queue to live in cache
-        bot: HangupsBot instance, optional
+        group (str): identifier for a platform to separate queues for
+        func (callable): non-coroutine function, will be called with scheduled
+            args/kwargs
+        timeout (int): optional, time in seconds for a queue to live in cache
+        bot (hangupsbot.HangupsBot): the running instance, optional
     """
     __slots__ = ('_default_args',)
     _queue = Queue
@@ -293,12 +295,12 @@ class QueueCache(Cache):
         """get the message queue of a chat
 
         Args:
-            identifier: string, conversation id
+            identifier (mixed): conversation id
 
         Returns:
-            an instance of ._queue, AsyncQueue or Queue
+            mixed: an instance of ._queue, AsyncQueue or Queue
         """
-        #pylint:disable=arguments-differ
+        # pylint:disable=arguments-differ
         return super().get(identifier, ignore_timeout=True)
 
     async def stop(self, timeout):
@@ -314,10 +316,10 @@ class AsyncQueueCache(QueueCache):
     """caches AsyncQueues and recreates one if a cache miss happens
 
     Args:
-        group: string, identifier for a platform to separate queues for
+        group (str): identifier for a platform to separate queues for
         func: coroutine function, will be called with the scheduled args/kwargs
         timeout: integer, optional, time in seconds for a queue to live in cache
-        bot: HangupsBot instance, optional
+        bot (hangupsbot.HangupsBot): the running instance, optional
     """
     __slots__ = ()
     _queue = AsyncQueue

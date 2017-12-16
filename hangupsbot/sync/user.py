@@ -18,14 +18,14 @@ class SyncUser(hangups.user.User, BotMixin):
     """a hangups.user.User-like object with builtin access to profilesyncs
 
     Args:
-        identifier: string, source plugin name
-        user: hangups.user.User instance or string as fallback
-        user_id: string or hangups.user.UserID, G+ID or platform id
-        user_name: string, Fullname
-        user_link: string, advanced identifier for cross platform sync
-        user_photo: string, url to the user's profile picture
-        user_nick: string, custom nickname
-        user_is_self: boolean, True if messages should be issued as the bot user
+        identifier (str): source plugin name
+        user (mixed): hangups.user.User instance or string as fallback
+        user_id (mixed): string or hangups.user.UserID, G+ID or platform id
+        user_name (str): Fullname
+        user_link (str): advaned identifier for cross platform sync
+        user_photo (str): url to the user's profile picture
+        user_nick (str): custom nickname
+        user_is_self (bool): True if messages should be issued as the bot user
     """
     __slots__ = ('identifier', 'nickname', 'user_link')
 
@@ -101,11 +101,11 @@ class SyncUser(hangups.user.User, BotMixin):
         set global/per conv 'sync_nicknames' in config to allow nicknames
 
         Args:
-            conv_id: string, conversation in which the name should be displayed
-            text_only: boolean, toggle to do not include the user link
+            conv_id (str): conversation in which the name should be displayed
+            text_only (bool): toggle to do not include the user link
 
         Returns:
-            string
+            str: name with formatting and/or html-link as requested
         """
         user_link = self.user_link
 

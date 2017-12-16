@@ -16,10 +16,10 @@ class User(SyncUser):
     """init a user base on a telegram user object in a message object
 
     Args:
-        tg_bot: TelegramBot instance
-        msg: Message instance or message dict
-        chat_action: target to pick user from, is key in msg
-        gpluslink: boolean, set to True to get G+links instead of t.me links
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper or message dict
+        chat_action (str): target to pick user from, is key in msg
+        gpluslink (bool): set to True to get G+links instead of t.me links
     """
     # Fallback for Telegram-channel with redacted publishers
     FALLBACK = {'id': 0, 'first_name': '~'}
@@ -67,7 +67,7 @@ class User(SyncUser):
         """create a short link with the users username
 
         Returns:
-            string, link to user or None
+            str: link to user or None
         """
         if self.username is None:
             return None
@@ -77,7 +77,7 @@ class User(SyncUser):
         """use the cached user picture or upload a new one
 
         Args:
-            use_cache: boolean, use a cached image and fetch only on cache miss
+            use_cache (bool): use a cached image and fetch only on cache miss
         """
         base_path = ['telesync', 'user_data', self.usr_id, 'picture']
 

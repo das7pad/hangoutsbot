@@ -49,10 +49,11 @@ def ensure_admin(tg_bot, msg):
     """return whether the user is admin, and respond if be_quiet is off
 
     Args:
-        msg: Message instance
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
 
     Returns:
-        boolean, True if user is Admin, otherwise False
+        bool: True if user is Admin, otherwise False
     """
     if not msg.user.usr_id in tg_bot.config('admins'):
         if not tg_bot.config('be_quiet'):
@@ -64,10 +65,11 @@ def ensure_private(tg_bot, msg):
     """return whether the chat is private, and respond if be_quiet is off
 
     Args:
-        msg: Message instance
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
 
     Returns:
-        boolean, True if chat is of type private, otherwise False
+        bool: True if chat is of type private, otherwise False
     """
     if msg.chat_type != 'private':
         if not tg_bot.config('be_quiet'):
@@ -81,13 +83,14 @@ def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
     """check the number of arguments, and respond if be_quiet is off
 
     Args:
-        tg_chat_id: int
-        args: list of strings
-        between: tuple of int, lower/higher limit for the amount of args
-        at_least: int, amount of args that are required at least
+        tg_bot (core.TelegramBot): the running instance
+        tg_chat_id (mixed): str or int, conversation identifier
+        args (tuple): a tuple of str
+        between (tuple): tuple of int, lower/higher limit for the amount of args
+        at_least (int): amount of args that are required at least
 
     Returns:
-        boolean, True if the number is correct, otherwise False
+        bool: True if the number is correct, otherwise False
     """
     if between is None and at_least is None:
         between = (1, 1)
@@ -105,8 +108,9 @@ async def command_start(tg_bot, msg, *args):
     /start [syncprofile]
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if ensure_private(tg_bot, msg):
         tg_bot.send_html(msg.chat_id,
@@ -122,8 +126,9 @@ async def command_cancel(tg_bot, msg, *dummys):
     """hide the custom keyboard
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     await tg_bot.sendMessage(
         msg.chat_id, _('canceled'),
@@ -135,8 +140,9 @@ async def command_whoami(tg_bot, msg, *dummys):
     /whereami
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     if ensure_private(tg_bot, msg):
         tg_bot.send_html(msg.chat_id,
@@ -148,8 +154,9 @@ async def command_whereami(tg_bot, msg, *dummys):
     /whereami
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     if ensure_admin(tg_bot, msg):
         tg_bot.send_html(msg.chat_id,
@@ -161,7 +168,7 @@ async def command_whois(tg_bot, msg, *args):
     Args:
         tg_bot (core.TelegramBot): the running instance
         msg (message.Message): a received message
-        args (tuple): a tuple of args, including the search term
+        args (str): the search term
     """
     if not ensure_args(tg_bot, msg.chat_id, args):
         return
@@ -185,8 +192,9 @@ async def command_set_sync_ho(tg_bot, msg, *args):
     /setsyncho <hangout conv_id>
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -230,8 +238,9 @@ async def command_clear_sync_ho(tg_bot, msg, *args):
     /clearsyncho <conv_ids>
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     bot = tg_bot.bot
     if not ensure_admin(tg_bot, msg):
@@ -285,8 +294,9 @@ async def command_add_admin(tg_bot, msg, *args):
     /addadmin <tg_user_id>
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -310,8 +320,9 @@ async def command_remove_admin(tg_bot, msg, *args):
     /removeadmin <tg_user_id>
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -335,11 +346,12 @@ async def command_tldr(tg_bot, msg, *args):
     /tldr
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
 
     Returns:
-        boolean, True
+        bool: True
     """
     msg.text = '{bot_cmd} tldr {args}'.format(bot_cmd=tg_bot.bot.command_prefix,
                                               args=' '.join(args)).strip()
@@ -358,8 +370,9 @@ async def command_sync_profile(tg_bot, msg, *dummys):
     /syncprofile
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     if not ensure_private(tg_bot, msg):
         return
@@ -390,7 +403,7 @@ async def command_set_sync_profile(tg_bot, msg, *args):
     Args:
         tg_bot (core.TelegramBot): the currently running instance
         msg (message.Message): a text message event
-        args (tuple): a tuple of str, arguments that were passed to the command
+        args (str): arguments that were passed to the command
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -443,8 +456,9 @@ async def command_unsync_profile(tg_bot, msg, *dummys):
     /unsyncprofile
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     if not ensure_private(tg_bot, msg):
         return
@@ -485,8 +499,9 @@ async def command_get_me(tg_bot, msg, *dummys):
     /getme
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -503,8 +518,9 @@ async def command_get_admins(tg_bot, msg, *dummys):
     /getadmins
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     admin_users = []
     max_name_length = 0
@@ -536,8 +552,9 @@ async def command_echo(tg_bot, msg, *args):
     /echo {text}
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -551,8 +568,9 @@ async def command_leave(tg_bot, msg, *dummys):
     /leave
 
     Args:
-        msg: Message instance
-        *dummys: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        dummys (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -613,8 +631,9 @@ async def command_chattitle(tg_bot, msg, *args):
     /chattitle [<chatid>] <title>
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -629,10 +648,11 @@ def get_chat_name(tg_bot, chat_id):
     """get the cached name of a chat
 
     Args:
-        chat_id: string, telegram chat identifier
+        tg_bot (core.TelegramBot): the running instance
+        chat_id (str): telegram chat identifier
 
     Returns:
-        string, the chats title or 'unknown' if no title is cached
+        str: the chats title or 'unknown' if no title is cached
     """
     try:
         return tg_bot.bot.memory.get_by_path(
@@ -646,8 +666,9 @@ async def command_sync_config(tg_bot, msg, *args):
     /sync_config key value
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return
@@ -728,8 +749,9 @@ async def command_restrict_user(tg_bot, msg, *args):
                                  'sticker+websites'>
 
     Args:
-        msg: Message instance
-        args: tuple, arguments that were passed after the command
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper
+        args (str): message text tokens
     """
     if not ensure_admin(tg_bot, msg):
         return

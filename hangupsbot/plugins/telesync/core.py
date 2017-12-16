@@ -73,7 +73,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
     """enhanced telepot bot with Hangouts sync
 
     Args:
-        ho_bot: HangupsBot instance
+        ho_bot (hangupsbot.HangupsBot): the running instance
     """
 
     def __init__(self, ho_bot):
@@ -114,11 +114,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """get a telegram config entry
 
         Args:
-            key: string, an item in the telesync config
-            fallback: boolean, toggle to use the config defaults on missing keys
+            key (str): an item in the telesync config
+            fallback (bool): toggle to use the config defaults on missing keys
 
         Returns:
-            any type, the requested item; dict, entire config if no key is set
+            mixed: the requested item; dict, entire config if no key is set
         """
         item = [key] if key is not None else []
         return self.bot.config.get_by_path(['telesync'] + item, fallback)
@@ -173,10 +173,10 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """check if Telegram api requests can be made
 
         Args:
-            retry: boolean, toggle to allow a single retry on a Server Error
+            retry (bool): toggle to allow a single retry on a Server Error
 
         Returns:
-            boolean, True if the TelegramBot is running, otherwise False
+            bool: True if the TelegramBot is running, otherwise False
         """
         if self._receive_next_updates > time.time():
             return True
@@ -218,11 +218,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """send html to telegram chat keeping the sequence
 
         Args:
-            tg_chat_id: int, a chat the bot user has access to
-            html: string, nested html tags are not allowed
+            tg_chat_id (mixed): a chat the bot user has access to
+            html (str): nested html tags are not allowed
 
         Returns:
-            a `sync.sending_queue.Status` instance for the scheduled task which
+            sync.sending_queue.Status: status of the scheduled task which
             can be awaited for a boolean value, returned as the task completed:
                 True on success otherwise False
         """
@@ -236,14 +236,14 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         user data can only be fetched, if a chat with the user exists
 
         Args:
-            user_id: string, user identifier
-            chat_id: string, telegram chat identifier
-            gpluslink: boolean, set to True get G+Links instead of t.me links
-            use_cache: boolean, set to False to ignore a cache hit and to
+            user_id (str): user identifier
+            chat_id (str): telegram chat identifier
+            gpluslink (bool): set to True get G+Links instead of t.me links
+            use_cache (bool): set to False to ignore a cache hit and to
              perform an API request for updated user data
 
         Returns:
-            User, a subclass of sync.user.SyncUser
+            User: a subclass of sync.user.SyncUser
         """
         path_user = ['telesync', 'user_data', user_id]
 
@@ -284,12 +284,12 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """download an image from Telegram and create a SyncImage
 
         Args:
-            image: dict, media item from telegram
-            type_: string, 'photo', 'sticker', 'gif', 'video'
-            exception: string, opt, file extension
+            image (dict): media item from telegram
+            type_ (str): 'photo', 'sticker', 'gif', 'video'
+            extension (str): opt, file extension
 
         Returns:
-            sync.SyncImage instance or None if no image could be created
+            sync.SyncImage: the image or None if no image could be created
         """
         image_data = io.BytesIO()
         try:
@@ -331,8 +331,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """send info about pending profilesync to user
 
         Args:
-            user_id: str, identifier for the user and its 1on1 chat with the bot
-            is_reminder: bool, set to True to prepend the reminder flag
+            user_id (str): identifier for the user and its 1on1 chat with the bot
+            is_reminder (bool): set to True to prepend the reminder flag
         """
         bot = self.bot
         path = ['profilesync', 'telesync', 'pending_2ho', user_id]
@@ -378,12 +378,12 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """send html to telegram chat
 
         Args:
-            tg_chat_id: int, a chat the bot user has access to
-            text: string, nested html tags are not allowed
-            silent: boolean, set to True to disable a client notification
+            tg_chat_id (int): a chat the bot user has access to
+            text (str): nested html tags are not allowed
+            silent (bool): set to True to disable a client notification
 
         Returns:
-            boolean, True in case of a successful api-call, otherwise False
+            bool: True in case of a successful api-call, otherwise False
         """
         if not await self.is_running() or not text:
             return False
@@ -425,7 +425,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                              text, tg_chat_id, repr(err))
 
         else:
-            Message.add_message(self.bot, tg_chat_id, msg.get('message_id'))
+            Message.add_message(self.bot, int(tg_chat_id), msg.get('message_id'))
             status = True
 
         finally:
@@ -443,10 +443,10 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         /command@name_bot args
 
         Args:
-            msg: Message
+            msg (message.Message): a message wrapper
+
         Returns:
-            tuple of bool, string and list of strings:
-                command is valid, command, args
+            tuple: (<cmd valid, bool>, <command, str>, <arguments, list of str>)
         """
         if not msg.text.startswith('/'):
             return False, '', []
@@ -462,7 +462,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         only process event type 'chat'
 
         Args:
-            response: dict, api-response from telepot
+            response (dict): api-response from telepot
         """
         logger.debug(response)
         if 'migrate_to_chat_id' in response:
@@ -496,7 +496,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """message handler for text, photo, sticker, location
 
         Args:
-            msg: Message instance
+            msg (message.Message): a message wrapper
         """
         bot = self.bot
         chat_id = msg.chat_id
@@ -538,7 +538,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """forward a membership change
 
         Args:
-            msg: Message instance
+            msg (message.Message): a message wrapper
         """
         bot = self.bot
         if not bot.memory.exists(['telesync', 'tg2ho', msg.chat_id]):
@@ -638,7 +638,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """migrate all old data to a new chat id
 
         Args:
-            msg: dict, message from Telegram
+            msg (dict): message from Telegram
         """
         bot = self.bot
 
@@ -716,17 +716,18 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         """long polling for updates and handle errors gracefully
 
         Raises:
-            telepot.exception.UnauthorizedError: API-token invalid
+            UnauthorizedError: API-token invalid
+            CancelledError: plugin unload in progress
         """
         def _log_http_error(delay, error):
             """log a custom error message for an error
 
             Args:
-                delay: float, previous delay between to requests
-                error: tuple, (Exception instance, status code, error message)
+                delay (float): previous delay between to requests
+                error (tuple): (Exception instance, status code, error message)
 
             Returns:
-                float, new delay between to requests
+                float: new delay between to requests
             """
             if error[1] >= 500:
                 delay = 30.
@@ -751,6 +752,9 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             Returns:
                 int: `0` in case the extracted message was handled
                     successful, otherwise the recent error count
+
+            Raises:
+                CancelledError: plugin unload in progress
             """
             message = None
             try:

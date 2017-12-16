@@ -184,9 +184,15 @@ async def invite(bot, event, *args):
     """add in one handler for getting users into conversations
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        *args: tuple of strings, additional words to form the request
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words to form the request
+
+    Returns:
+        str: command output
+
+    Raises:
+        Help: invalid query specified
     """
     test = False
 
@@ -438,9 +444,12 @@ async def rsvp(bot, event, *args):
     """claim an invite code or show pending invites
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        *args: tuple of strings, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words passed to the command
+
+    Returns:
+        str: command output
     """
     if len(args) == 1:
         await _claim_invite(bot, args[0], event.user.id_.chat_id)

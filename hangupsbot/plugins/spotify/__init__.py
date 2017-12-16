@@ -163,6 +163,7 @@ def spotify(bot, event, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (sync.event.SyncEvent): the currently handled instance
+        args (str): the command query
 
     Returns:
         str: the command output
@@ -235,6 +236,7 @@ def add_to_spotify(bot, event, query):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
+        query (str): a user provided search query for a track
 
     Returns:
         str: a status string
@@ -254,10 +256,10 @@ def search_spotify(bot, query):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        query (str)
+        query (str): the search query
 
     Returns:
-        str: the first search result
+        SpotifyTrack: the first search result
 
     Raises:
         _MissingAuth: the spotify auth is not configured
@@ -321,7 +323,7 @@ def _search(bot, groups):
         groups (list): a list of string, expect track title and artist
 
     Returns:
-        list: a list of `SpotifyTrack`s
+        SpotifyTrack: a single track wrapper
 
     Raises:
         _MissingAuth: there is no auth configured in the bot config
@@ -384,7 +386,7 @@ def remove_from_playlist(bot, event, track_url):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
-        track (SpotifyTrack): the track to remove
+        track_url (str): the track to remove
 
     Returns:
         str: a status string

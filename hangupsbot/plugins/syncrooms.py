@@ -10,12 +10,12 @@ def _get_targets(bot, source_id, caller):
     """get all conversations an event should be relayed to
 
     Args:
-        bot: HangupsBot instance
-        source_id: string, source conversation of event
-        caller: string, identifier to allow recursive calls
+        bot (hangupsbot.HangupsBot): the running instance
+        source_id (str): source conversation of event
+        caller (str): identifier to allow recursive calls
 
     Returns:
-        list with conversation ids that are in a syncroom with that source_id
+        list: with conversation ids that are in a syncroom with the source_id
     """
     identifier = 'plugins.syncrooms'
     if caller == identifier:

@@ -104,12 +104,19 @@ async def tldr(bot, event, *args):
 
 
 def tldr_shared(bot, args):
-    """
-    Shares tldr functionality with other plugins
-    :param bot: hangouts bot
-    :param args: a dictionary which holds arguments.
-    Must contain 'params' (tldr command parameters) and 'conv_id' (Hangouts conv_id)
-    :return:
+    """Shares tldr functionality with other plugins
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        args (dict): a dictionary which holds arguments.
+            Must contain 'params' (tldr command parameters)
+            and 'conv_id' (Hangouts conv_id)
+
+    Returns:
+        str: a status message with the tldr of the conversation
+
+    Raises:
+        Help: invalid arguments specified
     """
     if not isinstance(args, dict):
         raise Help("args must be a dictionary")

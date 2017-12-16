@@ -259,7 +259,6 @@ class SlackMessage(BotMixin):
         Args:
             slackrtm (core.SlackRTM): the instance which received the `reply`
             reply (dict): message response from slack
-            messages (list): last messages of the current channel, sorted asc
 
         Return:
             sync.SyncReply: the wrapped reply content or `None`

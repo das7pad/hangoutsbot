@@ -85,9 +85,9 @@ class EventHandler(BotMixin):
         """register an event handler
 
         Args:
-            function: callable, the handling function/coroutine
-            pluggable: string, a pluggable of .pluggables
-            priority: int, lower priorities receive the event earlier
+            function (mixed): the handling function or coroutine
+            pluggable (str): a pluggable of .pluggables
+            priority (int): lower priorities receive the event earlier
 
         Raises:
             KeyError: unknown pluggable specified
@@ -107,10 +107,10 @@ class EventHandler(BotMixin):
         """register a message context that can be later attached again
 
         Args:
-            context: dict, no keys are required
+            context (dict): no keys are required
 
         Returns:
-            string, a unique identifier for the context
+            str: a unique identifier for the context
         """
         context_id = None
         while context_id is None or context_id in self._contexts:
@@ -122,10 +122,10 @@ class EventHandler(BotMixin):
         """register a function that can be called later
 
         Args:
-            func: a callable that takes three args: bot, event, command
+            func (mixed): func or coro, footprint: bot, event, reprocessor_id
 
         Returns:
-            string, a unique identifier for the callable
+            str: a unique identifier for the callable
         """
         reprocessor_id = None
         while reprocessor_id is None or reprocessor_id in self._reprocessors:
@@ -137,7 +137,7 @@ class EventHandler(BotMixin):
         """remove previously registered handlers of a given plugin
 
         Args:
-            module_path: string, identifier for a loaded module
+            module_path (str): identifier for a loaded module
         """
         for pluggable in self.pluggables:
             for handler_ in self.pluggables[pluggable]:
@@ -155,8 +155,12 @@ class EventHandler(BotMixin):
         before it runs through the event processing
 
         Args:
-            func: callable that takes three arguments: bot, event, command
-            return_as_dict: legacy code
+            func (mixed): func or coro, footprint: bot, event, reprocessor_id
+            return_as_dict (bool): legacy code
+
+        Returns:
+            dict: the reprocessor id and a reference to the provided func
+                {'id': <reprocessor_id, str>, 'callable': <reprocessor, mixed>}
         """
         #pylint:disable=unused-argument
         reprocessor_id = self.register_reprocessor(func)
@@ -169,13 +173,13 @@ class EventHandler(BotMixin):
         """retrieve a public url for an image upload
 
         Args:
-            image_id: int, upload id of a previous upload
-            callback: coroutine, awaitable callable
-            args: tuple, positional arguments for the callback
-            kwargs: dict, keyword arguments for the callback
+            image_id (int): upload id of a previous upload
+            callback (coroutine): to be invoked with the image url
+            args (tuple): positional arguments for the callback
+            kwargs (dict): keyword arguments for the callback
 
         Returns:
-            boolean, False if no url was awaitable after 60sec, otherwise True
+            bool: False if no url was awaitable after 60sec, otherwise True
         """
         # TODO(das7pad) refactor plugins to use bot._client.image_upload_raw
 
@@ -197,7 +201,7 @@ class EventHandler(BotMixin):
         """reprocess the event with the callable that was attached on sending
 
         Args:
-            reprocessor_id: string, a found reprocessor id
+            reprocessor_id (str): a found reprocessor id
             event: hangupsbot event instance
         """
         reprocessor = self._reprocessors.get(reprocessor_id, pop=True)
@@ -220,7 +224,7 @@ class EventHandler(BotMixin):
         - handle the text as command, if the user is not the bot user
 
         Args:
-            event: event.ConversationEvent instance
+            event (event.ConversationEvent): a message container
 
         Raises:
             exceptions.SuppressEventHandling: do not handle the event at all
@@ -288,7 +292,7 @@ class EventHandler(BotMixin):
         """Handle command messages
 
         Args:
-            event: event.ConversationEvent instance
+            event (event.ConversationEvent): a message container
         """
         if not event.text:
             return
@@ -349,28 +353,28 @@ class EventHandler(BotMixin):
         """forward args to a group of handler which were registered for the name
 
         Args:
-            name: string, a key in .pluggables
-            args: tuple, positional arguments for each handler
-            kwargs: dict, keyword arguments for each handler,
+            name (str): a key in .pluggables
+            args (mixed): positional arguments for each handler
+            kwargs (mixed): keyword arguments for each handler,
                 may include '_run_concurrent_' to run them parallel
 
         Raises:
             KeyError: unknown pluggable specified
-            HangupsBotExceptions.SuppressEventHandling: do not handle further
+            SuppressEventHandling: do not handle further
         """
         async def _run_single_handler(function, meta, expected, names):
             """execute a single handler function
 
             Args:
-                function: callable
-                meta: dict
-                expected: ordered mapping of inspect.Parameter instances
-                names: list of strings, keys in expected
+                function(mixed): func or coroutine, the handler func
+                meta (dict): meta data from the plugin registration
+                expected (mappingproxy): ordered mapping of inspect.Parameter
+                names (list): a list of str, keys in expected
 
             Raises:
-                HangupsBotExceptions.SuppressAllHandlers:
+                SuppressAllHandlers:
                     skip handler of the current type
-                HangupsBotExceptions.SuppressEventHandling:
+                SuppressEventHandling:
                     skip all handler and do not handle this event further
             """
             message = ["%s: %s.%s" % (name, meta['module.path'],
@@ -515,10 +519,10 @@ class HandlerBridge(BotMixin):
             Note: default signature is func(bot, event, command)
 
             Args:
-                func: callable
+                func (mixed): func or coroutine
 
             Returns:
-                callable, compatible function that matches the defaults
+                coroutine: compatible function that matches the defaults
             """
             def thunk(bot, event, dummy):
                 """call the original function without the command_"""

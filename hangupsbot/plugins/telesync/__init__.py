@@ -44,7 +44,7 @@ async def _initialise(bot):
     for HO-messages and sync tasks
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
 
     Raises:
         RuntimeError: can not connect to the Telegram API
@@ -85,7 +85,7 @@ def setup_config(bot):
     """register all attributes in config
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     default_config = {
         'conversations': {
@@ -150,7 +150,7 @@ def setup_memory(bot):
     """create all dicts in memory
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     default_memory = {
         'telesync': {
@@ -204,9 +204,12 @@ def telesync(bot, event, *args):
     """set a telegram chat as sync target for the current ho
 
     Args:
-        bot: hangupsbot instance
-        event: hangups event instance
-        args: additional text as tuple
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message wrapper
+        args (str): additional words passed to the command
+
+    Returns:
+        str: a status message
 
     Raises:
         commands.Help: no sub command such as `remove`, `add` or `show` provided
@@ -215,7 +218,8 @@ def telesync(bot, event, *args):
         """remove or add the username from a forwarded message to a channel
 
         Args:
-            remove_name: boolean, defaults to True
+            channel_id (str): target conversation identifier
+            remove_name (bool): defaults to True
         """
         channel_tag = 'telesync:' + channel_id
         config_path = ['conversations', channel_tag, 'sync_format_message']
@@ -322,12 +326,12 @@ async def telesync_set_token(bot, event, *args):
     """sets the api key for the telesync bot
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, may contain the api key as first tuple entry
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): may contain the api key as first tuple entry
 
     Returns:
-        string, command output
+        str: command output
 
     Raises:
         commands.Help: no api token specified in the args
@@ -359,11 +363,11 @@ async def _handle_profilesync(bot, platform, remote_user, conv_1on1,
     """finish profile sync and set a 1on1 sync if requested
 
     Args:
-        bot: hangupsbot instance
-        platform: string, identifier for the platform which started the sync
-        remote_user: string, telegram user id
-        conv_1on1: string, users 1on1 chat with the bot
-        split_1on1s: boolean, toggle to sync the private chats
+        bot (hangupsbot.HangupsBot): the running instance
+        platform (str): identifier for the platform which started the sync
+        remote_user (str): telegram user id
+        conv_1on1 (str): users 1on1 chat with the bot
+        split_1on1s (bool): toggle to sync the private chats
     """
     if platform != 'telesync':
         return
@@ -395,9 +399,9 @@ async def _handle_user_kick(bot, conv_id, user):
     """kick a user from a given conversation
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, conversation identifier
-        user: SyncUser instance
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): conversation identifier
+        user (sync.user.SyncUser): the user to be kicked
 
     Returns:
         None: ignored, False: kick failed, True: kicked, 'whitelisted'
@@ -459,12 +463,12 @@ async def _handle_conv_user(bot, conv_id, profilesync_only):
     """get all telegram user for this conv_id
 
     Args:
-        bot: hangupsbot instance
-        conv_id: string, conversation identifier
-        profilesync_only: boolean, only include users synced to a G+ profile
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): conversation identifier
+        profilesync_only (bool): only include users synced to a G+ profile
 
     Returns:
-        list of sync.user.SyncUser
+        list: a list of sync.user.SyncUser
     """
     path = ['telesync', 'ho2tg', conv_id]
     tg_bot = bot.tg_bot
@@ -495,7 +499,7 @@ async def _handle_message(bot, event):
     """forward message/photos from any platform to Telegram
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
         event: sync.event.SyncEvent instance
     """
     async def _send_photo(tg_chat_id_, chat_tag_,
@@ -503,11 +507,11 @@ async def _handle_message(bot, event):
         """send the resized image of an event the a given telegram chat
 
         Args:
-            tg_chat_id_: string, telegram chat identifier
-            chat_tag_: string, identifier to receive config entries of the chat
+            tg_chat_id_ (str): telegram chat identifier
+            chat_tag_ (str): identifier to receive config entries of the chat
             image_: sync.image.SyncImage instance
             image_data_: io.BytesIO instance, the resized image data
-            filename_: string, file name of the image
+            filename_ (str): file name of the image
 
         Returns:
             boolean: True if the image sending failed, otherwise False
@@ -610,7 +614,7 @@ async def _handle_membership_change(bot, event):
     """notify a configured tg-chat about a membership change
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
         event: sync.event.SyncEventMembership instance
     """
     if not (bot.memory.exists(['telesync', 'ho2tg', event.conv_id]) and

@@ -114,7 +114,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
         """get the custom title or generate one from participant names
 
         Returns:
-            string
+            str: a conversation title
         """
         return self.bot.conversations.get_name(self)
 
@@ -135,11 +135,11 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
         """send a message to Hangouts
 
         Args:
-            message: string, list of hangups.ChatMessageSegment or None,
+            message (str): list of hangups.ChatMessageSegment or None,
                 the text part of the message which can be empty
             image_id: string or integer, the upload id of an image,
                 acquire one from ._client.upload_image(...)
-            context: dict, additional information about the message,
+            context (dict): additional information about the message,
                 including 'reprocessor' or chatbridge entries
 
         Raises:

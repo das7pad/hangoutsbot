@@ -21,10 +21,10 @@ class CacheItem(CacheItemBase):
     """Lightweight Item for caching
 
     Args:
-        value: any type, object to store
-        timeout: int, time in seconds an object should be stored further the
+        value (mixed): object to store
+        timeout (int): time in seconds an object should be stored further the
          last access
-        destroy_timeout: int, unix timestamp as end of life for the item
+        destroy_timeout (int): unix timestamp as end of life for the item
     """
     __slots__ = ()
     def __new__(cls, value, timeout, destroy_timeout):
@@ -35,7 +35,8 @@ class CacheItem(CacheItemBase):
         """increases the destroy timeout with the configured timeout
 
         Returns:
-            a new instance if the timeout should be increased otherwise the old
+            CacheItem: a new instance if the timeout should be increased
+                otherwise the old one
         """
         if not self.timeout:
             # increase_on_access is set to False, no need to update the timeout
@@ -47,14 +48,14 @@ class Cache(dict, BotMixin):
     """store items for a given timeout which could be extended on access
 
     Args:
-        default_timeout: int, timeout for each item if no other is given, this
+        default_timeout (int): timeout for each item if no other is given, this
             value also sets the interval for the cleanup
-        name: string, a custom identifier for the log entries
-        increase_on_access: boolean, change store behavior, If True an item will
+        name (str): a custom identifier for the log entries
+        increase_on_access (bool): change store behavior, If True an item will
             be stored further the given timeout if one accessed the items value
-        dump_config: tuple, (interval, path)
-            interval: int, time in seconds the cache should be dumped
-            path: list of strings, path in memory to the location to dump into
+        dump_config (tuple): (interval, path)
+            interval (int): time in seconds the cache should be dumped
+            path (list): a list of str, path in memory to the location to dump into
     """
     __slots__ = ('_name', '_default_timeout', '_increase_on_access',
                  '_dump_config', '_reload_listener')
@@ -87,13 +88,13 @@ class Cache(dict, BotMixin):
         """receive an entry from cache
 
         Args:
-            identifier: string, unique id for a cache entry
-            pop: boolean, toggle to remove the item from cache
-            ignore_timeout: boolean, toggle to also get outdated items
+            identifier (str): unique id for a cache entry
+            pop (bool): toggle to remove the item from cache
+            ignore_timeout (bool): toggle to also get outdated items
 
         Returns:
-            cached entry with no specific type, or the result of .__missing__
-            if no entry was found under the given identifier
+            mixed: cached entry or the result of .__missing__
+                if no entry was found under the given identifier
         """
         item = super().get(identifier)
         if item is None:
@@ -119,13 +120,13 @@ class Cache(dict, BotMixin):
         """insert a new entry to the cache or fail gracefully
 
         Args:
-            identifier: string, unique id for the cache entry
-            value: any object that should be cached
-            timeout: int, custom timeout (sec) for the object to remain in cache
-            destroy_timeout: int, a custom timestamp as end of life for the item
+            identifier (str): unique id for the cache entry
+            value (mixed): any object that should be cached
+            timeout (int): custom timeout (sec) for the object to remain in cache
+            destroy_timeout (int): a custom timestamp as end of life for the item
 
         Returns:
-            boolean, False if the identifier is not unique, True on success
+            bool: False if the identifier is not unique, True on success
         """
         if identifier in self:
             return False
@@ -178,8 +179,8 @@ class Cache(dict, BotMixin):
             """export the currently cached items to memory
 
             Args:
-                path: list of string, path in the memory as target for the dump
-                only_on_new_items: boolean, set to False to dump also if
+                path (list): list of str, path in the memory as the dump target
+                only_on_new_items (bool): set to False to dump also if
                  items got removed or timeouts have changed
             """
             mem = self.bot.memory.get_by_path(path)

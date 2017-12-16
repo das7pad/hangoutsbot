@@ -69,7 +69,7 @@ def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     plugins.register_sync_handler(_handle_keyword, 'message')
     plugins.register_sync_handler(_handle_once, 'message_once')
@@ -90,7 +90,7 @@ def _hide_from_subscribe(item):
     """register a command to be hidden from subscribes on execute
 
     Args:
-        item: string or tuple or list, a single or multiple commands
+        item (mixed): str, tuple or list, a single or multiple commands
     """
     if isinstance(item, str):
         IGNORED_COMMANDS.add(item)
@@ -119,7 +119,7 @@ def _populate_keywords(bot):
     """Pull the keywords from memory
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     for user_chat_id in bot.memory.get_option("user_data"):
         user_keywords = bot.user_memory_get(user_chat_id, 'keywords')
@@ -131,10 +131,11 @@ def _is_ignored_command(event):
     """check whether the event runs a command that should not trigger a mention
 
     Args:
-        event: sync.event.SyncEvent instance
+        event (sync.event.SyncEvent): message content wrapper
 
     Returns:
-        boolean
+        bool: True if a bot prefix and ignored command name were specified,
+            otherwise False
     """
     args = event.text.split()
     if len(args) < 2:
@@ -175,8 +176,8 @@ def _handle_once(bot, event):
     """scan the text of an event for subscribed keywords and notify the targets
 
     Args:
-        bot: HangupsBot instance
-        event: sync.event.SyncEvent instance
+        bot (hangupsbot.HangupsBot): the running instance
+        event (sync.event.SyncEvent): message content wrapper
     """
     # ignore marked HOs
     if any(bot.get_config_suboption(conv_id, 'ignore_hosubscribe')
@@ -221,9 +222,9 @@ async def _send_notification(bot, event, matches, user):
     """Alert a user that a keyword that they subscribed to has been used
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
         event: sync.event.SyncEvent instance
-        matches: list of strings, keywords that were found in the message
+        matches (set): a set of str, keywords that were found in the message
         user: sync.user.SyncUser instance, user who subscribe to the phrase
     """
     logger.info("keywords %s in '%s' (%s)",
@@ -291,9 +292,12 @@ async def subscribe(bot, event, *args):
     """allow users to subscribe to phrases, only one input at a time
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        *args: tuple of strings, additional words as the keyword to subscribe
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the keyword to subscribe
+
+    Returns:
+        str: a status message
     """
     keyword = ' '.join(args).lower()
     regex = _escape_keyword(keyword)
@@ -341,9 +345,12 @@ def unsubscribe(bot, event, *args):
     """Allow users to unsubscribe from phrases
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        *args: tuple of strings, additional words as the keyword to unsubscribe
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the keyword to unsubscribe
+
+    Returns:
+        str: a status message
     """
     chat_id = event.user_id.chat_id
     user_keywords = bot.user_memory_get(chat_id, 'keywords')
@@ -379,9 +386,9 @@ async def testsubscribe(bot, event, *dummys):
     """handle the event text and allow the user to be self-mentioned
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
         event: event.ChatMessageEvent instance
-        *args: list of strings, additional words as the test mention
+        dummys (str): the test mention
     """
     sync_event = SyncEvent(conv_id=event.conv_id, user=event.user_id,
                            text=event.conv_event.segments)
@@ -392,12 +399,12 @@ def global_subscribe(bot, event, *args):
     """subscribe keywords globally with a custom conversation as target
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional strings passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the query for the command
 
     Returns:
-        string
+        str: a status message
     """
     if not args:
         raise commands.Help('Missing keyword and/or conversation!')
@@ -447,12 +454,12 @@ def global_unsubscribe(bot, event, *args):
     """unsubscribe from keywords globally
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional strings passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the query for the command
 
     Returns:
-        string
+        str: a status message
     """
     if not args:
         raise commands.Help('Missing keyword and/or conversation!')

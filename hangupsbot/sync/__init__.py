@@ -236,7 +236,7 @@ def _initialise(bot):
     """register commands and ensure an existing target for hangouts chat titles
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     bot.memory.validate(DEFAULT_MEMORY)
     plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
@@ -257,9 +257,9 @@ def _convid_from_args(bot, args, conv_id=None):
     """get the conv_id and cleaned params from raw args
 
     Args:
-        bot: HangupsBot instance
-        args: iterable, having strings as items
-        conv_id: string, fallback if no other conv_id is in the args specified
+        bot (hangupsbot.HangupsBot): the running instance
+        args (iterable): a list or tuple of strings
+        conv_id (str): fallback if no other conv_id is in the args specified
 
     Returns:
         tuple: conv_id or None and the params without conv_id(s)/aliases
@@ -278,12 +278,15 @@ async def sync_config(bot, event, *args):
     """update a config entry for a conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, a tuple of strings that were passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the command query
 
     Returns:
-        string, the reply of the command or None if the help entry was called
+        str: the reply of the command or None if the help entry was called
+
+    Raises:
+        Help: invalid query specified
     """
     if not args or (len(args) == 1 and args[0].lower() != 'list'):
         raise Help()
@@ -318,10 +321,10 @@ def _sync_config(bot, conversation, key, value):
     """update a config entry for a conversation
 
     Args:
-        bot: HangupsBot instance
-        conversation: string, conversation identifier to update the config for
-        key: string, config key to set a different value on conversation level
-        value: any type, the new value
+        bot (hangupsbot.HangupsBot): the running instance
+        conversation (str): conversation identifier to update the config for
+        key (str): config key to set a different value on conversation level
+        value (mixed): the new value
 
     Returns:
         tuple: the recent value of the config entry and the parsed new value
@@ -372,9 +375,15 @@ async def chattitle(bot, event, *args):
     """set the title that will be synced for the current conversation
 
     Args:
-        bot: HangupsBot instance
-        event: hangups event instance
-        args: additional text as tuple
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message wrapper
+        args (str): additional words passed to the command
+
+    Returns:
+        str: a status message
+
+    Raises:
+        Help: invalid query specified
     """
     return _chattitle(bot, args, 'hangouts', bot.conversations, event.conv_id)
 
@@ -384,17 +393,17 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
     allowed args ([<conv_id>], <new title>)
 
     Args:
-        bot: HangupsBot instance
-        args: additional text as tuple
-        platform: string, platform identifier
-        source: iterable, used to check if the first arg is set to a valid
-            conversation identifier on the given platform
-        fallback: string, conversation identifier if no other is specified in the
+        bot (hangupsbot.HangupsBot): the running instance
+        args (tuple): a tuple of str, additional words passed to the command
+        platform (str): platform identifier
+        source (iterable): a list, tuple, dict of conversation ids of the
+            given platform, used to validate the first argument
+        fallback (str): conversation identifier if no other is specified in the
             args
 
     Returns:
-        string, if no args besides a conv_id were given, return a text with the
-        current title, otherwise return a text with the conv_id, old/new title
+        str: if no args besides a conv_id were given, return a text with the
+          current title, otherwise return a text with the conv_id, old/new title
     """
     if args and args[0] in source:
         conv_id = args[0]
@@ -424,9 +433,15 @@ async def syncusers(bot, event, *args):
     """get users that attend current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        event: hangups event instance
-        args: additional text as tuple
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message wrapper
+        args (str): additional words passed to the command
+
+    Returns:
+        str: a status message
+
+    Raises:
+        Help: the user requested help
     """
     return await _syncusers(bot, args, event.conv_id, event.user_id)
 
@@ -436,10 +451,16 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
     non-admins can only get the members of attending conversations
 
     Args:
-        bot: HangupsBot instance
-        args: tuple of string, additional words passed to the command
-        conv_id: string, fallback if no conversation is specified in the args
-        user_id: hangups.user.UserID instance, the user who sent the request
+        bot (hangupsbot.HangupsBot): the running instance
+        args (tuple): a tuple of str, additional words passed to the command
+        conv_id (str): fallback if no conversation is specified in the args
+        user_id (hangups.user.UserID): the user who sent the request
+
+    Returns:
+        str: a status message
+
+    Raises:
+        Help: the user requested help
     """
     if 'help' in args:
         raise Help()
@@ -520,7 +541,7 @@ async def finduser(bot, event, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): a currently handled instance
-        args (tuple): a tuple of str, the search term and optional a conv_id
+        args (str): the search term and optional a conv_id
 
     Returns:
         str: the command output
@@ -570,9 +591,15 @@ async def syncprofile(bot, event, *args):
     token is generated on the other platforms
 
     Args:
-        bot: HangupsBot instance
-        event: hangups event instance
-        args: additional text as tuple
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message wrapper
+        args (str): additional words passed to the command
+
+    Returns:
+        str: a status message
+
+    Raises:
+        Help: invalid query specified
     """
     if not args or (len(args) > 1 and args[1].lower() != 'split'):
         raise Help()
@@ -603,12 +630,15 @@ async def sync1to1(bot, event, *args):
     """change the setting for 1on1 syncing to a platform
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent
-        args: tuple of strings, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words passed to the command
 
     Returns:
-        string
+        str: a status message
+
+    Raises:
+        Help: invalid query specified
     """
     if not args:
         raise Help(_('specify a platform'))
@@ -654,9 +684,12 @@ async def check_users(bot, event, *args):
     """add or kick all users that are missing or not on the list, include syncs
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional words passed with the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words passed with the command
+
+    Returns:
+        str: a status message
     """
     return await _config_check_users(bot, *args, conv_id=event.conv_id)
 
@@ -664,13 +697,13 @@ async def _config_check_users(bot, *args, conv_id=None, targets=None):
     """add or kick all users that are missing or not on the list, include syncs
 
     Args:
-        bot: HangupsBot instance
-        args: tuple, additional words passed with the command
-        conv_id: string, default conversation if none specified in the args
-        targets: list of strings, conversation identifier of relay targets
+        bot (hangupsbot.HangupsBot): the running instance
+        args (str): additional words passed with the command
+        conv_id (str): default conversation if none specified in the args
+        targets (list): a list of str, conversation identifier of relay targets
 
     Returns:
-        string, the command output
+        str: the command output
     """
     conv_id_, params = _convid_from_args(bot, args)
     if conv_id_ is not None:
@@ -717,14 +750,14 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
     """add or kick all users that are missing or not on the list, include syncs
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, conversation identifier
-        kick_only: boolean, toggle to ignore missing/left users
-        verbose: boolean, toggle to get whitelisted users in the output
-        targets: list of strings, conversation identifier of relay targets
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): conversation identifier
+        kick_only (bool): toggle to ignore missing/left users
+        verbose (bool): toggle to get whitelisted users in the output
+        targets (list): a list of str, conversation identifier of relay targets
 
     Returns:
-        string, the command output
+        str: a status message
     """
     if not targets:
         targets = bot.sync.get_synced_conversations(conv_id=conv_id,
@@ -794,8 +827,8 @@ async def _autokick(bot, event):
     """kick users that are not previously whitelisted for the conversation
 
     Args:
-        bot: HangupsBot instance
-        event: sync.event.SyncEventMembership instance
+        bot (hangupsbot.HangupsBot): the running instance
+        event (sync.event.SyncEventMembership): a membership change wrapper
     """
     if event.type_ != 1:
         # a user left the conversation
@@ -818,12 +851,12 @@ def autokick(bot, event, *args):
     """change the setting for autokick for a given or the current conversation
 
     Args:
-        bot: HangupsBot instance
-        event: hangups event instance
-        args: additional text as tuple
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message wrapper
+        args (str): additional words passed to the command
 
     Returns:
-        string
+        str: a status message
     """
     conv_id = _convid_from_args(bot, args, conv_id=event.conv_id)[0]
 
