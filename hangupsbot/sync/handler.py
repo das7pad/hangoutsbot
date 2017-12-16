@@ -402,10 +402,9 @@ class SyncHandler(handlers.EventHandler):
                              type_=type_, size=size, url=url, cookies=cookies,
                              headers=headers)
         except (MissingArgument, ValueError):
-            data = len(data) if data else None
+            data = 'bytes: %s' % len(data) if isinstance(data, bytes) else data
             logger.exception('unable to init a SyncImage, locals %s', locals())
             return None
-
 
     def get_synced_conversations(self, *, conv_id, return_flat=True,
                                  caller=None, unique_conv_ids=True,
