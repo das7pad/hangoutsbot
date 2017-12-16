@@ -9,6 +9,7 @@ import pytest
 from aioresponses import aioresponses
 
 import hangupsbot.core
+import hangupsbot.hangups_conversation
 
 from tests.constants import DEFAULT_BOT_KWARGS
 from tests.utils import build_user_conversation_list_base
@@ -18,9 +19,9 @@ GSESSIONID = b'52\n[[0,["c","MYSID","",8]\n]\n,[1,[{"gsid":"MYGSID"}]]\n]\n'
 LONG_POLLING_URL = hangups.channel.CHANNEL_URL_PREFIX.format('channel/bind')
 USER_LIST_KWARGS, CONV_LIST_KWARGS = build_user_conversation_list_base()
 
-async def build_user_conversation_list(client):
+async def build_user_conversation_list(client, **kwargs):
     user_list = hangups.UserList(client, **USER_LIST_KWARGS)
-    conv_list = hangups.ConversationList(
+    conv_list = hangupsbot.hangups_conversation.HangupsConversationList(
         client, user_list=user_list, **CONV_LIST_KWARGS)
     return user_list, conv_list
 

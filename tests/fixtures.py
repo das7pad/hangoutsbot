@@ -22,6 +22,7 @@ import hangupsbot.commands
 import hangupsbot.plugins
 import hangupsbot.sinks
 from hangupsbot.event import ConversationEvent
+from hangupsbot.hangups_conversation import HangupsConversationList
 
 from tests.utils import (
     build_user_conversation_list_base,
@@ -180,7 +181,7 @@ class LocalHangupsBot(hangupsbot.core.HangupsBot):
         hangupsbot.handlers.handler.set_bot(self)
         self.sync = hangupsbot.sync.handler.SyncHandler(self, self._handlers)
         self._user_list = hangups.UserList(self._client, **USER_LIST_KWARGS)
-        self._conv_list = hangups.ConversationList(
+        self._conv_list = HangupsConversationList(
             self._client, user_list=self._user_list, **CONV_LIST_KWARGS)
 
         EVENT_LOOP.run_until_complete(self._handlers.setup(self._conv_list))
