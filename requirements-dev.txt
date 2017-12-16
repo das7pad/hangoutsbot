@@ -8,7 +8,7 @@
 git+https://github.com/das7pad/hangups@v0.4.3.7#egg=hangups==hangups-0.4.3.7
 aiohttp==2.3.6
 appdirs==1.4.3
-astroid==1.5.3
+astroid==1.6.0
 async-timeout==2.0.0
 beautifulsoup4==4.6.0
 bs4==0.0.1
@@ -18,7 +18,7 @@ cleverwrap==0.2.3.6
 configargparse==0.11.0
 decorator==4.0.11
 emoji==0.4.5
-fudge==1.1.0
+fudge==1.1.1
 google-api-python-client==1.6.4
 httplib2==0.10.3
 idna==2.6
@@ -43,7 +43,7 @@ psutil==5.2.2
 pushbullet.py==0.11.0
 pyasn1-modules==0.2.1
 pyasn1==0.4.2
-pylint==1.7.4
+pylint==1.8.1
 pyslack==0.3.0
 python-dateutil==2.6.1
 python-magic==0.4.15
