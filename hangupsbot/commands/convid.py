@@ -17,8 +17,8 @@ def _initialise():
     plugins.register_admin_command(["convecho", "convfilter", "convleave", "convrename", "convusers"])
 
 
-def get_posix_args(rawargs):
-    lexer = shlex.shlex(" ".join(rawargs), posix=True)
+def get_posix_args(raw_args):
+    lexer = shlex.shlex(" ".join(raw_args), posix=True)
     lexer.commenters = ""
     lexer.wordchars += "!@#$%^&*():/.<>?[]-,=+;|"
     posix_args = list(lexer)

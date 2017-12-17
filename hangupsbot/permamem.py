@@ -7,6 +7,7 @@ import re
 
 import hangups
 
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +31,11 @@ def name_from_hangups_conversation(conv):
              if not user.is_self]
     return ', '.join(names)
 
-def load_missing_entrys(bot):
+def load_missing_entries(bot):
     """load users and conversations that are missing on bot start into hangups
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     loaded_users = bot._user_list._user_dict
     for chat_id, user_data in bot.memory["user_data"].items():
@@ -59,12 +60,12 @@ async def initialise(bot):
     """load cache from memory and update it with new data from hangups
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
 
     Returns:
-        ConversationMemory instance
+        ConversationMemory: the current instance
     """
-    permamem = ConversationMemory(bot)
+    permamem = ConversationMemory()
 
     permamem.standardise_memory()
     await permamem.load_from_hangups()
@@ -72,7 +73,7 @@ async def initialise(bot):
 
     # set the attribute here as a HangupsConversation might needs to access it
     bot.conversations = permamem
-    load_missing_entrys(bot)
+    load_missing_entries(bot)
 
     permamem.stats()
 
@@ -80,18 +81,13 @@ async def initialise(bot):
     return permamem
 
 
-class ConversationMemory(object):
-    """cache conversation data that might be missing on bot start
-
-    Args:
-        bot: HangupsBot instance
-    """
-    def __init__(self, bot):
-        self.bot = bot
+class ConversationMemory(BotMixin):
+    """cache conversation data that might be missing on bot start"""
+    def __init__(self):
         self.catalog = {}
 
-        bot.memory.on_reload.add_observer(self.standardise_memory)
-        bot.memory.on_reload.add_observer(self.load_from_memory)
+        self.bot.memory.on_reload.add_observer(self.standardise_memory)
+        self.bot.memory.on_reload.add_observer(self.load_from_memory)
 
     def __del__(self):
         """explicit cleanup"""
@@ -107,7 +103,7 @@ class ConversationMemory(object):
         for chat_id in self.bot.memory["user_data"]:
             if "_hangups" not in self.bot.memory["user_data"][chat_id]:
                 continue
-            count_user = count_user + 1
+            count_user += 1
             if (self.bot.memory["user_data"][chat_id]["_hangups"]
                     ["is_definitive"]):
                 count_user_definitive += 1
@@ -213,10 +209,10 @@ class ConversationMemory(object):
         """retrieve definitive user data by requesting it from the server
 
         Args:
-            chat_ids: list of string, a list of G+ ids
+            chat_ids (list[str]): a list of G+ ids
 
         Returns:
-            integer, number of updated users
+            int: number of updated users
         """
 
         chat_ids = list(set(chat_ids))
@@ -251,10 +247,10 @@ class ConversationMemory(object):
         """update user memory based on supplied hangups User
 
         Args:
-            user: hangups.user.User instance
+            user (hangups.User): user data wrapper
 
         Returns:
-            boolean, True if the permamem entry for the user changed
+            bool: True if the permamem entry for the user changed
         """
         is_definitive = user.name_type == hangups.user.NameType.DEFAULT
 
@@ -273,6 +269,7 @@ class ConversationMemory(object):
             "is_definitive": is_definitive,
         }
 
+        key = None
         changed = True
         if cached:
             try:
@@ -300,11 +297,11 @@ class ConversationMemory(object):
 
         Args:
             conv: hangups.conversation.Conversation instance
-            source: string, origin of the conv, 'event', 'init'
-            automatic_save: boolean, toggle to dump the memory on changes
+            source (str): origin of the conv, 'event', 'init'
+            automatic_save (bool): toggle to dump the memory on changes
 
         Returns:
-            boolean, True on Conversation/User change, False on no changes
+            bool: True on Conversation/User change, False on no changes
         """
         _conversation = conv._conversation
         conv_title = name_from_hangups_conversation(conv)
@@ -344,6 +341,7 @@ class ConversationMemory(object):
                         conv_title, conv.id_, _users_to_fetch)
             await self.get_users_from_query(_users_to_fetch)
 
+        key = ''
         conv_changed = True
         if cached:
             memory["participants"].sort()
@@ -360,7 +358,6 @@ class ConversationMemory(object):
                 conv_changed = False
         else:
             message = "%snew conv %s (%s)"
-            key = ''
 
         if conv_changed:
             logger.info(message, key, conv_title, conv.id_)
@@ -379,7 +376,7 @@ class ConversationMemory(object):
         """remove the permamem entry of a given conversation
 
         Args:
-            conv_id: string, hangouts conversation identifier
+            conv_id (str): hangouts conversation identifier
         """
         if self.bot.memory.exists(["convmem", conv_id]):
             cached = self.bot.memory.get_by_path(["convmem", conv_id])
@@ -403,22 +400,28 @@ class ConversationMemory(object):
         each term must be enclosed with brackets "( ... )"
 
         Args:
-            search: string, filter for conv title, id, tags, type, user count
-            kwargs: dict, legacy to catch the keyword argument 'filter'
+            search (str): filter for conv title, id, tags, type, user count
+            kwargs (dict): legacy to catch the keyword argument 'filter'
 
         Returns:
-            dict, conv ids as keys and permamem entry of each conv as value
+            dict: conv ids as keys and permamem entry of each conv as value
+
+        Raises:
+            ValueError: invalid boolean operator specified
         """
         def parse_request(locals_):
-            """split multiple querys to their filter functions and queryvalue
+            """split multiple queries to their filter functions and queryvalue
 
             Args:
-                locals_: dict, locals of .get to access all filter functions
+                locals_ (dict): locals of .get to access all filter functions
 
             Returns:
-                list, a list of tuple,
+                list[tuple[mixed]]:
                 (operator : string, query: string, <filter func> : callable)
-                invalid filter querys result in a string as filter func
+                invalid filter queries result in a string as filter func
+
+            Raises:
+                ValueError: invalid boolean operator specified
             """
             raw_filter = (kwargs.get('filter') or search).strip()
             terms = []
@@ -466,7 +469,7 @@ class ConversationMemory(object):
             """check the conv title for the given query
 
             Returns:
-                boolean, True if the query is part of the title otherwise False
+                bool: True if the query is part of the title otherwise False
             """
             query = query.lower()
             return (query in convdata["title"].lower()
@@ -476,7 +479,7 @@ class ConversationMemory(object):
             """check if the query matches with the convid
 
             Returns:
-                boolean, True if the convid and query match otherwise False
+                bool: True if the convid and query match otherwise False
             """
             return convid == query
 
@@ -484,17 +487,18 @@ class ConversationMemory(object):
             """check the user chat ids for a match with the query
 
             Returns:
-                boolean, True if any chat_id matches the query, otherwise False
+                bool: True if any chat_id matches the query, otherwise False
             """
             for chat_id in convdata["participants"]:
                 if query == chat_id:
                     return True
+            return False
 
         def _type(dummy0, convdata, query):
             """check if the conversation type matches with the query
 
             Returns:
-                boolean, True if the type matches otherwise False
+                bool: True if the type matches otherwise False
             """
             return convdata["type"] == query.upper()
 
@@ -502,7 +506,7 @@ class ConversationMemory(object):
             """check if the user count of a conv is not below the query value
 
             Returns:
-                boolean, False if fewer users are in the conv, otherwise True
+                bool: False if fewer users are in the conv, otherwise True
             """
             return len(convdata["participants"]) >= int(query)
 
@@ -510,7 +514,7 @@ class ConversationMemory(object):
             """check if the user count of a conv is not above the query value
 
             Returns:
-                boolean, False if more users are in the conv, otherwise True
+                bool: False if more users are in the conv, otherwise True
             """
             return len(convdata["participants"]) <= int(query)
 
@@ -518,7 +522,7 @@ class ConversationMemory(object):
             """check the query value against a random number between 0 and 1
 
             Returns:
-                boolean, True if the query value is greater, otherwise False
+                bool: True if the query value is greater, otherwise False
             """
             return random.random() < float(query)
 
@@ -526,7 +530,7 @@ class ConversationMemory(object):
             """check if the query is a registered tag and the conv is tagged
 
             Returns:
-                boolean, True if the query is a tag and the conv is tagged w/ it
+                bool: True if the query is a tag and the conv is tagged w/ it
             """
             return (query in self.bot.tags.indices["tag-convs"] and
                     convid in self.bot.tags.indices["tag-convs"][query])
@@ -559,11 +563,11 @@ class ConversationMemory(object):
         """get the name of a conversation
 
         Args:
-            conv: string or hangups.conversation.Conversation instance
-            fallback: any type, a fallback if no name is available
+            conv (mixed): str or hangups.conversation.Conversation instance
+            fallback (mixed): a fallback if no name is available
 
         Returns:
-            string, a conversation name or the fallback if no name is available
+            str: a conversation name or the fallback if no name is available
 
         Raises:
             ValueError: no name is available but no fallback was specified

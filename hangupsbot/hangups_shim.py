@@ -25,11 +25,11 @@ def namedtuple_wrapper(name, **kwargs):
     """create a namedtuple and fill it with the given default values
 
     Args:
-        name: string, fake Class name of the namedtuple
-        kwargs: dict, keys as class variables and values as default values
+        name (str): fake Class name of the namedtuple
+        kwargs (dict): keys as class variables and values as default values
 
     Returns:
-        namedtuple instance of a fake hangups constant class
+        namedtuple: an instance of a fake hangups constant class
     """
     wrap = namedtuple(name, kwargs)
     return wrap(**kwargs)

@@ -14,10 +14,9 @@ logger = logging.getLogger(__name__)
 
 class WebhookReceiver(AsyncRequestHandler):
     """Receive REST API posts from GitLab"""
-    _bot = None
 
     async def process_request(self, path, dummy_query_string, content):
-        """Process a received POST to a given converstation"""
+        """Process a received POST to a given conversation"""
         path = path.split("/")
         conv_or_user_id = path[1]
         if conv_or_user_id is None:
@@ -28,6 +27,7 @@ class WebhookReceiver(AsyncRequestHandler):
             payload = json.loads(content)
         except json.JSONDecodeError as err:
             logger.exception("invalid payload @%d:%d: %s", err.lineno, err.colno, err)
+            return
 
         logger.error("GitLab message: %s", json.dumps(payload))
 

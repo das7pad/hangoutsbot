@@ -16,6 +16,7 @@ from hangupsbot import permamem
 from hangupsbot import plugins
 from hangupsbot import tagging
 from hangupsbot import sinks
+from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 from hangupsbot.exceptions import HangupsBotExceptions
 from hangupsbot.hangups_conversation import (
@@ -41,7 +42,7 @@ DEFAULT_CONFIG = {
     "memory-save_delay": 1,
 
     # timeout in second
-    "message_queque_unload_timeout": 3,
+    "message_queue_unload_timeout": 3,
 
     # number of threads for parallel execution
     "max_threads": 10,
@@ -51,10 +52,10 @@ class HangupsBot(object):
     """Hangouts bot listening on all conversations
 
     Args:
-        cookies_path: string, path on disk to stored auth-cookies
-        config_path: string, path on disk to the bot configuration json
-        memory_path: string, path on disk to the bot memory json
-        max_retries: integer, retry count for lowlevel errors
+        cookies_path (str): path on disk to stored auth-cookies
+        config_path (str): path on disk to the bot configuration json
+        memory_path (str): path on disk to the bot memory json
+        max_retries (int): retry count for low level errors
     """
 
     def __init__(self, cookies_path, config_path, memory_path, max_retries):
@@ -99,9 +100,8 @@ class HangupsBot(object):
                     memory_path, _failsafe_backups, _save_delay)
         self.memory = config.Config(memory_path,
                                     failsafe_backups=_failsafe_backups,
-                                    save_delay=_save_delay)
-        self.memory.logger = logging.getLogger("hangupsbot.memory")
-        self.memory.on_reload = hangups.event.Event('Memory reload')
+                                    save_delay=_save_delay,
+                                    name="hangupsbot.memory")
         try:
             self.memory.load()
         except (OSError, IOError, ValueError):
@@ -121,14 +121,14 @@ class HangupsBot(object):
         except NotImplementedError:
             pass
 
-        HangupsConversation.bot = self
+        BotMixin.set_bot(self)
 
     @property
     def command_prefix(self):
         """get a prefix for bot commands issued via chat
 
         Returns:
-            string
+            str: prefix for bot command messages
         """
         return self._handlers.bot_command[0]
 
@@ -136,11 +136,11 @@ class HangupsBot(object):
         """update localization
 
         Args:
-            language_code: string, a known translation code
-            reuse: string, toggle to True to use a cached translation
+            language_code (str): a known translation code
+            reuse (str): toggle to True to use a cached translation
 
         Returns:
-            boolean, True on success
+            bool: True on success
         """
         if not reuse or language_code not in self._locales:
             try:
@@ -164,8 +164,8 @@ class HangupsBot(object):
         """register a shared object to be called later
 
         Args:
-            id_: string, a unique identifier for the objectref
-            objectref: any type, the object to be shared
+            id_ (str): a unique identifier for the objectref
+            objectref (mixed): the object to be shared
 
         Raises:
             RuntimeError: the id_ is already in use
@@ -180,11 +180,12 @@ class HangupsBot(object):
         """run a registered shared function or get a registered object
 
         Args:
-            id_: string, shared identifier
-            args/kwargs: arguments for the shared function
+            id_ (str): shared identifier
+            args (mixed): arguments for the shared function
+            kwargs (mixed): arguments for the shared function
 
         Returns:
-            any type, the return value of the shared function or the shared
+            mixed: the return value of the shared function or the shared
                 object if the registered object is not callable
 
         Raises:
@@ -203,7 +204,7 @@ class HangupsBot(object):
             Authenticate with saved cookies or prompt for user credentials
 
             Returns:
-                dict, a dict of cookies to authenticate at Google
+                dict: a dict of cookies to authenticate at Google
 
             Raises:
                 SystemExit: login failed
@@ -248,8 +249,7 @@ class HangupsBot(object):
         sinks.start(self)
 
         # initialise plugin and command registration
-        plugins.tracking.set_bot(self)
-        command.set_bot(self)
+        command.setup()
 
         # retries for the hangups longpolling request
         max_retries_longpolling = (self._max_retries
@@ -301,7 +301,7 @@ class HangupsBot(object):
             self.__retry_resetter.cancel()
 
         await AsyncQueue.global_stop(
-            self.config["message_queque_unload_timeout"])
+            self.config["message_queue_unload_timeout"])
 
         await plugins.unload_all(self)
         await plugins.tracking.clear()
@@ -334,10 +334,10 @@ class HangupsBot(object):
         """get a user from the user list
 
         Args:
-            user_id: string, G+ user id; or hangups.user.UserID like object
+            user_id (str): G+ user id; or hangups.user.UserID like object
 
         Returns:
-            a hangups.user.User instance from cached data or a fallback user
+            hangups.user.User: from cached data or a fallback user
         """
         if not isinstance(user_id, hangups.user.UserID):
             chat_id = None
@@ -355,10 +355,10 @@ class HangupsBot(object):
         """get hangouts user of a single or multiple conversations
 
         Args:
-            conv_ids: string or list, a single conv or multiple conv_ids
+            conv_ids (mixed): str or list, a single conv or multiple conv_ids
 
         Returns:
-            list, a list of unique hangups.User instances
+            list[hangups.User]: users in the given conversations
         """
         if isinstance(conv_ids, str):
             conv_ids = [conv_ids]
@@ -376,12 +376,12 @@ class HangupsBot(object):
         """get an entry in the conv config with a fallback to top level
 
         Args:
-            conv_id: string, conversation identifier
-            option: string, third level key as target and also the top level
+            conv_id (str): conversation identifier
+            option (str): third level key as target and also the top level
                 key as fallback for a missing key in the path
 
         Returns:
-            any type, the requested value, it's fallback on top level or
+            mixed: the requested value, it's fallback on top level or
                 .default if the key does not exist on both level
         """
         return self.config.get_suboption("conversations", conv_id, option)
@@ -390,9 +390,9 @@ class HangupsBot(object):
         """set a value in the users memory entry and save to memory to file
 
         Args:
-            chat_id: string, G+ id of the user
-            keyname: string, new or existing entry in the users memory
-            keyvalue: any type, the new value to be set
+            chat_id (str): G+ id of the user
+            keyname (str): new or existing entry in the users memory
+            keyvalue (mixed): the new value to be set
         """
         self.memory.set_by_path(["user_data", chat_id, keyname], keyvalue)
         self.memory.save()
@@ -401,11 +401,11 @@ class HangupsBot(object):
         """get a memory entry of a given user
 
         Args:
-            chat_id: string, G+ id of the user
-            keyname: string, the entry
+            chat_id (str): G+ id of the user
+            keyname (str): the entry
 
         Returns:
-            any type, the requested value or None if the entry does not exist
+            mixed: the requested value or None if the entry does not exist
         """
         try:
             return self.memory.get_by_path(["user_data", chat_id, keyname],
@@ -417,9 +417,9 @@ class HangupsBot(object):
         """set a value in the conversations memory entry and dump the memory
 
         Args:
-            conv_id: string, conversation identifier
-            keyname: string, new or existing entry in the conversations memory
-            keyvalue: any type, the new value to be set
+            conv_id (str): conversation identifier
+            keyname (str): new or existing entry in the conversations memory
+            keyvalue (mixed): the new value to be set
         """
         self.memory.set_by_path(["conv_data", conv_id, keyname], keyvalue)
         self.memory.save()
@@ -428,11 +428,11 @@ class HangupsBot(object):
         """get a memory entry of a given conversation
 
         Args:
-            conv_id: string, conversation identifier
-            keyname: string, the entry
+            conv_id (str): conversation identifier
+            keyname (str): the entry
 
         Returns:
-            any type, the requested value or None if the entry does not exist
+            mixed: the requested value or None if the entry does not exist
         """
         try:
             return self.memory.get_by_path(["conv_data", conv_id, keyname],
@@ -444,14 +444,16 @@ class HangupsBot(object):
         """find or create a 1-to-1 conversation with specified user
 
         Args:
-            chat_id: string, G+ id of the user
-            context: dict, additional info to the request,
+            chat_id (str): G+ id of the user
+            context (dict): additional info to the request,
                 include "initiator_convid" to catch per conv optout
-            force: boolean, toggle to get the conv even if the user has optedout
+            force (bool): toggle to get the 1on1 conv even if the user has
+                opted out
 
         Returns:
-            the HangupsConversation instance of the 1on1, None if no conv can be
-                created or False if a 1on1 is not allowed with the user
+            mixed: a HangupsConversation instance of the 1on1,
+                None if no conv can be created
+                or False if a 1on1 is not allowed with the user
         """
         if chat_id == "sync":
             return None
@@ -517,11 +519,11 @@ class HangupsBot(object):
         """initialise the dict for a given key in the datatype in .memory
 
         Args:
-            key: string, identifier for an entry in datatype
-            datatype: string, first-level key in memory
+            key (str): identifier for an entry in datatype
+            datatype (str): first-level key in memory
 
         Returns:
-            boolean, True if an new entry for the key was created in the
+            bool: True if an new entry for the key was created in the
                 datatype, otherwise False
         """
         return self.memory.ensure_path([datatype, key])
@@ -533,7 +535,7 @@ class HangupsBot(object):
             """schedule a retry counter reset
 
             Args:
-                dummy: hangups.conversation_event.ConversationEvent instance
+                dummy (hangups.conversation_event.ConversationEvent): ignored
             """
             async def _delayed_reset():
                 """delayed reset of the retry count"""
@@ -551,14 +553,13 @@ class HangupsBot(object):
         logger.debug("connected")
 
         self.shared = {}
-        self.tags = tagging.Tags(self)
-        self._handlers = handlers.EventHandler(self)
-        handlers.handler.set_bot(self) # shim for handler decorator
+        self.tags = tagging.Tags()
+        self._handlers = handlers.EventHandler()
 
         # release the global sending block
         AsyncQueue.release_block()
 
-        self.sync = SyncHandler(self, self._handlers)
+        self.sync = SyncHandler(self._handlers)
         await self.sync.setup()
 
         self._user_list, self._conv_list = (
@@ -569,7 +570,6 @@ class HangupsBot(object):
 
         self.conversations = await permamem.initialise(self)
 
-        # init the shareds, start caches for reprocessing and start listening
         await self._handlers.setup(self._conv_list)
 
         await plugins.load(self, "sync")
@@ -594,7 +594,7 @@ class HangupsBot(object):
         Args:
             conversation: string or hangups conversation like instance
             message: string or a list of hangups.ChatMessageSegment
-            context: dict, optional information about the message
+            context (dict): optional information about the message
             image_id: int or string, upload id of an image to be attached
 
         Raises:
@@ -647,11 +647,11 @@ class HangupsBot(object):
         Args:
             chat_id: users G+ id
             message: string or a list of hangups.ChatMessageSegment
-            context: dict, optional information about the message
+            context (dict): optional information about the message
 
         Returns:
-            boolean, True if the message was sent,
-                otherwise False - unknown user, optouted or error on .get_1to1()
+            bool: True if the message was sent,
+                otherwise False - unknown user, opt out or error on .get_1to1()
         """
         if not self.memory.exists(["user_data", chat_id, "_hangups"]):
             logger.info("%s is not a valid user", chat_id)
@@ -682,9 +682,11 @@ class HangupsBot(object):
         if no 1-to-1 is available, send everything to the public chat
 
         Args:
-            chat_id: users G+ id
-            message: string or a list of hangups.ChatMessageSegment
-            context: dict, optional information about the message
+            chat_id (str): users G+ id
+            conv_id (str): target conversation for the public message
+            message_private (mixed): str or a list of hangups.ChatMessageSegment
+            message_public (mixed): str or a list of hangups.ChatMessageSegment
+            context (dict): optional information about the message
         """
         # pylint:disable=invalid-name
         conv_1on1 = await self.get_1to1(chat_id)
@@ -735,7 +737,7 @@ class HangupsBot(object):
         """get information about the bot user
 
         Returns:
-            dict, keys are "chat_id", "full_name" and "email"
+            dict: keys are "chat_id", "full_name" and "email"
         """
         myself = {
             "chat_id": None,
@@ -756,11 +758,13 @@ class HangupsBot(object):
     def __getattr__(self, attr):
         """bridge base requests to the hangups client
 
+        hides private members of the client
+
         Args:
-            attr: string, method name of hangups.client.Client
+            attr (str): method name of hangups.client.Client
 
         Returns:
-            callable, the requested method if it is not private
+            callable: the requested method
 
         Raises:
             NotImplementedError: the method is private or not implemented

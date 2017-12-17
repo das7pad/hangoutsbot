@@ -52,7 +52,7 @@ def _initialise(bot):
     """start listening to messages and register admin and user commands
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     plugins.register_sync_handler(_handle_mention, "message_once")
     plugins.register_user_command(["pushbulletapi", "setnickname",
@@ -67,7 +67,7 @@ def _populate_nicknames(bot):
     """Pull the keywords from memory and build an index and reverse index
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     for chat_id in bot.memory["user_data"]:
         nickname = bot.user_memory_get(chat_id, "nickname")
@@ -79,9 +79,9 @@ async def _handle_mention(bot, event, command):
     """forward cleaned @mention names to the main mention function
 
     Args:
-        bot: HangupsBot instance
-        event: sync.event.SyncEvent instance
-        command: command handler from commands
+        bot (hangupsbot.HangupsBot): the running instance
+        event (sync.event.SyncEvent): a message wrapper
+        command (commands.CommandDispatcher): command handler
     """
     # allow mentions to be disabled via global or per-conversation config
     if bot.get_config_suboption(event.conv_id, 'mentions.enabled') is False:
@@ -113,9 +113,10 @@ def _log(template, event, *args, debug=False):
     available keys in the template: 'conv' (_id), 'full' (_name), 'chat' (_id)
 
     Args:
-        template: string
-        event: hangups Event instance
-        level: string, logging level
+        template (str): see doc body
+        event (event.ConversationEvent): a message wrapper
+        args (str): additional text for the logging output
+        debug (bool): set the logging level
     """
     output = template.format(conv=event.conv_id, full=event.user.full_name,
                              chat=event.user_id.chat_id)
@@ -297,8 +298,7 @@ async def mention(bot, event, *args):
                     exact_fragment_matches[0].full_name)
         mention_list = exact_fragment_matches
 
-    elif (len(exact_fragment_matches) > 1 and
-          len(exact_fragment_matches) < len(mention_list)):
+    elif 1 < len(exact_fragment_matches) < len(mention_list):
         logger.info(
             "prioritising multiple case-sensitive fragment match for %s",
             exact_fragment_matches[0].full_name)
@@ -468,8 +468,8 @@ def bemorespecific(bot, event, *dummys):
 def setnickname(bot, event, *args):
     """allow users to set a nickname for mentions and sync relays"""
 
-    truncatelength = 16 # What should the maximum length of the nickname be?
-    minlength = 2 # What should the minimum length of the nickname be?
+    truncate_length = 16 # What should the maximum length of the nickname be?
+    min_length = 2 # What should the minimum length of the nickname be?
 
     chat_id = event.user_id.chat_id
 
@@ -479,12 +479,12 @@ def setnickname(bot, event, *args):
     nickname = re.sub('[^0-9a-zA-Z-_]+', '', nickname)
 
     # Truncate nickname
-    nickname = nickname[0:truncatelength]
+    nickname = nickname[0:truncate_length]
 
-    if nickname and len(nickname) < minlength: # Check minimum length
+    if nickname and len(nickname) < min_length: # Check minimum length
         return _("Error: Minimum length of nickname is {} characters. "
                  "Only alphabetical and numeric characters allowed."
-                ).format(minlength)
+                ).format(min_length)
 
     # perform hard-coded substitution on words that trigger easter eggs
     for original in EASTER_EGGS:

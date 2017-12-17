@@ -9,11 +9,11 @@ class ParseError(Exception):
 
 
 class AlreadySyncingError(Exception):
-    """attemted to create a duplicate sync"""
+    """attempted to create a duplicate sync"""
 
 
 class NotSyncingError(Exception):
-    """attemted to access/remove a non-existing sync"""
+    """attempted to access/remove a non-existing sync"""
 
 
 class IncompleteLoginError(Exception):
@@ -29,7 +29,7 @@ class SlackAPIError(Exception):
 
 
 class SlackRateLimited(SlackAPIError):
-    """too many requests performed in a short timespan"""
+    """too many requests performed in a short time span"""
 
 
 class SlackAuthError(SlackAPIError):

@@ -3,7 +3,7 @@
 a source for snapshots can be either security cameras or other URL's accessible
 to the hangupsbot server
 
-Config must specify aliases and urls which should include any nessisary auth.
+Config must specify aliases and urls which should include any necessary auth.
 """
 __LICENSE__ = """
 The BSD License
@@ -51,11 +51,11 @@ HELP = {
                 ' {bot_cmd} showme all'),
 }
 
-def _initalize(bot):
+def _initialize(bot):
     """register the showme command if sources are configured in config
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     if bot.config.get_option("showme") is not None:
         plugins.register_user_command(["showme"])
@@ -64,13 +64,13 @@ def _initalize(bot):
         logger.info('SHOWME: config["showme"] dict required')
 
 async def _send_source(bot, event, name, img_link):
-    """fetch the provided source and reupload the image and send a message
+    """fetch the provided source, upload the image and send a message
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        name: string, source label
-        img_link: string, url to a shared webcam
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        name (str): source label
+        img_link (str): url to a shared web cam
     """
     logger.info("Getting %s", img_link)
     async with aiohttp.ClientSession() as session:
@@ -94,13 +94,13 @@ async def showme(bot, event, *args):
     """retrieve images from web cameras
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, words passed to the command,
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): words passed to the command,
             see HELP for details
 
     Returns:
-        string, user output; or None if a valid image request was made
+        str: user output; or None if a valid image request was made
     """
     sources = bot.config.get_option("showme")
     if not args:

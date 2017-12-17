@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class WebhookReceiver(AsyncRequestHandler):
-    _bot = None
 
     async def process_request(self, path, query_string, content):
         path = path.split("/")
@@ -21,6 +20,7 @@ class WebhookReceiver(AsyncRequestHandler):
             payload = json.loads(content)
         except ValueError:
             logger.exception("invalid payload")
+            return
 
         if all(key in payload for key in ('repository', 'commits', 'pusher')):
             html = '<b>{}</b> has <a href="{}">pushed</a> {} commit{}\n'.format(

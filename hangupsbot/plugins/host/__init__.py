@@ -5,11 +5,11 @@ requirements for advanced report_online functionality:
         $ /path/to/venv/pip3 install datadog
 
     The command "report_online" can start periodic incrementation of the metric
-    "hangupsbot.online.<botname>", the intervall is set to 30 seconds
+    "hangupsbot.online.<bot name>", the interval is set to 30 seconds
     In addition datadog events are fired on bot start and on bot shutdown.
 
 
-Additional config entrys that can be set manually:
+Additional config entries that can be set manually:
     - "load_threshold": <int>
       threshold for the 5min load value of the system to trigger a notification,
       defaults to the cpu count
@@ -60,16 +60,16 @@ HELP = {
                        'reporting of an online state of the bot to '
                        'datadog - this requires an active datadog service</i>'),
 
-    'uptime': _('post the current sytem uptime in our private chat'),
+    'uptime': _('post the current system uptime in our private chat'),
 
     'who': _('list current ssh-session on the host in our private chat'),
 }
 
 def _initialise(bot):
-    """register the admin commands and start the coros
+    """register the admin commands and start the coroutines
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     plugins.register_admin_command([
         'check_load',
@@ -94,11 +94,11 @@ def _initialise(bot):
         plugins.register_sync_handler(log_event, 'allmessages_once')
 
 def log_event(bot, event):
-    """incremets the metrics for an incoming message
+    """increments the metrics for an incoming message
 
     Args:
-        bot: HangupsBot instance
-        event: sync.event.SyncEvent instance
+        bot (hangupsbot.HangupsBot): the running instance
+        event (sync.event.SyncEvent): message content wrapper
     """
     level = bot.config['datadog_log_level']
     if not level:
@@ -126,13 +126,13 @@ def log_event(bot, event):
     statsd.increment('hangupsbot.messages.' + '.'.join(metric), 1)
 
 def _seconds_to_str(seconds):
-    """get a printable representation of a timespawn
+    """get a printable representation of a time span
 
     Args:
-        seconds: int, number of seconds in the timespawn
+        seconds (float): number of seconds in the time span
 
     Returns:
-        string, pretty output
+        str: pretty output
     """
     return str(timedelta(seconds=seconds)).split('.')[0]
 
@@ -140,10 +140,10 @@ def _uptime_in_seconds(now):
     """get the system uptime in seconds
 
     Args:
-        now: datetime.datetime instance
+        now (datetime.datetime): an instance for the current date
 
     Returns:
-        float, time in seconds since the last boot
+        float: time in seconds since the last boot
     """
     return now.timestamp() - psutil.boot_time()
 
@@ -151,9 +151,9 @@ async def _update(bot, event, feature):
     """flip the state of a given feature and reload the plugin
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        feature: string, plugin feature to update targets for
+        bot(hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message data wrapper
+        feature (str): plugin feature to update targets for
     """
     targets = bot.config.get_option(feature) or []   # do not overwrite defaults
     target = event.conv_id
@@ -177,9 +177,9 @@ async def check_load(bot, event, *dummys):
     """add/remove the current conv_id from 'check_load' in config
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: unused
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message data wrapper
+        dummys (str): not used
     """
     await _update(bot, event, 'check_load')
 
@@ -187,9 +187,9 @@ async def report_online(bot, event, *dummys):
     """add/remove the current conv_id from 'report_online' in config
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: unused
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message data wrapper
+        dummys (str): not used
     """
     await _update(bot, event, 'report_online')
 
@@ -197,20 +197,20 @@ async def uptime(bot, event, *dummys):
     """display the current system uptime
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: unused
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message data wrapper
+        dummys (str): not used
     """
     now = datetime.today()
     today = now.strftime('%Y-%m-%d %H:%M:%S')
-    loadavg = os.getloadavg()
-    onlinetime = _seconds_to_str(_uptime_in_seconds(now))
+    load_avg = os.getloadavg()
+    online_time = _seconds_to_str(_uptime_in_seconds(now))
     process = psutil.Process()
     bot_uptime = _seconds_to_str(now.timestamp() - process.create_time())
     lines = [today,
-             'server uptime:  ' + onlinetime,
+             'server uptime:  ' + online_time,
              'server load:       {}  {}  {}'.format(
-                 loadavg[0], loadavg[1], loadavg[2]),
+                 load_avg[0], load_avg[1], load_avg[2]),
              'bot uptime:        ' + bot_uptime]
     await bot.coro_send_to_user(event.user_id.chat_id, '\n'.join(lines))
 
@@ -218,9 +218,9 @@ async def who(bot, event, *dummys):
     """display ssh-sessions
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: unused
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message data wrapper
+        dummys (str): not used
     """
     today = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     lines = [today]
@@ -268,7 +268,7 @@ async def _report_online(bot):
     """report the startup and send periodically an online state to datadog
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     if not bot.config.get_option('report_online'):
         return
@@ -316,32 +316,32 @@ async def _check_load(bot):
     """check periodically the system load and notify above the threshold
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     if not bot.config.get_option('check_load'):
         return
 
     try:
         while bot.config.get_option('check_load'):
-            loadavg = os.getloadavg()
+            load_avg = os.getloadavg()
             load_threshold = bot.config['load_threshold']
 
-            if loadavg[2] > load_threshold:
+            if load_avg[2] > load_threshold:
                 now = datetime.today()
                 today = datetime.strftime(now, '%Y-%m-%d %H:%M:%S')
 
-                onlinetime = _seconds_to_str(_uptime_in_seconds(now))
+                online_time = _seconds_to_str(_uptime_in_seconds(now))
                 output = ('<b>LOAD-WARNING</b>\n{}\n'
                           'server uptime:  {}\nserver load:       {}  {}  {}'
-                         ).format(today, onlinetime,
-                                  loadavg[0], loadavg[1], loadavg[2])
+                         ).format(today, online_time,
+                                  load_avg[0], load_avg[1], load_avg[2])
 
                 for conv_id in bot.config['check_load'].copy():
                     await bot.coro_send_message(conv_id, output)
 
                 await asyncio.sleep(600)        # do not spam with load warnings
-            elif loadavg[1] > load_threshold:
-                # we might hit the treshold soon
+            elif load_avg[1] > load_threshold:
+                # we might hit the threshold soon
                 await asyncio.sleep(60)
             else:
                 await asyncio.sleep(300)

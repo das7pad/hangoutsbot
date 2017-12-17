@@ -58,7 +58,7 @@ class SlackMessageParser(MessageParser):
 
 
 class SlackMessageSegment(MessageSegment):
-    """messae segment for text with slack markdown formatting"""
+    """message segment for text with slack markdown formatting"""
     _parser = SlackMessageParser()
 
     @classmethod
@@ -69,7 +69,7 @@ class SlackMessageSegment(MessageSegment):
             text (str): the text to parse
 
         Returns:
-            list: a list of `SlackMessageSegment` instances
+            list[SlackMessageSegment]: parsed formatting segments
         """
         segments = []
         split = text.split('\n')

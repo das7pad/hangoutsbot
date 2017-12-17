@@ -6,6 +6,7 @@ import re
 
 import hangups
 
+from hangupsbot.base_models import BotMixin, TrackingMixin
 from hangupsbot.commands.arguments_parser import ArgumentsParser
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ DEFAULT_CONFIG = {
 
     'commands.tags.escalate': False,
 
-    # default timeout for command-coros to return: 5minutes
+    # default timeout for command-coroutines to return: 5minutes
     'command_timeout': 5*60,
 }
 
@@ -34,15 +35,13 @@ class Help(Exception):
     pass
 
 
-class CommandDispatcher(object):
+class CommandDispatcher(BotMixin, TrackingMixin):
     """Register commands and run them"""
     def __init__(self):
-        self.bot = None
         self.commands = {}
         self.admin_commands = []
         self.unknown_command = None
         self.blocked_command = None
-        self.tracking = None
 
         self.command_tagsets = {}
 
@@ -66,32 +65,18 @@ class CommandDispatcher(object):
         """
         return self._arguments_parser
 
-    def set_bot(self, bot):
-        """extended init
+    def setup(self):
+        """extended init"""
+        self.bot.config.set_defaults(DEFAULT_CONFIG)
 
-        Args:
-            bot: HangupsBot instance
-        """
-        self.bot = bot
-        self._arguments_parser.set_bot(bot)
-        bot.config.set_defaults(DEFAULT_CONFIG)
-
-    def set_tracking(self, tracking):
-        """register the plugin tracking for commands
-
-        Args:
-            tracking: plugins.Tracker instance
-        """
-        self.tracking = tracking
-
-    def register_tags(self, command_name, tagsets):
+    def register_tags(self, command_name, tags):
         if command_name not in self.command_tagsets:
             self.command_tagsets[command_name] = set()
 
-        if isinstance(tagsets, str):
-            tagsets = set([tagsets])
+        if isinstance(tags, str):
+            tags = {tags}
 
-        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tagsets
+        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tags
 
     @property
     def deny_prefix(self):
@@ -170,10 +155,10 @@ class CommandDispatcher(object):
                         denied_commands.add(command_name)
                         break
 
-            admin_commands = admin_commands - denied_commands
-            user_commands = user_commands - denied_commands
+            admin_commands -= denied_commands
+            user_commands -= denied_commands
 
-        user_commands = user_commands - admin_commands # ensure no overlap
+        user_commands -= admin_commands  # ensure no overlap
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 
@@ -181,24 +166,25 @@ class CommandDispatcher(object):
         """Run a command
 
         Args:
-            bot: HangupsBot instance
-            event: event.ConversationEvent like instance
+            bot (hangupsbot.HangupsBot): the running instance
+            event (event.ConversationEvent): a message container
             args: tuple of string, including the command name in fist place
-            kwargs: dict, additional info to the execution including the key
+            kwargs (dict): additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
                 '__return_result__' to return all command output
 
         Returns:
-            mixed: command output, as requested
+            mixed: command specific output
 
         Raises:
             KeyError: specified command is unknown
             Help: the kwarg 'raise_exceptions' is set and the command raised
-            asyncio.TimeoutError: the kwarg 'raise_exceptions' is set and the
+            CancelledError: forward low level cancellation
+            TimeoutError: the kwarg 'raise_exceptions' is set and the
                 command execution time exceeded the `command_timeout` limit
                 which is set in the bot config, default see `DEFAULT_CONFIG`
-            mixed: the kwarg 'raise_exceptions' is set and the command
-             raised an Exception
+            Exception: the kwarg 'raise_exceptions' is set to True and the
+                command raised any Exception
         """
         command_name = args[0].lower()
         coro = self.commands.get(command_name)
@@ -307,12 +293,12 @@ def get_func_help(bot, cmd, func):
     """get a custom help message from memory or parse the doc string of the func
 
     Args:
-        bot: HangupsBot instance
-        cmd: string, an existing bot-command
-        func: callable, the command function
+        bot (hangupsbot.HangupsBot): the running instance
+        cmd (str): an existing bot-command
+        func (mixed): function or coroutine, the command function
 
     Returns:
-        string, the custom message or the parsed doc string
+        str: the custom message or the parsed doc string
     """
     try:
         text = bot.memory.get_by_path(['command_help', cmd]).format(

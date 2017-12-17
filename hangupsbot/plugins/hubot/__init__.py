@@ -5,12 +5,13 @@ import logging
 import aiohttp
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sinks import aiohttp_start
 from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
 
 
 logger = logging.getLogger(__name__)
-REQUIRED_ENTRYS = {
+REQUIRED_ENTRIES = {
     "certfile": str,
     "name": str,
     "port": int,
@@ -18,29 +19,28 @@ REQUIRED_ENTRYS = {
     "synced_conversations": list,
 }
 
-class HubotBridge():
+class HubotBridge(BotMixin):
     configuration = []
-    def __init__(self, bot, configkey, handler_class=IncomingRequestHandler):
-        self.bot = self._bot = bot
-        self.configkey = configkey
+    def __init__(self, config_key, handler_class=IncomingRequestHandler):
+        self.config_key = config_key
         self.handler_class = handler_class
 
         if not self._check_config():
             logger.info("no configuration for %s, not running",
-                        self.configkey)
+                        self.config_key)
             return
 
-        self._start_sinks(bot)
+        self._start_sinks()
 
-        plugins.register_handler(self._handle_websync)
+        plugins.register_handler(self._handle_web_sync)
 
     def _check_config(self):
-        """validate each configured config entry and discard invalid entrys
+        """validate each configured config entry and discard invalid entries
 
         Returns:
             bool: True if any config is valid, otherwise False
         """
-        input_config = self.bot.get_config_option(self.configkey)
+        input_config = self.bot.get_config_option(self.config_key)
         valid_configs = []
         if not input_config or isinstance(input_config, list):
             return False
@@ -48,15 +48,15 @@ class HubotBridge():
         for config in input_config:
             if not isinstance(config, dict):
                 logger.warning("config.%s[%s] is not a `dict`",
-                               self.configkey, config_nr)
+                               self.config_key, config_nr)
                 continue
-            for key, expected_type in REQUIRED_ENTRYS.items():
+            for key, expected_type in REQUIRED_ENTRIES.items():
                 if not config.get(key):
                     logger.warning('config.%s[%s]["%s"] must be configured',
-                                   self.configkey, config_nr, key)
+                                   self.config_key, config_nr, key)
                 if not isinstance(config[key], expected_type):
                     logger.warning('config.%s[%s]["%s"] must be of type %s',
-                                   self.configkey, config_nr, key,
+                                   self.config_key, config_nr, key,
                                    expected_type.__name__)
             valid_configs.append(config.copy())
             config_nr += 1
@@ -64,27 +64,27 @@ class HubotBridge():
         self.configuration = valid_configs
         return bool(valid_configs)
 
-    def _start_sinks(self, bot):
+    def _start_sinks(self):
         for listener in self.configuration:
             aiohttp_start(
-                bot=bot,
+                bot=self.bot,
                 name=listener["name"],
                 port=listener["port"],
                 certfile=listener["certfile"],
                 requesthandlerclass=self.handler_class,
-                group="hubotbridge." + self.configkey)
+                group="hubot_bridge." + self.config_key)
 
-        logger.info("hubotbridge: %s bridges started for %s",
-                    len(self.configuration), self.configkey)
+        logger.info("hubot: %s bridges started for %s",
+                    len(self.configuration), self.config_key)
 
-    def _handle_websync(self, dummy, event):
+    def _handle_web_sync(self, dummy, event):
         """Handle hangouts messages, preparing them to be sent to the
         external service
         """
 
         for config in self.configuration:
-            convlist = config["synced_conversations"]
-            if event.conv_id in convlist:
+            conv_list = config["synced_conversations"]
+            if event.conv_id in conv_list:
                 self._send_to_external_chat(dummy, event, config)
 
     @staticmethod
@@ -124,5 +124,5 @@ class IncomingMessages(IncomingRequestHandler):
         yield from self.send_data(conversation_id, payload["message"])
 
 
-def _initialise(bot):
-    HubotBridge(bot, "hubot", IncomingMessages)
+def _initialise():
+    HubotBridge("hubot", IncomingMessages)

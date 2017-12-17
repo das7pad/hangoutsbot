@@ -83,7 +83,7 @@ def addmod(bot, event, *args):
 def delmod(bot, dummy, *args):
     """remove user id(s) from the whitelist of who can add to a hangout"""
     if not bot.config.get_option('mods'):
-        return
+        return ''
 
     mods = bot.config.get_option('mods')
     mods_new = []

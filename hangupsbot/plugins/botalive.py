@@ -8,6 +8,7 @@ import time
 
 import hangups.exceptions
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ def _initialise(bot):
     """setup watermarking plugin
 
     Args:
-        bot: hangupsbot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     config_botalive = bot.get_config_option('botalive')
 
@@ -23,7 +24,7 @@ def _initialise(bot):
             not ('admins' in config_botalive or 'groups' in config_botalive)):
         return
 
-    watermark_updater = WatermarkUpdater(bot)
+    watermark_updater = WatermarkUpdater()
 
     if 'admins' in config_botalive:
         if config_botalive['admins'] < 60:
@@ -44,8 +45,9 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
     """add conv_ids to the watermark_updater queue and start to process it
 
     Args:
-        bot: hangupsbot instance
-        target: 'admins' to add admin 1on1 ids, 'groups' to add group conv_ids
+        bot (hangupsbot.HangupsBot): the running instance
+        target (str): 'admins' to enqueue chats with admins or 'groups' to
+            enqueue group chats
     """
     last_run = time.time()
 
@@ -73,7 +75,7 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
         return
 
 
-class WatermarkUpdater:
+class WatermarkUpdater(BotMixin):
     """use a queue to update the watermarks sequentially instead of all-at-once
 
     .add(<conv id>, overwrite=<boolean>) queue conversations for a watermark
@@ -86,28 +88,24 @@ class WatermarkUpdater:
     to prevent the processor from being consumed entirely and also to not act
         too much as a bot, we sleep 5 to T seconds after each watermark update
         T is set in config with the key 'maxfuzz' and defaults to 10 seconds
-
-    Args:
-        bot: HangupsBot instance
     """
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self._lock = asyncio.Lock()
 
         self.queue = set()
         self.failed = dict() # track errors
         self.failed_permanent = set() # track conv_ids that failed 5 times
 
-        bot.config.set_defaults({'maxfuzz': 10, 'permafail': 5},
-                                path=['botalive'])
+        self.bot.config.set_defaults({'maxfuzz': 10, 'permafail': 5},
+                                     path=['botalive'])
 
     def add(self, conv_id, overwrite=False):
         """schedule a conversation for watermarking and filter blacklisted
 
         Args:
-            conv_id: string, id of a conversation
-            overwrite: boolean, toggle to update the watermark even when there
+            conv_id (str): id of a conversation
+            overwrite (bool): toggle to update the watermark even when there
                 were no new events in the conversations
         """
         if conv_id not in self.failed_permanent:

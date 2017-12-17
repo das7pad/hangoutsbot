@@ -20,11 +20,11 @@ HELP = {
     'screenshot': _('get a screenshot of a user provided URL or the default URL'
                     ' of the hangout.'),
 
-    'seturl': _('set url for current converation for the screenshot command.\n'
+    'seturl': _('set url for current conversation for the screenshot command.\n'
                 '  use <b>{bot_cmd} clearurl</b> to clear the previous url '
                 'before setting a new one.'),
 
-    'clearurl': _('clear the default-url for current converation for the '
+    'clearurl': _('clear the default-url for current conversation for the '
                   'screenshot command.'),
 }
 
@@ -49,8 +49,8 @@ async def _open_file(name):
     return open(name, 'rb')
 
 
-async def _screencap(browser, url, filename):
-    logger.info("screencapping %s and saving as %s", url, filename)
+async def _screen_cap(browser, url, filename):
+    logger.info("screen capping %s and saving as %s", url, filename)
     browser.set_window_size(1280, 800)
     browser.get(url)
     await asyncio.sleep(5)
@@ -68,7 +68,7 @@ async def _screencap(browser, url, filename):
 
 
 def seturl(bot, event, *args):
-    """set url for current converation for the screenshot command."""
+    """set url for current conversation for the screenshot command."""
     url = bot.conversation_memory_get(event.conv_id, 'url')
     if url is None:
         bot.conversation_memory_set(event.conv_id, 'url', ''.join(args))
@@ -83,7 +83,7 @@ def seturl(bot, event, *args):
 
 
 def clearurl(bot, event, *dummys):
-    """clear url for current converation for the screenshot command."""
+    """clear url for current conversation for the screenshot command."""
     url = bot.conversation_memory_get(event.conv_id, 'url')
     if url is None:
         html = _("<i><b>{}</b> nothing to clear for this conversation")
@@ -115,9 +115,9 @@ async def screenshot(bot, event, *args):
         if not re.match(r'^[a-zA-Z]+://', url):
             url = 'http://' + url
         filename = event.conv_id + "." + str(time.time()) +".png"
-        filepath = tempfile.NamedTemporaryFile(prefix=event.conv_id,
-                                               suffix=".png", delete=False).name
-        logger.debug("temporary screenshot file: %s", filepath)
+        file_path = tempfile.NamedTemporaryFile(
+            prefix=event.conv_id, suffix=".png", delete=False).name
+        logger.debug("temporary screenshot file: %s", file_path)
 
         try:
             browser = webdriver.PhantomJS(desired_capabilities=_DCAP,
@@ -127,9 +127,9 @@ async def screenshot(bot, event, *args):
             return "<i>phantomjs could not be started - is it installed?</i>"
 
         try:
-            image_data = await _screencap(browser, url, filepath)
+            image_data = await _screen_cap(browser, url, file_path)
         except selenium.common.exceptions.WebDriverException:
-            logger.exception("screencap failed %s", url)
+            logger.exception("screen cap failed %s", url)
             _EXTERNALS["running"] = False
             return "<i>error getting screenshot</i>"
 

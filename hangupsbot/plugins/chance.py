@@ -16,7 +16,7 @@ HELP = {
 }
 
 def _initialise():
-    """register the message handler, commands and the help entrys"""
+    """register the message handler, commands and the help entries"""
     plugins.register_sync_handler(_handle_me_action, "message_once")
     plugins.register_user_command(["diceroll", "coinflip"])
     plugins.register_help(HELP)
@@ -25,14 +25,14 @@ async def _handle_me_action(bot, event):
     """run the diceroll or coinflip command from context
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
     """
     if not event.text.startswith(('/me', event.user.first_name)):
         return
 
     if any(item in event.text for item in ["roll dice", "rolls dice",
-                                           "rolles a dice", "rolled dice"]):
+                                           "rolls a dice", "rolled dice"]):
         await diceroll(bot, event)
 
     elif any(item in event.text for item in ["flips a coin", "flips coin",
@@ -43,9 +43,15 @@ def diceroll(dummy, event, dice="1d6"):
     """get random numbers from a fake diceroll
 
     Args:
-        dummy: HangupsBot instance
-        event: event.ConversationEvent instance
-        dice: string, the diceroll request
+        dummy (hangupsbot.HangupsBot): unused
+        event (event.ConversationEvent): a message container
+        dice (str): the diceroll request
+
+    Returns:
+        str: the command output
+
+    Raises:
+        Help: invalid query specified
     """
     try:
         repeat, sides = dice.split('d')
@@ -76,9 +82,12 @@ def coinflip(dummy, event, *dummys):
     """get the result of a fake coinflip
 
     Args:
-        dummy: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of string, not used
+        dummy (hangupsbot.HangupsBot): unused
+        event (event.ConversationEvent): a message container
+        dummys (str): not used
+
+    Returns:
+        str: the command output
     """
     if randint(1, 2) == 1:
         result = _("<i>{}, coin turned up <b>heads</b></i>")

@@ -20,6 +20,8 @@ import imageio
 imageio.plugins.ffmpeg.download()
 from moviepy.editor import VideoFileClip
 
+from hangupsbot.base_models import BotMixin
+
 from .exceptions import MissingArgument
 
 VALID_IMAGE_TYPES = ('photo', 'sticker', 'gif', 'video')
@@ -57,8 +59,8 @@ class MovieConverter(VideoFileClip):
     """Converter that saves one dump to file on gif convert of a video
 
     Args:
-        raw: file handler, the raw video data
-        file_format: string, file extension of the video
+        raw (io.BytesIO): the raw video data
+        file_format (str): file extension of the video
     """
     def __init__(self, raw, file_format):
         self._path = '{}-{}.{}'.format(PATH, time.time(), file_format)
@@ -72,7 +74,7 @@ class MovieConverter(VideoFileClip):
         """save the video to a file-like object
 
         Returns:
-            io.BytesIO instance, the video
+            io.BytesIO: the video
         """
         logger.debug('to_video')
         path = self._path + '.mp4'
@@ -88,10 +90,10 @@ class MovieConverter(VideoFileClip):
          the image data in memory
 
         Args:
-            fps: int, frames per second for the breakdown
+            fps (int): frames per second for the breakdown
 
         Returns:
-            io.BytesIO instance, the new image
+            io.BytesIO: the new image
         """
         logger.debug('to_gif')
         data = io.BytesIO()
@@ -106,7 +108,7 @@ class MovieConverter(VideoFileClip):
         """delete a created file
 
         Args:
-            path: string, defaults to the source filepath
+            path (str): defaults to the source file path
         """
         if path is None:
             path = self._path
@@ -121,26 +123,25 @@ class MovieConverter(VideoFileClip):
         self.cleanup()
 
 
-class SyncImage(object):
+class SyncImage(BotMixin):
     """store info to a synced image in one object and convert movies to gif
 
     provide either a public url or image data and a filename
 
     Args:
-        data: file-like object, containing the raw image_data
-        cache: int, time in sec for the upload info to remain in cache
-        filename: string, including a valid image file extension
-        type_: string, 'photo', 'sticker', 'gif', 'video'
-        size: tuple of int, width and height in px
-        url: string, public url of the image
-        cookies: dict, custom cookies to authenticate a download
-        headers: dict, custom header to authenticate a download
+        data (io.BytesIO): containing the raw image_data
+        cache (int): time in sec for the upload info to remain in cache
+        filename (str): including a valid image file extension
+        type_ (str): 'photo', 'sticker', 'gif', 'video'
+        size (tuple): a tuple of int, width and height in px
+        url (str): public url of the image
+        cookies (dict): custom cookies to authenticate a download
+        headers (dict): custom header to authenticate a download
 
     Raises:
         MissingArgument: no url/data were given
     """
     # pylint: disable=too-many-instance-attributes
-    bot = None
 
     # an incomplete init should not break __del__
     _data = None
@@ -179,7 +180,7 @@ class SyncImage(object):
         """complete an undefined type with the default 'photo'
 
         Returns:
-            string,  'photo', 'sticker', 'gif' or 'video'
+            str:  'photo', 'sticker', 'gif' or 'video'
         """
         return self._type or 'photo'
 
@@ -187,7 +188,7 @@ class SyncImage(object):
         """update the filename and image type from a given filename
 
         Args:
-            filename: string, a filename or url containing the file extension
+            filename (str): a filename or url containing the file extension
         """
         if isinstance(filename, str):
             extension = filename.lower().rsplit('.', 1)[-1]
@@ -196,7 +197,7 @@ class SyncImage(object):
             filename = self._filename or (str(time.time()) + '.jpg')
 
         if self._type not in VALID_IMAGE_TYPES:
-            filename = filename + '.jpg'
+            filename += '.jpg'
             self.cache = 1
 
         self.cache = (self.cache if isinstance(self.cache, int) else
@@ -210,12 +211,12 @@ class SyncImage(object):
         cache requests per image to safe CPU- and IO-time of resizing
 
         Args:
-            limit: int, a custom image size in px
-            video_as_gif: boolean, toggle to convert videos to gifs
+            limit (int): a custom image size in px
+            video_as_gif (bool): toggle to convert videos to gifs
 
         Returns:
             tuple: io.BytesIO instance, the image data and string, the filename;
-            if no data is availlable return None, <string with reason>
+            if no data is available return None, <string with reason>
         """
         if self._data is None:
             return None, '[Image has no content]'
@@ -285,7 +286,7 @@ class SyncImage(object):
         """download the image data if not already done cached
 
         Returns:
-            boolean, False if no data is available, otherwise True
+            bool: False if no data is available, otherwise True
         """
         if self._data is not None:
             self._data.seek(0)  # reset pointer
@@ -328,26 +329,26 @@ class SyncImage(object):
         """resize the image, the size applies to both width and height
 
         Args:
-            limit: int, in px the new size
-            data: io.BytesIO instance
-            filename: string
-            video_as_gif: boolean, toogle to get a video wrapped in a gif
-            caller: any type: set to a non value to block a loop
+            limit (int): in px the new size
+            data (io.BytesIO): initial instance
+            filename (str): filename with extension
+            video_as_gif (bool): toggle to get a video wrapped in a gif
+            caller (mixed): set to a non value to block a loop
 
         Returns:
-            tutple: a new io.BytesIO instance with the raw resized image data
+            tuple: a new io.BytesIO instance with the raw resized image data
             and the new filename
         """
         def _remove_background(data, filename):
             """remove background in saving as PNG
 
             Args:
-                data: io.BytesIO instance, image data to override
-                filename: string, image file name to override
+                data (io.BytesIO): image data to override
+                filename (str): image file name to override
 
             Returns:
-                tuple: io.BytesIO instance, the image as PNG
-                       string, the new filename
+                tuple: a io.BytesIO instance, the image as PNG
+                       and a str, the new filename
             """
             if filename.rsplit('.', 1)[-1].lower() == 'png':
                 # already a png, no need to format again
@@ -359,7 +360,7 @@ class SyncImage(object):
 
             if not self._meets_size_limit:
                 # to big to resize
-                return
+                return data, filename
 
             try:
                 container = io.BytesIO(data.getbuffer())
@@ -384,12 +385,12 @@ class SyncImage(object):
             """calculate the new size and resize the image
 
             Returns:
-                io.BytesIO instance with the image data, it may not be resized
+                io.BytesIO: instance with the image data, it may not be resized
                     if it already matches the required size or an error occutred
             """
+            message = 'open %s'
+            logger.debug(message, filename)
             try:
-                message = 'open %s'
-                logger.debug(message, filename)
                 if self._movie is not None:
                     image = self._movie
                     resize_arg = None
@@ -432,7 +433,7 @@ class SyncImage(object):
                                    FORMAT_MAPPING[filename.rsplit('.', 1)[-1]])
 
             except (OSError, IOError, KeyError, AttributeError):
-                logger.exception('failed to ' + message, filename)
+                logger.exception('failed to %s', message % filename)
                 return data
 
             return new_image_data
@@ -442,8 +443,8 @@ class SyncImage(object):
             # MovieConverter missing
             return data, filename
 
-        formating = FORMAT_MAPPING.get(extension)
-        if formating is None and caller is None:
+        formatting = FORMAT_MAPPING.get(extension)
+        if formatting is None and caller is None:
             # convert to PNG
             data, filename = _remove_background(data, filename)
             return self._get_resized(limit=limit, data=data, filename=filename,
@@ -458,10 +459,10 @@ class SyncImage(object):
 
     @property
     def _meets_size_limit(self):
-        """check the image size against the hardlimit for media processing
+        """check the image size against the hard limit for media processing
 
         Returns:
-            boolean, True if size is below the limit, otherwise False
+            bool: True if size is below the limit, otherwise False
         """
         below = (len(self._data.getvalue())
                  < (self.bot.config['sync_process_animated_max_size']*1024))

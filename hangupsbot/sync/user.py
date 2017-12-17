@@ -5,6 +5,8 @@ import logging
 
 import hangups.user
 
+from hangupsbot.base_models import BotMixin
+
 from .utils import get_sync_config_entry
 
 logger = logging.getLogger(__name__)
@@ -12,26 +14,24 @@ logger = logging.getLogger(__name__)
 G_PLUS_URL = 'https://plus.google.com/'
 
 
-class SyncUser(hangups.user.User):
+class SyncUser(hangups.user.User, BotMixin):
     """a hangups.user.User-like object with builtin access to profilesyncs
 
     Args:
-        bot: HangupsBot instance
-        identifier: string, source plugin name
-        user: hangups.user.User instance or string as fallback
-        user_id: string or hangups.user.UserID, G+ID or platform id
-        user_name: string, Fullname
-        user_link: string, advaned identifier for cross platform sync
-        user_photo: string, url to the user's profile picture
-        user_nick: string, custom nickname
-        user_is_self: boolean, True if messages should be issued as the bot user
+        identifier (str): source plugin name
+        user (mixed): hangups.user.User instance or string as fallback
+        user_id (mixed): string or hangups.user.UserID, G+ID or platform id
+        user_name (str): Fullname
+        user_link (str): advaned identifier for cross platform sync
+        user_photo (str): url to the user's profile picture
+        user_nick (str): custom nickname
+        user_is_self (bool): True if messages should be issued as the bot user
     """
-    __slots__ = ('bot', 'identifier', 'nickname', 'user_link')
+    __slots__ = ('identifier', 'nickname', 'user_link')
 
-    def __init__(self, bot, *, identifier=None, user=None, user_id=None,
+    def __init__(self, *, identifier=None, user=None, user_id=None,
                  user_name=None, user_link=None, user_photo=None,
                  user_nick=None, user_is_self=False):
-        self.bot = bot
         if isinstance(user, str):
             user_name = user_name or user
         elif isinstance(user, hangups.user.UserID):
@@ -47,7 +47,7 @@ class SyncUser(hangups.user.User):
                     '`user` is a hangups.user.User-like object, got %s, dir=%s',
                     type(user), dir(user))
 
-        # get the synced G+ ID, if a platform is registerd for the identifier
+        # get the synced G+ ID, if a platform is registered for the identifier
         platform = (identifier.rsplit(':', 1)[0] if isinstance(identifier, str)
                     else None)
         if (user_id is not None and platform is not None and
@@ -96,18 +96,17 @@ class SyncUser(hangups.user.User):
         self.user_link = user_link
 
     def get_displayname(self, conv_id, text_only=False):
-        """get either the fullname or firstname plus nickname
+        """get either the fullname or first name plus nickname
 
         set global/per conv 'sync_nicknames' in config to allow nicknames
 
         Args:
-            conv_id: string, conversation in which the name should be displayed
-            text_only: boolean, toggle to do not include the user link
+            conv_id (str): conversation in which the name should be displayed
+            text_only (bool): toggle to do not include the user link
 
         Returns:
-            string
+            str: name with formatting and/or html-link as requested
         """
-        name = self.full_name
         user_link = self.user_link
 
         if (self.nickname is not None and

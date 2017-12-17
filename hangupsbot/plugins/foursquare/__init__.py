@@ -35,7 +35,7 @@ def foursquareid(bot, dummy, *args):
     """Set the Foursquare API key for the bot"""
     if not args:
         raise Help()
-    clid = args[0]
+    client_id = args[0]
 
     if not bot.memory.exists(["foursquare"]):
         bot.memory.set_by_path(["foursquare"], {})
@@ -43,8 +43,8 @@ def foursquareid(bot, dummy, *args):
     if not bot.memory.exists(["foursquare"]):
         bot.memory.set_by_path(["foursquare", "id"], {})
 
-    bot.memory.set_by_path(["foursquare", "id"], clid)
-    return "Foursquare client id set to {}".format(clid)
+    bot.memory.set_by_path(["foursquare", "id"], client_id)
+    return "Foursquare client id set to {}".format(client_id)
 
 def foursquaresecret(bot, dummy, *args):
     """Set the Foursquare client secret for your bot"""
@@ -61,16 +61,17 @@ def foursquaresecret(bot, dummy, *args):
     bot.memory.set_by_path(["foursquare", "secret"], secret)
     return "Foursquare client secret set to {}".format(secret)
 
-async def getplaces(location, clid, secret, section=None):
-    url = "https://api.foursquare.com/v2/venues/explore?client_id={}&client_secret={}&limit=10&v=20160503&near={}".format(clid, secret, location)
+async def get_places(location, client_id, secret, section=None):
+    url = "https://api.foursquare.com/v2/venues/explore?client_id={}&client_secret={}&limit=10&v=20160503&near={}".format(client_id, secret, location)
     types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
     if section in types:
-        url = url + "&section={}".format(section)
+        url += "&section={}".format(section)
     elif section is None:
         pass
     else:
         return None
 
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
@@ -78,7 +79,7 @@ async def getplaces(location, clid, secret, section=None):
                 data = await response.json()
     except aiohttp.ClientError:
         logger.error('url: %s, response: %s', url, repr(response))
-        url = url.replace(clid, 'CLIENT_ID').replace(secret, 'CLIENT_SECRET')
+        url = url.replace(client_id, 'CLIENT_ID').replace(secret, 'CLIENT_SECRET')
         logger.error("URL: %s, %s", url, repr(response))
         return "<i><b>Foursquare Error</b></i>"
 
@@ -87,8 +88,8 @@ async def getplaces(location, clid, secret, section=None):
     else:
         places = ["Showing places near {}.<br>".format(data['response']['geocode']['displayString'])]
     for item in data['response']['groups'][0]['items']:
-        mapsurl = "http://maps.google.com/maps?q={}, {}".format(item['venue']['location']['lat'], item['venue']['location']['lng'])
-        places.append("<b><u><a href='{}'>{}</a></b></u> (<a href='{}'>maps</a>)<br>Score: {}/10 ({})".format(mapsurl, item['venue']["name"], "http://foursquare.com/v/{}".format(item['venue']['id']), item['venue']['rating'], item['venue']['ratingSignals']))
+        maps_url = "http://maps.google.com/maps?q={}, {}".format(item['venue']['location']['lat'], item['venue']['location']['lng'])
+        places.append("<b><u><a href='{}'>{}</a></b></u> (<a href='{}'>maps</a>)<br>Score: {}/10 ({})".format(maps_url, item['venue']["name"], "http://foursquare.com/v/{}".format(item['venue']['id']), item['venue']['rating'], item['venue']['ratingSignals']))
 
     response = "<br>".join(places)
     return response
@@ -100,16 +101,16 @@ async def foursquare(bot, dummy, *args):
         raise Help()
 
     try:
-        clid = bot.memory.get_by_path(["foursquare", "id"])
+        client_id = bot.memory.get_by_path(["foursquare", "id"])
         secret = bot.memory.get_by_path(["foursquare", "secret"])
     except (KeyError, TypeError):
         return _("Something went wrong - make sure the Foursquare plugin is correctly configured.")
 
     types = ["food", "drinks", "coffee", "shops", "arts", "outdoors", "sights", "trending", "specials"]
     if args[0] in types:
-        places = await getplaces(urllib.parse.quote(" ".join(args[1:])), clid, secret, args[0])
+        places = await get_places(urllib.parse.quote(" ".join(args[1:])), client_id, secret, args[0])
     else:
-        places = await getplaces(urllib.parse.quote(" ".join(args)), clid, secret)
+        places = await get_places(urllib.parse.quote(" ".join(args)), client_id, secret)
 
     if places:
         return places

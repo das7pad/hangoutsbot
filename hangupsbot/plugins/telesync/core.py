@@ -16,6 +16,7 @@ import telepot.exception
 from telepot.loop import _extract_message
 
 from hangupsbot import plugins
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.parser import get_formatted
 from hangupsbot.sync.sending_queue import AsyncQueueCache
 
@@ -65,18 +66,17 @@ IGNORED_MESSAGE_TYPES = (
 )
 
 _RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
-                           '<i>{chatname}</i> could <b>not</b> be restricted, '
+                           '<i>{chat_name}</i> could <b>not</b> be restricted, '
                            'please check manually!')
 
-class TelegramBot(telepot.aio.Bot):
+class TelegramBot(telepot.aio.Bot, BotMixin):
     """enhanced telepot bot with Hangouts sync
 
     Args:
-        ho_bot: HangupsBot instance
+        ho_bot (hangupsbot.HangupsBot): the running instance
     """
 
     def __init__(self, ho_bot):
-        self.bot = Message.bot = ho_bot
         Message.tg_bot = self
         self.user = None
         self._receive_next_updates = 0
@@ -114,11 +114,11 @@ class TelegramBot(telepot.aio.Bot):
         """get a telegram config entry
 
         Args:
-            key: string, an item in the telesync config
-            fallback: boolean, toggle to use the config defaults on missing keys
+            key (str): an item in the telesync config
+            fallback (bool): toggle to use the config defaults on missing keys
 
         Returns:
-            any type, the requested item; dict, entire config if no key is set
+            mixed: the requested item; dict, entire config if no key is set
         """
         item = [key] if key is not None else []
         return self.bot.config.get_by_path(['telesync'] + item, fallback)
@@ -137,7 +137,7 @@ class TelegramBot(telepot.aio.Bot):
 
         self.user = User(self, {'bot': bot_user, 'chat': {'id': None}},
                          chat_action='bot')
-        logger.info('Botuser: id: %s, name: %s, username: %s',
+        logger.info('Bot user: id: %s, name: %s, username: %s',
                     self.user.usr_id, self.user.first_name, self.user.username)
 
         tasks = [
@@ -173,10 +173,10 @@ class TelegramBot(telepot.aio.Bot):
         """check if Telegram api requests can be made
 
         Args:
-            retry: boolean, toggle to allow a single retry on a Server Error
+            retry (bool): toggle to allow a single retry on a Server Error
 
         Returns:
-            boolean, True if the TelegramBot is running, otherwise False
+            bool: True if the TelegramBot is running, otherwise False
         """
         if self._receive_next_updates > time.time():
             return True
@@ -218,11 +218,11 @@ class TelegramBot(telepot.aio.Bot):
         """send html to telegram chat keeping the sequence
 
         Args:
-            tg_chat_id: int, a chat the bot user has access to
-            html: string, nested html tags are not allowed
+            tg_chat_id (mixed): a chat the bot user has access to
+            html (str): nested html tags are not allowed
 
         Returns:
-            a `sync.sending_queue.Status` instance for the scheduled task which
+            sync.sending_queue.Status: status of the scheduled task which
             can be awaited for a boolean value, returned as the task completed:
                 True on success otherwise False
         """
@@ -236,14 +236,14 @@ class TelegramBot(telepot.aio.Bot):
         user data can only be fetched, if a chat with the user exists
 
         Args:
-            user_id: string, user identifier
-            chat_id: string, telegram chat identifier
-            gpluslink: boolean, set to True get G+Links instead of t.me links
-            use_cache: boolean, set to False to ignore a cache hit and to
+            user_id (str): user identifier
+            chat_id (str): telegram chat identifier
+            gpluslink (bool): set to True get G+Links instead of t.me links
+            use_cache (bool): set to False to ignore a cache hit and to
              perform an API request for updated user data
 
         Returns:
-            User, a subclass of sync.user.SyncUser
+            User: a subclass of sync.user.SyncUser
         """
         path_user = ['telesync', 'user_data', user_id]
 
@@ -284,12 +284,12 @@ class TelegramBot(telepot.aio.Bot):
         """download an image from Telegram and create a SyncImage
 
         Args:
-            image: dict, media item from telegram
-            type_: string, 'photo', 'sticker', 'gif', 'video'
-            exception: string, opt, file extension
+            image (dict): media item from telegram
+            type_ (str): 'photo', 'sticker', 'gif', 'video'
+            extension (str): opt, file extension
 
         Returns:
-            sync.SyncImage instance or None if no image could be created
+            sync.SyncImage: the image or None if no image could be created
         """
         image_data = io.BytesIO()
         try:
@@ -331,8 +331,8 @@ class TelegramBot(telepot.aio.Bot):
         """send info about pending profilesync to user
 
         Args:
-            user_id: str, identifier for the user and its 1on1 chat with the bot
-            is_reminder: bool, set to True to prepend the reminder flag
+            user_id (str): identifier for the user and its 1on1 chat with the bot
+            is_reminder (bool): set to True to prepend the reminder flag
         """
         bot = self.bot
         path = ['profilesync', 'telesync', 'pending_2ho', user_id]
@@ -378,12 +378,12 @@ class TelegramBot(telepot.aio.Bot):
         """send html to telegram chat
 
         Args:
-            tg_chat_id: int, a chat the bot user has access to
-            text: string, nested html tags are not allowed
-            silent: boolean, set to True to disable a client notification
+            tg_chat_id (int): a chat the bot user has access to
+            text (str): nested html tags are not allowed
+            silent (bool): set to True to disable a client notification
 
         Returns:
-            boolean, True in case of a successful api-call, otherwise False
+            bool: True in case of a successful api-call, otherwise False
         """
         if not await self.is_running() or not text:
             return False
@@ -425,7 +425,7 @@ class TelegramBot(telepot.aio.Bot):
                              text, tg_chat_id, repr(err))
 
         else:
-            Message.add_message(tg_chat_id, msg.get('message_id'))
+            Message.add_message(self.bot, int(tg_chat_id), msg.get('message_id'))
             status = True
 
         finally:
@@ -443,10 +443,10 @@ class TelegramBot(telepot.aio.Bot):
         /command@name_bot args
 
         Args:
-            msg: Message
+            msg (message.Message): a message wrapper
+
         Returns:
-            tuple of bool, string and list of strings:
-                command is valid, command, args
+            tuple: (<cmd valid, bool>, <command, str>, <arguments, list of str>)
         """
         if not msg.text.startswith('/'):
             return False, '', []
@@ -462,7 +462,7 @@ class TelegramBot(telepot.aio.Bot):
         only process event type 'chat'
 
         Args:
-            response: dict, api-response from telepot
+            response (dict): api-response from telepot
         """
         logger.debug(response)
         if 'migrate_to_chat_id' in response:
@@ -496,7 +496,7 @@ class TelegramBot(telepot.aio.Bot):
         """message handler for text, photo, sticker, location
 
         Args:
-            msg: Message instance
+            msg (message.Message): a message wrapper
         """
         bot = self.bot
         chat_id = msg.chat_id
@@ -524,8 +524,8 @@ class TelegramBot(telepot.aio.Bot):
         logger.debug('forwarding %s from: %s to %s',
                      msg.content_type, msg.chat_id, ho_conv_ids)
 
-        segments = TelegramMessageSegment.from_str((msg.text,
-                                                    msg.get('entities', [])))
+        segments = TelegramMessageSegment.from_text_and_entities(
+            msg.text, msg.get('entities', []))
 
         for conv_id in ho_conv_ids:
             asyncio.ensure_future(self.bot.sync.message(
@@ -538,7 +538,7 @@ class TelegramBot(telepot.aio.Bot):
         """forward a membership change
 
         Args:
-            msg: Message instance
+            msg (message.Message): a message wrapper
         """
         bot = self.bot
         if not bot.memory.exists(['telesync', 'tg2ho', msg.chat_id]):
@@ -555,6 +555,7 @@ class TelegramBot(telepot.aio.Bot):
         else:
             changed_members = [User(self, msg, chat_action=msg.content_type)]
 
+        type_ = 2
         for changed_member in changed_members:
             path_chat = ['telesync', 'chat_data', msg.chat_id, 'user',
                          changed_member.usr_id]
@@ -597,12 +598,12 @@ class TelegramBot(telepot.aio.Bot):
 
         Args:
             msg (Message): a membership change message
-            changed_members (list): a list of `telesync.user.User`s
+            changed_members (list[telesync.user.User]): the members to restrict
         """
         if msg.chat_type != 'supergroup':
             return
         mod_chat = self.config('mod_chat')
-        chatname = msg.get_group_name()
+        chat_name = msg.get_group_name()
         mode = self.bot.get_config_suboption('telesync:' + msg.chat_id,
                                              'restrict_users')
 
@@ -619,7 +620,7 @@ class TelegramBot(telepot.aio.Bot):
                     self.send_html(
                         mod_chat,
                         _RESTRICT_USERS_FAILED.format(names=failed_names,
-                                                      chatname=chatname))
+                                                      chat_name=chat_name))
 
                 logger.warning('restricting rights for users %s in %s failed',
                                failed_names, msg.chat_id)
@@ -627,7 +628,7 @@ class TelegramBot(telepot.aio.Bot):
             message = _(
                 'Check the config value `restrict_users` for the chat '
                 '{name} ({chat_id}), expected one of {valid_values}').format(
-                    name=chatname, chat_id=msg.chat_id,
+                    name=chat_name, chat_id=msg.chat_id,
                     valid_values=', '.join(RESTRICT_OPTIONS))
             logger.warning(message)
             if mod_chat:
@@ -637,7 +638,7 @@ class TelegramBot(telepot.aio.Bot):
         """migrate all old data to a new chat id
 
         Args:
-            msg: dict, message from Telegram
+            msg (dict): message from Telegram
         """
         bot = self.bot
 
@@ -678,15 +679,15 @@ class TelegramBot(telepot.aio.Bot):
         except asyncio.CancelledError:
             return
         except:                                    # pylint: disable=bare-except
-            logger.exception('lowlevel error in periodic profilesync reminder')
+            logger.exception('low level error in periodic profilesync reminder')
 
     async def _periodic_profile_updater(self):
         """update the telesync data periodically
 
         sleep for x hours after each update run
-        x determined by telesync config entry 'profile_update_intervall'
+        x determined by telesync config entry 'profile_update_interval'
 
-        this could likely end in a ratelimit, delay each query by 10-20 seconds
+        this could likely end in a rate limit, delay each query by 10-20 seconds
         """
         data_path = ['telesync', 'user_data']
         chat_path = ['telesync', 'chat_data']
@@ -705,27 +706,28 @@ class TelegramBot(telepot.aio.Bot):
                     await asyncio.sleep(random.randint(10, 20))
 
                 await asyncio.sleep(
-                    3600 * self.config('profile_update_intervall'))
+                    3600 * self.config('profile_update_interval'))
         except asyncio.CancelledError:
             return
         except:                                    # pylint: disable=bare-except
-            logger.exception('lowlevel error in profile updater')
+            logger.exception('low level error in profile updater')
 
     async def _message_loop(self):
         """long polling for updates and handle errors gracefully
 
         Raises:
-            telepot.exception.UnauthorizedError: API-token invalid
+            UnauthorizedError: API-token invalid
+            CancelledError: plugin unload in progress
         """
         def _log_http_error(delay, error):
             """log a custom error message for an error
 
             Args:
-                delay: float, previous delay between to requests
-                error: tuple, (Exception instance, status code, error message)
+                delay (float): previous delay between to requests
+                error (tuple): (Exception instance, status code, error message)
 
             Returns:
-                float, new delay between to requests
+                float: new delay between to requests
             """
             if error[1] >= 500:
                 delay = 30.
@@ -750,6 +752,9 @@ class TelegramBot(telepot.aio.Bot):
             Returns:
                 int: `0` in case the extracted message was handled
                     successful, otherwise the recent error count
+
+            Raises:
+                CancelledError: plugin unload in progress
             """
             message = None
             try:
@@ -807,7 +812,7 @@ class TelegramBot(telepot.aio.Bot):
                 delay += _log_http_error(delay,
                                          (err, err.error_code, err.description))
 
-            except Exception as err:              # pylint: disable=broad-except
+            except Exception:                     # pylint: disable=broad-except
                 logger.exception('unexpected error in message loop')
             finally:
                 self._receive_next_updates = 0

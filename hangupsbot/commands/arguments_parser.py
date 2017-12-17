@@ -2,7 +2,10 @@
 
 import re
 
-class ArgumentsParser(object):
+from hangupsbot.base_models import BotMixin, TrackingMixin
+
+
+class ArgumentsParser(BotMixin, TrackingMixin):
     """resolve `#` and `@` tagged arguments to `chat_id`s and `conversation_id`s
 
     * one_chat_id (also resolves #conv)
@@ -23,8 +26,6 @@ class ArgumentsParser(object):
       * @user@wxyz
     """
     def __init__(self):
-        self._bot = None
-        self._tracking = None
         self._preprocessors = {
             "inbuilt": {
                 r"^(#?[\w|]+[^#]\|)?@[\w]+[^@]$": self._one_chat_id,
@@ -33,26 +34,10 @@ class ArgumentsParser(object):
 
         }
 
-    def set_bot(self, bot):
-        """extended init
-
-        Args:
-            bot (HangupsBot): the running instance
-        """
-        self._bot = bot
-
-    def set_tracking(self, tracking):
-        """register the plugin tracking for commands
-
-        Args:
-            tracking (hangupsbot.plugins.Tracker): the current instance
-        """
-        self._tracking = tracking
-
     def register_preprocessor_group(self, name, preprocessors):
         name_lower = name.lower()
         self._preprocessors[name_lower] = preprocessors
-        self._tracking.register_command_argument_preprocessors_group(
+        self.tracking.register_command_argument_preprocessors_group(
             name_lower)
 
     def deregister_preprocessor_group(self, name):
@@ -60,20 +45,20 @@ class ArgumentsParser(object):
         self._preprocessors.pop(name_lower)
 
     def _one_chat_id(self, token, event, all_users=False):
-        subtokens = token.split("|", 1)
+        sub_tokens = token.split("|", 1)
 
-        if subtokens[0].startswith("#"):
+        if sub_tokens[0].startswith("#"):
             # probably convuser format - resolve conversation id first
-            subtokens[0] = self._one_conv_id(subtokens[0], event)
+            sub_tokens[0] = self._one_conv_id(sub_tokens[0], event)
 
-        text = subtokens[-1][1:]
+        text = sub_tokens[-1][1:]
 
         if text == "me":
             # current user chat_id
-            subtokens[-1] = event.user.id_.chat_id
+            sub_tokens[-1] = event.user.id_.chat_id
         else:
-            user_memory = self._bot.memory["user_data"]
-            chat_ids = (list(self._bot.conversations[event.conv_id]
+            user_memory = self.bot.memory["user_data"]
+            chat_ids = (list(self.bot.conversations[event.conv_id]
                              ["participants"])
                         if all_users else list(user_memory.keys()))
 
@@ -93,13 +78,13 @@ class ArgumentsParser(object):
                     matched_users[chat_id] = chat_id
 
             if len(matched_users) == 1:
-                subtokens[-1] = list(matched_users)[0]
+                sub_tokens[-1] = list(matched_users)[0]
             elif not matched_users:
                 if not all_users:
                     # redo the user search, expanded to all users
                     # since this is calling itself again,
-                    # completely overwrite subtokens
-                    subtokens = self._one_chat_id(
+                    # completely overwrite sub_tokens
+                    sub_tokens = self._one_chat_id(
                         token,
                         event,
                         all_users=True).split("|", 1)
@@ -108,7 +93,7 @@ class ArgumentsParser(object):
             else:
                 raise ValueError("{} returned more than one user".format(token))
 
-        return "|".join(subtokens)
+        return "|".join(sub_tokens)
 
     def _one_conv_id(self, token, event):
         subtokens = token.split("|", 1)
@@ -119,7 +104,7 @@ class ArgumentsParser(object):
             subtokens[0] = event.conv_id
         else:
             filter_ = "(type:GROUP)and(text:{})".format(text)
-            conv_list = self._bot.conversations.get(filter_)
+            conv_list = self.bot.conversations.get(filter_)
             if len(conv_list) == 1:
                 subtokens[0] = next(iter(conv_list))
             elif not conv_list:
@@ -142,10 +127,10 @@ class ArgumentsParser(object):
         all_groups = force_groups or all_groups
 
         _implicit = (bool(force_groups)
-                     or not self._bot.config.get_option(
+                     or not self.bot.config.get_option(
                          "commands.preprocessor.explicit"))
         _trigger = (force_trigger
-                    or self._bot.config.get_option(
+                    or self.bot.config.get_option(
                         "commands.preprocessor.trigger")
                     or "resolve").lower()
 
@@ -249,10 +234,10 @@ class ArgumentsParser(object):
             if skip_arg:
                 # never consume the trigger term
                 continue
-            for rname in [rname
-                          for rname in apply_resolvers
-                          if rname in all_groups]:
-                for pattern, callee in self._preprocessors[rname].items():
+            for r_name in [rname
+                           for rname in apply_resolvers
+                           if rname in all_groups]:
+                for pattern, callee in self._preprocessors[r_name].items():
                     if re.match(pattern, arg, flags=re.IGNORECASE):
                         _arg = callee(arg, event)
                         if _arg:

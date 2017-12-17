@@ -6,18 +6,18 @@ from urllib.parse import urlparse, parse_qs
 
 from aiohttp import web
 
+from hangupsbot.base_models import BotMixin
+
 logger = logging.getLogger(__name__)
 
 
-class AsyncRequestHandler:
-    bot = None
+class AsyncRequestHandler(BotMixin):
     _bot = None # ensure backward compatibility for legacy subclasses
 
     def __init__(self, *args):
+        # pylint:disable=unused-argument
         self.sinkname = self.__class__.__name__
-        if (args[0]):
-            self.bot = args[0]
-            self._bot = self.bot # backward-compatibility
+        self._bot = self.bot # backward-compatibility
 
     def addroutes(self, router):
         router.add_route("POST", "/{convid}", self.adapter_do_post)
@@ -51,6 +51,7 @@ class AsyncRequestHandler:
         if "echo" in payload:
             text = payload["echo"]
 
+        image_raw = None
         image_data = None
         image_filename = None
         if "image" in payload:
@@ -88,5 +89,5 @@ class AsyncRequestHandler:
         if not text and not image_id:
             raise ValueError("nothing to send")
 
-        results = await self.bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
+        await self.bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
         return "OK"

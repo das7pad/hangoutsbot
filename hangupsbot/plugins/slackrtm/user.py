@@ -21,7 +21,7 @@ class SlackUser(SyncUser):
         # slack specific username, may not be overwritten by `/bot setnickname`
         self.username = nickname or slackrtm.get_username(user_id, None)
 
-        name = name or slackrtm.get_realname(user_id, self.username)
+        name = name or slackrtm.get_real_name(user_id, self.username)
         if name == self.username:
             self.username = None
             if name is None:
@@ -35,7 +35,7 @@ class SlackUser(SyncUser):
 
         self.usr_id = user_id
         identifier = slackrtm.identifier + ':%s' % channel
-        super().__init__(slackrtm.bot, identifier=identifier,
+        super().__init__(identifier=identifier,
                          user_name=name, user_nick=self.username,
                          user_photo=photo, user_id=user_id, user_link=url,
                          user_is_self=(user_id == slackrtm.my_uid))

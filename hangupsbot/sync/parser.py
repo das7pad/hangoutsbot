@@ -133,7 +133,7 @@ MARKDOWN_UNESCAPE = re.compile(r'\\([%s])' % MARKDOWN_START_CHAR)
 class MessageParser(ChatMessageParser):
     """parser for markdown and html environments
 
-    unescapes markdown in parsed segments with .unescape_markdown
+    unescape markdown in parsed segments with .unescape_markdown
 
     Args:
         tokens: list of reparser.Token instances
@@ -149,10 +149,10 @@ class MessageParser(ChatMessageParser):
             """unescape markdown in the parsed segment
 
             Args:
-                segment: reparser.Segment instance
+                segment (reparser.Segment): formatting instance
 
             Returns:
-                the segment instance having text and link target unescaped
+                reparser.Segment: with text and link target unescaped
             """
             segment.text = self.unescape_markdown(segment.text)
             link_target = (self.unescape_markdown(segment.params['link_target'])
@@ -169,10 +169,10 @@ class MessageParser(ChatMessageParser):
         """unescape escaped markdown
 
         Args:
-            text: string, backslash escaped markdown
+            text (str): backslash escaped markdown
 
         Returns:
-            string, unescaped markdown
+            str: unescaped markdown
         """
         return MARKDOWN_UNESCAPE.sub(r'\1', text)
 
@@ -181,10 +181,10 @@ class MessageParser(ChatMessageParser):
         """escape markdown formatting
 
         Args:
-            text: string, markdown formatted text
+            text (str): markdown formatted text
 
         Returns:
-            string, backslash escaped markdown
+            str: backslash escaped markdown
         """
         return MARKDOWN_ESCAPE.sub(r'\\\1', text)
 
@@ -234,10 +234,10 @@ class MessageSegmentHangups(hangups.ChatMessageSegment):
         """parse a message to a sequence of MessageSegments
 
         Args:
-            text: str, text to parse
+            text (str): text to parse
 
         Returns:
-            a list of ChatMessageSegment instances
+            list[MessageSegmentHangups]: parsed formatting segments
         """
         return [cls(segment.text, **segment.params)
                 for segment in cls._parser.parse(text)]
@@ -249,7 +249,7 @@ class MessageSegmentInternal(MessageSegmentHangups):
     parses html and linebreaks only
 
     Args:
-        text: string, message part without formatting
+        text (str): message part without formatting
         kwargs: see MessageSegmentInternal
     """
     line_breaks = [Tokens.basic[1]]     # drop autolinking
@@ -263,7 +263,7 @@ class MessageSegment(MessageSegmentHangups):
     url-escapes markdown formatting found in the segment text
 
     Args:
-        text: string, message part without formatting
+        text (str): message part without formatting
         kwargs: see MessageSegmentInternal
     """
     def __init__(self, text, **kwargs):
@@ -278,10 +278,10 @@ class MessageSegment(MessageSegmentHangups):
          and subclass will be used to escape markdown and create new instances
 
         Args:
-            segments: list of MessageSegment instances
+            segments (list[MessageSegment]): the raw segments
 
         Returns:
-            new list of MessageSegments with escaped markdown
+            list[MessageSegment]: new segments with escaped markdown
         """
         # do not alter the original segments
         return [cls(seg.text,
@@ -298,13 +298,13 @@ def get_formatted(segments, raw_style, *, internal_source=False):
     """parse a text input and format the segments with a given style
 
     Args:
-        segments: list of ChatMessageSegments or a string
-        raw_style: string, target style key in .STYLE_MAPPING
+        segments (mixed): a list of ChatMessageSegments or a string
+        raw_style (mixed): target style key in .STYLE_MAPPING
             or dict, a custom style covering all formatting cases
-        internal_source: boolean, set to True to disable markdown escape
+        internal_source (bool): set to True to disable markdown escape
 
     Returns:
-        string, formated segment text
+        str: formatted segment text
 
     Raises:
         ValueError: invalid style provided
@@ -313,7 +313,7 @@ def get_formatted(segments, raw_style, *, internal_source=False):
         """verify the provided style
 
         Returns:
-            dict, a valid formatting style
+            dict: a valid formatting style
 
         Raises:
             ValueError: invalid style provided
@@ -360,7 +360,7 @@ def get_formatted(segments, raw_style, *, internal_source=False):
             continue
 
         if raw_style != 'internal':
-            # unescape the quoted special charater and escape as needed
+            # unescape the quoted special character and escape as needed
             text = urllib.parse.unquote(text)
             text = (html_module.escape(text, quote=False)
                     if style['escape_html'] else text)

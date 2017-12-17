@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class WebhookReceiver(AsyncRequestHandler):
-    _bot = None
 
     async def process_request(self, path, query_string, content):
         path = path.split("/")
@@ -33,8 +32,8 @@ class WebhookReceiver(AsyncRequestHandler):
 
 
     async def send_actionable_message(self, target, content):
-        if target in self._bot.conversations:
-            await self._bot.coro_send_message(target, content)
+        if target in self.bot.conversations:
+            await self.bot.coro_send_message(target, content)
         else:
             # attempt to send to a user id
-            await self._bot.coro_send_to_user(target, content)
+            await self.bot.coro_send_to_user(target, content)

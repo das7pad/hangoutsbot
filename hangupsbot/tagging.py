@@ -1,13 +1,14 @@
 import logging
 import re
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 
 
 logger = logging.getLogger(__name__)
 
 
-class Tags(object):
+class Tags(BotMixin):
     regex_allowed = r"a-z0-9._\-" # +command.deny_prefix
 
     wildcard = {"conversation": "*",
@@ -15,11 +16,9 @@ class Tags(object):
                 "group": "GROUP",
                 "one2one": "ONE_TO_ONE"}
 
-    bot = None
     indices = {}
 
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self.refresh_indices()
 
     def _load_from_memory(self, key, tag_type):
@@ -230,7 +229,7 @@ class Tags(object):
         if remove:
             for args in remove:
                 if self.remove(*args):
-                    records_removed = records_removed + 1
+                    records_removed += 1
 
         return records_removed
 
@@ -267,11 +266,11 @@ class Tags(object):
         """fetch active tags of user for given conversation or globally
 
         Args:
-            chat_id: string, G+ID
-            conv_id: string, a Hangout ID to fetch tags for a single conv
+            chat_id (str): G+ID
+            conv_id (str): a Hangout ID to fetch tags for a single conv
 
         Returns:
-            list,
+            list[str]: matching tags for user and conversation
         """
         if chat_id == "sync":
             return []

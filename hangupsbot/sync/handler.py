@@ -22,8 +22,9 @@ from .exceptions import (
     MissingArgument,
     UnRegisteredProfilesync,
     ProfilesyncAlreadyCompleted,
+    HandlerFailed,
 )
-from .event import FakeEvent, SyncEvent, SyncEventMembership, SyncReply
+from .event import SyncEvent, SyncEventMembership
 from .image import SyncImage
 from .parser import MessageSegment
 from .user import SyncUser
@@ -33,9 +34,6 @@ logger = logging.getLogger(__name__)
 
 # character used to generate tokens for the profile sync
 TOKEN_CHAR = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-CLASSES_TO_INIT = (FakeEvent, SyncEvent, SyncEventMembership,
-                   SyncImage, SyncReply)
 
 SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'user_kick', 'profilesync',
                    'allmessages_once', 'message_once', 'membership_once')
@@ -54,47 +52,42 @@ class SyncHandler(handlers.EventHandler):
     """router for messages and platform user request
 
     Args:
-        bot: HangupsBot instance
-        handlers_: handler.EventHandler instance, the base event handler
+        handlers_ (handler.EventHandler): the base event handler
     """
-    # forward the call to the main event handler, ignore attibute setting
+    # forward the call to the main event handler, ignore attribute setting
     bot_command = property(lambda self: self._bot_handlers.bot_command,
                            lambda self, value: None)
 
-    def __init__(self, bot, handlers_):
+    def __init__(self, handlers_):
         self._bot_handlers = handlers_
-        super().__init__(bot)
+        super().__init__()
 
         # add more handler categories
         for pluggable in SYNC_PLUGGABLES:
             self.pluggables[pluggable] = []
 
-        # set the bot class valiables
-        for obj in CLASSES_TO_INIT:
-            obj.bot = bot
-
-        bot.config.set_defaults(DEFAULT_CONFIG)
-        bot.memory.validate(DEFAULT_MEMORY)
+        self.bot.config.set_defaults(DEFAULT_CONFIG)
+        self.bot.memory.validate(DEFAULT_MEMORY)
 
         # image upload cache
-        image_timeout = min(bot.config[key] for key in
+        image_timeout = min(self.bot.config[key] for key in
                             ('sync_cache_timeout_photo',
                              'sync_cache_timeout_gif',
                              'sync_cache_timeout_video',
                              'sync_cache_timeout_sticker'))
-        image_dump_intervall = bot.config['sync_cache_dump_image']
-        image_dump = (image_dump_intervall, ['cache', 'image_upload_info'])
+        image_dump_interval = self.bot.config['sync_cache_dump_image']
+        image_dump = (image_dump_interval, ['cache', 'image_upload_info'])
         self._cache_image = Cache(image_timeout, name='Image Upload',
                                   dump_config=image_dump)
 
         # conv user cache
-        conv_user_timeout = bot.config['sync_cache_timeout_conv_user']
+        conv_user_timeout = self.bot.config['sync_cache_timeout_conv_user']
         self._cache_conv_user = Cache(conv_user_timeout, name='User Lists',
                                       increase_on_access=False)
 
         # sending queues
         self._cache_sending_queue = AsyncQueueCache(
-            'hangouts', bot.coro_send_message, bot=bot)
+            'hangouts', self.bot.coro_send_message)
 
         self.profilesync_cmds = {}
         self.profilesync_provider = {}
@@ -119,17 +112,18 @@ class SyncHandler(handlers.EventHandler):
               'allmessages_once'
 
         Args:
-            identifier: string, platform identifier to skip the event on receive
-            conv_id: string, target Conversation ID for the message
-            user: SyncUser instance of the sender
-            text: string or segment list, raw message from any platform
-            reply: SyncReply instance, reply wrapped in one object
-            title: string, chat title of source chat
-            edited: boolean, True if the message is an edited message
-            image: sync.SyncImage instance, already wrapped image info
-            context: dict, optional information about the message
-            previous_targets: set of strings, conversation identifiers
-            notified_users: set of strings, user chat ids
+            identifier (str): platform identifier to skip the event on receive
+            conv_id (str): target Conversation ID for the message
+            user (user.SyncUser): the sender
+            text (mixed): str or segment list, raw message from any platform
+            reply (event.SyncReply): reply wrapped in one object
+            title (str): chat title of source chat
+            edited (bool): True if the message is an edited message
+            image (sync.image.SyncImage): already wrapped image info
+            context (dict): optional information about the message
+            previous_targets (set[str]): conversation identifiers
+            notified_users (set[str]): object to track users that were notified
+                for the message content
         """
         # pylint:disable=too-many-locals
         logger.info('received a message from %s for %s', identifier, conv_id)
@@ -194,7 +188,7 @@ class SyncHandler(handlers.EventHandler):
                 'allmessages_once', self.bot, target_event, command,
                 _run_concurrent_=True))
 
-        if not sync_event.from_bot:
+        if not target_event.from_bot:
             await self._ignore_handler_suppressor(
                 self.run_pluggable_omnibus(
                     'message_once', self.bot, target_event, command,
@@ -221,17 +215,17 @@ class SyncHandler(handlers.EventHandler):
             - run the message through the sync handler 'membership_once'
 
         Args:
-            identifier: string, platform identifier to skip the event on receive
-            conv_id: string, target Conversation ID for the message
-            user: SyncUser instance of the changed user or inviter/remover
-            type_: int, 1: join, 2: leave
-            text: string or segment list, raw message from any platform,
+            identifier (str): platform identifier to skip the event on receive
+            conv_id (str): target Conversation ID for the message
+            user (user.SyncUser): the changed user or inviter/remover
+            type_ (int): 1: join, 2: leave
+            text (mixed): str or segment list, raw message from any platform,
                 by default, this text is not used for the membership event
-            title: string, chat title of source chat
-            participant_user: list or users, a user could be a hangups.user.User
-                like object or a string, representing a username or chat_id
-            previous_targets: set of strings, conversation identifiers
-            notified_users: set of strings, user chat ids
+            title (str): chat title of source chat
+            participant_user (mixed): see sync.event.SyncEventMembership
+            previous_targets (set[str]): conversation identifiers
+            notified_users (set[str]): object to track users that were notified
+                for the message content
 
         Raises:
             AssertionError: the given membership change type is not 1 or 2
@@ -290,12 +284,15 @@ class SyncHandler(handlers.EventHandler):
         """kick a platform user out of the synced chats
 
         Args:
-            user: SyncUser instance
-            conv_id: string, conversation identifier
+            user (sync.user.SyncUser): the user to kick
+            conv_id (str): conversation identifier
 
         Returns:
-            set, results from all platforms, expect the items None: ignored,
-                False: kick failed, True: kicked, 'whitelisted'
+            set[mixed]: results from all platforms, expect the items
+                None: ignored,
+                False: kick failed,
+                True: kicked,
+                'whitelisted': user is admin, bot
         """
         conv_ids = self.get_synced_conversations(conv_id=conv_id,
                                                  include_source_id=True)
@@ -313,13 +310,13 @@ class SyncHandler(handlers.EventHandler):
         """try to fetch a cached upload info or upload the image data to Google
 
         Args:
-            image_data: io.BytesIO instance, containing the raw image_data
-            image_file_name: string, including a valid image file extension
-            image_cache: int, time in sec for the image info to remain in cache
+            image_data (io.BytesIO): instance containing the raw image_data
+            image_filename (str): including a valid image file extension
+            image_cache (int): time in sec for the image info to remain in cache
 
         Returns:
-            a hangups.client.UploadedImage instance or None if the image upload
-             failed
+            mixed: a hangups.client.UploadedImage instance or None if the image
+                upload failed
         """
         image_raw = image_data.getvalue()
         image_hash = hashlib.md5(image_raw).hexdigest()
@@ -342,28 +339,29 @@ class SyncHandler(handlers.EventHandler):
             self._cache_image.add(image_hash, upload_info, image_cache)
             return upload_info
 
-    def get_sync_user(self, *, identifier=None, user=None, user_id=None,
+    @staticmethod
+    def get_sync_user(*, identifier=None, user=None, user_id=None,
                       user_name=None, user_link=None, user_photo=None,
                       user_nick=None, user_is_self=False):
         """get a SyncUser object
 
         Args:
-            identifier: string, source plugin name
-            user: hangups.user.User instance or string as fallback
-            user_id: string or hangups.user.UserID, G+ID, or platform id
-            user_name: string, Fullname
-            user_link: string, advaned identifier for cross platform sync
-            user_photo: string, url to the user's profile picture
-            user_nick: string, custom nickname
-            user_is_self: boolean, simulate the bot user is certain cases
+            identifier (str): source plugin name
+            user (mixed): hangups.user.User instance or string as fallback
+            user_id (mixed): string or hangups.user.UserID, G+ID, or platform id
+            user_name (str): Fullname
+            user_link (str): advanced identifier for cross platform sync
+            user_photo (str): url to the user's profile picture
+            user_nick (str): custom nickname
+            user_is_self (bool): simulate the bot user is certain cases
 
         Returns:
-            sync.user.SyncUser instance
+            sync.user.SyncUser: matching instance
         """
         if isinstance(user, SyncUser):
             return user
 
-        return SyncUser(self.bot, identifier=identifier, user=user,
+        return SyncUser(identifier=identifier, user=user,
                         user_id=user_id, user_name=user_name,
                         user_link=user_link, user_photo=user_photo,
                         user_nick=user_nick, user_is_self=user_is_self)
@@ -380,18 +378,18 @@ class SyncHandler(handlers.EventHandler):
         - url, opt: auth with header and cookies, type_, filename, size, cache
 
         Args:
-            image: sync.image.SyncImage instance
-            data: file-like object, containing the raw image_data
-            cache: int, time in sec for the upload info to remain in cache
-            filename: string, including a valid image file extension
-            type_: string, 'photo', 'sticker', 'gif', 'video'
-            size: tuple of int, width and height in px
-            url: string, public url of the image
-            cookies: dict, custom cookies to authenticate a download
-            headers: dict, custom header to authenticate a download
+            image (sync.image.SyncImage): instance to validate
+            data (io.BytesIO): instance containing the raw image_data
+            cache (int): time in sec for the upload info to remain in cache
+            filename (str): including a valid image file extension
+            type_ (str): 'photo', 'sticker', 'gif', 'video'
+            size (tuple): tuple of int, width and height in px
+            url (str): public url of the image
+            cookies (dict): custom cookies to authenticate a download
+            headers (dict): custom header to authenticate a download
 
         Returns:
-            a SyncImage or None if no valid Image could be created
+            mixed: a SyncImage or None if no valid Image could be created
         """
         if isinstance(image, SyncImage):
             return image
@@ -404,10 +402,9 @@ class SyncHandler(handlers.EventHandler):
                              type_=type_, size=size, url=url, cookies=cookies,
                              headers=headers)
         except (MissingArgument, ValueError):
-            data = len(data) if data else None
+            data = 'bytes: %s' % len(data) if isinstance(data, bytes) else data
             logger.exception('unable to init a SyncImage, locals %s', locals())
             return None
-
 
     def get_synced_conversations(self, *, conv_id, return_flat=True,
                                  caller=None, unique_conv_ids=True,
@@ -415,15 +412,15 @@ class SyncHandler(handlers.EventHandler):
         """get all conversations a message would/should reach on sending
 
         Args:
-            conv_id: string, conversation identifier
-            return_flat: boolean, change the output behaviour
-            caller: string, identifier to allow recursive calls
-            unique_conv_ids: boolean, filter duplicates, toggle also return_flat
-            include_source_id: boolean, toggle to add the input id to the output
+            conv_id (str): conversation identifier
+            return_flat (bool): change the output behaviour
+            caller (str): identifier to allow recursive calls
+            unique_conv_ids (bool): filter duplicates, toggle also return_flat
+            include_source_id (bool): toggle to add the input id to the output
 
         Returns:
-            If return_flat: list of conv_ids, otherwise a dict with keys:
-            handler and values lists of conv_ids
+            mixed: If return_flat: list of conv_ids, otherwise a dict with keys:
+                handler and values lists of conv_ids
         """
         conv_ids = self._get_handler_results('conv_sync', conv_id, caller,
                                              return_flat=False)
@@ -451,10 +448,10 @@ class SyncHandler(handlers.EventHandler):
         """get all attending users of a conversation
 
         Args:
-            conv_id: string, a unique conversation identifier
-            profilesync_only: boolean, set to True to get only G+ user
-            return_flat: boolean, change the output behaviour
-            unique_users: boolean, filter duplicates by user_link and fullname
+            conv_id (str): a unique conversation identifier
+            profilesync_only (bool): set to True to get only G+ user
+            return_flat (bool): change the output behaviour
+            unique_users (bool): filter duplicates by user_link and fullname
                 only allowed if return_flat is True
         Returns:
             If return_flat: list of sync.user.SyncUser, otherwise a dict with
@@ -492,8 +489,8 @@ class SyncHandler(handlers.EventHandler):
         if not unique_users:
             return list(flat_users)
         # use a dict with keys fullname, chat_id to filter the user
-        # using the userlink as key would catch platform specific links that
-        #  would result in two users for a single G+ User
+        # (using the users link as key could catch platform specific links that
+        #  would result in two users for a single G+ User in the final list)
         filtered_users = list(
             {(user.full_name,
               user.id_.chat_id): user for user in flat_users}.values())
@@ -506,11 +503,12 @@ class SyncHandler(handlers.EventHandler):
         """find a user in a single or all conversations
 
         example:
-        >> loop.run_until_complate(sync_handler.find_user('NAME'))
+        >> loop.run_until_complete(sync_handler.find_user('NAME'))
         {'hangouts': [<SyncUser ...>,]}
 
         Args:
             term (str): search term: name, platform, nickname, chat_id
+            conv_id (str): optional, a unique conversation identifier
 
         Returns:
             dict: keys are platforms, values are lists of `user.SyncUser`s
@@ -534,8 +532,9 @@ class SyncHandler(handlers.EventHandler):
         """register a handler for a single type
 
         Args:
-            function: callable, the handling function/coro
-            pluggable: string, a pluggable of .pluggables
+            function (callable): the handling function/coroutine
+            pluggable (str): a pluggable of .pluggables
+            priority (int): ignored by the SyncHandler
 
         Raises:
             KeyError: unknown pluggable specified
@@ -558,9 +557,9 @@ class SyncHandler(handlers.EventHandler):
         variable-names may not differ
 
         Args:
-            platform: string, identifier for the platform
-            platform_cmd: string, command to start the sync from the platform
-            label: string, set a custom display label for this platform
+            platform (str): identifier for the platform
+            cmd (str): command to start the sync from the platform
+            label (str): set a custom display label for this platform
         """
         path = ['profilesync', platform]
         structure = {'ho2': {}, '2ho': {},
@@ -585,11 +584,14 @@ class SyncHandler(handlers.EventHandler):
         see doc of `.register_profile_sync` for details
 
         Args:
-            platform: string, identifier for the platform
-            user_id: string, user who started the sync on the given platform
+            platform (str): identifier for the platform
+            user_id (str): user who started the sync on the given platform
 
         Returns:
-            string, token for the running sync
+            string: token for the running sync
+
+        Raises:
+            UnRegisteredProfilesync: called before registration of the platform
         """
         if platform not in self.profilesync_cmds:
             raise UnRegisteredProfilesync(
@@ -618,7 +620,7 @@ class SyncHandler(handlers.EventHandler):
         Args:
             platform (str): remote platform identifier
             chat_id (str): G+ user id
-            remote_user (str): user id at the fiven platform
+            remote_user (str): user id at the given platform
             split_1on1s (bool): toggle a sync of the private chats with the bot
 
         Raises:
@@ -662,7 +664,7 @@ class SyncHandler(handlers.EventHandler):
         """remove previously registered handlers and profilesyncs
 
         Args:
-            module_path: string, identifier for a loaded module
+            module_path (str): identifier for a loaded module
         """
         # deregister the profilesyncs
         for platform, data in self.profilesync_cmds.copy().items():
@@ -720,9 +722,9 @@ class SyncHandler(handlers.EventHandler):
               keep the sequence of messages
 
         Args:
-            bot: HangupsBot instance
+            bot (hangupsbot.HangupsBot): the running instance
             broadcast_targets: list of tuple, (conv_id, hangups.ChatMessage)
-            context: dict, additional info about the message/conv
+            context (dict): additional info about the message/conv
         """
         if context.get('syncroom_no_repeat'):
             # sync related message, already handled
@@ -734,7 +736,7 @@ class SyncHandler(handlers.EventHandler):
             conv_id, text, image_id = message
             title = bot.conversations.get_name(conv_id, '')
             if image_id is None:
-                previous_targets = targets - set(('hangouts:' + conv_id,))
+                previous_targets = targets - {'hangouts:' + conv_id}
                 # skip direct sending and add it to the message queue instead
                 broadcast_targets.remove(message)
             else:
@@ -752,7 +754,7 @@ class SyncHandler(handlers.EventHandler):
 
         Args:
             dummy: HangupsBot instance
-            event: hangups Event instance
+            event (event.ConversationEvent): a message wrapper
         """
         segments = MessageSegment.replace_markdown(event.conv_event.segments)
         if event.syncroom_no_repeat:
@@ -788,7 +790,7 @@ class SyncHandler(handlers.EventHandler):
 
         Args:
             dummy: HangupsBot instance
-            event: hangups Event instance
+            event (event.ConversationEvent): a message wrapper
         """
         if isinstance(event, SyncEventMembership):
             return
@@ -808,19 +810,19 @@ class SyncHandler(handlers.EventHandler):
         """get all hangouts user for this conv_id
 
         Args:
-            bot: HangupsBot instance
-            conv_id: string, conversation identifier
-            dummy: boolean, unused
+            bot (hangupsbot.HangupsBot): the running instance
+            conv_id (str): conversation identifier
+            dummy (bool): unused
 
         Returns:
-            list of sync.user.SyncUser
+            list[sync.user.SyncUser]: users participating in the conversation
         """
         if conv_id not in bot.conversations:
             return []
         chat_ids = bot.conversations[conv_id]['participants']
         users = []
         for chat_id in chat_ids:
-            users.append(SyncUser(bot, identifier='hangouts:' + conv_id,
+            users.append(SyncUser(identifier='hangouts:' + conv_id,
                                   user_id=chat_id))
         return users
 
@@ -828,9 +830,9 @@ class SyncHandler(handlers.EventHandler):
         """kick a user from a given conversation
 
         Args:
-            bot: HangupsBot instance
-            conv_id: string, conversation identifier
-            user: SyncUser instance
+            bot (hangupsbot.HangupsBot): the running instance
+            conv_id (str): conversation identifier
+            user (sync.user.SyncUser): the user to be kicked
 
         Returns:
             None: ignored, False: kick failed, True: kicked or 'whitelisted'
@@ -868,14 +870,14 @@ class SyncHandler(handlers.EventHandler):
 
         Args:
             event: event.SyncEvent instance
-            original_conv_id: string, original target conversation of the event
+            original_conv_id (str): original target conversation of the event
         """
         ho_tag = 'hangouts:' + event.conv_id
         if ho_tag in event.previous_targets:
             return
         event.previous_targets.add(ho_tag)
 
-        text = event.get_formated_text(names_text_only=True)
+        text = event.get_formatted_text(names_text_only=True)
         if text is None:
             return
 
@@ -897,11 +899,11 @@ class SyncHandler(handlers.EventHandler):
         """set defaults and ensure types
 
         Args:
-            identifier: string, platform identifier to skip the event on receive
-            conv_id: string, target Conversation ID for the message
-            user: SyncUser instance of the sender
-            previous_targets: set of strings, conversation identifiers
-            notified_users: set of strings, user chat ids
+            identifier (str): platform identifier to skip the event on receive
+            conv_id (str): target Conversation ID for the message
+            user (sync.user.SyncUser): instance of the sender
+            previous_targets (set[str]): conversation identifiers
+            notified_users (set[str]): user chat ids
 
         Returns:
             tuple: user, targets, previous_targets, notified_users
@@ -913,10 +915,10 @@ class SyncHandler(handlers.EventHandler):
 
         previous_targets = (previous_targets
                             if isinstance(previous_targets, set)
-                            else set((identifier,)))
+                            else {identifier})
 
         notified_users = (notified_users if isinstance(notified_users, set)
-                          else set((user.id_.chat_id,)))
+                          else {user.id_.chat_id})
 
         return user, targets, previous_targets, notified_users
 
@@ -924,8 +926,9 @@ class SyncHandler(handlers.EventHandler):
         """async get the results of each handler of the given pluggable
 
         Args:
-            pluggable: string, key in .pluggables
-            return_flat: boolean, get the results as one iterable
+            args (mixed): depends on the pluggable
+            pluggable (str): key in .pluggables
+            return_flat (bool): get the results as one iterable
 
         Returns:
             if return_flat is True:
@@ -936,21 +939,24 @@ class SyncHandler(handlers.EventHandler):
             """run a handler with provided arguments and log any exception
 
             Args:
-                handler: coroutine function
+                handler (coroutine): coroutine function
+
+            Returns:
+                mixed: depends on the pluggable
 
             Raises:
-                AssertionError: any exception was raised inside the handler
+                HandlerFailed: any exception was raised inside the handler
             """
             try:
                 result = handler(self.bot, *args)
                 if asyncio.iscoroutinefunction(handler):
                     return await result
                 return result
-            except:                                # pylint: disable=bare-except
+            except Exception:                     # pylint: disable=broad-except
                 logger.exception('%s: %s with args=%s',
                                  pluggable, handler.__name__,
                                  str([str(arg) for arg in args]))
-                raise AssertionError()
+                raise HandlerFailed()
 
         handlers_ = self.pluggables[pluggable].copy()
         results_unmapped = await asyncio.gather(*[_run(handler[0])
@@ -962,7 +968,7 @@ class SyncHandler(handlers.EventHandler):
             meta_data = handler[2]
             key = meta_data.get('identifier') or meta_data.get('module.path')
             results[key] = results_unmapped.pop(0)
-            if isinstance(results[key], Exception):
+            if isinstance(results[key], HandlerFailed):
                 results.pop(key)
 
         if return_flat is True:
@@ -973,30 +979,34 @@ class SyncHandler(handlers.EventHandler):
         """get the results of each registered handler for the given pluggable
 
         Args:
-            pluggable: string, key in .pluggables
-            return_flat: boolean, get the results as one iterable
+            args (mixed): depends on the pluggable
+            pluggable (str): key in .pluggables
+            return_flat (bool): get the results as one iterable
 
         Returns:
-            if return_flat is True:
+            mixed: if return_flat is True:
                 a dict, plugins names as key, values are the results
-            otherwise: tuple with all results
+                otherwise: tuple with all results
         """
         def _run(handler):
             """run a handler with provided arguments and log any exception
 
             Args:
-                handler: coroutine function
+                handler (callable): non-coroutine function
+
+            Returns:
+                mixed: depends on the pluggable
 
             Raises:
-                AssertionError: any exception was raised inside the handler
+                HandlerFailed: any exception was raised inside the handler
             """
             try:
                 return handler(self.bot, *args)
-            except:                                # pylint: disable=bare-except
+            except Exception:                     # pylint: disable=broad-except
                 logger.exception('%s: %s with args=%s',
                                  pluggable, handler.__name__,
                                  str([str(arg) for arg in args]))
-                raise AssertionError()
+                raise HandlerFailed()
 
         results = {}
         for handler in self.pluggables[pluggable].copy():
@@ -1004,7 +1014,7 @@ class SyncHandler(handlers.EventHandler):
             key = meta.get('identifier') or meta.get('module.path')
             try:
                 results[key] = _run(function)
-            except AssertionError:
+            except HandlerFailed:
                 pass
         if return_flat is True:
             return tuple(itertools.chain.from_iterable(results.values()))

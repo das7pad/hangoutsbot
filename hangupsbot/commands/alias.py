@@ -22,7 +22,7 @@ def _initialise(bot):
     """register the commands and help, shareds on the aliases
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     bot.memory.validate({'hoalias': {}})
 
@@ -37,11 +37,11 @@ def get_alias(bot, conv_id):
     """get the alias for the given conversation
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, Hangouts conversation identifier
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): Hangouts conversation identifier
 
     Returns:
-        string, the alias for the conversation or None if no alias is set
+        str: the alias for the conversation or None if no alias is set
     """
     for alias, conv_id_ in bot.memory['hoalias'].items():
         if conv_id_ == conv_id:
@@ -52,11 +52,11 @@ def get_convid(bot, alias):
     """get the conversation of an alias
 
     Args:
-        bot: HangupsBot instance
-        alias: string, conversation alias
+        bot (hangupsbot.HangupsBot): the running instance
+        alias (str): conversation alias
 
     Returns:
-        string, the conversation identifier of the alias or None if no
+        str: the conversation identifier of the alias or None if no
             conversation was labeled with the alias
     """
     if alias in bot.memory['hoalias']:
@@ -67,52 +67,58 @@ def sethoalias(bot, event, *args):
     """set the alias for the current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, a tuple of strings, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words passed to the command
 
     Returns:
-        string, the result wrapped in a text
+        str: the result wrapped in a text
+
+    Raises:
+        Help: invalid query specified
     """
     if (len(args) not in (1, 2) or
             len(args) == 2 and args[1] not in bot.conversations):
         raise Help(_('Check Arguments'))
 
     alias_list = bot.memory['hoalias']
-    newalias = args[0].lower()
+    new_alias = args[0].lower()
     conv_id = event.conv_id if len(args) == 1 else args[1]
 
-    oldalias = get_alias(bot, conv_id)
-    if bot.memory.exists(['hoalias', oldalias]):
-        alias_list.pop(oldalias)
+    old_alias = get_alias(bot, conv_id)
+    if bot.memory.exists(['hoalias', old_alias]):
+        alias_list.pop(old_alias)
 
-    if newalias != 'none':
-        alias_list[newalias] = conv_id
+    if new_alias != 'none':
+        alias_list[new_alias] = conv_id
     bot.memory.save()
 
-    if newalias == 'none':
+    if new_alias == 'none':
         if conv_id == event.conv_id:
             return _('<i>HO alias deleted</i>')
         return _('<i>HO alias for</i>  {conv_id} <i>deleted</i>').format(
             conv_id=conv_id)
 
     elif conv_id == event.conv_id:
-        return _('<i>HO alias set to</i>  <b>{newalias}</b>').format(
-            newalias=newalias)
+        return _('<i>HO alias set to</i>  <b>{new_alias}</b>').format(
+            new_alias=new_alias)
 
     return _('<i>HO alias for</i>  {conv_id} <i>is set to</i>  <b>'
-             '{newalias}</b>').format(conv_id=conv_id, newalias=newalias)
+             '{new_alias}</b>').format(conv_id=conv_id, new_alias=new_alias)
 
 def gethoalias(bot, event, *args):
     """get the alias for the current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, a tuple of strings, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words passed to the command
 
     Returns:
-        string, the result wrapped in a text or None if the event got redirected
+        str: the result wrapped in a text or None if the event got redirected
+
+    Raises:
+        Help: invalid query specified
     """
     if len(args) > 1:
         raise Help(_('Too many arguments!'))

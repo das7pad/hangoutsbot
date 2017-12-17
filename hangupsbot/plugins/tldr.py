@@ -26,7 +26,7 @@ HELP = {
         '   replace the specified entry with the new <text>\n'
         '- {bot_cmd} tldr clear <number>\n'
         '   clear specified numbered entry\n'
-        '   <i>specialcase: {bot_cmd} tldr clear all\n'
+        '   <i>special case: {bot_cmd} tldr clear all\n'
         '     clear all entries</i>')
 }
 
@@ -104,12 +104,19 @@ async def tldr(bot, event, *args):
 
 
 def tldr_shared(bot, args):
-    """
-    Shares tldr functionality with other plugins
-    :param bot: hangouts bot
-    :param args: a dictionary which holds arguments.
-    Must contain 'params' (tldr command parameters) and 'conv_id' (Hangouts conv_id)
-    :return:
+    """Shares tldr functionality with other plugins
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        args (dict): a dictionary which holds arguments.
+            Must contain 'params' (tldr command parameters)
+            and 'conv_id' (Hangouts conv_id)
+
+    Returns:
+        str: a status message with the tldr of the conversation
+
+    Raises:
+        Help: invalid arguments specified
     """
     if not isinstance(args, dict):
         raise Help("args must be a dictionary")
@@ -231,6 +238,8 @@ def tldr_base(bot, conv_id, parameters):
             message = _('<em>{}</em> added to TL;DR. Count: {}').format(text, len(conv_tldr))
 
             return message, display
+
+    return '', 0
 
 
 def _time_ago(timestamp):

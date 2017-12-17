@@ -73,6 +73,7 @@ async def urbandict(dummy0, dummy1, *args):
     else:
         url = "http://www.urbandictionary.com/define.php?term=" + urlquote(term)
 
+    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:

@@ -5,23 +5,20 @@ import time
 import hangups
 from hangups import hangouts_pb2
 
+from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.parser import MessageSegmentHangups
 
 logger = logging.getLogger(__name__)
 
 
-class HangupsConversation(hangups.conversation.Conversation):
+class HangupsConversation(hangups.conversation.Conversation, BotMixin):
     """Conversation with fallback to permamem
 
     Args:
         see `hangups.conversation.Conversation`
     """
-    bot = None
-
     @classmethod
-    def from_permamem(cls, conv_id):
-        bot = cls.bot
-
+    def from_permamem(cls, bot, conv_id):
         # pylint:disable=protected-access
         client = bot._client
         user_list = bot._user_list
@@ -114,10 +111,10 @@ class HangupsConversation(hangups.conversation.Conversation):
 
     @property
     def name(self):
-        """get the custom title or gernerate one from participant names
+        """get the custom title or generate one from participant names
 
         Returns:
-            string
+            str: a conversation title
         """
         return self.bot.conversations.get_name(self)
 
@@ -138,12 +135,12 @@ class HangupsConversation(hangups.conversation.Conversation):
         """send a message to Hangouts
 
         Args:
-            message: string, list of hangups.ChatMessageSegment or None,
+            message (str): list of hangups.ChatMessageSegment or None,
                 the text part of the message which can be empty
             image_id: string or integer, the upload id of an image,
-                aquire one from ._client.upload_image(...)
-            context: dict, additional infomation about the message,
-                including 'reprocessor' or chatbridge entrys
+                acquire one from ._client.upload_image(...)
+            context (dict): additional information about the message,
+                including 'reprocessor' or chatbridge entries
 
         Raises:
             TypeError: invalid message text provided
@@ -159,7 +156,7 @@ class HangupsConversation(hangups.conversation.Conversation):
 
         elif ("parser" in context and context["parser"] is False and
               isinstance(message, str)):
-            # pre-formated string
+            # pre-formatted string
             segments = [hangups.ChatMessageSegment(message)]
 
         elif isinstance(message, str):
@@ -218,7 +215,7 @@ class HangupsConversation(hangups.conversation.Conversation):
                          repr(err), self.id_, serialised_segments, image_id)
 
 
-class HangupsConversationList(hangups.conversation.ConversationList):
+class HangupsConversationList(hangups.conversation.ConversationList, BotMixin):
     conv_cls = HangupsConversation
 
     def get(self, conv_id):
@@ -233,7 +230,7 @@ class HangupsConversationList(hangups.conversation.ConversationList):
         if conv_id in self._conv_dict:
             return self._conv_dict[conv_id]
 
-        conv = self.conv_cls.from_permamem(conv_id)
+        conv = self.conv_cls.from_permamem(self.bot, conv_id)
         self._conv_dict[conv_id] = conv
         return conv
 

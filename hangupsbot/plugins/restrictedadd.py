@@ -10,7 +10,7 @@ from hangupsbot.commands import Help
 logger = logging.getLogger(__name__)
 
 
-class _InternalVars():
+class _InternalVars:
     def __init__(self):
         self.last_verified = {}
 
@@ -40,8 +40,6 @@ def _initialise():
 
 
 def _botkeeper_list(bot, conv_id):
-    botkeepers = []
-
     # users can be tagged as botkeeper
     tagged_botkeeper = list(bot.tags.userlist(conv_id, "botkeeper").keys())
 
@@ -58,7 +56,7 @@ def _botkeeper_list(bot, conv_id):
 
     botkeepers = tagged_botkeeper + admins_list + allowbotadd_ids
 
-    botkeepers = list(set(botkeepers) - set([bot.user_self()["chat_id"]]))
+    botkeepers = list(set(botkeepers) - {bot.user_self()["chat_id"]})
 
     return botkeepers
 

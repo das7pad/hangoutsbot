@@ -16,19 +16,18 @@ class User(SyncUser):
     """init a user base on a telegram user object in a message object
 
     Args:
-        tg_bot: TelegramBot instance
-        msg: Message instance or message dict
-        chat_action: target to pick user from, is key in msg
-        gpluslink: boolean, set to True to get G+links instead of t.me links
+        tg_bot (core.TelegramBot): the running instance
+        msg (message.Message): a message wrapper or message dict
+        chat_action (str): target to pick user from, is key in msg
+        gpluslink (bool): set to True to get G+links instead of t.me links
     """
     # Fallback for Telegram-channel with redacted publishers
     FALLBACK = {'id': 0, 'first_name': '~'}
-    __slots__ = ('bot', 'tg_bot', 'usr_id', 'full_name', 'username',
+    __slots__ = ('tg_bot', 'usr_id', 'full_name', 'username',
                  'photo_url', 'is_self')
 
     def __init__(self, tg_bot, msg, chat_action='from', gpluslink=False):
         self.tg_bot = tg_bot
-        self.bot = tg_bot.bot
         if chat_action not in msg:
             msg[chat_action] = self.FALLBACK
 
@@ -48,7 +47,7 @@ class User(SyncUser):
         user_link = self.get_user_link() if not gpluslink else None
 
         identifier = 'telesync:' + str(msg['chat']['id'])
-        super().__init__(self.bot, identifier=identifier, user_id=self.usr_id,
+        super().__init__(identifier=identifier, user_id=self.usr_id,
                          user_name=self.full_name, user_link=user_link,
                          user_nick=self.username)
 
@@ -68,7 +67,7 @@ class User(SyncUser):
         """create a short link with the users username
 
         Returns:
-            string, link to user or None
+            str: link to user or None
         """
         if self.username is None:
             return None
@@ -78,7 +77,7 @@ class User(SyncUser):
         """use the cached user picture or upload a new one
 
         Args:
-            use_cache: boolean, use a cached image and fetch only on cache miss
+            use_cache (bool): use a cached image and fetch only on cache miss
         """
         base_path = ['telesync', 'user_data', self.usr_id, 'picture']
 
@@ -94,7 +93,7 @@ class User(SyncUser):
             photos = raw['photos'][0]
         except (AssertionError, IndexError, KeyError):
             # AssertionError: do not fetch pictures for the fallback user
-            # IndexError or KeyError: the user has no profilepicture
+            # IndexError or KeyError: the user has no profile picture
             return
         except telepot.exception.TelegramError as err:
             logger.debug('no profile picture available for %s\nReason: %s',
