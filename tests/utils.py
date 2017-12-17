@@ -154,10 +154,12 @@ def build_user_conversation_list_base():
             hangouts_pb2.ConversationState(conversation=conversation,
                                            event=()))
 
-    return dict(self_entity=self_entity,
-                entities=users,
-                conv_parts=()), dict(conv_states=conv_states,
-                                     sync_timestamp=DEFAULT_TIMESTAMP)
+    return (dict(self_entity=self_entity,
+                 entities=users,
+                 conv_parts=()),
+            dict(conv_states=conv_states,
+                 sync_timestamp=hangups.parsers.from_timestamp(
+                     DEFAULT_TIMESTAMP)))
 
 async def run_cmd(bot, event):
     kwargs = dict(__return_result__=True, raise_exceptions=True)
