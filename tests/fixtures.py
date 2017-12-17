@@ -170,16 +170,13 @@ class LocalHangupsBot(hangupsbot.core.HangupsBot):
         self.memory.defaults = {}
 
         # patch .run()
-        hangupsbot.plugins.tracking.set_bot(self)
-        hangupsbot.commands.command.set_bot(self)
         self._client = hangups.Client({'SAPISID': 'IS_REQUIRED'})
 
         # patch ._on_connect()
         self.shared = {}
-        self.tags = hangupsbot.tagging.Tags(self)
-        self._handlers = hangupsbot.handlers.EventHandler(self)
-        hangupsbot.handlers.handler.set_bot(self)
-        self.sync = hangupsbot.sync.handler.SyncHandler(self, self._handlers)
+        self.tags = hangupsbot.tagging.Tags()
+        self._handlers = hangupsbot.handlers.EventHandler()
+        self.sync = hangupsbot.sync.handler.SyncHandler(self._handlers)
         self._user_list = hangups.UserList(self._client, **USER_LIST_KWARGS)
         self._conv_list = HangupsConversationList(
             self._client, user_list=self._user_list, **CONV_LIST_KWARGS)

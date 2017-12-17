@@ -11,12 +11,12 @@ from tests import simple_conv_list
 
 def test_bot(bot):
     assert isinstance(bot, core.HangupsBot)
+
+    # check mixins
     assert plugins.tracking.bot is bot
-    assert commands.command.bot is bot
-    assert handlers.handler.bot is bot
-    assert hangupsbot.event.GenericEvent.bot is bot
-    assert all(conv_id in bot.conversations for conv_id in simple_conv_list)
     assert plugins.tracking is commands.command.tracking
+
+    assert all(conv_id in bot.conversations for conv_id in simple_conv_list)
 
 def test_event(event):
     assert isinstance(event, hangupsbot.event.ConversationEvent)
