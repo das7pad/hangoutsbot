@@ -433,7 +433,7 @@ class SyncImage(BotMixin):
                                    FORMAT_MAPPING[filename.rsplit('.', 1)[-1]])
 
             except (OSError, IOError, KeyError, AttributeError):
-                logger.exception('failed to ' + message, filename)
+                logger.exception('failed to %s', message % filename)
                 return data
 
             return new_image_data

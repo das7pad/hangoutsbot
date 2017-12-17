@@ -438,7 +438,8 @@ class SyncEventMembership(SyncEvent):
 
         if type_ not in (1, 2):
             raise MissingArgument(
-                'membership change types: 1 (join) or 2 (leave), got %s', type_)
+                'membership change types: 1 (join) or 2 (leave), got %s'
+                % type_)
 
         # build the base SyncEvent
         super().__init__(identifier=identifier, conv_id=conv_id, user=user,
