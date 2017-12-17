@@ -26,12 +26,12 @@ _GLOBAL_KEYWORDS = {}
 MENTION_TEMPLATE = (
     '<b>{name}</b> mentioned "<b>%s</b>" in <i>%s</i> :\n{edited}{text}')
 
-IGNORED_COMMANDS = set((
+IGNORED_COMMANDS = {
     'subscribe',
     'unsubscribe',
     'global_subscribe',
     'global_unsubscribe',
-))
+}
 
 HELP = {
     'subscribe': _('allow users to subscribe to phrases, only one input at a '
@@ -69,7 +69,7 @@ def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
     plugins.register_sync_handler(_handle_keyword, 'message')
     plugins.register_sync_handler(_handle_once, 'message_once')
@@ -90,7 +90,7 @@ def _hide_from_subscribe(item):
     """register a command to be hidden from subscribes on execute
 
     Args:
-        item: string or tuple or list, a single or multiple commands
+        item (mixed): str, tuple or list, a single or multiple commands
     """
     if isinstance(item, str):
         IGNORED_COMMANDS.add(item)
@@ -119,22 +119,23 @@ def _populate_keywords(bot):
     """Pull the keywords from memory
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
     """
-    for userchatid in bot.memory.get_option("user_data"):
-        userkeywords = bot.user_memory_get(userchatid, 'keywords')
-        if userkeywords:
-            _KEYWORDS[userchatid] = re.compile(r'|'.join(userkeywords))
+    for user_chat_id in bot.memory.get_option("user_data"):
+        user_keywords = bot.user_memory_get(user_chat_id, 'keywords')
+        if user_keywords:
+            _KEYWORDS[user_chat_id] = re.compile(r'|'.join(user_keywords))
     _GLOBAL_KEYWORDS.update(bot.memory['hosubscribe'])
 
 def _is_ignored_command(event):
     """check whether the event runs a command that should not trigger a mention
 
     Args:
-        event: sync.event.SyncEvent instance
+        event (sync.event.SyncEvent): message content wrapper
 
     Returns:
-        boolean
+        bool: True if a bot prefix and ignored command name were specified,
+            otherwise False
     """
     args = event.text.split()
     if len(args) < 2:
@@ -175,8 +176,8 @@ def _handle_once(bot, event):
     """scan the text of an event for subscribed keywords and notify the targets
 
     Args:
-        bot: HangupsBot instance
-        event: sync.event.SyncEvent instance
+        bot (hangupsbot.HangupsBot): the running instance
+        event (sync.event.SyncEvent): message content wrapper
     """
     # ignore marked HOs
     if any(bot.get_config_suboption(conv_id, 'ignore_hosubscribe')
@@ -221,9 +222,9 @@ async def _send_notification(bot, event, matches, user):
     """Alert a user that a keyword that they subscribed to has been used
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
         event: sync.event.SyncEvent instance
-        matches: list of strings, keywords that were found in the message
+        matches (set[str]): keywords that were found in the message
         user: sync.user.SyncUser instance, user who subscribe to the phrase
     """
     logger.info("keywords %s in '%s' (%s)",
@@ -247,14 +248,14 @@ async def _send_notification(bot, event, matches, user):
 
     phrases = '</b>", "<b>'.join(matches)
     template = MENTION_TEMPLATE % (phrases, event.display_title)
-    raw_text = event.get_formated_text(template='{text}', style='internal')
+    raw_text = event.get_formatted_text(template='{text}', style='internal')
 
     highlighted = raw_text
     for phrase in matches:
         highlighted = highlighted.replace(phrase, '<b>%s</b>' % phrase)
 
-    text = event.get_formated_text(template=template, names_text_only=True,
-                                   text=highlighted)
+    text = event.get_formatted_text(template=template, names_text_only=True,
+                                    text=highlighted)
 
     await bot.coro_send_message(conv_1on1, text)
     logger.info("%s (%s) alerted via 1on1 (%s)",
@@ -291,15 +292,18 @@ async def subscribe(bot, event, *args):
     """allow users to subscribe to phrases, only one input at a time
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        *args: tuple of strings, additional words as the keyword to subscribe
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the keyword to subscribe
+
+    Returns:
+        str: a status message
     """
     keyword = ' '.join(args).lower()
     regex = _escape_keyword(keyword)
 
     chat_id = event.user_id.chat_id
-    userkeywords = bot.user_memory_get(chat_id, 'keywords')
+    user_keywords = bot.user_memory_get(chat_id, 'keywords')
 
     conv_1on1 = await bot.get_1to1(chat_id)
     if not conv_1on1:
@@ -307,33 +311,33 @@ async def subscribe(bot, event, *args):
 
     lines = []
     if keyword:
-        if userkeywords is None:
+        if user_keywords is None:
             # first one ever
-            userkeywords = []
+            user_keywords = []
             lines.append(USER_NOTE_SELF_MENTION)
             lines.append('')
 
-        elif regex in userkeywords:
+        elif regex in user_keywords:
             # Duplicate!
             return _("Already subscribed to '{}'!").format(keyword)
 
-        userkeywords.append(regex)
-        _KEYWORDS[chat_id] = re.compile(r'|'.join(userkeywords))
+        user_keywords.append(regex)
+        _KEYWORDS[chat_id] = re.compile(r'|'.join(user_keywords))
 
         # Save to file
-        bot.user_memory_set(chat_id, 'keywords', userkeywords)
+        bot.user_memory_set(chat_id, 'keywords', user_keywords)
 
     else:
         # user might need help
         lines.append(_("Usage: {bot_cmd} subscribe [keyword]").format(
             bot_cmd=bot.command_prefix))
 
-    if userkeywords:
-        # Note: print each keyword into one line to differeniate between
+    if user_keywords:
+        # Note: print each keyword into one line to differentiate between
         # "'keyword1', 'keyword2'" and "'keyword1, keyword1', 'keyword2'"
         # second happens as users try to add more than one keyword at once
         lines.append(_("Subscribed to:"))
-        lines += [repr(_unescape_regex(entry)) for entry in userkeywords]
+        lines += [repr(_unescape_regex(entry)) for entry in user_keywords]
 
     return '\n'.join(lines)
 
@@ -341,14 +345,17 @@ def unsubscribe(bot, event, *args):
     """Allow users to unsubscribe from phrases
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        *args: tuple of strings, additional words as the keyword to unsubscribe
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the keyword to unsubscribe
+
+    Returns:
+        str: a status message
     """
     chat_id = event.user_id.chat_id
-    userkeywords = bot.user_memory_get(chat_id, 'keywords')
+    user_keywords = bot.user_memory_get(chat_id, 'keywords')
 
-    if not userkeywords:
+    if not user_keywords:
         return _('No subscribes found for you')
 
     keyword = ' '.join(args).lower()
@@ -356,32 +363,32 @@ def unsubscribe(bot, event, *args):
 
     if not keyword:
         lines = [_("Unsubscribing all keywords:")]
-        lines += [repr(_unescape_regex(entry)) for entry in userkeywords]
+        lines += [repr(_unescape_regex(entry)) for entry in user_keywords]
         text = '\n'.join(lines)
         _KEYWORDS.pop(chat_id)
-        userkeywords = []
+        user_keywords = []
 
-    elif regex in userkeywords:
+    elif regex in user_keywords:
         text = _("Unsubscribing from keyword '{}'").format(keyword)
-        userkeywords.remove(regex)
-        if userkeywords:
-            _KEYWORDS[chat_id] = re.compile(r'|'.join(userkeywords))
+        user_keywords.remove(regex)
+        if user_keywords:
+            _KEYWORDS[chat_id] = re.compile(r'|'.join(user_keywords))
         else:
             _KEYWORDS.pop(chat_id)
 
     else:
         return _('keyword "%s" not found') % keyword
 
-    bot.user_memory_set(chat_id, 'keywords', userkeywords)
+    bot.user_memory_set(chat_id, 'keywords', user_keywords)
     return text
 
 async def testsubscribe(bot, event, *dummys):
     """handle the event text and allow the user to be self-mentioned
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
         event: event.ChatMessageEvent instance
-        *args: list of strings, additional words as the test mention
+        dummys (str): the test mention
     """
     sync_event = SyncEvent(conv_id=event.conv_id, user=event.user_id,
                            text=event.conv_event.segments)
@@ -392,12 +399,12 @@ def global_subscribe(bot, event, *args):
     """subscribe keywords globally with a custom conversation as target
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional strings passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the query for the command
 
     Returns:
-        string
+        str: a status message
     """
     if not args:
         raise commands.Help('Missing keyword and/or conversation!')
@@ -447,12 +454,12 @@ def global_unsubscribe(bot, event, *args):
     """unsubscribe from keywords globally
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional strings passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the query for the command
 
     Returns:
-        string
+        str: a status message
     """
     if not args:
         raise commands.Help('Missing keyword and/or conversation!')

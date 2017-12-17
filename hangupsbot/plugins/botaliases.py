@@ -26,8 +26,8 @@ def _initialise(bot):
         # /<first name fragment>
         first_fragment = myself["full_name"].split()[0].lower()
         if first_fragment != "unknown":
-            alias_firstname = "/" + first_fragment
-            bot_command_aliases.append(alias_firstname)
+            alias_first_name = "/" + first_fragment
+            bot_command_aliases.append(alias_first_name)
 
         # /<chat_id>
         bot_command_aliases.append("/" + myself["chat_id"])
@@ -53,12 +53,12 @@ def botalias(bot, event, *args):
     """update the botaliases for bot commands
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, additional words as the aliases to add/remove
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the aliases to add/remove
 
     Returns:
-        string
+        str: command output
     """
     # pylint:disable=protected-access
     _aliases = bot._handlers.bot_command

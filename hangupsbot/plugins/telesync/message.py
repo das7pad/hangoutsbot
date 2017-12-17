@@ -23,7 +23,7 @@ class _LocationCache(Cache):
     values: last location data (tuple):
         `(<timestamp (int)>, (<pos_lat (int)>, <pos_lng (int)>))`
 
-    Note: we can not resolve a msg_id to a user_id without storing the orignial
+    Note: we can not resolve a msg_id to a user_id without storing the original
      message. The debug-mode logs complete messages.
     """
     def __missing__(self, identifier):
@@ -44,7 +44,7 @@ class Message(dict, BotMixin):
     keep value accessing via dict
 
     Args:
-        msg: dict from telepot
+        msg (dict): Message object from Telegram
 
     Raises:
         IgnoreMessage: the message should not be synced
@@ -61,7 +61,7 @@ class Message(dict, BotMixin):
         self.user = User(self.tg_bot, msg)
         self.image_info = None
         self._set_content()
-        self.add_message(self.bot, self.chat_id, self.msg_id)
+        self.add_message(self.bot, chat_id, self['message_id'])
 
         base_path = ['telesync', 'chat_data', self.chat_id]
         user_path = base_path + ['user', self.user.usr_id]
@@ -73,7 +73,7 @@ class Message(dict, BotMixin):
         """Check whether the message is an update of a previous message
 
         Returns:
-            boolean, True if the message is an update, otherwise False
+            bool: True if the message is an update, otherwise False
         """
         return 'edit_date' in self
 
@@ -82,7 +82,7 @@ class Message(dict, BotMixin):
         """get the message identifier
 
         Returns:
-            string, the unique identifier of the message
+            str: the unique identifier of the message
         """
         return str(self['message_id'])
 
@@ -92,8 +92,8 @@ class Message(dict, BotMixin):
 
         Args:
             bot (HangupsBot): the running instance
-            identifier: string, identifier for a chat
-            msg_id: int or string, the unique id of the message
+            chat_id (int): identifier for a chat
+            msg_id (int): int or string, the unique id of the message
         """
         if chat_id in cls._last_messages:
             messages = cls._last_messages[chat_id]
@@ -125,7 +125,7 @@ class Message(dict, BotMixin):
         """check the reply for a hidden synced user and create the image
 
         Returns:
-            a SyncReply instance with the user, text and image
+            SyncReply: content wrapper with the user, text and image
         """
         if self.reply is None:
             return None
@@ -161,17 +161,17 @@ class Message(dict, BotMixin):
                          offset=offset, image=image)
 
     def _set_content(self):
-        """map content type to a propper message text and find images
+        """map content type to a proper message text and find images
 
         Raises:
             IgnoreMessage: the message should not be synced,
                 invalid type or duplicate location
         """
-        def _create_gmaps_url():
+        def _create_google_maps_url():
             """create Google Maps query from a location in the message
 
             Returns:
-                string, a google maps link or .content_type or error
+                str: a google maps link or .content_type or error
 
             Raises:
                 IgnoreMessage: duplicate location, discard this message
@@ -238,7 +238,7 @@ class Message(dict, BotMixin):
             self.image_info = self['video'], 'video'
 
         elif self.content_type == 'location':
-            self.text = _create_gmaps_url()
+            self.text = _create_google_maps_url()
 
         elif self.content_type not in ('new_chat_member', 'new_chat_members',
                                        'left_chat_member'):

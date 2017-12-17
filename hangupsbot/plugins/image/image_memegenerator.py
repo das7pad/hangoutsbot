@@ -31,9 +31,8 @@ async def meme(bot, event, *args):
 
     _EXTERNALS["running"] = True
 
+    parameters = args or ("robot",)
     try:
-        parameters = args or ("robot",)
-
         # public api: http://version1.api.memegenerator.net
         url_api = 'http://version1.api.memegenerator.net/Instances_Search?q=' + "+".join(parameters) + '&pageIndex=0&pageSize=25'
 
@@ -44,6 +43,7 @@ async def meme(bot, event, *args):
         if results['result']:
             url_image = random.choice(results['result'])['instanceImageUrl']
 
+            response = None
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url_image) as response:

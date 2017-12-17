@@ -153,7 +153,7 @@ class APIRequestHandler(AsyncRequestHandler):
         return results
 
     async def send_actionable_message(self, target, content):
-        """reprocessor: allow message to be intepreted as a command"""
+        """a reprocessor allows the message to be interpreted as a command"""
         reprocessor_context = self._bot.call_shared(
             "reprocessor.attach_reprocessor", handle_as_command)
         reprocessor_id = reprocessor_context["id"]

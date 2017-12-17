@@ -18,17 +18,17 @@ def _initialise():
             logger.info("ChatMessageLogger already attached")
             return
 
-    chathandler = ChatMessageLogger()
+    chat_handler = ChatMessageLogger()
 
-    chathandler.setFormatter(logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
-    chathandler.setLevel(logging.WARNING)
-    chathandler.addFilter(PluginFilter())
+    chat_handler.setFormatter(logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
+    chat_handler.setLevel(logging.WARNING)
+    chat_handler.addFilter(PluginFilter())
 
-    root_logger.addHandler(chathandler)
+    root_logger.addHandler(chat_handler)
 
 
-def logconfig(bot, dummy, loggername, level):
-    if loggername in sys.modules:
+def logconfig(bot, dummy, logger_name, level):
+    if logger_name in sys.modules:
         config_logging = bot.get_config_option("logging") or {}
 
         mapping = {"critical": 50,
@@ -46,26 +46,26 @@ def logconfig(bot, dummy, loggername, level):
             effective_level = mapping[level]
 
         if effective_level == 0:
-            if loggername in config_logging:
-                del config_logging[loggername]
+            if logger_name in config_logging:
+                del config_logging[logger_name]
             message = "logging: {} disabled".format(effective_level)
 
         else:
-            if loggername in config_logging:
-                current = config_logging[loggername]
+            if logger_name in config_logging:
+                current = config_logging[logger_name]
             else:
                 current = {"level": 0}
 
             current["level"] = effective_level
 
-            config_logging[loggername] = current
-            message = "logging: {} set to {} / {}".format(loggername, effective_level, level)
+            config_logging[logger_name] = current
+            message = "logging: {} set to {} / {}".format(logger_name, effective_level, level)
 
         bot.config.set_by_path(["logging"], config_logging)
         bot.config.save()
 
     else:
-        message = "logging: {} not found".format(loggername)
+        message = "logging: {} not found".format(logger_name)
 
     return message
 

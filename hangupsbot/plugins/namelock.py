@@ -49,7 +49,6 @@ async def _watch_rename(bot, event):
         if authorised_topic_change:
             bot.memory.set_by_path(memory_topic_path, event.conv_event.new_name)
             bot.memory.save()
-            old_name = event.conv_event.new_name
 
         else:
             hangups_user = bot.get_hangups_user(event.user_id.chat_id)

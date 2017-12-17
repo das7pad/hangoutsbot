@@ -45,13 +45,13 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
     """add users to a conversation but split the queue in parts
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, conversation identifier
-        chat_ids: list of strings, a list of G+ User Ids
-        batch_max: int, number of users to be added at once
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): conversation identifier
+        chat_ids (list[str]): a list of G+ User Ids
+        batch_max (int): number of users to be added at once
 
     Returns:
-        int, the number of new users in the conversation
+        int: the number of new users in the conversation
     """
     chat_ids = list(set(chat_ids))
 
@@ -80,7 +80,7 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
                         id=conv_id),
                     client_generated_id=bot.get_client_generated_id())))
 
-        users_added = users_added + len(partial_list)
+        users_added += len(partial_list)
         await asyncio.sleep(0.5)
 
     return users_added
@@ -89,12 +89,12 @@ async def _batch_remove_users(bot, target_conv, chat_ids):
     """remove a list of users from a given conversation
 
     Args:
-        bot: HangupsBot instance
-        target_conv: string, conversation identifier
-        chat_ids: iterable object
+        bot (hangupsbot.HangupsBot): the running instance
+        target_conv (str): conversation identifier
+        chat_ids (iterable): with strings, G+Ids
 
     Returns:
-        set, users that could not be removed
+        set[str]: user ids that could not be removed
     """
     chat_ids = set(chat_ids)
     remove = set()
@@ -120,29 +120,31 @@ async def addusers(bot, event, *args):
     """add users from a conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str):additional words passed to the command
+
+    Raises:
+        commands.Help: invalid request
     """
     list_add = []
     target_conv = event.conv_id
 
-    state = ["adduser"]
+    state = ["add_user"]
 
     for parameter in args:
         if parameter == "into":
-            state.append("targetconv")
+            state.append("target_conv")
         else:
-            if state[-1] == "adduser":
+            if state[-1] == "add_user":
                 list_add.append(parameter)
-            elif state[-1] == "targetconv":
+            elif state[-1] == "target_conv":
                 target_conv = parameter
                 state.pop()
             else:
                 raise commands.Help("UNKNOWN STATE: {}".format(state[-1]))
 
     list_add = list(set(list_add))
-    added = 0
     if list_add:
         added = await _batch_add_users(bot, target_conv, list_add)
         logger.info("addusers: %s added to %s", added, target_conv)
@@ -151,9 +153,12 @@ async def addme(bot, event, *args):
     """let a user add himself to a conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str):additional words passed to the command
+
+    Raises:
+        commands.Help: invalid request
     """
     if not args:
         raise commands.Help(_("supply the id of the conversation to join"))
@@ -167,9 +172,15 @@ async def createconversation(bot, dummy, *args):
     """create a new conversation with given users
 
     Args:
-        bot: HangupsBot instance
-        dummy: event.ConversationEvent instance
-        args: tuple, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): not used
+        args (str):additional words passed to the command
+
+    Returns:
+        tuple[str]: target conversation, command output
+
+    Raises:
+        commands.Help: invalid request
     """
     user_ids = [chat_id for chat_id in set(args)
                 if len(chat_id) == 21 and chat_id.isdigit()]
@@ -188,23 +199,29 @@ async def createconversation(bot, dummy, *args):
                         for chat_id in user_ids]))
     new_conversation_id = _response.conversation.conversation_id.id
 
-    return (new_conversation_id, _("<i>conversation created</i>"))
+    return new_conversation_id, _("<i>conversation created</i>")
 
 async def refresh(bot, event, *args):
     """recreate a conversation and remove or add certain users
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str):additional words passed to the command
+
+    Returns:
+        str: command output
+
+    Raises:
+        commands.Help: invalid request
     """
-    #TODO(das7pad): refactor into smaller functions
+    # TODO(das7pad): refactor into smaller functions
     parameters = list(args)
 
     test = False
     quietly = False
     source_conv = False
-    renameold = True
+    rename_old = True
     list_removed = []
     list_added = []
 
@@ -212,25 +229,25 @@ async def refresh(bot, event, *args):
 
     for parameter in parameters:
         if parameter == _("remove") or parameter == _("without"):
-            state.append("removeuser")
+            state.append("remove_user")
         elif parameter == _("add") or parameter == _("with"):
-            state.append("adduser")
+            state.append("add_user")
         elif parameter == _("conversation"):
             state.append("conversation")
         elif parameter == _("quietly"):
             quietly = True
-            renameold = False
+            rename_old = False
         elif parameter == _("test"):
             test = True
         elif parameter == _("norename"):
-            renameold = False
+            rename_old = False
         else:
-            if state[-1] == "adduser":
+            if state[-1] == "add_user":
                 list_added.append(parameter)
                 if parameter in list_removed:
                     list_removed.remove(parameter)
 
-            elif state[-1] == "removeuser":
+            elif state[-1] == "remove_user":
                 list_removed.append(parameter)
                 if parameter in list_added:
                     list_added.remove(parameter)
@@ -274,7 +291,7 @@ async def refresh(bot, event, *args):
                  "<b>removed {}:</b> {}\n"
                  "<b>added {}:</b> {}").format(
                      source_conv,
-                     old_title if renameold else _("<em>unchanged</em>"),
+                     old_title if rename_old else _("<em>unchanged</em>"),
                      len(text_removed_users),
                      ", ".join(text_removed_users) or _("<em>none</em>"),
                      len(list_added),
@@ -301,7 +318,7 @@ async def refresh(bot, event, *args):
     await commands.command.run(
         bot, event, *["convrename", "id:" + new_conversation_id, new_title])
 
-    if renameold:
+    if rename_old:
         await commands.command.run(
             bot, event, *["convrename", "id:" + source_conv, old_title])
 
@@ -324,9 +341,9 @@ async def kick(bot, event, *args):
     """refresh the a conversation without certain users
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str):additional words passed to the command
     """
     parameters = list(args)
 
@@ -365,9 +382,12 @@ async def realkick(bot, event, *args):
     """remove users from a conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple, additional words passed to the command
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str):additional words passed to the command
+
+    Returns:
+        str: command output
     """
     chat_ids = []
     conv_id = event.conv_id

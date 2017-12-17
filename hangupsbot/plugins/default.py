@@ -1,4 +1,4 @@
-"""basic commmands for the HangupsBot"""
+"""basic commands for the HangupsBot"""
 import re
 import json
 import logging
@@ -50,7 +50,7 @@ HELP = {
 _INTERNAL = {"broadcast": {"message": "", "conversations": []}} # /bot broadcast
 
 def _initialise():
-    """register the commands and their help entrys"""
+    """register the commands and their help entries"""
     plugins.register_admin_command(["broadcast", "users", "user", "hangouts",
                                     "rename", "leave", "reload", "quit",
                                     "config", "whereami"])
@@ -62,17 +62,19 @@ def echo(bot, event, *args):
     """echo a message back to the current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        dummy: event.ConversationEvent instance, not needed
-        args: tuple, a tuple of strings, request body
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): message wrapper
+        args (str): request body
 
     Returns:
-        tuple of strings, the conversation target and the message
+        tuple[str]: the conversation target and the message
+
+    Raises:
+        Help: invalid request
     """
     if not args:
         raise Help(_('supply a message!'))
 
-    text = None
     if len(args) > 1 and args[0] in bot.conversations:
         # /bot echo <convid> <text>
         # only admins can echo messages into other conversations
@@ -89,28 +91,28 @@ def echo(bot, event, *args):
         convid = event.conv_id
         text = args
 
-    return (convid, " ".join(text))
+    return convid, " ".join(text)
 
 
 async def broadcast(bot, dummy, *args):
     """broadcast a message to multiple chats, schedule here
 
     Args:
-        bot: HangupsBot instance
+        bot (hangupsbot.HangupsBot): the running instance
         dummy: event.ConversationEvent instance, not needed
-        args: tuple, a tuple of strings, request body
+        args (str): request body
 
     Returns:
-        string, user output
+        str: user output
 
     Raises:
-        commands.Help: bad request
+        Help: bad request
     """
     if not args:
         raise Help(_('Your request is missing'))
-    subcmd = args[0]
+    sub_cmd = args[0]
     parameters = args[1:]
-    if subcmd == "info":
+    if sub_cmd == "info":
         # display broadcast data such as message and target rooms
 
         conv_info = ["<b><i>{name}</i></b> ... <i>{conv_id}</i>".format(
@@ -128,7 +130,7 @@ async def broadcast(bot, dummy, *args):
                     _("<b>to:</b>")]
             text.extend(conv_info)
 
-    elif subcmd == "message":
+    elif sub_cmd == "message":
         # set broadcast message
         message = ' '.join(parameters)
         if message:
@@ -136,9 +138,9 @@ async def broadcast(bot, dummy, *args):
             text = [_("{} saved").format(message)]
 
         else:
-            text = [_("broadcast: message must be supplied after subcommand")]
+            text = [_("broadcast: message must be supplied after sub command")]
 
-    elif subcmd == "add":
+    elif sub_cmd == "add":
         # add conversations to a broadcast
         if parameters[0] == "groups":
             # add all groups
@@ -163,7 +165,7 @@ async def broadcast(bot, dummy, *args):
         text = [_("broadcast: {conv_count} conversation(s)").format(
             conv_count=len(_INTERNAL["broadcast"]["conversations"]))]
 
-    elif subcmd == "remove":
+    elif sub_cmd == "remove":
         if parameters[0].lower() == "all":
             # remove all conversations from broadcast
             _INTERNAL["broadcast"]["conversations"] = []
@@ -185,7 +187,7 @@ async def broadcast(bot, dummy, *args):
             text = [_("broadcast: removed {conv_tags}".format(
                 conv_tags=", ".join(removed)))]
 
-    elif subcmd == "NOW":
+    elif sub_cmd == "NOW":
         # send the broadcast
         context = {"syncroom_no_repeat": True} # prevent echos across syncrooms
         for convid in _INTERNAL["broadcast"]["conversations"]:
@@ -207,7 +209,19 @@ async def users(bot, event, *dummys):
 
 
 def user(bot, dummy, *args):
-    """find people by name"""
+    """find people by name
+
+    Args:
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): not used
+        args (str): additional words passed to the command
+
+    Returns:
+        list[hangups.ChatMessageSegment]: formatted command output
+
+    Raises:
+        Help: invalid request
+    """
 
     search = " ".join(args)
 
@@ -228,14 +242,14 @@ def user(bot, dummy, *args):
     for usr in sorted(all_known_users.values(), key=lambda x: x.full_name.split()[-1]):
         fullname_lower = usr.full_name.lower()
         fullname_upper = usr.full_name.upper()
-        unspaced_lower = re.sub(r'\s+', '', fullname_lower)
-        unspaced_upper = re.sub(r'\s+', '', usr.full_name.upper())
+        non_spaced_lower = re.sub(r'\s+', '', fullname_lower)
+        non_spaced_upper = re.sub(r'\s+', '', usr.full_name.upper())
 
         if (search_lower in fullname_lower
-                or search_lower in unspaced_lower
-                # XXX: turkish alphabet special case: converstion works better when uppercase
+                or search_lower in non_spaced_lower
+                # XXX: turkish alphabet special case: conversation works better when uppercase
                 or search_upper in remove_accents(fullname_upper)
-                or search_upper in remove_accents(unspaced_upper)):
+                or search_upper in remove_accents(non_spaced_upper)):
 
             link = 'https://plus.google.com/u/0/{}/about'.format(usr.id_.chat_id)
             segments.append(hangups.ChatMessageSegment(usr.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
@@ -252,15 +266,15 @@ def user(bot, dummy, *args):
 
 
 def hangouts(bot, dummy, *args):
-    """retrieve a list of hangouts, supply a searchterm in args to filter
+    """retrieve a list of hangouts, supply a search term in args to filter
 
     Args:
-        bot: HangupsBot instance
-        dummy: unused
-        args: tuple of strings, additional words as the searchterm
+        bot (hangupsbot.HangupsBot): the running instance
+        dummy (event.ConversationEvent): not used
+        args (str): the search term
 
     Returns:
-        string
+        str: the command output
     """
     text_search = " ".join(args)
 
@@ -287,9 +301,9 @@ async def rename(bot, event, *args):
     """rename the current conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, additional words as the new chat title
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): the new chat title
 
     Returns:
         string
@@ -302,9 +316,9 @@ async def leave(bot, event, *args):
     """leave the current or given conversation
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, a different conv_id, 'quietly' to skip an output
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): a different conv_id, 'quietly' to skip an output
     """
     parameters = set(args)
     if "quietly" in args:
@@ -326,9 +340,9 @@ async def reload(bot, event, *dummys):
     """reload .config and .memory from file
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
     """
     await bot.coro_send_message(event.conv, "<b>reloading config.json</b>")
     bot.config.load()
@@ -341,28 +355,28 @@ def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
     """kill the bot
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
     """
     logger.warning('HangupsBot killed by user %s from conversation %s',
                    event.user.full_name, event.conv.name)
     bot.stop()
 
 
-async def config(bot, event, cmd=None, *args):
-    """retrive or edit a config entry
+async def config(bot, event, *args):
+    """retrieve or edit a config entry
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        args: tuple of strings, additional words to for a request
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        args (str): additional words to for a request
 
     Returns:
-        string, request result or None if the output was redirected to a pHO
+        str: request result or None if the output was redirected to a pHO
 
     Raises:
-        command.Help: invalid request
+        Help: invalid request
         KeyError: the given path does not exist
         ValueError: the given value is not a valid json
     """
@@ -392,7 +406,7 @@ async def config(bot, event, cmd=None, *args):
     #TODO(das7pad): refactor into smaller parts and validate the new value/path
 
     # consume arguments and differentiate beginning of a json array or object
-    tokens = list(args)
+    cmd, *tokens = args or (None,)
     parameters = []
     value = []
     state = "key"
@@ -486,12 +500,12 @@ def whoami(bot, event, *dummys):
     """retrieve the users G+id
 
     Args:
-        bot: HangupsBot instance
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        bot (hangupsbot.HangupsBot): the running instance
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
 
     Returns:
-        string
+        str: a status message
     """
     path = ['user_data', event.user_id.chat_id, "label"]
     if bot.memory.exists(path):
@@ -507,12 +521,12 @@ def whereami(dummy, event, *dummys):
     """retrieve the current conversation identifier
 
     Args:
-        dummy: HangupsBot instance not used
-        event: event.ConversationEvent instance
-        dummys: tuple of strings, ignored
+        dummy (hangupsbot.HangupsBot): the running instance, not used
+        event (event.ConversationEvent): a message container
+        dummys (str): ignored
 
     Returns:
-        string
+        str: a status message
     """
     return _("You are at <b><i>{conv_name}</i></b>, "
              "conv_id = <i>{conv_id}</i>").format(conv_name=event.conv.name,

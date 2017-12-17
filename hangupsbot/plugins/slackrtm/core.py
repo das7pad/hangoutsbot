@@ -49,7 +49,7 @@ _RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '
 
 
 class SlackRTM(BotMixin):
-    """hander for a single slack team
+    """handler for a single slack team
 
     Args:
         sink_config (dict): basic configuration including the api `key`, a
@@ -69,7 +69,7 @@ class SlackRTM(BotMixin):
         if  not isinstance(sink_config, dict) or 'key' not in sink_config:
             raise SlackConfigError('API-`key` is missing in config %s'
                                    % repr(sink_config))
-        self.apikey = sink_config['key']
+        self.api_key = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}
         self.users = {}
@@ -93,7 +93,7 @@ class SlackRTM(BotMixin):
             SlackConfigError: could not find the sink config or `key` is missing
         """
         for config in self.bot.config.get_option('slackrtm'):
-            if config.get('key') == self.apikey:
+            if config.get('key') == self.api_key:
                 return config
 
         for config in self.bot.config.get_option('slackrtm'):
@@ -102,7 +102,7 @@ class SlackRTM(BotMixin):
 
             if 'key' in config:
                 # api-key change
-                self.apikey = config['key']
+                self.api_key = config['key']
                 asyncio.ensure_future(self.rebuild_base())
                 return config
             raise SlackConfigError('API-`key` is missing in config %s' % config)
@@ -114,7 +114,7 @@ class SlackRTM(BotMixin):
         """get the configured admins
 
         Returns:
-            list: a list of slack user ids (str)
+            list[str]: a list of slack user ids
         """
         return self.config.get('admins', [])
 
@@ -123,7 +123,7 @@ class SlackRTM(BotMixin):
         """access the memory entry with configured syncs of the current team
 
         Returns:
-            list: a list of dicts, each has two keys `hangoutid`, `channelid`
+            list[dict]: each has two keys `hangoutid` and `channelid`
         """
         return self.bot.memory.get_by_path(
             ['slackrtm', self.slack_domain, 'synced_conversations'])
@@ -165,7 +165,7 @@ class SlackRTM(BotMixin):
             await asyncio.gather(*(self.update_cache(name) for name in
                                    ('users', 'channels', 'groups', 'ims')))
 
-        async def _set_selfuser_and_ids(login_data):
+        async def _set_self_user_and_ids(login_data):
             """set the bot user and bot id to filter messages
 
             .rebuild_base() requires the self user being present
@@ -214,7 +214,7 @@ class SlackRTM(BotMixin):
                 login_data = await _login()
 
                 await _build_cache(login_data)
-                await _set_selfuser_and_ids(login_data)
+                await _set_self_user_and_ids(login_data)
                 await self.rebuild_base()
 
                 await self._process_websocket(login_data['url'])
@@ -353,11 +353,11 @@ class SlackRTM(BotMixin):
         more documentation on the api call: https://api.slack.com/web
         more documentation on methods: https://api.slack.com/methods
 
-        delay the execution in case of a ratelimit
+        delay the execution in case of a rate limit
 
         Args:
             method (str): the api-method to call
-            kwargs (dict): optional kwargs passed with api-method
+            kwargs (mixed): optional kwargs passed with api-method
 
         Returns:
             dict: pre-parsed json response
@@ -374,11 +374,13 @@ class SlackRTM(BotMixin):
             delay = kwargs.pop('delay')
             self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
             await asyncio.sleep(delay)
+        else:
+            delay = 0
         parsed = None
         try:
             async with await asyncio.shield(self._session.post(
                 'https://slack.com/api/' + method,
-                data={'token': self.apikey, **kwargs})) as resp:
+                data={'token': self.api_key, **kwargs})) as resp:
 
                 parsed = await resp.json()
                 self.logger.debug('api_call %s: %s', tracker, repr(parsed))
@@ -392,15 +394,10 @@ class SlackRTM(BotMixin):
 
                 raise RuntimeError('invalid request')
         except SlackRateLimited:
-            self.logger.warning('api_call %s: ratelimit hit', tracker)
+            self.logger.warning('api_call %s: rate limit hit', tracker)
             delay += parsed.get('Retry-After', 30)
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
-            try:
-                parsed = parsed or (await resp.text())
-            except (NameError, aiohttp.ClientError):
-                pass
-
             self.logger.error(
                 'api_call %s: failed with %s, method=%s, kwargs=%s, parsed=%s',
                 tracker, repr(err), method, kwargs, parsed)
@@ -498,25 +495,25 @@ class SlackRTM(BotMixin):
                 storage[item['id']] = item
 
     def get_channel_users(self, channel):
-        """get the usernames and realnames of users attending the given channel
+        """get the user names and real names of users attending a given channel
 
         Args:
             channel (str): channel or group identifier
 
         Returns:
-            dict: with keys 'username slackid', realnames as values
+            dict: with keys 'username slack id', real names as values
                 or the default value if no users can be fetched for the channel
         """
-        channelusers = self._get_channel_data(channel, 'members', None)
-        if channelusers is None:
+        channel_users = self._get_channel_data(channel, 'members', None)
+        if channel_users is None:
             return {}
 
         users = {}
-        for user_id in channelusers:
+        for user_id in channel_users:
             username = self.get_username(user_id)
             if username:
-                realname = self.get_realname(user_id, 'No real name')
-                users[username + ' ' + user_id] = realname
+                real_name = self.get_real_name(user_id, 'No real name')
+                users[username + ' ' + user_id] = real_name
         return users
 
     def _get_user_data(self, user, key, default=None):
@@ -525,10 +522,10 @@ class SlackRTM(BotMixin):
         Args:
             user (str): user_id
             key (str): data entry in the user data
-            default (unknown): value for missing user
+            default (mixed): value for missing user
 
         Returns:
-            unknown: or the default value
+            mixed: dict with user data or the default value
         """
         if user not in self.users:
             self.logger.debug('user %s not found, reloading users', user)
@@ -542,7 +539,7 @@ class SlackRTM(BotMixin):
         Args:
             channel (str): channel or group identifier
             key (str): data entry in the channel data
-            default (unknown): return value if no data is available
+            default (mixed): return value if no data is available
 
         Returns:
             dict: requested channel entry or the default value
@@ -554,15 +551,15 @@ class SlackRTM(BotMixin):
             return default
         return self.conversations[channel].get(key, default)
 
-    def get_realname(self, user, default=None):
+    def get_real_name(self, user, default=None):
         """get the users real name or return the default value
 
         Args:
             user (str): user_id
-            default (unknwon): value for missing user or no available name
+            default (mixed): value for missing user or no available name
 
         Returns:
-            str: the realname or the default value in case of a missing user
+            str: the real name or the default value in case of a missing user
         """
         return self._get_user_data(user, 'real_name', default)
 
@@ -571,7 +568,7 @@ class SlackRTM(BotMixin):
 
         Args:
             user (str): user_id
-            default (unknwon): value for missing user
+            default (mixed): value for missing user
 
         Returns:
             str: the nickname or the default value in case of a missing user
@@ -583,7 +580,7 @@ class SlackRTM(BotMixin):
 
         Args:
             user (str): user_id
-            default (unknwon): value for missing user
+            default (mixed): value for missing user
 
         Returns:
             str: the image url or the default value in case of a missing user
@@ -595,7 +592,7 @@ class SlackRTM(BotMixin):
 
         Args:
             channel (str): a slack channel/group/dm
-            default (unknwon): the fallback for a missing channel in the cache
+            default (mixed): the fallback for a missing channel in the cache
 
         Returns:
             str: the chattitle or the default value in case of a missing chat
@@ -606,14 +603,14 @@ class SlackRTM(BotMixin):
         return self._get_channel_data(channel, 'name', default=default)
 
     def get_syncs(self, channelid=None, hangoutid=None):
-        """search for syncs with mathing channel or hangout identifier
+        """search for syncs with matching channel or hangout identifier
 
         Args:
             channelid (str): slack channel identifier
             hangoutid (str): hangouts conversation identifier
 
         Returns:
-            list: a list of dicts, each has two keys `channelid`, `hangoutid`
+            list[dict]: each has two keys `channelid` and `hangoutid`
         """
         syncs = []
         for sync in self.syncs:
@@ -693,7 +690,7 @@ class SlackRTM(BotMixin):
                         if websocket.closed:
                             self.logger.warning('websocket connection closed')
                             break
-                        # covers invalid json-replys and replys without a `type`
+                        # covers invalid json-replies, replies without a `type`
                         self.logger.warning('bad websocket read: %s', repr(err))
                         soft_reset += 1
                         await asyncio.sleep(2**soft_reset)
@@ -714,7 +711,7 @@ class SlackRTM(BotMixin):
         """parse and forward a response from slack
 
         Args:
-            reply (dict): responce from slack
+            reply (dict): response from slack
         """
         async def _update_cache_on_event(event_type):
             """update the internal cache based on team changes
@@ -791,11 +788,11 @@ class SlackRTM(BotMixin):
         channel_name = self.get_chatname(msg.channel, '')
 
         for sync in syncs:
-            if msg.is_joinleave is not None:
+            if msg.is_join_leave is not None:
                 asyncio.ensure_future(self.bot.sync.membership(
                     identifier=channel_tag, conv_id=sync['hangoutid'],
                     user=msg.user, text=msg.segments, title=channel_name,
-                    type_=msg.is_joinleave,
+                    type_=msg.is_join_leave,
                     participant_user=msg.participant_user))
                 continue
 
@@ -820,8 +817,8 @@ class SlackRTM(BotMixin):
                 continue
             event.previous_targets.add(channel_tag)
 
-            message = event.get_formated_text(style=SLACK_STYLE,
-                                              conv_id=channel_tag)
+            message = event.get_formatted_text(style=SLACK_STYLE,
+                                               conv_id=channel_tag)
 
             image_url = await event.get_image_url(channel_tag)
             if image_url is not None:
@@ -851,8 +848,8 @@ class SlackRTM(BotMixin):
                 continue
             event.previous_targets.add(channel_tag)
 
-            message = event.get_formated_text(style=SLACK_STYLE,
-                                              conv_id=channel_tag)
+            message = event.get_formatted_text(style=SLACK_STYLE,
+                                               conv_id=channel_tag)
             if message is None:
                 # membership change should not be synced to this channel
                 return
@@ -886,7 +883,7 @@ class SlackRTM(BotMixin):
             profilesync_only (bool): only include users synced to a G+ profile
 
         Returns:
-            list: a list of `user.SlackUser`s
+            list[user.SlackUser]: users participating in the conversation
         """
         users = []
         for sync in self.get_syncs(hangoutid=conv_id):
@@ -906,7 +903,7 @@ class SlackRTM(BotMixin):
         return users
 
     async def _handle_user_kick(self, dummy, conv_id, user):
-        """kick a user from all syned channels for a given conversation
+        """kick a user from all synced channels for a given conversation
 
         Args:
             dummy (hangupsbot.HangupsBot): the running instance
@@ -954,7 +951,7 @@ class SlackRTM(BotMixin):
 
         Args:
             platform (str): sync platform identifier
-            remote_user (str): user who startet the sycn on a given platform
+            remote_user (str): user who started the sync on a given platform
             conv_1on1 (str): users 1on1 in hangouts
             split_1on1s (boolean): toggle to sync the private chats
         """

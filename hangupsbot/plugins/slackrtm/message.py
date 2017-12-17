@@ -32,10 +32,10 @@ TYPES_TO_SKIP = (
 TYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
 TYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')
 
-GUCFMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
-                    re.MULTILINE | re.DOTALL)
+GUC_FMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
+                     re.MULTILINE | re.DOTALL)
 
-REFFMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
+REF_FMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
 def parse_text(slackrtm, text):
     """clean the text from slack tags/markdown and search for an image
@@ -57,28 +57,27 @@ def parse_text(slackrtm, text):
         Returns:
             str: the item to display
         """
-        out = ''
-        linktext = ''
+        link_text = ''
         if match.group(5) == '|':
-            linktext = match.group(6)
+            link_text = match.group(6)
         if match.group(2) == '@':
-            if linktext != '':
-                out = linktext
+            if link_text != '':
+                out = link_text
             else:
                 out = '@%s' % slackrtm.get_username(
                     match.group(3), 'unknown:%s' % match.group(3))
         elif match.group(2) == '#':
-            if linktext != '':
-                out = '#%s' % linktext
+            if link_text != '':
+                out = '#%s' % link_text
             else:
                 out = '#%s' % slackrtm.get_chatname(
                     match.group(3), 'unknown:%s' % match.group(3))
         else:
-            linktarget = match.group(1)
+            link_target = match.group(1)
             # save '<text>'
-            out = ('<%s|%s>' % (linktarget, linktext) if linktext else
-                   '<%s|%s>' % (linktarget, linktarget) if 'http' in linktarget
-                   else '<%s>' % linktarget)
+            out = ('<%s|%s>' % (link_target, link_text) if link_text else
+                   '<%s>' % link_target if 'http' not in link_target
+                   else '<%s|%s>' % (link_target, link_target))
         out = out.replace('_', '%5F')
         out = out.replace('*', '%2A')
         out = out.replace('`', '%60')
@@ -91,7 +90,7 @@ def parse_text(slackrtm, text):
 
     image_url = None
     if 'googleusercontent.com' in text:
-        match = GUCFMT.match(text)
+        match = GUC_FMT.match(text)
         if match:
             image_url = match.group(2)
             text = match.group(1).replace(image_url, '')
@@ -109,7 +108,7 @@ def parse_text(slackrtm, text):
     # convert emoji aliases into their unicode counterparts
     text = emoji.emojize(text, use_aliases=True)
 
-    text = REFFMT.sub(matchreference, text)
+    text = REF_FMT.sub(matchreference, text)
     segments = SlackMessageSegment.from_str(text)
     return segments, image_url
 
@@ -147,15 +146,15 @@ class SlackMessage(BotMixin):
         # membership part
         self.participant_user = []
         if subtype in TYPES_MEMBERSHIP_JOIN:
-            self.is_joinleave = 1
+            self.is_join_leave = 1
             if 'inviter' in reply:
                 self.participant_user.append(self.user)
                 self.user = SlackUser(slackrtm, user_id=reply['inviter'],
                                       channel=self.channel)
         elif subtype in TYPES_MEMBERSHIP_LEAVE:
-            self.is_joinleave = 2
+            self.is_join_leave = 2
         else:
-            self.is_joinleave = None
+            self.is_join_leave = None
 
     @property
     def text(self):
@@ -260,7 +259,6 @@ class SlackMessage(BotMixin):
         Args:
             slackrtm (core.SlackRTM): the instance which received the `reply`
             reply (dict): message response from slack
-            messages (list): last messages of the current channel, sorted asc
 
         Return:
             sync.SyncReply: the wrapped reply content or `None`

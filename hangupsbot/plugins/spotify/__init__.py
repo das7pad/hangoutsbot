@@ -33,7 +33,7 @@ _DETECT_LINKS = re.compile(
      r"([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
 _YOUTUBE_ID = re.compile(
     r"^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*")
-_HAS_PROTOCOLL = re.compile("https?://")
+_HAS_PROTOCOL = re.compile("https?://")
 
 _CLEANUP_CHAR = re.compile(
     r"\s*[-‐‒–—―−~\(\)\[\]\{\}\<\>\|‖¦:;‘’“”\"«»„‚]+\s*")
@@ -142,6 +142,8 @@ async def _watch_for_music_link(bot, event):
                 query = get_title_from_youtube(bot, link)
             elif "soundcloud" in link:
                 query = get_title_from_soundcloud(bot, link)
+            else:
+                query = None
 
             if query:
                 try:
@@ -161,6 +163,7 @@ def spotify(bot, event, *args):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (sync.event.SyncEvent): the currently handled instance
+        args (str): the command query
 
     Returns:
         str: the command output
@@ -218,13 +221,13 @@ def extract_music_links(text):
         text (str): the source event text
 
     Returns:
-        list: a list of strings, the found media urls
+        list[str]: the found media urls
     """
     links = _DETECT_LINKS.findall(text)
     links = ["".join(link) for link in links]
 
     # Turn all URIs into URLs (necessary for the Spotify API).
-    return [l if _HAS_PROTOCOLL.match(l) else "https://" + l for l in links]
+    return [l if _HAS_PROTOCOL.match(l) else "https://" + l for l in links]
 
 
 def add_to_spotify(bot, event, query):
@@ -233,6 +236,7 @@ def add_to_spotify(bot, event, query):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
+        query (str): a user provided search query for a track
 
     Returns:
         str: a status string
@@ -252,10 +256,10 @@ def search_spotify(bot, query):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        query (str)
+        query (str): the search query
 
     Returns:
-        str: the first search result
+        SpotifyTrack: the first search result
 
     Raises:
         _MissingAuth: the spotify auth is not configured
@@ -296,7 +300,7 @@ def _clean(query):
         query (str): noisy track title with extras
 
     Returns:
-        list: a list of string, expected items: the track title and artist
+        list[str]: expected items: the track title and artist
     """
     # Split into groups.
     groups = list(filter(None, _CLEANUP_CHAR.split(query)))
@@ -316,10 +320,10 @@ def _search(bot, groups):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        groups (list): a list of string, expect tracktitle and artist
+        groups (list[str]): expect track title and artist
 
     Returns:
-        list: a list of `SpotifyTrack`s
+        SpotifyTrack: a single track wrapper
 
     Raises:
         _MissingAuth: there is no auth configured in the bot config
@@ -382,7 +386,7 @@ def remove_from_playlist(bot, event, track_url):
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): the currently handled instance
-        track (SpotifyTrack): the track to remove
+        track_url (str): the track to remove
 
     Returns:
         str: a status string
@@ -536,7 +540,7 @@ def get_spotify_client(bot):
     Spotify access requires user authorization. The refresh token is stored
     in memory to circumvent logging in after the initial authorization.
 
-    Auth is captured via stdin
+    Auth is captured via console input
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance

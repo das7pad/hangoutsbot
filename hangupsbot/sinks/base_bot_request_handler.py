@@ -15,6 +15,7 @@ class AsyncRequestHandler(BotMixin):
     _bot = None # ensure backward compatibility for legacy subclasses
 
     def __init__(self, *args):
+        # pylint:disable=unused-argument
         self.sinkname = self.__class__.__name__
         self._bot = self.bot # backward-compatibility
 
@@ -50,6 +51,7 @@ class AsyncRequestHandler(BotMixin):
         if "echo" in payload:
             text = payload["echo"]
 
+        image_raw = None
         image_data = None
         image_filename = None
         if "image" in payload:
@@ -87,5 +89,5 @@ class AsyncRequestHandler(BotMixin):
         if not text and not image_id:
             raise ValueError("nothing to send")
 
-        results = await self.bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
+        await self.bot.coro_send_message(conversation_id, text, context=context, image_id=image_id)
         return "OK"

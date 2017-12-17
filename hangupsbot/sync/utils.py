@@ -9,12 +9,12 @@ def get_sync_config_entry(bot, conv_id, key):
     'slackrtm:teamname:C001' -> 'slackrtm:teamname' -> 'slackrtm' -> global
 
     Args:
-        bot: HangupsBot instance
-        conv_id: string, chat conversation identifier
-        key: string, sync config item
+        bot (hangupsbot.HangupsBot): the running instance
+        conv_id (str): chat conversation identifier
+        key (str): sync config item
 
     Returns:
-        any type, check sync.DEFAULT_CONFIG for the expected type
+        mixed: check sync.DEFAULT_CONFIG for the expected type
     """
     key = key if key[:5] == 'sync_' else 'sync_' + key
     base_path = ['conversations']

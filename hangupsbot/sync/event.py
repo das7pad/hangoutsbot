@@ -23,9 +23,9 @@ class FakeConvEvent(object):
     """Dummy Event for a Hangups Conversation Event
 
     Args:
-        fake_event: FakeEvent instance
-        text: string or list, the message as text or in segments in a list
-        attachments: list, urls to media
+        fake_event (FakeEvent): base instance
+        text (mixed): the message as text or in segments in a list
+        attachments (list[str]): urls to media
     """
     def __init__(self, fake_event, text, attachments=None):
         self.timestamp = fake_event.timestamp
@@ -52,7 +52,7 @@ class FakeConvEvent(object):
         """get the raw text of the event
 
         Returns:
-            string
+            str: raw event text without formatting
         """
         lines = [get_formatted(self.segments, 'text')] + self.attachments
         return '\n'.join(lines)
@@ -62,12 +62,12 @@ class FakeEvent(BotMixin):
     """Dummy Event to provide Hangups Event like access to Data around a Message
 
     Args:
-        conv_id: string, Conversation ID for the message
-        user: str or HangupsUser instance
+        conv_id (str): Conversation ID for the message
+        user (mixed): str or HangupsUser instance
             str, the G+ ID of the sender
             hangups.user.User like object, the sender
-        text: string or list, the message as text or in segments in a list
-        attachments: list, urls of images for example
+        text (mixed): the message as text or in segments in a list
+        attachments (list[str]): urls of images for example
     """
 
     def __init__(self, conv_id=None, user=None, text=None, attachments=None):
@@ -92,19 +92,19 @@ class SyncEvent(FakeEvent):
     """enhanced Event to fake a Hangups Event for a synced Message
 
     Args:
-        identifier: string, platform tag used to identify an Event on receive
-        conv_id: string, target Conversation ID for the message
-        user: SyncUser instance of the sender
-        text: string or segment list, raw message from any platform
-        targets: list of strings, conversation identifier of relay targets
-        previous_targets: list of strings, conv identifier of previous targets
-        reply: tuple, orignal sender and original text of the reply
-        title: string, Chat Title of the source conversation
-        edited: boolean, True if the message is an edited message
-        image: SyncImage instance, already wrapped image info
-        context: dict, optional information about the message
-        notified_users: set, object to track user that were notified for the
-            message content
+        identifier (str): platform tag used to identify an Event on receive
+        conv_id (str): target Conversation ID for the message
+        user (SyncUser): instance of the sender
+        text (mixed): str or segment list, raw message from any platform
+        targets (list[str]): conversation identifier of relay targets
+        previous_targets (list[str]): conv identifier of previous targets
+        reply (SyncReply): wrapper with a message to reply
+        title (str): Chat Title of the source conversation
+        edited (bool): True if the message is an edited message
+        image (SyncImage): already wrapped image info
+        context (dict): optional information about the message
+        notified_users (set[str]): object to track users that were notified for
+            the message content
     """
 
     def __init__(self, *, identifier=None, conv_id, user, text=None,
@@ -122,11 +122,10 @@ class SyncEvent(FakeEvent):
         self.context = context if isinstance(context, dict) else {}
 
         # keep the reference of notified_users, to track them in all other convs
-        self.notified_users = (notified_users if notified_users is not None else
-                               set((user.id_.chat_id,)))
-        self.previous_targets = (previous_targets
-                                 if previous_targets is not None else
-                                 set((identifier,)))
+        self.notified_users = (
+            {user.id_.chat_id} if notified_users is None else notified_users)
+        self.previous_targets = (
+            {identifier} if previous_targets is None else previous_targets)
         self.user_list = None
         self.syncroom_no_repeat = False
 
@@ -151,10 +150,10 @@ class SyncEvent(FakeEvent):
         """get a shot custom or long live title of the source conversation
 
         Args:
-            conv_id: string, conv identifier of the target conversation
+            conv_id (str): conv identifier of the target conversation
 
         Returns:
-            string
+            str: long or short version of the title
         """
         if conv_id is None:
             conv_id = self.conv_id
@@ -166,10 +165,10 @@ class SyncEvent(FakeEvent):
         """get a public url to the image that is connected to this event
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id (str): a custom identifier to pick the config entries from
 
         Returns:
-            string, a cached url or error message, None if no image is available
+            mixed: a url or error message (str) or None if no image is available
         """
         upload_info = await self._base_image_upload(conv_id, video_as_gif=True)
 
@@ -182,10 +181,10 @@ class SyncEvent(FakeEvent):
         """get an upload id of the resized image connected to the event
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id (str): a custom identifier to pick the config entries from
 
         Returns:
-            int, the upload id or None if no image is available
+            mixed: the upload id (int) or None if no image is available
         """
         upload_info = await self._base_image_upload(conv_id)
 
@@ -201,8 +200,8 @@ class SyncEvent(FakeEvent):
         """get the image connected to the event with resized image data
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
-            video_as_gif: boolean, toogle to get videos as gif
+            conv_id (str): a custom identifier to pick the config entries from
+            video_as_gif (bool): toggle to get videos as gif
 
         Returns:
             tuple: SyncImage instance, the resized image data in a file-like
@@ -235,10 +234,10 @@ class SyncEvent(FakeEvent):
         """get hangups.ChatMessageSegments from .text or text
 
         Args:
-            text: string or list of hangups.ChatMessageSegments
+            text (mixed): string or list of hangups.ChatMessageSegments
 
         Returns:
-            list, a list of hangups.ChatMessageSegment
+            list[hangups.ChatMessageSegment]: parsed formatting segments
         """
         if isinstance(text, str):
             return MessageSegment.from_str(text)
@@ -248,26 +247,27 @@ class SyncEvent(FakeEvent):
 
         return self.conv_event.segments
 
-    def get_formated_text(self, *, style='hangouts', template=None, text=None,
-                          title=None, name=None, add_photo_tag=None,
-                          names_text_only=False, conv_id=None):
-        """create a formated text for the event with applied style
+    def get_formatted_text(self, *, style='hangouts', template=None, text=None,
+                           title=None, name=None, add_photo_tag=None,
+                           names_text_only=False, conv_id=None):
+        """create a formatted text for the event with applied style
 
         Args:
-            style: string or dict, target style key in STYLE_MAPPING or own dict
-            template: string, a custom format string, available keys:
+            style (mixed): string or dict, target style key in
+                `sync.parser.STYLE_MAPPING` or own dict
+            template (str): a custom format string, available keys:
                 edited, name, reply, separator, text, title
-            text: string, override the original text of the message
-            title: string, override the original title of the chat
-            name: string, override the original sender of the message
-            add_photo_tag: boolean, True/False forces the prefix with image tag
+            text (str): override the original text of the message
+            title (str): override the original title of the chat
+            name (str): override the original sender of the message
+            add_photo_tag (bool): True/False forces the prefix with image tag
                 defaults to the existance of an image
-            names_text_only: boolean, on True do not include a url into the name
-            conv_id: string, identifier for a conversation to pick the config
-                entrys from
+            names_text_only (bool): on True do not include a url into the name
+            conv_id (str): identifier for a conversation to pick the config
+                entries from
 
         Returns:
-            string, final text
+            str: final event text
         """
         bot = self.bot
         if conv_id is None:
@@ -322,16 +322,16 @@ class SyncEvent(FakeEvent):
         """forward call to reply
 
         Args:
-            conv_id: target conversation
+            conv_id (str): target conversation
 
         Returns:
-            string, formated reply text or empty string if no reply is available
+            str: formatted reply text or empty string if no reply is available
         """
         # skip if no reply is available or should be synced to the given conv
         if self.reply is None:
             return ''
 
-        return self.reply.get_formated_text(conv_id)
+        return self.reply.get_formatted_text(conv_id)
 
     ############################################################################
     # PRIVATE METHODS
@@ -344,7 +344,7 @@ class SyncEvent(FakeEvent):
         the main image first and ignore the reply image then
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
+            conv_id (str): a custom identifier to pick the config entries from
 
         Returns:
             tuple: (SyncImage, int), the image or None if no image is available
@@ -381,13 +381,13 @@ class SyncEvent(FakeEvent):
         """perform the base image upload
 
         Args:
-            conv_id: string, a custom identifier to pick the config entrys from
-            video_as_gif: boolean, set to True to get videos as gif
+            conv_id (str): a custom identifier to pick the config entries from
+            video_as_gif (bool): set to True to get videos as gif
 
         Returns:
             None: the upload failed or the event has no image
             string: no image data is available, a custom error message
-            hangups.client.UploadedImage instance: on a succesful image upload
+            hangups.client.UploadedImage instance: on a successful image upload
         """
         image, image_data, filename = await self.get_image(
             conv_id=conv_id, video_as_gif=video_as_gif)
@@ -415,18 +415,21 @@ class SyncEventMembership(SyncEvent):
     """Membership Event similar to the hangups.MembershipChangeEvent
 
     Args:
-        identifier: string, platform tag used to identify an Event on receive
-        conv_id: string, target Conversation ID for the message
-        title: string, Chat Title of the source conversation
-        user: SyncUser instance of the sender
-        text: string or segment list, raw message from any platform
-        targets: list of strings, conversation identifier of relay targets
-        previous_targets: list of strings, conv identifier of previous targets
-        type_: int, 1: join, 2: leave - same as the hangups values
-        participant_user: list or users, a user could be a hangups.user.User
-            like object or a string, representing a username or chat_id
-        notified_users: set, object to track user that were notified for the
-            message content
+        identifier (str): platform tag used to identify an Event on receive
+        conv_id (str): target Conversation ID for the message
+        title (str): Chat Title of the source conversation
+        user (sync.user.SyncUser): instance of the sender
+        text (mixed): str or segment list, raw message from any platform
+        targets (list[str]): conversation identifier of relay targets
+        previous_targets (list[str]): conv identifier
+        type_ (int): 1: join, 2: leave - same as the hangups values
+        participant_user (mixed): the changed members
+            None: self add or leave,
+            SyncUser: one user added or kicked,
+            list[SyncUser]: multiple users added or kicked,
+            or list[str]: representing each a username or chat_id
+        notified_users (set[str]): object to track users that were notified for
+            the message content
     """
 
     def __init__(self, *, identifier=None, conv_id=None, title=None, user=None,
@@ -435,7 +438,8 @@ class SyncEventMembership(SyncEvent):
 
         if type_ not in (1, 2):
             raise MissingArgument(
-                'membership change types: 1 (join) or 2 (leave), got %s', type_)
+                'membership change types: 1 (join) or 2 (leave), got %s'
+                % type_)
 
         # build the base SyncEvent
         super().__init__(identifier=identifier, conv_id=conv_id, user=user,
@@ -463,24 +467,25 @@ class SyncEventMembership(SyncEvent):
                                            if p_user.id_.chat_id != 'sync']
 
     #pylint:disable=arguments-differ
-    def get_formated_text(self, *, style='hangouts', text=None, title=None,
-                          name=None, template=None, names_text_only=False,
-                          conv_id=None):
-        """create a formated text for the event with applied style
+    def get_formatted_text(self, *, style='hangouts', text=None, title=None,
+                           name=None, template=None, names_text_only=False,
+                           conv_id=None):
+        """create a formatted text for the event with applied style
 
         Args:
-            style: string or dict, target style key in STYLE_MAPPING or own dict
-            text: string, override the original text of the message
-            title: string, override the original title of the chat
-            name: string, override the original sender of the message
-            template: string, a custom format string, available keys:
+            style (mixed): string or dict, target style key in
+                `sync.parser.STYLE_MAPPING` or own dict
+            text (str): override the original text of the message
+            title (str): override the original title of the chat
+            name (str): override the original sender of the message
+            template (str): a custom format string, available keys:
                 edited, name, reply, separator, text, title
-            names_text_only: boolean, on True do not include a url into the name
-            conv_id: string, identifier for a conversation to pick the config
-                entrys from
+            names_text_only (bool): on True do not include a url into the name
+            conv_id (str): identifier for a conversation to pick the config
+                entries from
 
         Returns:
-            string, final text; or None if no text should be send
+            mixed: final text (str) or None if no text should be send
         """
         bot = self.bot
         if conv_id is None:
@@ -532,11 +537,11 @@ class SyncReply(BotMixin):
     """wrapper for reply messages
 
     Args:
-        identifier: string, platform tag used to identify an Event on receive
-        user: string or SyncUser instance, sender of the original message
-        text: string, original message
-        offset: int, message count between the original message and the reply
-        image: SyncImage instance, the image one replys to or None
+        identifier (str): platform tag used to identify an Event on receive
+        user (mixed): string or SyncUser instance, sender of the original message
+        text (str): original message
+        offset (int): message count between the original message and the reply
+        image (sync.image.SyncImage): the image one replies to; may be None
     """
 
     def __init__(self, *, identifier=None, user=None, text=None, offset=None,
@@ -555,14 +560,14 @@ class SyncReply(BotMixin):
         # validate a given image or unset it
         self.image = image if isinstance(image, SyncImage) else None
 
-    def get_formated_text(self, conv_id):
-        """check the sender user and create the formated reply message
+    def get_formatted_text(self, conv_id):
+        """check the sender user and create the formatted reply message
 
         Args:
-            conv_id: string, target conversation
+            conv_id (str): target conversation
 
         Returns:
-            string, the formated message
+            str: the formatted message
         """
         bot = self.bot
         if not get_sync_config_entry(bot, conv_id, 'sync_reply'):

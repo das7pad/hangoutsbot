@@ -73,7 +73,7 @@ def _get_cw_for_chat(bot, event):
 
     # setting segregate to False makes cleverbot share its memory across non-segregated conversations
     # important: be careful of information leaking from one conversation to another!
-    # by default, conversation memory is segregrated by instantiating new cleverwrap interfaces
+    # by default, conversation memory is segregated by instantiating new cleverwrap interfaces
     segregate = bot.get_config_suboption(event.conv_id, "cleverbot_segregate")
     if segregate is None:
         segregate = True

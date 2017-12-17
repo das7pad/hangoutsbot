@@ -35,7 +35,7 @@ def start(bot):
 
     item_no = -1
 
-    aiohttpcount = 0
+    aiohttp_count = 0
 
     for sink_config in jsonrpc_sinks:
         item_no += 1
@@ -86,7 +86,7 @@ def start(bot):
                 requesthandlerclass=handler_class,
                 group="json-rpc")
 
-            aiohttpcount = aiohttpcount + 1
+            aiohttp_count += 1
 
         else:
             logger.critical(
@@ -94,26 +94,26 @@ def start(bot):
                 repr(handler_class))
             continue
 
-    if aiohttpcount:
-        logger.info("%s aiohttp web listener(s)", aiohttpcount)
+    if aiohttp_count:
+        logger.info("%s aiohttp web listener(s)", aiohttp_count)
 
 def aiohttp_start(*, bot, name, port, certfile=None, requesthandlerclass, group,
                   callback=None):
-    requesthandler = requesthandlerclass(bot)
+    request_handler = requesthandlerclass(bot)
 
     app = web.Application()
-    requesthandler.addroutes(app.router)
+    request_handler.addroutes(app.router)
 
     handler = app.make_handler()
 
     if certfile:
-        sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        sslcontext.load_cert_chain(certfile)
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        ssl_context.load_cert_chain(certfile)
     else:
-        sslcontext = None
+        ssl_context = None
 
     loop = asyncio.get_event_loop()
-    server = loop.create_server(handler, name, port, ssl=sslcontext)
+    server = loop.create_server(handler, name, port, ssl=ssl_context)
 
     asyncio.ensure_future(server).add_done_callback(
         functools.partial(aiohttp_started, handler=handler, app=app,

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise(bot):
-    """set defaut config entry"""
+    """set default config entry"""
     bot.config.set_defaults({"conversations": {}})
 
 def _tagshortcuts(event, type_, conv_id):
@@ -75,6 +75,17 @@ def tagspurge(bot, event, *args):
 @command.register(admin=True)
 def tagscommand(bot, _event, *args):
     """display of command tagging information, more complete than plugininfo"""
+
+    def _extend_tags(source):
+        """extend the tags with command tags from the given source"""
+        if command_name not in source or not source[command_name]:
+            return set()
+
+        items = set([frozenset(value if isinstance(value, list) else [value])
+                     for value in source[command_name]])
+        all_tags.update(items)
+        return items
+
     if len(args) != 1:
         return Help(_(_("<b>supply command name</b>")))
 
@@ -90,34 +101,15 @@ def tagscommand(bot, _event, *args):
         plugin_defined = command.command_tagsets[command_name]
         all_tags = all_tags | plugin_defined
 
-    config_root = set()
     config_commands_tagged = bot.config.get_option('commands_tagged') or {}
-    if (command_name in config_commands_tagged and
-            config_commands_tagged[command_name]):
-        config_root = set(
-            [frozenset(value if isinstance(value, list) else [value])
-             for value in config_commands_tagged[command_name]])
-        all_tags = all_tags | config_root
-
-    def _extend_tage(source, all_tags):
-        """extend the tags with command tags from the given source"""
-        if command_name not in source or not source[command_name]:
-            return
-
-        items = set([frozenset(value if isinstance(value, list) else [value])
-                     for value in source[command_name]])
-        return all_tags | items
+    config_root = _extend_tags(config_commands_tagged)
 
     config_conv = {}
     for convid in bot.config["conversations"]:
         path = ["conversations", convid, "commands_tagged"]
         if bot.config.exists(path):
             conv_tagged = bot.config.get_by_path(path)
-            if command_name in conv_tagged and conv_tagged[command_name]:
-                config_conv[convid] = set(
-                    [frozenset(value if isinstance(value, list) else [value])
-                     for value in conv_tagged[command_name]])
-                all_tags = all_tags | config_conv[convid]
+            config_conv[convid] = _extend_tags(conv_tagged)
 
     tags = {}
     for match in all_tags:
@@ -130,8 +122,8 @@ def tagscommand(bot, _event, *args):
             tags[text_match].append("plugin")
         if match in config_root:
             tags[text_match].append("config: root")
-        for convid, tagsets in config_conv.items():
-            if match in tagsets:
+        for convid, tag_sets in config_conv.items():
+            if match in tag_sets:
                 tags[text_match].append("config: {}".format(convid))
 
     lines = []

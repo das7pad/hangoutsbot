@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
 
     'commands.tags.escalate': False,
 
-    # default timeout for command-coros to return: 5minutes
+    # default timeout for command-coroutines to return: 5minutes
     'command_timeout': 5*60,
 }
 
@@ -63,14 +63,14 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         """extended init"""
         self.bot.config.set_defaults(DEFAULT_CONFIG)
 
-    def register_tags(self, command_name, tagsets):
+    def register_tags(self, command_name, tags):
         if command_name not in self.command_tagsets:
             self.command_tagsets[command_name] = set()
 
-        if isinstance(tagsets, str):
-            tagsets = set([tagsets])
+        if isinstance(tags, str):
+            tags = {tags}
 
-        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tagsets
+        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tags
 
     @property
     def deny_prefix(self):
@@ -149,10 +149,10 @@ class CommandDispatcher(BotMixin, TrackingMixin):
                         denied_commands.add(command_name)
                         break
 
-            admin_commands = admin_commands - denied_commands
-            user_commands = user_commands - denied_commands
+            admin_commands -= denied_commands
+            user_commands -= denied_commands
 
-        user_commands = user_commands - admin_commands # ensure no overlap
+        user_commands -= admin_commands  # ensure no overlap
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 
@@ -160,15 +160,20 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         """Run a command
 
         Args:
-            bot: HangupsBot instance
-            event: event.ConversationEvent like instance
+            bot (hangupsbot.HangupsBot): the running instance
+            event (event.ConversationEvent): a message container
             args: tuple of string, including the command name in fist place
-            kwds: dict, additional info to the execution including the key
+            kwds (dict): additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
+
+        Returns:
+            mixed: command specific output
+
         Raises:
             KeyError: specified command is unknown
-            any other: the kwarg 'raise_exceptions' is set and the command
-             raised
+            CancelledError: forward low level cancellation
+            Exception: the kwarg 'raise_exceptions' is set to True and the
+                command raised any Exception
         """
         command_name = args[0].lower()
         coro = self.commands.get(command_name)
@@ -269,12 +274,12 @@ def get_func_help(bot, cmd, func):
     """get a custom help message from memory or parse the doc string of the func
 
     Args:
-        bot: HangupsBot instance
-        cmd: string, an existing bot-command
-        func: callable, the command function
+        bot (hangupsbot.HangupsBot): the running instance
+        cmd (str): an existing bot-command
+        func (mixed): function or coroutine, the command function
 
     Returns:
-        string, the custom message or the parsed doc string
+        str: the custom message or the parsed doc string
     """
     try:
         text = bot.memory.get_by_path(['command_help', cmd]).format(

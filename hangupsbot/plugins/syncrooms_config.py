@@ -47,10 +47,10 @@ def attachsyncout(bot, event, *args):
 
     if len(conversation_ids) < 2:
         # need at least 2 ids, one has to be another room
-        return
+        return ''
 
     if not bot.config.get_option('syncing_enabled'):
-        return
+        return ''
 
     syncouts = bot.config.get_option('sync_rooms')
 
@@ -88,21 +88,21 @@ def attachsyncout(bot, event, *args):
     if not quietly:
         return html_message.format(len(affected_conversations))
 
+    return ''
 
-def detachsyncout(bot, event, target_conversation_id=None, *dummys):
+
+def detachsyncout(bot, event, *args):
     """detach current conversation from a syncout if no parameters supplied."""
 
     if not bot.config.get_option('syncing_enabled'):
-        return
+        return ''
 
     syncouts = bot.config.get_option('sync_rooms')
 
     if not syncouts:
-        return
+        return ''
 
-    if target_conversation_id is None:
-        # detach myself if no target_conversation_id provided
-        target_conversation_id = event.conv_id
+    target_conversation_id = args[0] if args else event.conv_id
 
     _detached = False
     for sync_room_list in syncouts:
@@ -122,3 +122,5 @@ def detachsyncout(bot, event, target_conversation_id=None, *dummys):
         bot.config.set_by_path(["sync_rooms"], syncouts)
         bot.config.save()
         return _("<i>`{}` was detached</i>").format(target_conversation_id)
+
+    return ''

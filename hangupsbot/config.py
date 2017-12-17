@@ -1,4 +1,4 @@
-"""cache for a json file with shortscuts to access data"""
+"""cache for a json file with shortcuts to access data"""
 
 import asyncio
 import collections
@@ -21,9 +21,9 @@ class Config(collections.MutableMapping):
     """Configuration JSON storage class
 
     Args:
-        path: string, file path of the config file
-        failsafe_backups: int, ammount of backups that should be kept
-        save_delay: int, time in second a dump should be delayed
+        path (str): file path of the config file
+        failsafe_backups (int): amount of backups that should be kept
+        save_delay (int): time in second a dump should be delayed
         name (str): custom name for the logger and reload event
     """
     default = None
@@ -44,12 +44,12 @@ class Config(collections.MutableMapping):
         """return whether the config changed since the last dump
 
         Returns:
-            boolean, True if config matches with the last dump, otherwise False
+            bool: True if config matches with the last dump, otherwise False
         """
         try:
             current_state = json.dumps(self.config, indent=2, sort_keys=True)
         except TypeError:
-            # currupt config
+            # corrupt config
             return True
         return current_state != self._last_dump
 
@@ -59,7 +59,7 @@ class Config(collections.MutableMapping):
         the limit refers to the number of .failsafe_backups
 
         Returns:
-            boolean, True on a successful new backup, otherwise False
+            bool: True on a successful new backup, otherwise False
         """
         try:
             with open(self.filename) as file:
@@ -89,8 +89,8 @@ class Config(collections.MutableMapping):
         """restore data from a recent backup
 
         Returns:
-            boolean, True if any backup could be loaded, False if None is
-                available or all backups are currupt or no readable
+            bool: True if any backup could be loaded, False if None is
+                available or all backups are corrupt or no readable
         """
         existing = sorted(glob.glob(self.filename + ".*.bak"))
         recovery_filename = None
@@ -116,7 +116,7 @@ class Config(collections.MutableMapping):
         """Load config from file
 
         Raises:
-            IOError: the existing config is not readable or no new config can
+            OSError: the existing config is not readable or no new config can
                 be saved to the configured path
             ValueError: the config file is not a valid json and no backups are
                 available
@@ -143,7 +143,7 @@ class Config(collections.MutableMapping):
         """Load config from JSON string
 
         Args:
-            json_str: string, a json formated string that overrides the config
+            json_str (str): a json formatted string that overrides the config
 
         Raises:
             ValueError: the string is not a valid json representing of a dict
@@ -205,15 +205,16 @@ class Config(collections.MutableMapping):
         """Get an item from .config by path
 
         Args:
-            keys_list: list, a list of strings, describing the path to the value
-            fallback: boolean, use the default values as fallback for missing
-                entrys
+            keys_list (list[str]): describing the path to the value
+            fallback (bool): use the default values as fallback for missing
+                entries
 
         Returns:
-            any type, the requested value
+            mixed: the requested value
 
         Raises:
-            KeyError, ValueError: the path does not exist
+            KeyError: the path does not exist
+            ValueError: the path does not exist
         """
         try:
             return self._get_by_path(self.config, keys_list)
@@ -230,9 +231,9 @@ class Config(collections.MutableMapping):
         """set an item in .config by path
 
         Args:
-            keys_list: list, a list of strings, describing the path to the value
-            value: any type, the new value
-            create_path: boolean, toogle to ensure an existing path
+            keys_list (list[str]): describing the path to the value
+            value (mixed): the new value
+            create_path (bool): toggle to ensure an existing path
 
         Raises:
             KeyError, ValueError: the path does not exist
@@ -246,10 +247,10 @@ class Config(collections.MutableMapping):
         """remove an item in .config found with the given path
 
         Args:
-            keys_list: list, a list of strings, describing the path to the value
+            keys_list (list[str]): describing the path to the value
 
         Returns:
-            any type, the removed value
+            mixed: the removed value
 
         Raises:
             KeyError, ValueError: the path does not exist
@@ -261,13 +262,15 @@ class Config(collections.MutableMapping):
         """Get an item from source by path
 
         Args:
-            path: list, a list of strings, describing the path to the value
+            source (dict): `.config` or `.defaults`
+            path (list[str]): describing the path to the value
 
         Returns:
-            any type, the requested value
+            mixed: the requested value
 
         Raises:
-            KeyError, ValueError: the path does not exist
+            KeyError: the path does not exist
+            ValueError: the path does not exist
         """
         if not path:
             return source
@@ -277,10 +280,10 @@ class Config(collections.MutableMapping):
         """get a top level entry from config or a default value
 
         Args:
-            keyname: string, top level key
+            keyname (str): top level key
 
         Returns:
-            any type, the requested value or .default if the key does not exist
+            mixed: the requested value or .default if the key does not exist
         """
         try:
             return self.get_by_path([keyname])
@@ -291,13 +294,13 @@ class Config(collections.MutableMapping):
         """get a third level entry from config with a fallback to top level
 
         Args:
-            grouping: string, top level entry in .config
-            groupname: string, second level entry, key in grouping
-            keyname: string, third level key as target and also the top level
+            grouping (str): top level entry in .config
+            groupname (str): second level entry, key in grouping
+            keyname (str): third level key as target and also the top level
                 key as fallback for a missing key in the path
 
         Returns:
-            any type, the requested value, it's fallback on top level or
+            mixed: the requested value, it's fallback on top level or
                 .default if the key does not exist on both level
         """
         try:
@@ -306,15 +309,15 @@ class Config(collections.MutableMapping):
             return self.get_option(keyname)
 
     def exists(self, keys_list, fallback=False):
-        """check if a path exisits in the dict
+        """check if a path exists in the dict
 
         Args:
-            keys_list: list, a list of strings describing the path
-            fallback: boolean, use the default values as fallback for missing
-                entrys
+            keys_list (list[str]): describing the path
+            fallback (bool): use the default values as fallback for missing
+                entries
 
         Returns:
-            boolean, True if the full path is resolvable, otherwise False
+            bool: True if the full path is resolvable, otherwise False
         """
         try:
             self.get_by_path(keys_list, fallback)
@@ -327,11 +330,11 @@ class Config(collections.MutableMapping):
         """create a path of dicts if the given path does not exist
 
         Args:
-            path: list, a list of strings describing the path
-            base: dict, the source to create the path in
+            path (list[str]): describing the path
+            base (dict): the source to create the path in
 
         Returns:
-            boolean, True if the path did not existed before, otherwise False
+            bool: True if the path did not existed before, otherwise False
 
         Raises:
             AttributeError: on attempting to override a key pointing to an entry
@@ -364,8 +367,8 @@ class Config(collections.MutableMapping):
         also override to defaults if the type of an entry does not match
 
         Args:
-            source: dict structure with values
-            path: list, a list of keys to the dict to update with defaults
+            source (dict): structure with values
+            path (list[str]): path of the target for the defaults in the config
 
         Raises:
             ValueError: the path could not be created as it would override an
@@ -391,11 +394,11 @@ class Config(collections.MutableMapping):
                 defaults[key] = value
 
     def validate(self, source, path=None):
-        """ensure that the entrys in source are all available in the config
+        """ensure that the entries in source are all available in the config
 
         Args:
-            source: default dict structure with values
-            path: list of keys to the dict to validate
+            source (dict): default dict structure with values
+            path (list[str]): list of keys to the dict to validate
 
         Raises:
             ValueError: the path could not be created as it would override an

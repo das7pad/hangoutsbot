@@ -229,7 +229,7 @@ class Tags(BotMixin):
         if remove:
             for args in remove:
                 if self.remove(*args):
-                    records_removed = records_removed + 1
+                    records_removed += 1
 
         return records_removed
 
@@ -266,11 +266,11 @@ class Tags(BotMixin):
         """fetch active tags of user for given conversation or globally
 
         Args:
-            chat_id: string, G+ID
-            conv_id: string, a Hangout ID to fetch tags for a single conv
+            chat_id (str): G+ID
+            conv_id (str): a Hangout ID to fetch tags for a single conv
 
         Returns:
-            list,
+            list[str]: matching tags for user and conversation
         """
         if chat_id == "sync":
             return []

@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class GenericEvent(BotMixin):
-    """base event that sets logging
+    """fetch the base data
 
     Args:
-        conv_event: an event instance from hangups.conversation_event or
+        conv_event (mixed): a derived hangups.ConversationEvent or
          one of hangups.parsers.{TypingStatusMessage, WatermarkNotification}
-        conv_id: string, conversation indentifier
+        conv_id (str): conversation indentifier
     """
     def __init__(self, conv_event, conv_id):
         self.conv_event = conv_event
@@ -45,7 +45,7 @@ class TypingEvent(GenericEvent):
     """user starts/pauses/stops typing
 
     Args:
-        state_update_event: hangups.parsers.TypingStatusMessage instance
+        state_update_event (hangups.parsers.TypingStatusMessage): data wrapper
     """
     def __init__(self, state_update_event):
         super().__init__(state_update_event, state_update_event.conv_id)
@@ -60,7 +60,7 @@ class WatermarkEvent(GenericEvent):
     """user reads up to a certain point in the conversation
 
     Args:
-        state_update_event: hangups.parsers.WatermarkNotification instance
+        state_update_event (hangups.parsers.WatermarkNotification): data wrapper
     """
     def __init__(self, state_update_event):
         super().__init__(state_update_event, state_update_event.conv_id)
@@ -72,7 +72,7 @@ class ConversationEvent(GenericEvent):
     """user joins, leaves, renames or messages a conversation
 
     Args:
-        conv_event: an event instance from hangups.conversation_event
+        conv_event (hangups.ConversationEvent): event data wrapper
     """
     def __init__(self, conv_event):
         super().__init__(conv_event, conv_event.conversation_id)

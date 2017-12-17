@@ -14,7 +14,7 @@ def wiki(dummy0, dummy1, *args):
 
     term = " ".join(args)
     if not term:
-        return
+        return ''
 
     try:
         page = wikipedia.page(term, auto_suggest=False)

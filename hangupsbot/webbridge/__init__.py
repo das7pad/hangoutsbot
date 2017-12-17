@@ -51,7 +51,7 @@ class WebFramework:
 
         if self.uid is None:
             self.uid = "%s-%s" % (self.plugin_name, self.instance_number)
-            WebFramework.instance_number = WebFramework.instance_number + 1
+            WebFramework.instance_number += 1
 
         asyncio.ensure_future(self._register_handlers())
         self.start_listening(bot)
@@ -137,7 +137,7 @@ class WebFramework:
             message = passthru["original_request"]["message"]
             image_id = passthru["original_request"]["image_id"]
             if "user" in passthru["original_request"]:
-                if (isinstance(passthru["original_request"]["user"], str)):
+                if isinstance(passthru["original_request"]["user"], str):
                     user = FakeUser( full_name = str,
                                      id_ = FakeUserID( chat_id = chat_id,
                                                        gaia_id = chat_id ))
@@ -229,8 +229,9 @@ class WebFramework:
                     else:
                         # Couldn't match the user's name to the message text.
                         # Possible mismatch between permamem and Hangouts?
-                        logger.warn("/me message: couldn't match name '{}' ({}) with message text"
-                                    .format(name, user_id))
+                        logger.warning("/me message: couldn't match name '%s' "
+                                       "(%s) with message text",
+                                       name, user_id)
 
             attach = None
             if hasattr(event, "conv_event") and getattr(event.conv_event, "attachments"):

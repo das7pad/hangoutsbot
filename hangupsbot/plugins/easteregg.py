@@ -33,10 +33,10 @@ async def easteregg(bot, event, *args):
         raise Help()
 
     easteregg_name = args[0]
-    eggcount = int(args[1]) if len(args) > 1 and not args[1].isdigit() else 1
+    egg_count = int(args[1]) if len(args) > 1 and not args[1].isdigit() else 1
     period = float(args[2]) if len(args) > 2 and not args[2].isdigit() else 0.5
 
-    for dummy in range(eggcount):
+    for dummy in range(egg_count):
         # pylint:disable=protected-access
         await bot._client.easter_egg(
             hangups.hangouts_pb2.EasterEggRequest(
@@ -46,5 +46,5 @@ async def easteregg(bot, event, *args):
                 easter_egg=hangups.hangouts_pb2.EasterEgg(
                     message=easteregg_name)))
 
-        if eggcount > 1:
+        if egg_count > 1:
             await asyncio.sleep(period + random.uniform(-0.1, 0.1))

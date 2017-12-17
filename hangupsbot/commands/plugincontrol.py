@@ -78,16 +78,16 @@ def plugininfo(dummy0, dummy1, *args):
             lines.append("<b>tagged via plugin module:</b>")
             for command_name, type_tags in plugin["commands"]["tagged"].items():
                 if 'admin' in type_tags:
-                    plugin_tagsets = type_tags['admin']
+                    plugin_tags = type_tags['admin']
                 else:
-                    plugin_tagsets = type_tags['user']
+                    plugin_tags = type_tags['user']
 
                 matches = []
-                for tagset in plugin_tagsets:
-                    if isinstance(tagset, frozenset):
-                        matches.append("[ {} ]".format(', '.join(tagset)))
+                for tags in plugin_tags:
+                    if isinstance(tags, frozenset):
+                        matches.append("[ {} ]".format(', '.join(tags)))
                     else:
-                        matches.append(tagset)
+                        matches.append(tags)
 
                 lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(command_name, ', '.join(matches)))
 
@@ -110,11 +110,11 @@ def _compose_load_message(module_path, result):
     """get a formatted message
 
     Args:
-        module_path: string, plugin path
-        result: string, result of the load function
+        module_path (str): plugin path
+        result (str): result of the load function
 
     Returns:
-        string, the formatted message
+        str: the formatted message
     """
     return "<b><i>%s</i></b> : <b>%s</b>" % (module_path, result)
 
@@ -247,9 +247,9 @@ async def removeplugin(bot, dummy, *args):
         return "plugin does not exist: {}".format(plugin.replace("_", "\\_"))
 
     if plugin in loaded_plugins:
+        module_path = "plugins.{}".format(plugin)
+        escaped_module_path = module_path.replace("_", "\\_")
         try:
-            module_path = "plugins.{}".format(plugin)
-            escaped_module_path = module_path.replace("_", "\\_")
             await plugins.unload(bot, module_path)
             lines.append('* **unloaded: {}**'.format(escaped_module_path))
         except (RuntimeError, KeyError) as err:
