@@ -208,11 +208,15 @@ class Cache(dict, BotMixin):
         except asyncio.CancelledError:
             logger.info('flushing [%s]', self._name)
             _dump(path, only_on_new_items=False)
+            self.clear()
 
-    def __del__(self):
+    def clear(self):
         """explicit cleanup"""
         if self._reload_listener is not None:
-            self.bot.memory.on_reload.remove_observer(self._reload_listener)
+            reload_listener = self._reload_listener
+            self._reload_listener = None
+            self.bot.memory.on_reload.remove_observer(reload_listener)
+        super().clear()
 
     def __missing__(self, identifier):
         """may be overwritten"""

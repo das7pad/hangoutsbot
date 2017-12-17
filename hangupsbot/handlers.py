@@ -491,6 +491,21 @@ class EventHandler(BotMixin):
         asyncio.ensure_future(self.run_pluggable_omnibus(
             pluggable, self.bot, event, command))
 
+    async def close(self):
+        """explicit cleanup"""
+        self._reprocessors.clear()
+        self._contexts.clear()
+        self._image_ids.clear()
+        self._executables.clear()
+
+        self.pluggables.clear()
+
+        conv_list = self.bot._conv_list        # pylint:disable=protected-access
+        conv_list.on_event.remove_observer(self._handle_event)
+        conv_list.on_typing.remove_observer(self._handle_status_change)
+        conv_list.on_watermark_notification.remove_observer(
+            self._handle_status_change)
+
 
 class HandlerBridge(BotMixin):
     """shim for handler decorator"""

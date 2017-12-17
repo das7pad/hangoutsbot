@@ -703,6 +703,13 @@ class SyncHandler(handlers.EventHandler):
         # save registered items
         plugins.tracking.end()
 
+    async def close(self):
+        """explicit cleanup"""
+        self._cache_image.clear()
+        self._cache_conv_user.clear()
+        self._cache_sending_queue.clear()
+        self.pluggables.clear()
+
     @staticmethod
     async def _ignore_handler_suppressor(call):
         """block event suppressing
