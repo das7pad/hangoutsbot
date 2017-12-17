@@ -30,6 +30,9 @@ __all__ = (
 import asyncio
 import json
 import os
+import sys
+
+PYTHON36 = sys.version_info >= (3, 6, 0)
 
 _BASE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           '.cache')

@@ -28,6 +28,7 @@ from tests.utils import (
     build_user_conversation_list_base,
 )
 from tests.constants import (
+    PYTHON36,
     EVENT_LOOP,
     CONV_ID_1,
     CONV_ID_2,
@@ -51,7 +52,8 @@ def module_wrapper(request):
         CLEANUP_LOOP.run_until_complete(
             hangupsbot.sinks.aiohttp_servers.clear())
         hangupsbot.core.AsyncQueue.release_block()
-        CLEANUP_LOOP.run_until_complete(EVENT_LOOP.shutdown_asyncgens())
+        if PYTHON36:
+            CLEANUP_LOOP.run_until_complete(EVENT_LOOP.shutdown_asyncgens())
         EVENT_LOOP.run_until_complete(asyncio.sleep(0.1))
     request.addfinalizer(_cleanup)
     logger.info('Loaded Module %s', request.module.__name__)
