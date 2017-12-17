@@ -18,8 +18,11 @@ def _initialise(bot):
 
 
 @command.register
-async def help(bot, event, cmd=None, *args):  # pylint:disable=redefined-builtin
+async def help(bot, event, *args):
     """list supported commands, /bot help <command> will show additional details"""
+    # pylint:disable=redefined-builtin
+
+    cmd, *args = args or (None,)
     help_lines = []
     link_to_guide = bot.get_config_suboption(event.conv_id, 'link_to_guide')
     admins_list = bot.get_config_suboption(event.conv_id, 'admins')

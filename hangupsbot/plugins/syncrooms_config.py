@@ -91,7 +91,7 @@ def attachsyncout(bot, event, *args):
     return ''
 
 
-def detachsyncout(bot, event, target_conversation_id=None, *dummys):
+def detachsyncout(bot, event, *args):
     """detach current conversation from a syncout if no parameters supplied."""
 
     if not bot.config.get_option('syncing_enabled'):
@@ -102,9 +102,7 @@ def detachsyncout(bot, event, target_conversation_id=None, *dummys):
     if not syncouts:
         return ''
 
-    if target_conversation_id is None:
-        # detach myself if no target_conversation_id provided
-        target_conversation_id = event.conv_id
+    target_conversation_id = args[0] if args else event.conv_id
 
     _detached = False
     for sync_room_list in syncouts:

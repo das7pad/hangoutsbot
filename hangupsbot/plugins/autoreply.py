@@ -195,19 +195,19 @@ def _words_in_text(word, text):
     return True if re.search(regex, text, re.IGNORECASE) else False
 
 
-def autoreply(bot, event, cmd=None, *args):
+def autoreply(bot, event, *args):
     """adds or removes an autoreply from config.
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): a message container
-        cmd (str): the first argument passed after the command
         args (str): the new/old autoreply entry
 
     Returns:
         str: command output
     """
-    argument = " ".join(args)
+    cmd = args[0] if args else None
+    argument = " ".join(args[1:])
     html = None
     value = bot.get_config_suboption(event.conv_id, "autoreplies")
 

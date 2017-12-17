@@ -364,13 +364,12 @@ def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
     bot.stop()
 
 
-async def config(bot, event, cmd=None, *args):
+async def config(bot, event, *args):
     """retrieve or edit a config entry
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): a message container
-        cmd (str): optional sub command
         args (str): additional words to for a request
 
     Returns:
@@ -407,7 +406,7 @@ async def config(bot, event, cmd=None, *args):
     #TODO(das7pad): refactor into smaller parts and validate the new value/path
 
     # consume arguments and differentiate beginning of a json array or object
-    tokens = list(args)
+    cmd, *tokens = args or (None,)
     parameters = []
     value = []
     state = "key"
