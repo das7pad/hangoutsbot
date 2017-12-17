@@ -360,7 +360,7 @@ class SyncImage(BotMixin):
 
             if not self._meets_size_limit:
                 # to big to resize
-                return
+                return data, filename
 
             try:
                 container = io.BytesIO(data.getbuffer())

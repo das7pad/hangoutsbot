@@ -239,6 +239,8 @@ def tldr_base(bot, conv_id, parameters):
 
             return message, display
 
+    return '', 0
+
 
 def _time_ago(timestamp):
     time_difference = time.time() - timestamp

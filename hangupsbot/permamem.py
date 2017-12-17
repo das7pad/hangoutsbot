@@ -492,6 +492,7 @@ class ConversationMemory(BotMixin):
             for chat_id in convdata["participants"]:
                 if query == chat_id:
                     return True
+            return False
 
         def _type(dummy0, convdata, query):
             """check if the conversation type matches with the query
