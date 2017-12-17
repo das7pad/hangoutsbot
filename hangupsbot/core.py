@@ -308,6 +308,15 @@ class HangupsBot(object):
         await command.clear()
         await sinks.aiohttp_servers.clear()
 
+        if self.sync is not None:
+            await self.sync.close()
+        if self._handlers is not None:
+            await self._handlers.close()
+        if self.conversations is not None:
+            await self.conversations.close()
+        if self._conv_list is not None:
+            self._conv_list.on_event.remove_observer(self._retry_reset)
+
         self.memory.flush()
         self.config.flush()
 
@@ -528,27 +537,27 @@ class HangupsBot(object):
         """
         return self.memory.ensure_path([datatype, key])
 
+    def _retry_reset(self, dummy):
+        """schedule a retry counter reset
+
+        Args:
+            dummy (hangups.conversation_event.ConversationEvent): ignored
+        """
+        async def _delayed_reset():
+            """delayed reset of the retry count"""
+            try:
+                await asyncio.sleep(self._max_retries)
+            except asyncio.CancelledError:
+                return
+            self.__retry = 1
+
+        if (self.__retry > 1 and
+                (self.__retry_resetter is None
+                 or self.__retry_resetter.done())):
+            self.__retry_resetter = asyncio.ensure_future(_delayed_reset())
+
     async def _on_connect(self):
         """handle connection"""
-
-        def _retry_reset(dummy):
-            """schedule a retry counter reset
-
-            Args:
-                dummy (hangups.conversation_event.ConversationEvent): ignored
-            """
-            async def _delayed_reset():
-                """delayed reset of the retry count"""
-                try:
-                    await asyncio.sleep(self._max_retries)
-                except asyncio.CancelledError:
-                    return
-                self.__retry = 1
-
-            if (self.__retry > 1 and
-                    (self.__retry_resetter is None
-                     or self.__retry_resetter.done())):
-                self.__retry_resetter = asyncio.ensure_future(_delayed_reset())
 
         logger.debug("connected")
 
@@ -566,7 +575,7 @@ class HangupsBot(object):
             await hangups.build_user_conversation_list(
                 self._client, conv_list_cls=HangupsConversationList))
 
-        self._conv_list.on_event.add_observer(_retry_reset)
+        self._conv_list.on_event.add_observer(self._retry_reset)
 
         self.conversations = await permamem.initialise(self)
 
