@@ -99,7 +99,7 @@ lint: venv-dev
 .PHONY: .test-only
 .test-only:
 	@echo "Tests: started"
-	@$(venv)/bin/py.test -q -x tests
+	@$(venv)/bin/py.test -q tests
 	@echo "Tests: all completed"
 
 .PHONY: test-only
@@ -108,7 +108,7 @@ test-only: venv-dev .test-only
 .PHONY: test-only-verbose
 test-only-verbose: venv-dev
 	@echo "Tests: started in verbose mode"
-	@$(venv)/bin/py.test -vv -x tests
+	@$(venv)/bin/py.test -vv tests
 	@echo "Tests: all completed"
 
 .PHONY: test
