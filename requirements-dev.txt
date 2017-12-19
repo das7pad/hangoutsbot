@@ -7,10 +7,9 @@
 
 git+https://github.com/das7pad/hangups@v0.4.3.7#egg=hangups==hangups-0.4.3.7
 aiohttp==2.3.6
-aioresponses==0.3.0
+aioresponses==0.3.1
 appdirs==1.4.3
 astroid==1.6.0
-async-generator==1.8
 async-timeout==2.0.0
 attrs==17.3.0
 beautifulsoup4==4.6.0
