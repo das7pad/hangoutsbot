@@ -17,10 +17,14 @@ import hangups.user
 from hangups import hangouts_pb2
 from hangups.conversation_event import ChatMessageEvent, ChatMessageSegment
 
-import hangupsbot.core
 import hangupsbot.commands
+import hangupsbot.core
+import hangupsbot.handlers
+import hangupsbot.permamem
 import hangupsbot.plugins
 import hangupsbot.sinks
+import hangupsbot.tagging
+import hangupsbot.sync.handler
 from hangupsbot.event import ConversationEvent
 from hangupsbot.hangups_conversation import HangupsConversationList
 
@@ -44,6 +48,7 @@ from tests.constants import (
 USER_LIST_KWARGS, CONV_LIST_KWARGS = build_user_conversation_list_base()
 CLEANUP_LOOP = asyncio.new_event_loop()
 logger = logging.getLogger('tests')
+
 
 @pytest.fixture(scope='module', autouse=True)
 def module_wrapper(request):

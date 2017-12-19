@@ -4,7 +4,8 @@
 
 import pytest
 import hangupsbot.event
-from hangupsbot import core, plugins, commands, handlers
+
+from hangupsbot import core, plugins, commands
 
 from tests import simple_conv_list, CONV_ID_1, Message
 

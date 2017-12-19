@@ -6,6 +6,7 @@ from unittest import mock
 
 import hangups
 import pytest
+import hangups.channel
 from aioresponses import aioresponses
 
 import hangupsbot.core
