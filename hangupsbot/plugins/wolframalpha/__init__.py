@@ -54,7 +54,7 @@ async def _fetch(bot, args):
 
     Args:
         bot (hangupsbot.HangupsBot): the running instance
-        args: tuple of string, query for wolframalpha
+        args (tuple[str]): query for wolframalpha
 
     Returns:
         str: the parsed result or an error message

@@ -32,6 +32,11 @@ async def test_bot(bot):
 
 
 def test_event(event):
+    """test the TestConversationEvent
+
+    Args:
+        event (tests.fixtures.TestConversationEvent): message wrapper
+    """
     assert isinstance(event, hangupsbot.event.ConversationEvent)
     assert event.CHAT_ID == event.user_id.chat_id
     assert event.CONV_ID == event.conv_id

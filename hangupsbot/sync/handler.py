@@ -715,7 +715,7 @@ class SyncHandler(handlers.EventHandler):
         """block event suppressing
 
         Args:
-            call: awaitable coroutine function with arguments
+            call (generator): awaitable coroutine function with arguments
         """
         try:
             await call
@@ -730,7 +730,7 @@ class SyncHandler(handlers.EventHandler):
 
         Args:
             bot (hangupsbot.HangupsBot): the running instance
-            broadcast_targets: list of tuple, (conv_id, hangups.ChatMessage)
+            broadcast_targets (list[tuple[str, mixed, int]): targets
             context (dict): additional info about the message/conv
         """
         if context.get('syncroom_no_repeat'):
@@ -760,7 +760,7 @@ class SyncHandler(handlers.EventHandler):
         """forward an incoming message from hangouts to the message handler
 
         Args:
-            dummy: HangupsBot instance
+            dummy (hangupsbot.HangupsBot): the running instance
             event (event.ConversationEvent): a message wrapper
         """
         segments = MessageSegment.replace_markdown(event.conv_event.segments)
@@ -796,7 +796,7 @@ class SyncHandler(handlers.EventHandler):
         """forward a membership change on hangouts to the membership handler
 
         Args:
-            dummy: HangupsBot instance
+            dummy (hangupsbot.HangupsBot): the running instance
             event (event.ConversationEvent): a message wrapper
         """
         if isinstance(event, SyncEventMembership):
@@ -842,7 +842,11 @@ class SyncHandler(handlers.EventHandler):
             user (sync.user.SyncUser): the user to be kicked
 
         Returns:
-            None: ignored, False: kick failed, True: kicked or 'whitelisted'
+            mixed:
+                None: ignored,
+                False: kick failed,
+                True: kicked
+                'whitelisted'
         """
         if user.identifier != 'hangouts:' + conv_id:
             return None
@@ -876,7 +880,7 @@ class SyncHandler(handlers.EventHandler):
         """send a message to the event conv
 
         Args:
-            event: event.SyncEvent instance
+            event (event.SyncEvent): message wrapper
             original_conv_id (str): original target conversation of the event
         """
         ho_tag = 'hangouts:' + event.conv_id

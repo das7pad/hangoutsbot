@@ -123,12 +123,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         item = [key] if key is not None else []
         return self.bot.config.get_by_path(['telesync'] + item, fallback)
 
-    async def start(self, dummy=None):
-        """init the bot user and commands, start the reminder and MessageLoop
-
-        Args:
-            dummy: HangupsBot instance, arg is required for a registered task
-        """
+    async def start(self):
+        """init the bot user and commands, start the reminder and MessageLoop"""
         bot_user = await self.getMe()
         bot_chat_id = self.bot.user_self()['chat_id']
         self.bot.memory.set_defaults(

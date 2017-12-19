@@ -129,7 +129,7 @@ def help(slack_bot, msg, args):                # pylint:disable=redefined-builti
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (str): additional arguments as strings
+        args (tuple[str]): additional arguments as strings
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -156,7 +156,7 @@ def whereami(dummy, msg, dummys):
     Args:
         dummy (core.SlackRTM): ignored
         msg (message.SlackMessage): the currently handled message
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         str: command output
@@ -170,7 +170,7 @@ def whoami(dummy, msg, dummys):
     Args:
         dummy (core.SlackRTM): ignored
         msg (message.SlackMessage): the currently handled message
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -184,7 +184,7 @@ def whois(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (str): additional arguments as strings
+        args (tuple[str]): additional arguments as strings
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -213,7 +213,7 @@ def admins(slack_bot, msg, dummys):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -231,7 +231,7 @@ async def syncprofile(slack_bot, msg, dummys):
     Args:
         slack_bot (core.SlackRTM): a running instance
         msg (message.SlackMessage): the currently handled instance
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -282,7 +282,7 @@ async def unsyncprofile(slack_bot, msg, dummys):
     Args:
         slack_bot (core.SlackRTM): a running instance
         msg (message.SlackMessage): the currently handled instance
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -323,7 +323,7 @@ async def hangouts(slack_bot, msg, dummys):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -342,7 +342,7 @@ def listsyncs(slack_bot, msg, dummys):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        dummys (tuple): a tuple of string, ignored
+        dummys (tuple[str]): ignored
 
     Returns:
         tuple[str]: the channel target and the command output
@@ -377,7 +377,7 @@ def syncto(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (str): additional arguments as strings
+        args (tuple[str]): additional arguments as strings
 
     Returns:
         str: command output
@@ -412,7 +412,7 @@ def disconnect(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (str): additional arguments as strings
+        args (tuple[str]): additional arguments as strings
 
     Returns:
         str: command output
@@ -446,7 +446,7 @@ def chattitle(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (str): additional arguments as strings
+        args (tuple[str]): additional arguments as strings
 
     Returns:
         str: command output
@@ -461,7 +461,7 @@ def sync_config(slack_bot, msg, args):
     Args:
         slack_bot (core.SlackRTM): the instance which received the message
         msg (message.SlackMessage): the currently handled message
-        args (str): additional arguments as strings
+        args (tuple[str]): additional arguments as strings
 
     Returns:
         str: command output

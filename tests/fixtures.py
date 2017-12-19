@@ -66,7 +66,7 @@ def module_wrapper(request):
 
 
 class TestChatMessageEvent(ChatMessageEvent):
-    """Lowlevel `hangups.conversation_event.ConversationEvent`
+    """Low level `hangups.conversation_event.ConversationEvent`
 
     Args:
         conv_id (str): conversation identifier
@@ -99,7 +99,7 @@ class TestChatMessageEvent(ChatMessageEvent):
             event_type=hangouts_pb2.EVENT_TYPE_REGULAR_CHAT_MESSAGE))
 
 class TestConversationEvent(ConversationEvent):
-    """Highlevel `hangupsbot.event.ConversationEvent`
+    """High level `hangupsbot.event.ConversationEvent`
 
     Args:
         conv_id (str): conversation identifier
@@ -136,7 +136,7 @@ class TestConversationEvent(ConversationEvent):
 
         Args:
             cmd (str): the command name
-            args (tuple): a tuple of strings, the command args
+            args (str): the command args
 
         Returns:
             TestConversationEvent: a new event with the given args

@@ -298,7 +298,7 @@ class QueueCache(Cache):
             identifier (mixed): conversation id
 
         Returns:
-            mixed: an instance of ._queue, AsyncQueue or Queue
+            Queue: an instance of ._queue, AsyncQueue or Queue
         """
         # pylint:disable=arguments-differ
         return super().get(identifier, ignore_timeout=True)

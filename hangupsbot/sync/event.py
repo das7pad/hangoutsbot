@@ -97,7 +97,7 @@ class SyncEvent(FakeEvent):
         user (SyncUser): instance of the sender
         text (mixed): str or segment list, raw message from any platform
         targets (list[str]): conversation identifier of relay targets
-        previous_targets (list[str]): conv identifier of previous targets
+        previous_targets (set[str]): conv identifier of previous targets
         reply (SyncReply): wrapper with a message to reply
         title (str): Chat Title of the source conversation
         edited (bool): True if the message is an edited message
@@ -421,7 +421,7 @@ class SyncEventMembership(SyncEvent):
         user (sync.user.SyncUser): instance of the sender
         text (mixed): str or segment list, raw message from any platform
         targets (list[str]): conversation identifier of relay targets
-        previous_targets (list[str]): conv identifier
+        previous_targets (set[str]): conv identifier
         type_ (int): 1: join, 2: leave - same as the hangups values
         participant_user (mixed): the changed members
             None: self add or leave,

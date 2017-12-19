@@ -601,10 +601,10 @@ class HangupsBot(object):
         """send a message to hangouts and allow handler to add more targets
 
         Args:
-            conversation: string or hangups conversation like instance
-            message: string or a list of hangups.ChatMessageSegment
+            conversation (mixed): str or hangups conversation like instance
+            message (mixed): str or a list of hangups.ChatMessageSegment
             context (dict): optional information about the message
-            image_id: int or string, upload id of an image to be attached
+            image_id (mixed): int or str, upload id of an image to be attached
 
         Raises:
             ValueError: invalid conversation(id) provided
@@ -654,8 +654,8 @@ class HangupsBot(object):
         the user must have already been seen elsewhere by the bot
 
         Args:
-            chat_id: users G+ id
-            message: string or a list of hangups.ChatMessageSegment
+            chat_id (mixed): int or str, users G+ id
+            message (mixed): string or a list of hangups.ChatMessageSegment
             context (dict): optional information about the message
 
         Returns:

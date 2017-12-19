@@ -304,9 +304,6 @@ async def rename(bot, event, *args):
         bot (hangupsbot.HangupsBot): the running instance
         event (event.ConversationEvent): a message container
         args (str): the new chat title
-
-    Returns:
-        string
     """
     await command.run(bot, event, *["convrename", "id:" + event.conv_id,
                                     " ".join(args)])
