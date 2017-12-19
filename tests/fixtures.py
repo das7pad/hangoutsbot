@@ -165,7 +165,7 @@ def event(request):
     return TestConversationEvent(conv_id, chat_id)
 
 
-class LocalHangupsBot(hangupsbot.core.HangupsBot):
+class TestHangupsBot(hangupsbot.core.HangupsBot):
     def __init__(self):
         # pylint:disable=protected-access
         super().__init__(**DEFAULT_BOT_KWARGS)
@@ -212,5 +212,5 @@ class LocalHangupsBot(hangupsbot.core.HangupsBot):
 
 @pytest.fixture(scope='module')
 def bot():
-    """get a fresh HangupsBot instance per module"""
-    return LocalHangupsBot()
+    """get a fresh TestHangupsBot instance per module"""
+    return TestHangupsBot()

@@ -13,10 +13,10 @@ from tests import simple_conv_list, CONV_ID_1, Message
 
 @pytest.mark.asyncio
 async def test_bot(bot):
-    """test the LocalHangupsBot
+    """test the TestHangupsBot
 
     Args:
-        bot (tests.fixtures.LocalHangupsBot): current test instance
+        bot (tests.fixtures.TestHangupsBot): current test instance
     """
     assert isinstance(bot, core.HangupsBot)
 

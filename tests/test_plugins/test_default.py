@@ -50,7 +50,7 @@ async def test_reload(bot, event):
     """test `/bot reload`
 
     Args:
-        bot (tests.fixtures.LocalHangupsBot): current test instance
+        bot (tests.fixtures.TestHangupsBot): current test instance
         event (tests.fixtures.TestConversationEvent): message wrapper
     """
     def on_reload_config():
