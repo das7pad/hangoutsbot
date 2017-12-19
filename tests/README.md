@@ -62,7 +62,6 @@ Currently there are two fixtures implemented:
   from hangupsbot import commands
 
   from tests import run_cmd
-  from tests.constants import CHAT_ID_ADMIN
 
   @pytest.mark.asyncio
   async def test_load_plugin(bot):
@@ -79,3 +78,17 @@ Currently there are two fixtures implemented:
       expected_text = '<b>Changed entry XYZ</b>'
       assert expected == result
   ```
+
+### Test a plugin which sends messages
+
+  Commands can return their command output, this simplifies the test setup as
+  seen above.
+
+  Command output that was sent using `bot.coro_send_message` can be
+  retrieved from `bot.last_message`. The returned object is a
+  `tests.utils.Message`, which has a simple api:
+
+  - `conv_id`: `str`, the target conversation
+  - `text`: `str` or `list[ChatMessageSegment]`, the message content
+  - `context`: `dict`, additional information about the message
+  - `image_id`: `int`, upload id of an image
