@@ -31,7 +31,9 @@ def test_hangupsbot_run():
         async def _on_connect(self):
             await super()._on_connect()
             self.stop()
-            await asyncio.sleep(5)  # delay further requests
+            lock = asyncio.Lock()
+            await lock.acquire()
+            await lock.acquire()  # delay further requests
 
     with mock.patch('hangups.get_auth_stdin') as get_auth_stdin:
         get_auth_stdin.return_value = {'SAPISID': 'IS_REQUIRED'}
