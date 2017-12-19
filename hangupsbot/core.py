@@ -304,6 +304,9 @@ class HangupsBot(object):
             self.config["message_queue_unload_timeout"])
 
         await plugins.unload_all(self)
+        await plugins.tracking.clear()
+        await command.clear()
+        await sinks.aiohttp_servers.clear()
 
         if self.sync is not None:
             await self.sync.close()

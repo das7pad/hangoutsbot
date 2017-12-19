@@ -95,6 +95,25 @@ lint: venv-dev
 	@$(venv)/bin/pylint -s no -j 4 hangupsbot | sed -r 's/(\*{13})/\n\1/g'
 	@echo "Lint: no errors found"
 
+# internal, do not check the venv
+.PHONY: .test-only
+.test-only:
+	@echo "Tests: started"
+	@$(venv)/bin/py.test -q tests
+	@echo "Tests: all completed"
+
+.PHONY: test-only
+test-only: venv-dev .test-only
+
+.PHONY: test-only-verbose
+test-only-verbose: venv-dev
+	@echo "Tests: started in verbose mode"
+	@$(venv)/bin/py.test -vv tests
+	@echo "Tests: all completed"
+
+.PHONY: test
+test: lint .test-only
+
 .PHONY: clean
 clean:
 	@echo "Remove local cache and compiled Python files"

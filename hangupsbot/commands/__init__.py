@@ -50,6 +50,12 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         self.register_arg_preprocessor_group = (
             self._arguments_parser.register_preprocessor_group)
 
+    async def clear(self):
+        """drop all commands"""
+        self.commands.clear()
+        self.command_tagsets.clear()
+        self.admin_commands.clear()
+
     @property
     def arguments_parser(self):
         """get the arguments parser
@@ -156,22 +162,27 @@ class CommandDispatcher(BotMixin, TrackingMixin):
 
         return {"admin": list(admin_commands), "user": list(user_commands)}
 
-    async def run(self, bot, event, *args, **kwds):
+    async def run(self, bot, event, *args, **kwargs):
         """Run a command
 
         Args:
             bot (hangupsbot.HangupsBot): the running instance
             event (event.ConversationEvent): a message container
             args: tuple of string, including the command name in fist place
-            kwds (dict): additional info to the execution including the key
+            kwargs (dict): additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
+                '__return_result__' to return all command output
 
         Returns:
             mixed: command specific output
 
         Raises:
             KeyError: specified command is unknown
+            Help: the kwarg 'raise_exceptions' is set and the command raised
             CancelledError: forward low level cancellation
+            TimeoutError: the kwarg 'raise_exceptions' is set and the
+                command execution time exceeded the `command_timeout` limit
+                which is set in the bot config, default see `DEFAULT_CONFIG`
             Exception: the kwarg 'raise_exceptions' is set to True and the
                 command raised any Exception
         """
@@ -182,26 +193,32 @@ class CommandDispatcher(BotMixin, TrackingMixin):
 
         # default: if exceptions occur in a command, output as message
         # supply keyword argument raise_exceptions=True to override behaviour
-        raise_exceptions = kwds.pop("raise_exceptions", False)
+        raise_exceptions = kwargs.pop("raise_exceptions", False)
 
         setattr(event, 'command_name', command_name)
         setattr(event, 'command_module', coro.__module__)
         setattr(event, 'command_path', coro.__module__ + '.' + command_name)
+        return_result = kwargs.pop("__return_result__", False)
 
         conv_id = event.conv_id
         context = None
         try:
-            result = await asyncio.wait_for(coro(bot, event, *args[1:], **kwds),
-                                            bot.config['command_timeout'])
+            result = await asyncio.wait_for(
+                coro(bot, event, *args[1:], **kwargs),
+                bot.config['command_timeout'])
 
         except asyncio.CancelledError:
             # shutdown in progress
             raise
 
         except asyncio.TimeoutError:
+            if raise_exceptions:
+                raise
             text = _('command execution of "{}" timed out').format(command_name)
 
         except Help as err:
+            if raise_exceptions:
+                raise
             help_entry = (*err.args, '', '<b>%s:</b>' % command_name,
                           get_func_help(bot, command_name, coro))
             text = "\n".join(help_entry).strip()
@@ -215,6 +232,8 @@ class CommandDispatcher(BotMixin, TrackingMixin):
             text = "<i><b>%s</b> %s</i>" % (command_name, type(err).__name__)
 
         else:
+            if return_result:
+                return result
             if (isinstance(result, str) or
                     (isinstance(result, list) and
                      all([isinstance(item, hangups.ChatMessageSegment)
