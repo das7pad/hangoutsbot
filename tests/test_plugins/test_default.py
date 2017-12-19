@@ -65,7 +65,7 @@ async def test_reload(bot, event):
     event = event.for_command('reload')
     await run_cmd(bot, event)
     await asyncio.sleep(0)
-    assert 'reloading' in bot.last_message.message
+    assert 'reloading' in bot.last_message.text
     bot.config.on_reload.remove_observer(on_reload_config)
     bot.memory.on_reload.remove_observer(on_reload_memory)
     assert reloaded == ['config', 'memory']

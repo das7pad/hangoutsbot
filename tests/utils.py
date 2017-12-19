@@ -36,7 +36,7 @@ from tests.constants import (
     USER_PHOTO_2,
 )
 
-Message = namedtuple('Message', ['conv_id', 'message', 'context', 'image_id'])
+Message = namedtuple('Message', ['conv_id', 'text', 'context', 'image_id'])
 ConvData = namedtuple('ConvData', ('id_', 'name', 'users'))
 
 class _User(User):
