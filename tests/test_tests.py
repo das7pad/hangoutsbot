@@ -2,14 +2,21 @@
 
 # TODO(das7pad): more tests
 
+import pytest
 import hangupsbot.event
 from hangupsbot import core, plugins, commands, handlers
 
-from tests import simple_conv_list
+from tests import simple_conv_list, CONV_ID_1, Message
 
 # pylint:disable=redefined-outer-name
 
-def test_bot(bot):
+@pytest.mark.asyncio
+async def test_bot(bot):
+    """test the LocalHangupsBot
+
+    Args:
+        bot (tests.fixtures.LocalHangupsBot): current test instance
+    """
     assert isinstance(bot, core.HangupsBot)
 
     # check mixins
@@ -17,6 +24,11 @@ def test_bot(bot):
     assert plugins.tracking is commands.command.tracking
 
     assert all(conv_id in bot.conversations for conv_id in simple_conv_list)
+
+    message = Message(CONV_ID_1, 'TEXT', {'key': 'VALUE'}, 0)
+    await bot.coro_send_message(*message)
+    assert bot.last_message == message
+
 
 def test_event(event):
     assert isinstance(event, hangupsbot.event.ConversationEvent)

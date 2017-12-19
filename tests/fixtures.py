@@ -25,6 +25,7 @@ from hangupsbot.event import ConversationEvent
 from hangupsbot.hangups_conversation import HangupsConversationList
 
 from tests.utils import (
+    Message,
     build_user_conversation_list_base,
 )
 from tests.constants import (
@@ -171,6 +172,8 @@ class LocalHangupsBot(hangupsbot.core.HangupsBot):
         self.memory._last_dump = ''
         self.memory.defaults = {}
 
+        self._message_queue = []
+
         # patch .run()
         self._client = hangups.Client({'SAPISID': 'IS_REQUIRED'})
 
@@ -186,6 +189,21 @@ class LocalHangupsBot(hangupsbot.core.HangupsBot):
         EVENT_LOOP.run_until_complete(self._handlers.setup(self._conv_list))
         EVENT_LOOP.run_until_complete(self.sync.setup())
         EVENT_LOOP.run_until_complete(hangupsbot.permamem.initialise(self))
+
+    async def coro_send_message(self, conversation, message, context=None,
+                                image_id=None):
+        self._message_queue.append(
+            Message(conversation, message, context, image_id))
+
+    @property
+    def last_message(self):
+        """get schedules messages
+
+        Returns:
+            tests.utils.Message: a queued message
+        """
+        return self._message_queue[-1]
+
 
 @pytest.fixture(scope='module')
 def bot():

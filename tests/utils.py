@@ -2,6 +2,7 @@
 
 # TODO(das7pad): documentation
 __all__ = (
+    'Message',
     'simple_conv_list',
     'simple_user_list',
     'build_user_conversation_list_base',
@@ -35,6 +36,7 @@ from tests.constants import (
     USER_PHOTO_2,
 )
 
+Message = namedtuple('Message', ['conv_id', 'message', 'context', 'image_id'])
 ConvData = namedtuple('ConvData', ('id_', 'name', 'users'))
 
 class _User(User):
