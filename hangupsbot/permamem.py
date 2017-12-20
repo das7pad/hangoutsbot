@@ -101,12 +101,11 @@ class ConversationMemory(BotMixin):
 
         count_user = 0
         count_user_definitive = 0
-        for chat_id in self.bot.memory["user_data"]:
-            if "_hangups" not in self.bot.memory["user_data"][chat_id]:
+        for user in self.bot.memory["user_data"].values():
+            if "_hangups" not in user:
                 continue
             count_user += 1
-            if (self.bot.memory["user_data"][chat_id]["_hangups"]
-                    ["is_definitive"]):
+            if user["_hangups"]["is_definitive"]:
                 count_user_definitive += 1
 
         logger.info("total users: %s | definitive at start: %s",
