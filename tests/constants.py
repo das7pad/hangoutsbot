@@ -36,6 +36,7 @@ PYTHON36 = sys.version_info >= (3, 6, 0)
 
 _BASE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           '.cache')
+os.makedirs(_BASE_PATH, exist_ok=True)
 CONFIG_PATH = os.path.join(_BASE_PATH, 'config.json')
 MEMORY_PATH = os.path.join(_BASE_PATH, 'memory.json')
 COOKIES_PATH = os.path.join(_BASE_PATH, 'cookies.json')
