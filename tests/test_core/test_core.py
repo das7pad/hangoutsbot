@@ -2,6 +2,7 @@
 __author__ = 'das7pad@outlook.com'
 
 import asyncio
+import os
 from unittest import mock
 
 import hangups
@@ -46,6 +47,14 @@ def test_hangupsbot_run():
             await lock.acquire()
             await lock.acquire()  # delay further requests
 
+    def _delete(path):
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+
+    _delete(DEFAULT_BOT_KWARGS['config_path'])
+    _delete(DEFAULT_BOT_KWARGS['memory_path'])
     with mock.patch('hangups.get_auth_stdin') as get_auth_stdin:
         get_auth_stdin.return_value = {'SAPISID': 'IS_REQUIRED'}
 
