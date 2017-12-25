@@ -7,8 +7,7 @@ import time
 import logging
 from collections import namedtuple
 
-from hangupsbot import plugins
-from hangupsbot.base_models import BotMixin
+from hangupsbot.base_models import BotMixin, TrackingMixin
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class CacheItem(CacheItemBase):
         return CacheItem(self.value, self.timeout, time.time() + self.timeout)
 
 
-class Cache(dict, BotMixin):
+class Cache(dict, BotMixin, TrackingMixin):
     """store items for a given timeout which could be extended on access
 
     Args:
@@ -56,6 +55,7 @@ class Cache(dict, BotMixin):
     """
     __slots__ = ('_name', '_default_timeout', '_increase_on_access',
                  '_dump_config', '_reload_listener')
+
     def __init__(self, default_timeout, name=None, increase_on_access=True,
                  dump_config=None):
         super().__init__()
@@ -71,7 +71,8 @@ class Cache(dict, BotMixin):
 
     def start(self):
         """start the cleanup, restore old entries and start dumping to memory"""
-        plugins.start_asyncio_task(self._periodic_cleanup)
+        task = asyncio.ensure_future(self._periodic_cleanup())
+        self.tracking.register_asyncio_task(task)
 
         # loading and dumping depends on a configured interval and dump path
         if self._dump_config is not None:
@@ -79,7 +80,8 @@ class Cache(dict, BotMixin):
             self._reload_listener = functools.partial(self._load_entries)
             self.bot.memory.on_reload.add_observer(self._reload_listener)
 
-            plugins.start_asyncio_task(self._periodic_dump)
+            task = asyncio.ensure_future(self._periodic_dump())
+            self.tracking.register_asyncio_task(task)
 
     def get(self, identifier, pop=False, ignore_timeout=False):
         """receive an entry from cache
@@ -142,12 +144,8 @@ class Cache(dict, BotMixin):
     # PRIVATE METHODS
     ############################################################################
 
-    async def _periodic_cleanup(self, dummy=None):
-        """remove old cache entries, sleep ._default_timeout before each run
-
-        Args:
-            dummy: unused
-        """
+    async def _periodic_cleanup(self):
+        """remove old cache entries, sleep ._default_timeout before each run"""
         try:
             while True:
                 await asyncio.sleep(self._default_timeout)
@@ -166,11 +164,8 @@ class Cache(dict, BotMixin):
         for identifier, value in self.bot.memory.get_by_path(path).items():
             self.add(identifier, *value)
 
-    async def _periodic_dump(self, dummy=None):
+    async def _periodic_dump(self):
         """load the last cache state from memory and schedule dumping to memory
-
-        Args:
-            dummy: unused
         """
         def _dump(path, only_on_new_items=True):
             """export the currently cached items to memory
