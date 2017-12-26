@@ -72,7 +72,6 @@ class Tracker(BotMixin):
             "handlers": [],
             "shared": [],
             "metadata": {},
-            "threads": [],
             "asyncio.task": [],
             "aiohttp.web": [],
             "aiohttp.session": [],
@@ -206,10 +205,6 @@ class Tracker(BotMixin):
             objectref (mixed): the shared object
         """
         self._current["shared"].append((identifier, objectref))
-
-    def register_thread(self, thread):
-        """add a single Thread to the plugin tracking"""
-        self._current["threads"].append(thread)
 
     def register_aiohttp_web(self, group):
         """track the group(name) of an aiohttp listener"""
@@ -667,7 +662,6 @@ async def unload(bot, module_path):
         bool: True if the plugin was fully unloaded
 
     Raises:
-        RuntimeError: the plugin has registered threads
         NotLoaded: the plugin was not loaded or is already unloaded
     """
     try:
@@ -676,10 +670,6 @@ async def unload(bot, module_path):
         logger.debug('Duplicate call on `plugins.unload(bot, "%s")`',
                      module_path)
         raise NotLoaded(module_path) from None
-
-    if plugin["threads"]:
-        raise RuntimeError("%s has %s thread(s)" % (module_path,
-                                                    len(plugin["threads"])))
 
     for command_name in plugin["commands"]["all"]:
         if command_name in command.commands:

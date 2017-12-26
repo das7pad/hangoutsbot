@@ -59,10 +59,6 @@ def plugininfo(dummy0, dummy1, *args):
         if plugin["shared"]:
             lines.append("<b>shared:</b> " + ", ".join(["<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
 
-        # threads
-        if plugin["threads"]:
-            lines.append("<b>threads:</b> {}".format(len(plugin["threads"])))
-
         # aiohttp.web
         if plugin["aiohttp.web"]:
             lines.append("<b>aiohttp.web:</b>")
