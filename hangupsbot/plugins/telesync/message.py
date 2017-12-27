@@ -152,7 +152,7 @@ class Message(dict, BotMixin):
             image = None
 
         try:
-            offset = self._last_messages[self.chat_id].index(
+            offset = self._last_messages[int(self.chat_id)].index(
                 int(self.reply.msg_id))
         except ValueError:
             offset = None
