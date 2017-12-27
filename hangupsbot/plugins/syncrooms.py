@@ -10,7 +10,7 @@ def _get_targets(bot, source_id, caller):
     """get all conversations an event should be relayed to
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         source_id (str): source conversation of event
         caller (str): identifier to allow recursive calls
 

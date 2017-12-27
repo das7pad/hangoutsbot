@@ -114,12 +114,12 @@ class SyncHandler(handlers.EventHandler):
         Args:
             identifier (str): platform identifier to skip the event on receive
             conv_id (str): target Conversation ID for the message
-            user (user.SyncUser): the sender
+            user (hangupsbot.sync.user.SyncUser): the sender
             text (mixed): str or segment list, raw message from any platform
             reply (event.SyncReply): reply wrapped in one object
             title (str): chat title of source chat
             edited (bool): True if the message is an edited message
-            image (sync.image.SyncImage): already wrapped image info
+            image (hangupsbot.sync.image.SyncImage): already wrapped image info
             context (dict): optional information about the message
             previous_targets (set[str]): conversation identifiers
             notified_users (set[str]): object to track users that were notified
@@ -217,7 +217,8 @@ class SyncHandler(handlers.EventHandler):
         Args:
             identifier (str): platform identifier to skip the event on receive
             conv_id (str): target Conversation ID for the message
-            user (user.SyncUser): the changed user or inviter/remover
+            user (hangupsbot.sync.user.SyncUser): the changed user or
+                inviter/remover
             type_ (int): 1: join, 2: leave
             text (mixed): str or segment list, raw message from any platform,
                 by default, this text is not used for the membership event
@@ -284,7 +285,7 @@ class SyncHandler(handlers.EventHandler):
         """kick a platform user out of the synced chats
 
         Args:
-            user (sync.user.SyncUser): the user to kick
+            user (hangupsbot.sync.user.SyncUser): the user to kick
             conv_id (str): conversation identifier
 
         Returns:
@@ -356,7 +357,7 @@ class SyncHandler(handlers.EventHandler):
             user_is_self (bool): simulate the bot user is certain cases
 
         Returns:
-            sync.user.SyncUser: matching instance
+            hangupsbot.sync.user.SyncUser: matching instance
         """
         if isinstance(user, SyncUser):
             return user
@@ -378,7 +379,7 @@ class SyncHandler(handlers.EventHandler):
         - url, opt: auth with header and cookies, type_, filename, size, cache
 
         Args:
-            image (sync.image.SyncImage): instance to validate
+            image (hangupsbot.sync.image.SyncImage): instance to validate
             data (io.BytesIO): instance containing the raw image_data
             cache (int): time in sec for the upload info to remain in cache
             filename (str): including a valid image file extension
@@ -419,8 +420,8 @@ class SyncHandler(handlers.EventHandler):
             include_source_id (bool): toggle to add the input id to the output
 
         Returns:
-            mixed: If return_flat: list of conv_ids, otherwise a dict with keys:
-                handler and values lists of conv_ids
+            mixed: If return_flat: list[str], conv_ids, otherwise a dict:
+                {<handler, str>: list[<conv_id, str>]}
         """
         conv_ids = self._get_handler_results('conv_sync', conv_id, caller,
                                              return_flat=False)
@@ -454,9 +455,10 @@ class SyncHandler(handlers.EventHandler):
             unique_users (bool): filter duplicates by user_link and fullname
                 only allowed if return_flat is True
         Returns:
-            If return_flat: list of sync.user.SyncUser, otherwise a dict with
-            keys: connected conv_ids, containing dicts with keys: handler and
-            values: list of sync.SyncUser
+            mixed: If return_flat: list[hangupsbot.sync.user.SyncUser],
+                otherwise a dict with users per handler per conversation:
+                {<conv_id, str>: {
+                    <handler, str>: list[hangupsbot.sync.user.SyncUser]}}
         """
         if profilesync_only and return_flat and unique_users:
             cached_users = self._cache_conv_user.get(conv_id)
@@ -729,7 +731,7 @@ class SyncHandler(handlers.EventHandler):
               keep the sequence of messages
 
         Args:
-            bot (hangupsbot.HangupsBot): the running instance
+            bot (hangupsbot.core.HangupsBot): the running instance
             broadcast_targets (list[tuple[str, mixed, int]): targets
             context (dict): additional info about the message/conv
         """
@@ -760,8 +762,8 @@ class SyncHandler(handlers.EventHandler):
         """forward an incoming message from hangouts to the message handler
 
         Args:
-            dummy (hangupsbot.HangupsBot): the running instance
-            event (event.ConversationEvent): a message wrapper
+            dummy (hangupsbot.core.HangupsBot): the running instance
+            event (hangupsbot.event.ConversationEvent): a message wrapper
         """
         segments = MessageSegment.replace_markdown(event.conv_event.segments)
         if event.syncroom_no_repeat:
@@ -796,8 +798,8 @@ class SyncHandler(handlers.EventHandler):
         """forward a membership change on hangouts to the membership handler
 
         Args:
-            dummy (hangupsbot.HangupsBot): the running instance
-            event (event.ConversationEvent): a message wrapper
+            dummy (hangupsbot.core.HangupsBot): the running instance
+            event (hangupsbot.event.ConversationEvent): a message wrapper
         """
         if isinstance(event, SyncEventMembership):
             return
@@ -817,12 +819,12 @@ class SyncHandler(handlers.EventHandler):
         """get all hangouts user for this conv_id
 
         Args:
-            bot (hangupsbot.HangupsBot): the running instance
+            bot (hangupsbot.core.HangupsBot): the running instance
             conv_id (str): conversation identifier
             dummy (bool): unused
 
         Returns:
-            list[sync.user.SyncUser]: users participating in the conversation
+            list[hangupsbot.sync.user.SyncUser]: users participating in the conv
         """
         if conv_id not in bot.conversations:
             return []
@@ -837,9 +839,9 @@ class SyncHandler(handlers.EventHandler):
         """kick a user from a given conversation
 
         Args:
-            bot (hangupsbot.HangupsBot): the running instance
+            bot (hangupsbot.core.HangupsBot): the running instance
             conv_id (str): conversation identifier
-            user (sync.user.SyncUser): the user to be kicked
+            user (hangupsbot.sync.user.SyncUser): the user to be kicked
 
         Returns:
             mixed:
@@ -912,12 +914,14 @@ class SyncHandler(handlers.EventHandler):
         Args:
             identifier (str): platform identifier to skip the event on receive
             conv_id (str): target Conversation ID for the message
-            user (sync.user.SyncUser): instance of the sender
+            user (SyncUser): instance of the sender
             previous_targets (set[str]): conversation identifiers
             notified_users (set[str]): user chat ids
 
         Returns:
-            tuple: user, targets, previous_targets, notified_users
+            tuple[SyncUser, list[str], set[str], set[SyncUser]:
+                the sender, target conversations, previous conversations,
+                users that are already notified by the message
         """
         user = self.get_sync_user(identifier=identifier, user=user)
 

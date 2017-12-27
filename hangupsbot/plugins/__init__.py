@@ -51,7 +51,7 @@ class Tracker(BotMixin):
         TrackingMixin.set_tracking(self)
 
     async def clear(self):
-        """clear all entrys"""
+        """clear all entries"""
         self.reset()
         for plugin_data in self.list.values():
             for task in plugin_data["asyncio.task"]:
@@ -420,7 +420,7 @@ def get_configured_plugins(bot):
     """get the configured and also available plugins to load
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
 
     Returns:
         list[str]: a list of module paths
@@ -492,7 +492,7 @@ async def load_user_plugins(bot):
     """loads all user plugins
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
 
     Raises:
         CancelledError: shutdown in progress
@@ -512,7 +512,7 @@ async def unload_all(bot):
     """unload user plugins
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     all_plugins = tracking.list.copy()
     done = await asyncio.gather(*[unload(bot, module_path)
@@ -533,7 +533,7 @@ async def load(bot, module_path, module_name=None):
     """loads a single plugin-like object as identified by module_path
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         module_path (str): python import style relative to the main script
         module_name (str): custom name
 
@@ -655,7 +655,7 @@ async def unload(bot, module_path):
     """unload a plugin including all external registered resources
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         module_path (str): plugin path on disk relative to the main script
 
     Returns:
@@ -740,7 +740,7 @@ async def reload_plugin(bot, module_path):
     Note: the plugin may reset the sentinel on a successful internal load
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         module_path (str): plugin path on disk relative to the main script
 
     Returns:

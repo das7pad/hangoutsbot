@@ -33,7 +33,7 @@ def _get_slackrtm(bot, slack_name):
     """scan all running slackrtms for a matching name
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         slack_name (str): user input as a search query
 
     Returns:
@@ -61,12 +61,12 @@ def _get_slackrtm_and_channel(bot, slack_name, channel):
     """scan all running slackrtms and their channel for a match
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         slack_name (str): search query for a slack team/SlackRTM
         channel (str): channel id of the team specified with `slack_name`
 
     Returns:
-        tuple: `(<core.SlackRTM>, <str>)`, requested team instance and channel
+        tuple[core.SlackRTM, str]: requested team instance and channel id
 
     Raises:
         Help: no matching slackrtm or channel is not in slackrtm
@@ -102,8 +102,8 @@ async def slack_channels(bot, dummy, *args):
     """list all slack channels available in specified slack team
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        dummy (event.ConversationEvent): ignored
+        bot (hangupsbot.core.HangupsBot): the running instance
+        dummy (hangupsbot.event.ConversationEvent): ignored
         args (str): the slackrtm name to query channels from
 
     Returns:
@@ -136,8 +136,8 @@ def slack_users(bot, dummy, *args):
     """list all slack channels available in specified slack team
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        dummy (event.ConversationEvent): ignored
+        bot (hangupsbot.core.HangupsBot): the running instance
+        dummy (hangupsbot.event.ConversationEvent): ignored
         args (str): slackrtm name and a channel of it
 
     Returns:
@@ -165,7 +165,7 @@ def slack_listsyncs(bot, *dummys):
     """list current conversations we are syncing
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         dummys (mixed): ignored
 
     Returns:
@@ -190,8 +190,8 @@ def slack_syncto(bot, event, *args):
     """start syncing the current hangout to a given slack team/channel
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): slackrtm name and a channel of it
 
     Returns:
@@ -219,8 +219,8 @@ def slack_disconnect(bot, event, *args):
     """stop syncing the current hangout with given slack team and channel
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): slackrtm name and a channel of it
 
     Returns:

@@ -34,7 +34,7 @@ def setup_storage(bot):
     """set defaults and run migration
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     bot.config.set_defaults(DEFAULT_CONFIG)
     bot.memory.set_defaults(DEFAULT_MEMORY)
@@ -106,7 +106,7 @@ def _migrate_data(bot):
     """run all migration steps
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     _migrate_20170319(bot)
     _migrate_20170917(bot)
@@ -121,7 +121,7 @@ def _migrate_20170319(bot):
     previously, this plugin abused 'user_data' to store its internal team config
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     memory_root_key = 'slackrtm'
     if bot.memory.exists([memory_root_key]):
@@ -142,7 +142,7 @@ def _migrate_20170917(bot):
     """migrate the synced profiles
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     for team, data in bot.memory.get_option('slackrtm').items():
         if data.get('_migrated_', 0) >= 20170917:
@@ -164,7 +164,7 @@ def _migrate_20170919(bot):
     """extract the config entries for sync behaviour
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     for team, data in bot.memory.get_option('slackrtm').items():
         if data.get('_migrated_', 0) >= 20170919:

@@ -22,7 +22,7 @@ def _initialise(bot):
     """register the commands and help, shareds on the aliases
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     bot.memory.validate({'hoalias': {}})
 
@@ -37,7 +37,7 @@ def get_alias(bot, conv_id):
     """get the alias for the given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): Hangouts conversation identifier
 
     Returns:
@@ -52,7 +52,7 @@ def get_convid(bot, alias):
     """get the conversation of an alias
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         alias (str): conversation alias
 
     Returns:
@@ -67,8 +67,8 @@ def sethoalias(bot, event, *args):
     """set the alias for the current or given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): additional words passed to the command
 
     Returns:
@@ -110,8 +110,8 @@ def gethoalias(bot, event, *args):
     """get the alias for the current or given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): additional words passed to the command
 
     Returns:

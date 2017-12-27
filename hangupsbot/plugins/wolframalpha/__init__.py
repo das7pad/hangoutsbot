@@ -37,7 +37,7 @@ def _api_token(bot):
     """get the configured api token
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
 
     Returns:
         str: the configured app id or None if no id is available
@@ -53,7 +53,7 @@ async def _fetch(bot, args):
     """fetch data from wolframalpha and parse the response
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         args (tuple[str]): query for wolframalpha
 
     Returns:

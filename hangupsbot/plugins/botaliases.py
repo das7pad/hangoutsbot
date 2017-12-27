@@ -53,8 +53,8 @@ def botalias(bot, event, *args):
     """update the botaliases for bot commands
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): the aliases to add/remove
 
     Returns:

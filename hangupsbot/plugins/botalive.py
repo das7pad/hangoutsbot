@@ -16,7 +16,7 @@ def _initialise(bot):
     """setup watermarking plugin
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     config_botalive = bot.get_config_option('botalive')
 
@@ -45,7 +45,7 @@ async def _periodic_watermark_update(bot, watermark_updater, target):
     """add conv_ids to the watermark_updater queue and start to process it
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         target (str): 'admins' to enqueue chats with admins or 'groups' to
             enqueue group chats
     """

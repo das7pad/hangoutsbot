@@ -184,8 +184,8 @@ async def invite(bot, event, *args):
     """add in one handler for getting users into conversations
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): additional words to form the request
 
     Returns:
@@ -444,8 +444,8 @@ async def rsvp(bot, event, *args):
     """claim an invite code or show pending invites
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): additional words passed to the command
 
     Returns:

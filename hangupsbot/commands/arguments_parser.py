@@ -251,7 +251,7 @@ def _initialize(bot):
     """register the arguments parser as shared
 
     Args:
-        bot (HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     from hangupsbot.commands import command
     bot.register_shared('arguments_parser', command.arguments_parser)

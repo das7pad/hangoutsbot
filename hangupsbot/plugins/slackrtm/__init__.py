@@ -75,7 +75,7 @@ def _initialise(bot):
     """migrate data, start SlackRTMs and register commands
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     setup_storage(bot)
 

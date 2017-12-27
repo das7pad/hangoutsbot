@@ -35,7 +35,7 @@ def load_missing_entries(bot):
     """load users and conversations that are missing on bot start into hangups
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     loaded_users = bot._user_list._user_dict
     for chat_id, user_data in bot.memory["user_data"].items():
@@ -60,7 +60,7 @@ async def initialise(bot):
     """load cache from memory and update it with new data from hangups
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
 
     Returns:
         ConversationMemory: the current instance

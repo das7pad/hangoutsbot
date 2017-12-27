@@ -215,8 +215,8 @@ class SyncImage(BotMixin):
             video_as_gif (bool): toggle to convert videos to gifs
 
         Returns:
-            tuple: io.BytesIO instance, the image data and string, the filename;
-            if no data is available return None, <string with reason>
+            tuple[io.BytesIO, str]: the image data and the filename;
+                if no data is available return None, <string with reason>
         """
         if self._data is None:
             return None, '[Image has no content]'
@@ -336,8 +336,7 @@ class SyncImage(BotMixin):
             caller (mixed): set to a non value to block a loop
 
         Returns:
-            tuple: a new io.BytesIO instance with the raw resized image data
-            and the new filename
+            tuple[io.BytesIO, str]: the resized image data and the new filename
         """
         def _remove_background(data, filename):
             """remove background in saving as PNG
@@ -347,8 +346,7 @@ class SyncImage(BotMixin):
                 filename (str): image file name to override
 
             Returns:
-                tuple: a io.BytesIO instance, the image as PNG
-                       and a str, the new filename
+                tuple[io.BytesIO, str]: image data as PNG and the new filename
             """
             if filename.rsplit('.', 1)[-1].lower() == 'png':
                 # already a png, no need to format again

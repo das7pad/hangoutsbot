@@ -361,7 +361,7 @@ def _get_hangout_name(bot, conv_id):
     """get the name of a conversation and a error message with the convs id
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): a possible hangouts conversation identifier
 
     Returns:

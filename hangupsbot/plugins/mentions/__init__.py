@@ -52,7 +52,7 @@ def _initialise(bot):
     """start listening to messages and register admin and user commands
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     plugins.register_sync_handler(_handle_mention, "message_once")
     plugins.register_user_command(["pushbulletapi", "setnickname",
@@ -67,7 +67,7 @@ def _populate_nicknames(bot):
     """Pull the keywords from memory and build an index and reverse index
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     for chat_id in bot.memory["user_data"]:
         nickname = bot.user_memory_get(chat_id, "nickname")
@@ -79,8 +79,8 @@ async def _handle_mention(bot, event, command):
     """forward cleaned @mention names to the main mention function
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (sync.event.SyncEvent): a message wrapper
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.sync.event.SyncEvent): a message wrapper
         command (commands.CommandDispatcher): command handler
     """
     # allow mentions to be disabled via global or per-conversation config
@@ -114,7 +114,7 @@ def _log(template, event, *args, debug=False):
 
     Args:
         template (str): see doc body
-        event (event.ConversationEvent): a message wrapper
+        event (hangupsbot.event.ConversationEvent): a message wrapper
         args (str): additional text for the logging output
         debug (bool): set the logging level
     """

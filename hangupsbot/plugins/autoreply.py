@@ -199,8 +199,8 @@ def autoreply(bot, event, *args):
     """adds or removes an autoreply from config.
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): the new/old autoreply entry
 
     Returns:

@@ -92,7 +92,7 @@ def build_user_conversation_list_base():
     """get the protobuf-based params for `hangups.UserList`, `.ConversationList`
 
     Returns:
-        tuple: a tuple of two dicts, kwargs for the userlist and convlist
+        tuple[dict, dict]: kwargs for the user list and kwargs for the conv list
     """
     get_client_generated_id = hangups.Client.get_client_generated_id
 

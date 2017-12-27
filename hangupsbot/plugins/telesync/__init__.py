@@ -44,7 +44,7 @@ async def _initialise(bot):
     for HO-messages and sync tasks
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
 
     Raises:
         RuntimeError: can not connect to the Telegram API
@@ -85,7 +85,7 @@ def setup_config(bot):
     """register all attributes in config
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     default_config = {
         'conversations': {
@@ -150,7 +150,7 @@ def setup_memory(bot):
     """create all dicts in memory
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     default_memory = {
         'telesync': {
@@ -204,8 +204,8 @@ def telesync(bot, event, *args):
     """set a telegram chat as sync target for the current ho
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message wrapper
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message wrapper
         args (str): additional words passed to the command
 
     Returns:
@@ -326,8 +326,8 @@ async def telesync_set_token(bot, event, *args):
     """sets the api key for the telesync bot
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): may contain the api key as first tuple entry
 
     Returns:
@@ -363,7 +363,7 @@ async def _handle_profilesync(bot, platform, remote_user, conv_1on1,
     """finish profile sync and set a 1on1 sync if requested
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         platform (str): identifier for the platform which started the sync
         remote_user (str): telegram user id
         conv_1on1 (str): users 1on1 chat with the bot
@@ -399,12 +399,12 @@ async def _handle_user_kick(bot, conv_id, user):
     """kick a user from a given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): conversation identifier
-        user (sync.user.SyncUser): the user to be kicked
+        user (hangupsbot.sync.user.SyncUser): the user to be kicked
 
     Returns:
-        None: ignored, False: kick failed, True: kicked, 'whitelisted'
+        mixed: None: ignored, False: kick failed, True: kicked, 'whitelisted'
     """
     if not isinstance(user, User):
         # not a telesync user
@@ -463,7 +463,7 @@ async def _handle_conv_user(bot, conv_id, profilesync_only):
     """get all telegram user for this conv_id
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): conversation identifier
         profilesync_only (bool): only include users synced to a G+ profile
 
@@ -499,8 +499,8 @@ async def _handle_message(bot, event):
     """forward message/photos from any platform to Telegram
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event: sync.event.SyncEvent instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.sync.event.SyncEvent): a message wrapper
     """
     async def _send_photo(tg_chat_id_, chat_tag_,
                           image_, image_data_, filename_):
@@ -509,12 +509,12 @@ async def _handle_message(bot, event):
         Args:
             tg_chat_id_ (str): telegram chat identifier
             chat_tag_ (str): identifier to receive config entries of the chat
-            image_: sync.image.SyncImage instance
-            image_data_: io.BytesIO instance, the resized image data
+            image_ (hangupsbot.sync.image.SyncImage): media data wrapper
+            image_data_ (io.BytesIO): the resized image data
             filename_ (str): file name of the image
 
         Returns:
-            boolean: True if the image sending failed, otherwise False
+            bool: True if the image sending failed, otherwise False
         """
         # TG-Photo-Captions are not allowed to contain html,
         # do not send the event text as caption
@@ -614,8 +614,8 @@ async def _handle_membership_change(bot, event):
     """notify a configured tg-chat about a membership change
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event: sync.event.SyncEventMembership instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.sync.event.SyncEventMembership): a data wrapper
     """
     if not (bot.memory.exists(['telesync', 'ho2tg', event.conv_id]) and
             (await bot.tg_bot.is_running())):

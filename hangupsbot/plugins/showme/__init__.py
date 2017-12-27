@@ -55,7 +55,7 @@ def _initialize(bot):
     """register the showme command if sources are configured in config
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     if bot.config.get_option("showme") is not None:
         plugins.register_user_command(["showme"])
@@ -67,8 +67,8 @@ async def _send_source(bot, event, name, img_link):
     """fetch the provided source, upload the image and send a message
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         name (str): source label
         img_link (str): url to a shared web cam
     """
@@ -94,8 +94,8 @@ async def showme(bot, event, *args):
     """retrieve images from web cameras
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): words passed to the command,
             see HELP for details
 

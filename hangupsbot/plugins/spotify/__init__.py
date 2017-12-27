@@ -84,7 +84,7 @@ def _initialise(bot):
     """setup logging and storage, register the user command, listen to messages
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     # suppress a noisy stacktrace and disable logging of every request which
     # also exposes the api-token to the log.
@@ -107,8 +107,8 @@ async def _watch_for_music_link(bot, event):
     """resolve music links to their titles and add the tracks to spotify
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
     """
     # Start with Spotify off.
     enabled = bot.conversation_memory_get(event.conv_id, "spotify_enabled")
@@ -161,8 +161,8 @@ def spotify(bot, event, *args):
     see `HELP['spotify']` for details
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (sync.event.SyncEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.sync.event.SyncEvent): the currently handled instance
         args (str): the command query
 
     Returns:
@@ -234,8 +234,8 @@ def add_to_spotify(bot, event, query):
     """Searches Spotify for the query and adds a found track to the playlist.
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         query (str): a user provided search query for a track
 
     Returns:
@@ -255,7 +255,7 @@ def search_spotify(bot, query):
     """Searches spotify for the cleaned query
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         query (str): the search query
 
     Returns:
@@ -319,7 +319,7 @@ def _search(bot, groups):
     """perform an api-request to get tracks from spotify
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         groups (list[str]): expect track title and artist
 
     Returns:
@@ -352,8 +352,8 @@ def add_to_playlist(bot, event, track):
     """add a track to the conversations spotify playlist
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         track (SpotifyTrack): the track to add
 
     Returns:
@@ -384,8 +384,8 @@ def remove_from_playlist(bot, event, track_url):
     """remove a track from the conversations spotify playlist
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         track_url (str): the track to remove
 
     Returns:
@@ -420,8 +420,8 @@ def get_chat_playlist(bot, event):
     """get a cached playlist for the conversation or create a new one
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): the currently handled instance
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
 
     Returns:
         SpotifyPlaylist: the conversations playlist
@@ -475,7 +475,7 @@ def get_title_from_youtube(bot, url):
     """get the title of a youtube video
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         url (str): the video URI
 
     Returns:
@@ -514,7 +514,7 @@ def get_title_from_soundcloud(bot, url):
     """get the title of a soundcloud track
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         url (str): the tracks URI
 
     Returns:
@@ -543,7 +543,7 @@ def get_spotify_client(bot):
     Auth is captured via console input
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
 
     Returns:
         Spotify: `spotify.client.Spotify`, the spotify client

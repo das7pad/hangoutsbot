@@ -204,8 +204,8 @@ class SyncEvent(FakeEvent):
             video_as_gif (bool): toggle to get videos as gif
 
         Returns:
-            tuple: SyncImage instance, the resized image data in a file-like
-                object and the filename
+            tuple[SyncImage, io.ByesIO, str]: the complete image data, the
+                resized image data and the filename
             If no image is available return None, None, None
         """
         image, limit = self._get_image_raw(conv_id=conv_id)
@@ -347,7 +347,7 @@ class SyncEvent(FakeEvent):
             conv_id (str): a custom identifier to pick the config entries from
 
         Returns:
-            tuple: (SyncImage, int), the image or None if no image is available
+            tuple[SyncImage, int]: the image or None if no image is available
                 and the new image size limit
         """
         conv_id = conv_id or self.conv_id
@@ -418,7 +418,7 @@ class SyncEventMembership(SyncEvent):
         identifier (str): platform tag used to identify an Event on receive
         conv_id (str): target Conversation ID for the message
         title (str): Chat Title of the source conversation
-        user (sync.user.SyncUser): instance of the sender
+        user (hangupsbot.sync.user.SyncUser): instance of the sender
         text (mixed): str or segment list, raw message from any platform
         targets (list[str]): conversation identifier of relay targets
         previous_targets (set[str]): conv identifier
@@ -538,10 +538,10 @@ class SyncReply(BotMixin):
 
     Args:
         identifier (str): platform tag used to identify an Event on receive
-        user (mixed): string or SyncUser instance, sender of the original message
+        user (mixed): str or SyncUser instance, sender of the original message
         text (str): original message
         offset (int): message count between the original message and the reply
-        image (sync.image.SyncImage): the image one replies to; may be None
+        image (hangupsbot.sync.image.SyncImage): opt, the image one replies to
     """
 
     def __init__(self, *, identifier=None, user=None, text=None, offset=None,

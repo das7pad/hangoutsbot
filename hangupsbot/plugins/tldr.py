@@ -107,7 +107,7 @@ def tldr_shared(bot, args):
     """Shares tldr functionality with other plugins
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         args (dict): a dictionary which holds arguments.
             Must contain 'params' (tldr command parameters)
             and 'conv_id' (Hangouts conv_id)

@@ -45,7 +45,7 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
     """add users to a conversation but split the queue in parts
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): conversation identifier
         chat_ids (list[str]): a list of G+ User Ids
         batch_max (int): number of users to be added at once
@@ -89,7 +89,7 @@ async def _batch_remove_users(bot, target_conv, chat_ids):
     """remove a list of users from a given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         target_conv (str): conversation identifier
         chat_ids (iterable): with strings, G+Ids
 
@@ -120,8 +120,8 @@ async def addusers(bot, event, *args):
     """add users from a conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str):additional words passed to the command
 
     Raises:
@@ -153,8 +153,8 @@ async def addme(bot, event, *args):
     """let a user add himself to a conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str):additional words passed to the command
 
     Raises:
@@ -172,8 +172,8 @@ async def createconversation(bot, dummy, *args):
     """create a new conversation with given users
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        dummy (event.ConversationEvent): not used
+        bot (hangupsbot.core.HangupsBot): the running instance
+        dummy (hangupsbot.event.ConversationEvent): not used
         args (str):additional words passed to the command
 
     Returns:
@@ -205,8 +205,8 @@ async def refresh(bot, event, *args):
     """recreate a conversation and remove or add certain users
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str):additional words passed to the command
 
     Returns:
@@ -341,8 +341,8 @@ async def kick(bot, event, *args):
     """refresh the a conversation without certain users
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str):additional words passed to the command
     """
     parameters = list(args)
@@ -382,8 +382,8 @@ async def realkick(bot, event, *args):
     """remove users from a conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str):additional words passed to the command
 
     Returns:

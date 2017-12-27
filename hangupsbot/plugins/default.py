@@ -62,8 +62,8 @@ def echo(bot, event, *args):
     """echo a message back to the current or given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): message wrapper
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): message wrapper
         args (str): request body
 
     Returns:
@@ -98,7 +98,7 @@ async def broadcast(bot, dummy, *args):
     """broadcast a message to multiple chats, schedule here
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         dummy: event.ConversationEvent instance, not needed
         args (str): request body
 
@@ -212,8 +212,8 @@ def user(bot, dummy, *args):
     """find people by name
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        dummy (event.ConversationEvent): not used
+        bot (hangupsbot.core.HangupsBot): the running instance
+        dummy (hangupsbot.event.ConversationEvent): not used
         args (str): additional words passed to the command
 
     Returns:
@@ -269,8 +269,8 @@ def hangouts(bot, dummy, *args):
     """retrieve a list of hangouts, supply a search term in args to filter
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        dummy (event.ConversationEvent): not used
+        bot (hangupsbot.core.HangupsBot): the running instance
+        dummy (hangupsbot.event.ConversationEvent): not used
         args (str): the search term
 
     Returns:
@@ -301,8 +301,8 @@ async def rename(bot, event, *args):
     """rename the current conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): the new chat title
     """
     await command.run(bot, event, *["convrename", "id:" + event.conv_id,
@@ -313,8 +313,8 @@ async def leave(bot, event, *args):
     """leave the current or given conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): a different conv_id, 'quietly' to skip an output
     """
     parameters = set(args)
@@ -337,8 +337,8 @@ async def reload(bot, event, *dummys):
     """reload .config and .memory from file
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         dummys (str): ignored
     """
     await bot.coro_send_message(event.conv, "<b>reloading config.json</b>")
@@ -352,8 +352,8 @@ def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
     """kill the bot
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         dummys (str): ignored
     """
     logger.warning('HangupsBot killed by user %s from conversation %s',
@@ -365,8 +365,8 @@ async def config(bot, event, *args):
     """retrieve or edit a config entry
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): additional words to for a request
 
     Returns:
@@ -497,8 +497,8 @@ def whoami(bot, event, *dummys):
     """retrieve the users G+id
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         dummys (str): ignored
 
     Returns:
@@ -518,8 +518,8 @@ def whereami(dummy, event, *dummys):
     """retrieve the current conversation identifier
 
     Args:
-        dummy (hangupsbot.HangupsBot): the running instance, not used
-        event (event.ConversationEvent): a message container
+        dummy (hangupsbot.core.HangupsBot): the running instance, not used
+        event (hangupsbot.event.ConversationEvent): a message container
         dummys (str): ignored
 
     Returns:

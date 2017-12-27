@@ -273,7 +273,7 @@ class QueueCache(Cache):
         func (callable): non-coroutine function, will be called with scheduled
             args/kwargs
         timeout (int): optional, time in seconds for a queue to live in cache
-        bot (hangupsbot.HangupsBot): the running instance, optional
+        bot (hangupsbot.core.HangupsBot): the running instance, optional
     """
     __slots__ = ('_default_args',)
     _queue = Queue
@@ -319,7 +319,7 @@ class AsyncQueueCache(QueueCache):
         group (str): identifier for a platform to separate queues for
         func: coroutine function, will be called with the scheduled args/kwargs
         timeout: integer, optional, time in seconds for a queue to live in cache
-        bot (hangupsbot.HangupsBot): the running instance, optional
+        bot (hangupsbot.core.HangupsBot): the running instance, optional
     """
     __slots__ = ()
     _queue = AsyncQueue

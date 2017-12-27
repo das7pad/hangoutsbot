@@ -257,7 +257,7 @@ class SlackRTM(BotMixin):
                 kwargs (dict): see api documentation for `chat.postMessage`
 
             Returns:
-                boolean: True in case of a successful api-call, otherwise False
+                bool: True in case of a successful api-call, otherwise False
 
             Raises:
                 SlackAuthError: the api-token got revoked
@@ -422,8 +422,9 @@ class SlackRTM(BotMixin):
             icon_url (str): a custom profile picture of the sender
 
         Returns:
-            sync.sending_queue.Status: tracker for the scheduled task which
-             returns a boolean value when finished: True on success else False.
+            hangupsbot.sync.sending_queue.Status: tracker for the scheduled task
+                which returns a boolean value when finished:
+                True on success else False.
         """
         queue = self._cache_sending_queue.get(channel)
 
@@ -720,7 +721,7 @@ class SlackRTM(BotMixin):
                 event_type (str): see https://api.slack.com/rtm for details
 
             Returns:
-                boolean: True if the reply triggered an update only
+                bool: True if the reply triggered an update only
             """
             if event_type in CACHE_UPDATE_USERS:
                 await self.update_cache('users')
@@ -805,8 +806,8 @@ class SlackRTM(BotMixin):
         """forward message/media from any platform to slack
 
         Args:
-            bot (hangupsbot.HangupsBot): the running instance
-            event (sync.event.SyncEvent): instance to be handled
+            bot (hangupsbot.core.HangupsBot): the running instance
+            event (hangupsbot.sync.event.SyncEvent): instance to be handled
         """
         photo_url = ('https:' + event.user.photo_url
                      if isinstance(event.user.photo_url, str) else None)
@@ -839,8 +840,8 @@ class SlackRTM(BotMixin):
         """notify configured slack channels about a membership change
 
         Args:
-            dummy (hangupsbot.HangupsBot): unused
-            event (sync.event.SyncEventMembership): instance to be handled
+            dummy (hangupsbot.core.HangupsBot): unused
+            event (hangupsbot.sync.event.SyncEventMembership): data wrapper
         """
         for sync in self.get_syncs(hangoutid=event.conv_id):
             channel_tag = '%s:%s' % (self.identifier, sync['channelid'])
@@ -860,8 +861,8 @@ class SlackRTM(BotMixin):
         """notify configured slack channels about a changed conversation name
 
         Args:
-            bot (hangupsbot.HangupsBot): the running instance
-            event (event.ConversationEvent): instance to be handled
+            bot (hangupsbot.core.HangupsBot): the running instance
+            event (hangupsbot.event.ConversationEvent): instance to be handled
         """
         name = bot.conversations.get_name(event.conv)
         user = SyncUser(user_id=event.user_id.chat_id)
@@ -878,7 +879,7 @@ class SlackRTM(BotMixin):
         """get all slack user participating in a synced conversation
 
         Args:
-            dummy (hangupsbot.HangupsBot): the running instance
+            dummy (hangupsbot.core.HangupsBot): the running instance
             conv_id (str): conversation identifier
             profilesync_only (bool): only include users synced to a G+ profile
 
@@ -906,9 +907,9 @@ class SlackRTM(BotMixin):
         """kick a user from all synced channels for a given conversation
 
         Args:
-            dummy (hangupsbot.HangupsBot): the running instance
+            dummy (hangupsbot.core.HangupsBot): the running instance
             conv_id (str): conversation identifier
-            user (sync.user.SyncUser): user that should get kicked
+            user (hangupsbot.sync.user.SyncUser): user that should get kicked
 
         Returns:
             mixed: None: ignored, False: failed, True: kicked, 'whitelisted'

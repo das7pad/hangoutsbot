@@ -73,7 +73,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
     """enhanced telepot bot with Hangouts sync
 
     Args:
-        ho_bot (hangupsbot.HangupsBot): the running instance
+        ho_bot (hangupsbot.core.HangupsBot): the running instance
     """
 
     def __init__(self, ho_bot):
@@ -277,7 +277,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         return user
 
     async def get_image(self, image, type_='photo', extension=None):
-        """download an image from Telegram and create a SyncImage
+        """download an image from Telegram and create a data wrapper for it
 
         Args:
             image (dict): media item from telegram
@@ -285,7 +285,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             extension (str): opt, file extension
 
         Returns:
-            sync.SyncImage: the image or None if no image could be created
+            hangupsbot.sync.image.SyncImage: the image or None in case no image
+                could be created
         """
         image_data = io.BytesIO()
         try:
@@ -442,7 +443,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             msg (message.Message): a message wrapper
 
         Returns:
-            tuple: (<cmd valid, bool>, <command, str>, <arguments, list of str>)
+            tuple[bool, str, list[str]]: cmd is valid, command, arguments
         """
         if not msg.text.startswith('/'):
             return False, '', []

@@ -166,9 +166,9 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         """Run a command
 
         Args:
-            bot (hangupsbot.HangupsBot): the running instance
-            event (event.ConversationEvent): a message container
-            args: tuple of string, including the command name in fist place
+            bot (hangupsbot.core.HangupsBot): the running instance
+            event (hangupsbot.event.ConversationEvent): a message container
+            args (str): including the command name in fist place
             kwargs (dict): additional info to the execution including the key
                 'raise_exceptions' to raise them instead of sending a message
                 '__return_result__' to return all command output
@@ -293,7 +293,7 @@ def get_func_help(bot, cmd, func):
     """get a custom help message from memory or parse the doc string of the func
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         cmd (str): an existing bot-command
         func (mixed): function or coroutine, the command function
 

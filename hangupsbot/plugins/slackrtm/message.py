@@ -45,8 +45,8 @@ def parse_text(slackrtm, text):
         text (str): raw message from slack
 
     Returns:
-        tuple: `(<list>, <str>)`, a list of `parsers.SlackMessageSegment`s - the
-            formatted text; the str: an image url - if present otherwise None
+        tuple[list[parsers.SlackMessageSegment], str]: formatted text and an
+            image url - if present otherwise None
     """
     def matchreference(match):
         """replace slack tags with the full descriptor
@@ -233,14 +233,14 @@ class SlackMessage(BotMixin):
         image_url = image_url or file_attachment
         self.image = slackrtm.bot.sync.get_sync_image(
             url=image_url,
-            headers={'Authorization': 'Bearer ' + slackrtm.apikey})
+            headers={'Authorization': 'Bearer ' + slackrtm.api_key})
 
     @classmethod
     def track_message(cls, bot, channel_tag, reply):
         """add a message id to the last message and delete old items
 
         Args:
-            bot (HangupsBot): the running instance
+            bot (hangupsbot.core.HangupsBot): the running instance
             channel_tag (str): identifier for a channel of a slack team
             reply (dict): message response from slack
         """
@@ -260,8 +260,8 @@ class SlackMessage(BotMixin):
             slackrtm (core.SlackRTM): the instance which received the `reply`
             reply (dict): message response from slack
 
-        Return:
-            sync.SyncReply: the wrapped reply content or `None`
+        Returns:
+            hangupsbot.sync.event.SyncReply: the wrapped reply content or `None`
         """
         if (reply['type'] == 'message' and 'text' in reply
                 and reply.get('attachments')    # covers missing/empty
@@ -356,7 +356,7 @@ class SlackMessage(BotMixin):
             `self.segments` (list), a list of `parsers.SlackMessageSegment`
             `self.user` (user.SlackUser), the sender
         - optional:
-            `self.image` (sync.image.SyncImage), attached media
+            `self.image` (hangupsbot.sync.image.SyncImage), attached media
             `self.edited` (bool), edited version of a previous message
 
         Args:

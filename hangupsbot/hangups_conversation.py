@@ -137,7 +137,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
         Args:
             message (str): list of hangups.ChatMessageSegment or None,
                 the text part of the message which can be empty
-            image_id: string or integer, the upload id of an image,
+            image_id (mixed): string or integer, the upload id of an image,
                 acquire one from ._client.upload_image(...)
             context (dict): additional information about the message,
                 including 'reprocessor' or chatbridge entries

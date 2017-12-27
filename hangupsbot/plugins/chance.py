@@ -25,8 +25,8 @@ async def _handle_me_action(bot, event):
     """run the diceroll or coinflip command from context
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
     """
     if not event.text.startswith(('/me', event.user.first_name)):
         return
@@ -43,8 +43,8 @@ def diceroll(dummy, event, dice="1d6"):
     """get random numbers from a fake diceroll
 
     Args:
-        dummy (hangupsbot.HangupsBot): unused
-        event (event.ConversationEvent): a message container
+        dummy (hangupsbot.core.HangupsBot): unused
+        event (hangupsbot.event.ConversationEvent): a message container
         dice (str): the diceroll request
 
     Returns:
@@ -82,8 +82,8 @@ def coinflip(dummy, event, *dummys):
     """get the result of a fake coinflip
 
     Args:
-        dummy (hangupsbot.HangupsBot): unused
-        event (event.ConversationEvent): a message container
+        dummy (hangupsbot.core.HangupsBot): unused
+        event (hangupsbot.event.ConversationEvent): a message container
         dummys (str): not used
 
     Returns:

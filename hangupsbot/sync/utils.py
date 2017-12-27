@@ -9,7 +9,7 @@ def get_sync_config_entry(bot, conv_id, key):
     'slackrtm:teamname:C001' -> 'slackrtm:teamname' -> 'slackrtm' -> global
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): chat conversation identifier
         key (str): sync config item
 

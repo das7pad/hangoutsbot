@@ -59,10 +59,10 @@ def serialize(segments):
     """serialize parsed text segments
 
     Args:
-        segments (iterable): a list or generator of `ChatMessageSegment`
+        segments (list[MessageSegment]): message segments
 
     Returns:
-        list: a list of sorted `dict_items`, the serialized segments
+        list[tuple[str, mixed]]: the serialized segments
     """
     return [sorted(seg.__dict__.items()) for seg in segments]
 

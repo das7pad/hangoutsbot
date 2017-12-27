@@ -59,7 +59,7 @@ class EventHandler(BotMixin):
         """async init part of the handler
 
         Args:
-            _conv_list: hangups.conversation.ConversationList instance
+            _conv_list (hangups.conversation.ConversationList): data wrapper
         """
         await plugins.tracking.start({"module": "handlers",
                                       "module.path": "handlers"})
@@ -202,7 +202,7 @@ class EventHandler(BotMixin):
 
         Args:
             reprocessor_id (str): a found reprocessor id
-            event: hangupsbot event instance
+            event (hangupsbot.event.ConversationEvent): a message container
         """
         reprocessor = self._reprocessors.get(reprocessor_id, pop=True)
         if reprocessor is None:
@@ -224,7 +224,7 @@ class EventHandler(BotMixin):
         - handle the text as command, if the user is not the bot user
 
         Args:
-            event (event.ConversationEvent): a message container
+            event (hangupsbot.event.ConversationEvent): a message container
 
         Raises:
             exceptions.SuppressEventHandling: do not handle the event at all
@@ -292,7 +292,7 @@ class EventHandler(BotMixin):
         """Handle command messages
 
         Args:
-            event (event.ConversationEvent): a message container
+            event (hangupsbot.event.ConversationEvent): a message container
         """
         if not event.text:
             return
@@ -437,7 +437,7 @@ class EventHandler(BotMixin):
         """Handle conversation events
 
         Args:
-            conv_event: hangups.conversation_event.ConversationEvent instance
+            conv_event (hangups.conversation_event.ConversationEvent): raw event
         """
         event = ConversationEvent(conv_event)
 
@@ -477,7 +477,7 @@ class EventHandler(BotMixin):
         """run notification handler for a given state_update
 
         Args:
-            state_update: hangups.parsers.TypingStatusMessage or
+            state_update (mixed): hangups.parsers.TypingStatusMessage or
              hangups.parsers.WatermarkNotification instance
         """
         if isinstance(state_update, hangups.parsers.TypingStatusMessage):

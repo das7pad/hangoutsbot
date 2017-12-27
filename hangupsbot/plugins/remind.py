@@ -45,8 +45,8 @@ async def remindme(bot, event, *args):
     """schedule a message for the private chat with the bot
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): delay and message content
 
     Returns:
@@ -69,8 +69,8 @@ async def remindall(bot, event, *args):
     """schedule a message in the current conversation
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
-        event (event.ConversationEvent): a message container
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message container
         args (str): delay and message content
 
     Returns:
@@ -89,7 +89,7 @@ async def _reminder(bot, conv_id, delay, args):
     """detached execution of a remind/remindall request
 
     Args:
-        bot (hangupsbot.HangupsBot): the running instance
+        bot (hangupsbot.core.HangupsBot): the running instance
         conv_id (str): Hangouts conversation identifier
         delay (float): time in seconds to sleep before sending the reminder
         args (tuple): reminder text

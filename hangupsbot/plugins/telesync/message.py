@@ -91,7 +91,7 @@ class Message(dict, BotMixin):
         """add a message id to the last message and delete old items
 
         Args:
-            bot (HangupsBot): the running instance
+            bot (hangupsbot.core.HangupsBot): the running instance
             chat_id (int): identifier for a chat
             msg_id (int): int or string, the unique id of the message
         """
