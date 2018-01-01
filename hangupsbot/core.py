@@ -575,6 +575,10 @@ class HangupsBot(object):
             await hangups.build_user_conversation_list(
                 self._client, conv_list_cls=HangupsConversationList))
 
+        await plugins.tracking.start({'module.path': __name__})
+        HangupsConversation.register_cache()
+        plugins.tracking.end()
+
         self._conv_list.on_event.add_observer(self._retry_reset)
 
         self.conversations = await permamem.initialise(self)

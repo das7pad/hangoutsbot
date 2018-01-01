@@ -6,6 +6,7 @@ import hangups
 from hangups import hangouts_pb2
 
 from hangupsbot.base_models import BotMixin
+from hangupsbot.utils.cache import Cache
 from hangupsbot.sync.parser import MessageSegmentHangups
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,13 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
     Args:
         see `hangups.conversation.Conversation`
     """
+    _cache = Cache(default_timeout=60*60, name='Event Id Storage')
+
+    @classmethod
+    def register_cache(cls):
+        """register the cache to ensure a graceful shutdown"""
+        cls._cache.start()
+
     @classmethod
     def from_permamem(cls, bot, conv_id):
         # pylint:disable=protected-access
@@ -129,7 +137,14 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
         Returns:
             hangups.ConversationEvent: the derived conv_event
         """
-        return self._wrap_event(event_)
+        conv_event = self._wrap_event(event_)
+        if conv_event.id_ not in self._cache:
+            self._cache.add(conv_event.id_, None)
+        else:
+            logger.info('%s %s ignoring duplicate event %s',
+                        self.__class__.__name__, self.id_, conv_event.id_)
+            return None
+        return conv_event
 
     async def send_message(self, message, image_id=None, context=None):
         """send a message to Hangouts
