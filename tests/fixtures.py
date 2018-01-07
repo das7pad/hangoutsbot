@@ -7,6 +7,7 @@ __all__ = (
 )
 
 import asyncio
+import copy
 import logging
 import time
 
@@ -170,7 +171,7 @@ class TestHangupsBot(hangupsbot.core.HangupsBot):
         # pylint:disable=protected-access
         super().__init__(**DEFAULT_BOT_KWARGS)
         # clear config and memory
-        self.config.config = CONFIG_DATA.copy()
+        self.config.config = copy.deepcopy(CONFIG_DATA)
         self.config._last_dump = CONFIG_DATA_DUMPED
         self.config.defaults = {}
         self.memory.config = {}
