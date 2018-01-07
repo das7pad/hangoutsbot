@@ -99,7 +99,7 @@ class Config(collections.MutableMapping):
                 recovery_filename = existing.pop()
                 with open(recovery_filename, 'r') as file:
                     data = file.read()
-                self._loads(data)
+                self._update_deep(data)
             except IOError:
                 self.logger.warning('Failed to remove %s, check permissions',
                                     recovery_filename)
@@ -124,7 +124,7 @@ class Config(collections.MutableMapping):
         try:
             with open(self.filename) as file:
                 data = file.read()
-            self._loads(data)
+            self._update_deep(data)
         except IOError:
             if not os.path.isfile(self.filename):
                 self.config = {}
@@ -139,8 +139,15 @@ class Config(collections.MutableMapping):
             self._last_dump = data
             self.logger.info("%s read", self.filename)
 
-    def _loads(self, json_str):
-        """Load config from JSON string
+    def _update_deep(self, json_str):
+        """Update the config from a JSON string
+
+        By replacing the immutable and changed entries only we do not need to
+        update all external references.
+
+        Limitations:
+            - mutable objects living inside lists can not be updated and are
+                replaced instead.
 
         Args:
             json_str (str): a json formatted string that overrides the config
@@ -148,7 +155,51 @@ class Config(collections.MutableMapping):
         Raises:
             ValueError: the string is not a valid json representing of a dict
         """
-        self.config = json.loads(json_str)
+        def _deep_replace(old, new):
+            """replace the content but keep the old data structure
+
+            Assume that the `old` dict and the `new` dict have almost exactly
+            the same structure. The `new` dict stores the new values for the
+            config and we got external references pointing to mutable objects
+            which are living inside the `old` dict.
+
+            Args:
+                old (dict): object that is living inside the current config
+                new (dict): object with possibly more, fewer or changed entries
+            """
+            old_keys = set(old)
+            new_keys = set(new)
+
+            # discard deleted entries
+            for key in old_keys - new_keys:
+                old.pop(key)
+
+            # insert new entries
+            for key in new_keys - old_keys:
+                old[key] = new[key]
+
+            # update existing entries
+            for key in old_keys & new_keys:
+                old_value = old[key]
+                new_value = new[key]
+
+                if not isinstance(old_value, type(new_value)):
+                    # overwrite in case of a changed type
+                    old[key] = new_value
+                    continue
+
+                if isinstance(old_value, dict):
+                    # compare recursive
+                    _deep_replace(old_value, new_value)
+                elif isinstance(old_value, list):
+                    # keep the old list object in the config, swap the content
+                    old_value.clear()
+                    old_value.extend(new_value)
+                else:
+                    # overwrite in case of an immutable object
+                    old[key] = new_value
+
+        _deep_replace(self.config, json.loads(json_str))
         asyncio.ensure_future(self.on_reload.fire())
 
     def save(self, delay=True, stack=None):

@@ -5,6 +5,9 @@ __author__ = 'das7pad@outlook.com'
 # TODO(das7pad): missing: `.validate`
 # TODO(das7pad): missing: default coverage incl. `.set_default`
 
+import copy
+import json
+
 import pytest
 
 import hangupsbot.config
@@ -14,6 +17,8 @@ from tests.constants import (
     CONV_ID_2,
     CONFIG_DATA,
     CONFIG_DATA_DUMPED,
+    CHAT_ID_ADMIN,
+    CHAT_ID_2,
 )
 
 CONFIG_DEFAULT = object()
@@ -30,9 +35,51 @@ def config():
     """
     cfg = hangupsbot.config.Config(path=CONFIG_PATH)
     cfg.default = CONFIG_DEFAULT
-    cfg.config = CONFIG_DATA.copy()
+    cfg.config = copy.deepcopy(CONFIG_DATA)
     cfg._last_dump = CONFIG_DATA_DUMPED
     return cfg
+
+def test_config__loads(config):
+    """
+
+    Args:
+        config (hangupsbot.config.Config):
+    """
+    new_data = copy.deepcopy(CONFIG_DATA)
+    new_data.update(
+        {
+            # only the `CHAT_ID_ADMIN` was previously present
+            'admins': [
+                CHAT_ID_ADMIN,
+                CHAT_ID_2,
+            ],
+            # a new item
+            'NEW': None,
+            'one': {
+                'two': {
+                    # the entry "three" was previously `None`
+                    'three': {
+                        'four': None,
+                    }
+                }
+            },
+            # state changed from `True`
+            'GLOBAL': False,
+        }
+    )
+    new_data.pop('PER_CONV')
+
+    admins = config['admins']
+    entry_one_two = config['one']['two']
+
+    config._update_deep(json.dumps(new_data))
+
+    assert admins == [CHAT_ID_ADMIN, CHAT_ID_2]
+    assert entry_one_two['three'] == {'four': None}
+    assert config['GLOBAL'] is False
+    assert not config.exists(['PER_CONV'])
+    assert config.exists(['NEW'])
+
 
 def test_config_changed(config):
     assert not config._changed
