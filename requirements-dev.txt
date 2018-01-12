@@ -6,12 +6,12 @@
 #
 
 git+https://github.com/das7pad/hangups@v0.4.3.7#egg=hangups==hangups-0.4.3.7
-aiohttp==2.3.6
+aiohttp==2.3.7
 aioresponses==0.3.1
 appdirs==1.4.3
 astroid==1.6.0
 async-timeout==2.0.0
-attrs==17.3.0
+attrs==17.4.0
 beautifulsoup4==4.6.0
 bs4==0.0.1
 certifi==2017.11.5
@@ -35,11 +35,10 @@ mechanicalsoup==0.6.0
 more-itertools==4.0.1
 moviepy==0.2.3.2
 multidict==3.3.2
-numpy==1.13.3
+numpy==1.14.0
 oauth2client==4.1.2
 oauthlib==2.0.6
-olefile==0.44
-pillow==4.3.0
+pillow==5.0.0
 pluggy==0.6.0
 protobuf==3.1.0.post1
 psutil==5.2.2
@@ -51,7 +50,7 @@ pylint==1.8.1
 pyslack==0.3.0
 pytest-asyncio==0.8.0
 pytest-sugar==0.9.0
-pytest==3.3.1
+pytest==3.3.2
 python-dateutil==2.6.1
 python-magic==0.4.15
 readlike==0.1.2
@@ -59,7 +58,7 @@ reparser==1.4.3
 requests-oauthlib==0.8.0
 requests==2.18.4
 rsa==3.4.2
-selenium==3.8.0
+selenium==3.8.1
 simplejson==3.13.2
 six==1.11.0
 soundcloud==0.5.0
@@ -72,9 +71,9 @@ twitterapi==2.4.6
 uritemplate==3.0.0
 urllib3==1.22
 urwid==1.3.1
-websocket-client==0.44.0
+websocket-client==0.46.0
 wikipedia==1.4.0
 wolframalpha==3.0
 wrapt==1.10.11
 xmltodict==0.11.0
-yarl==0.16.0
+yarl==0.18.0
