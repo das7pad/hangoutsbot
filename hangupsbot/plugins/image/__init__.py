@@ -115,7 +115,7 @@ async def image_upload_single(image_uri):
                             if results:
                                 # allow custom handlers to fail gracefully
                                 raw = results
-                        except:                     # pylint:disable=bare-except
+                        except Exception:         # pylint: disable=broad-except
                             # unhandled Exception from custom image handler
                             logger.exception("custom image handler failed: %s",
                                              image_handling)

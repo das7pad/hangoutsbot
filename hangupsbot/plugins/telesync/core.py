@@ -675,7 +675,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     await self.profilesync_info(user_id, is_reminder=True)
         except asyncio.CancelledError:
             return
-        except:                                    # pylint: disable=bare-except
+        except Exception:                         # pylint: disable=broad-except
             logger.exception('low level error in periodic profilesync reminder')
 
     async def _periodic_profile_updater(self):
@@ -706,7 +706,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     3600 * self.config('profile_update_interval'))
         except asyncio.CancelledError:
             return
-        except:                                    # pylint: disable=bare-except
+        except Exception:                         # pylint: disable=broad-except
             logger.exception('low level error in profile updater')
 
     async def _message_loop(self):

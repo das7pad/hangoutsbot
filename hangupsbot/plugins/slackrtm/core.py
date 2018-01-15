@@ -229,7 +229,7 @@ class SlackRTM(BotMixin):
                 self._session.close()           # do not allow further api-calls
                 self.logger.critical('closing SlackRTM: %s', repr(err))
                 return
-            except:                                 # pylint:disable=bare-except
+            except Exception:                     # pylint: disable=broad-except
                 self.logger.exception('core error')
             else:
                 self.logger.info('websocket closed gracefully, restarting')
@@ -780,7 +780,7 @@ class SlackRTM(BotMixin):
         except SlackAuthError as err:
             self.logger.critical(repr(err))
             # continue with message handling
-        except:         # capture all Exceptions   # pylint: disable=bare-except
+        except Exception:                         # pylint: disable=broad-except
             self.logger.exception(error_message, repr(reply))
             if error_is_critical:
                 return

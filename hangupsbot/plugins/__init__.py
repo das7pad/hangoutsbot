@@ -505,7 +505,7 @@ async def load_user_plugins(bot):
             await load(bot, module_path)
         except asyncio.CancelledError:
             raise
-        except:         # capture all Exceptions   # pylint: disable=bare-except
+        except Exception:                         # pylint: disable=broad-except
             logger.exception(module_path)
 
 async def unload_all(bot):
@@ -590,7 +590,7 @@ async def load(bot, module_path, module_name=None):
             if asyncio.iscoroutinefunction(the_function):
                 await result
 
-    except:             # capture all Exceptions   # pylint: disable=bare-except
+    except Exception:                             # pylint: disable=broad-except
         logger.exception("error on plugin init: %s", module_path)
         tracking.end()
         await unload(bot, module_path)
@@ -647,7 +647,7 @@ def load_module(module_path):
             importlib.import_module(module_path)
 
         return True
-    except:             # capture all Exceptions   # pylint: disable=bare-except
+    except Exception:                             # pylint: disable=broad-except
         logger.exception("load_module %s: %s", module_path, message)
         return False
 

@@ -406,7 +406,7 @@ class EventHandler(BotMixin):
             except HangupsBotExceptions.SuppressEventHandling:
                 # handle requested to skip all pluggables
                 raise
-            except: # capture all Exceptions   # pylint: disable=bare-except
+            except Exception:                     # pylint: disable=broad-except
                 # exception is not related to the handling of this
                 # pluggable, log and continue with the next handler
                 message.append("args=" + str([str(arg) for arg in args]))

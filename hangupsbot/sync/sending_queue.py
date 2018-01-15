@@ -209,7 +209,7 @@ class Queue(list):
 
                 except asyncio.CancelledError:
                     pass
-                except:                            # pylint: disable=bare-except
+                except Exception:                 # pylint: disable=broad-except
                     status.set(Status.FAILED)
                     self._logger.exception(
                         'sending args="%s", kwargs="%s" failed',
