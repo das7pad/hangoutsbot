@@ -36,8 +36,9 @@ def plugininfo(dummy0, dummy1, *args):
 
     for module_path, plugin in plugins.tracking.list.items():
         lines = []
-        if (args and args[0] not in plugin["metadata"]["module"]
-                or args[0] not in module_path):
+        if (args and ("module" in plugin["metadata"] and
+                      args[0] not in plugin["metadata"]["module"]
+                      or args[0] not in module_path)):
             continue
         lines.append("<b>[ {} ]</b>".format(plugin["metadata"]["module.path"]))
 
