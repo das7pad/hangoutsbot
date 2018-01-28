@@ -9,13 +9,20 @@ def steps = python_versions.collectEntries {
 
 parallel steps
 
+def custom_env = [
+    'GIT_COMMITTER_NAME="Joe Doe"',
+    'GIT_COMMITTER_EMAIL="joe.doe@example.com"',
+]
+
 def run_ci(python_version) {
     return {
-        docker.image("python:${python_version}").inside {
-            checkout scm
-            sh 'make venv-dev'
-            sh 'make install'
-            sh 'make test'
+        withEnv(custom_env) {
+            docker.image("python:${python_version}").inside {
+                checkout scm
+                sh 'make venv-dev'
+                sh 'make install'
+                sh 'make test'
+            }
         }
     }
 }
