@@ -20,11 +20,12 @@ def custom_env() {
 def run_ci(python_version) {
     return {
         withEnv(custom_env()) {
-            docker.image("python:${python_version}").inside {
-                checkout scm
-                sh 'make venv-dev'
-                sh 'make install'
-                sh 'make test'
+            timestamps {
+                docker.image("python:${python_version}").inside {
+                    checkout scm
+                    sh 'make install'
+                    sh 'make test'
+                }
             }
         }
     }
