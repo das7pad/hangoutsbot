@@ -33,6 +33,10 @@ admins : user_ids from slack (to find them, you can use
 
 You can set up as many slack teams per bot as you like by extending the list.
 
+In addition to the `slackrtm` entry you can add `"slackrtm.retries": <int>` to
+specify a custom retry limit for repeated failed connections. For an example
+value see `DEFAULT_CONFIG` in `.storage.py`.
+
 Once the team(s) are configured, and the hangupsbot is restarted, invite the
 newly created Slack user into any channel or group that you want to sync, and
 then use the command from any slack channel:

@@ -17,7 +17,11 @@ DEFAULT_CONFIG = {
             'sync_format_bot': '{reply}{edited}{image_tag}{text}',
         },
     },
+    # the config entries per team
     'slackrtm': [],
+
+    # retry limit for repeated failed connections
+    'slackrtm.retries': 10,
 }
 
 DEFAULT_MEMORY = {

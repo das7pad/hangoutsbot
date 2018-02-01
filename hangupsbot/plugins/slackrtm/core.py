@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 
 import aiohttp
 
@@ -205,7 +206,8 @@ class SlackRTM(BotMixin):
 
 
         hard_reset = 0
-        while hard_reset < 5:
+        last_drop = time.time()
+        while hard_reset < self.bot.config.get_option('slackrtm.retries'):
             self.bot.config.on_reload.add_observer(self.rebuild_base)
             try:
                 await asyncio.sleep(hard_reset*10)
@@ -223,6 +225,10 @@ class SlackRTM(BotMixin):
             except IncompleteLoginError:
                 self.logger.error('Incomplete Login, restarting')
             except WebsocketFailed:
+                if time.time() - last_drop > hard_reset * 30:
+                    hard_reset = 1
+                last_drop = time.time()
+
                 self.logger.warning('Connection failed, waiting %s sec',
                                     hard_reset * 10)
             except SlackAuthError as err:
