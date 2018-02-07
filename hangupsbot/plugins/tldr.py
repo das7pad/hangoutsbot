@@ -90,7 +90,12 @@ async def gettldr(bot, event, *args):
         return _('The query returned no conversations for you')
 
     if len(conversations) > 1:
-        return _('The query returned too many conversations')
+        names = '- '
+        names += '\n- '.join(bot.conversations.get_name(conv_id, 'unknown')
+                             for conv_id in conversations)
+        return _('The query returned too many conversations:\n{names}').format(
+            names=names,
+        )
 
     text = tldr_base(bot, conversations[0], ())[0]
     await bot.coro_send_to_user(event.user_id.chat_id, text)
