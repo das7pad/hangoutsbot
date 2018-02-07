@@ -60,10 +60,19 @@ async def gettldr(bot, event, *args):
     if not query:
         return _('Specify a conversation name')
 
-    if ':' not in query:
-        query = 'text:' + query
+    try:
+        conv_id = bot.call_shared('alias2convid', query)
+    except KeyError:
+        conv_id = None
 
-    conversations = tuple(bot.conversations.get(query))
+    if conv_id is not None:
+        conversations = (conv_id,)
+    else:
+        if ':' not in query:
+            query = 'text:' + query
+
+        conversations = tuple(bot.conversations.get(query))
+
     chat_id = event.user_id.chat_id
     if chat_id not in bot.config['admins']:
         # verify that the user is member in the requested conversation
