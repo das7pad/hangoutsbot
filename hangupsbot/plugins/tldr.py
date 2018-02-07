@@ -13,6 +13,9 @@ TLDR_ECHO_OPTIONS = [
 ]
 
 HELP = {
+    'gettldr': _('Get the tl;dr of a conversation into your private chat with '
+                 'the bot.'),
+
     'tldrecho': _('defines whether the tldr is sent as a private message or '
                   'into the main chat'),
 
@@ -31,7 +34,7 @@ HELP = {
 }
 
 def _initialise(bot):
-    plugins.register_user_command(["tldr"])
+    plugins.register_user_command(["tldr", "gettldr"])
     plugins.register_admin_command(["tldrecho"])
     plugins.register_help(HELP)
     bot.register_shared("plugin_tldr_shared", tldr_shared)
@@ -40,6 +43,67 @@ def _initialise(bot):
     if not bot.config.exists(['tldr_echo']):
         bot.config.set_by_path(["tldr_echo"], 1) # TLDR_ECHO_OPTIONS[1] is "GROUP"
         bot.config.save()
+
+
+async def gettldr(bot, event, *args):
+    """Forward the tl;dr of a conversation into the private chat with the user
+
+    Args:
+        bot (hangupsbot.core.HangupsBot): the running instance
+        event (hangupsbot.event.ConversationEvent): a message content wrapper
+        args (str): the query params
+
+    Returns:
+        str: status message
+    """
+    query = ''.join(args)
+    if not query:
+        return _('Specify a conversation name')
+
+    try:
+        conv_id = bot.call_shared('alias2convid', query)
+    except KeyError:
+        conv_id = None
+
+    if conv_id is not None:
+        conversations = (conv_id,)
+    else:
+        if ':' not in query:
+            query = 'text:' + query
+
+        conversations = tuple(bot.conversations.get(query))
+
+    chat_id = event.user_id.chat_id
+    if chat_id not in bot.config['admins']:
+        # verify that the user is member in the requested conversation
+        is_member_in = []
+        for conv_id in conversations:
+            users = await bot.sync.get_users_in_conversation(
+                conv_id, profilesync_only=True, return_flat=True,
+            )
+            if any(user.id_.chat_id == chat_id for user in users):
+                is_member_in.append(conv_id)
+
+        conversations = tuple(is_member_in)
+
+    if not conversations:
+        return _('The query returned no conversations for you')
+
+    if len(conversations) > 1:
+        names = '- '
+        names += '\n- '.join(bot.conversations.get_name(conv_id, 'unknown')
+                             for conv_id in conversations)
+        return _('The query returned too many conversations:\n{names}').format(
+            names=names,
+        )
+
+    conv_id = conversations[0]
+    text = _('TL;DR of "{name}":\n{text}').format(
+        name=bot.conversations.get_name(conv_id, 'unknown'),
+        text=tldr_base(bot, conv_id, ())[0],
+    )
+    await bot.coro_send_to_user(event.user_id.chat_id, text)
+    return None
 
 
 def tldrecho(bot, event, *dummys):
