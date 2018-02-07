@@ -97,7 +97,11 @@ async def gettldr(bot, event, *args):
             names=names,
         )
 
-    text = tldr_base(bot, conversations[0], ())[0]
+    conv_id = conversations[0]
+    text = _('TL;DR of "{name}":\n{text}').format(
+        name=bot.conversations.get_name(conv_id, 'unknown'),
+        text=tldr_base(bot, conv_id, ())[0],
+    )
     await bot.coro_send_to_user(event.user_id.chat_id, text)
     return None
 
