@@ -495,6 +495,62 @@ async def _handle_conv_user(bot, conv_id, profilesync_only):
     return [user for user in all_users
             if not profilesync_only or user.id_.chat_id != 'sync']
 
+
+async def _send_photo(tg_bot, event, tg_chat_id, chat_tag,
+                      image, image_data, filename):
+    """send the resized image of an event to a given telegram chat
+
+    Args:
+        tg_bot (TelegramBot): the running instance
+        event (hangupsbot.sync.event.SyncEvent): a message wrapper
+        tg_chat_id (str): telegram chat identifier
+        chat_tag (str): identifier to receive config entries of the chat
+        image (hangupsbot.sync.image.SyncImage): media data wrapper
+        image_data (io.BytesIO): the resized image data
+        filename (str): file name of the image
+
+    Returns:
+        bool: True if the image sending failed, otherwise False
+    """
+    # TG-Photo-Captions are not allowed to contain html,
+    # do not send the event text as caption
+    text_photo = event.get_formatted_text(
+        style='text', text='', add_photo_tag=True,
+        names_text_only=True, conv_id=chat_tag,
+        template=('{title}{image_tag}'
+                  if event.user.is_self else
+                  '{name}{title}{separator}{image_tag}'))
+    try:
+        # pass
+        await tg_bot.sendPhoto(tg_chat_id, (filename, image_data),
+                               caption=text_photo)
+    except telepot.exception.TelegramError as err:
+        if 'PHOTO_SAVE_FILE_INVALID' in repr(err):
+            image_data.close()
+            image_data, filename = image.get_data(limit=500)
+            try:
+                await tg_bot.sendPhoto(tg_chat_id,
+                                       (filename, image_data),
+                                       caption=text_photo)
+            except telepot.exception.TelegramError as err:
+                logger.warning('error sending %s in 500px: %s',
+                               filename, repr(err))
+            else:
+                # force no tag as we already send it
+                return False
+        else:
+            logger.warning('error sending %s as photo: %s',
+                           filename, repr(err))
+
+        # force a tag as we could not send it
+        return True
+    finally:
+        image_data.close()
+
+    # force no tag as we already send it
+    return False
+
+
 async def _handle_message(bot, event):
     """forward message/photos from any platform to Telegram
 
@@ -502,59 +558,6 @@ async def _handle_message(bot, event):
         bot (hangupsbot.core.HangupsBot): the running instance
         event (hangupsbot.sync.event.SyncEvent): a message wrapper
     """
-    async def _send_photo(tg_chat_id_, chat_tag_,
-                          image_, image_data_, filename_):
-        """send the resized image of an event the a given telegram chat
-
-        Args:
-            tg_chat_id_ (str): telegram chat identifier
-            chat_tag_ (str): identifier to receive config entries of the chat
-            image_ (hangupsbot.sync.image.SyncImage): media data wrapper
-            image_data_ (io.BytesIO): the resized image data
-            filename_ (str): file name of the image
-
-        Returns:
-            bool: True if the image sending failed, otherwise False
-        """
-        # TG-Photo-Captions are not allowed to contain html,
-        # do not send the event text as caption
-        text_photo = event.get_formatted_text(
-            style='text', text='', add_photo_tag=True,
-            names_text_only=True, conv_id=chat_tag_,
-            template=('{title}{image_tag}'
-                      if event.user.is_self else
-                      '{name}{title}{separator}{image_tag}'))
-        try:
-            # pass
-            await tg_bot.sendPhoto(tg_chat_id_, (filename_, image_data_),
-                                   caption=text_photo)
-        except telepot.exception.TelegramError as err:
-            if 'PHOTO_SAVE_FILE_INVALID' in repr(err):
-                image_data_.close()
-                image_data_, filename_ = image_.get_data(limit=500)
-                try:
-                    await tg_bot.sendPhoto(tg_chat_id_,
-                                           (filename_, image_data_),
-                                           caption=text_photo)
-                except telepot.exception.TelegramError as err:
-                    logger.warning('error sending %s in 500px: %s',
-                                   filename_, repr(err))
-                else:
-                    # force no tag as we already send it
-                    return False
-            else:
-                logger.warning('error sending %s as photo: %s',
-                               filename_, repr(err))
-
-            # force a tag as we could not send it
-            return True
-        finally:
-            image_data_.close()
-
-        # force no tag as we already send it
-        return False
-
-
     if not bot.memory.exists(['telesync', 'ho2tg', event.conv_id]):
         # no sync is set
         return
@@ -602,7 +605,7 @@ async def _handle_message(bot, event):
                 add_tag = True
 
             else:
-                add_tag = await _send_photo(tg_chat_id, chat_tag,
+                add_tag = await _send_photo(tg_bot, event, tg_chat_id, chat_tag,
                                             image, image_data, filename)
 
         if has_text:
