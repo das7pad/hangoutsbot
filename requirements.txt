@@ -30,7 +30,7 @@ mechanicalsoup==0.6.0
 more-itertools==4.1.0
 moviepy==0.2.3.2
 multidict==4.1.0
-numpy==1.14.0
+numpy==1.14.1
 oauth2client==4.1.2
 oauthlib==2.0.6
 pillow==5.0.0
@@ -52,14 +52,14 @@ simplejson==3.13.2
 six==1.11.0
 soundcloud==0.5.0
 spotipy==2.4.4
-telepot==12.5
+telepot==12.6
 tld==0.7.9
 tqdm==4.11.2
 twitterapi==2.4.8
 uritemplate==3.0.0
 urllib3==1.22
 urwid==1.3.1
-websocket-client==0.46.0
+websocket-client==0.47.0
 wikipedia==1.4.0
 wolframalpha==3.0
 xmltodict==0.11.0
