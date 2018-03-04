@@ -60,7 +60,7 @@ async def _initialise(bot):
     plugins.register_admin_command(['telesync'])
 
     bot.tg_bot = TelegramBot(bot)
-    if not await bot.tg_bot.is_running(retry=False):
+    if not await bot.tg_bot.can_log_in(retry=False):
         raise RuntimeError('Can not connect to the Telegram API')
 
     if __name__ in plugins.SENTINELS:
@@ -135,6 +135,9 @@ def setup_config(bot):
 
             # remove the edit-tag from live-locations
             'location_sharing_remove_edit_tag': True,
+
+            # retry request that failed due to a server error n times
+            'request_retry_limit': 5,
         },
         # new chat users are unrestricted by default, possible values are:
         # messages, media, sticker, websites, sticker+websites
@@ -349,7 +352,7 @@ async def telesync_set_token(bot, event, *args):
     bot.config.set_by_path(api_key_path, api_key)
 
     # test the api-key first:
-    if not await TelegramBot(bot).is_running(retry=False):
+    if not await TelegramBot(bot).can_log_in(retry=False):
         bot.config.set_by_path(api_key_path, backup)
         return 'invalid Telegram API Key'
 
@@ -416,9 +419,6 @@ async def _handle_user_kick(bot, conv_id, user):
 
     path = ['telesync', 'ho2tg', conv_id]
 
-    if not await bot.tg_bot.is_running():
-        return False
-
     kicked = False
     tg_chat_id = user.identifier.split(':', 1)[1]
     try:
@@ -473,8 +473,8 @@ async def _handle_conv_user(bot, conv_id, profilesync_only):
     """
     path = ['telesync', 'ho2tg', conv_id]
     tg_bot = bot.tg_bot
-    if not (bot.memory.exists(path) and await tg_bot.is_running()):
-        # no sync is set or the bot is not responding
+    if not bot.memory.exists(path):
+        # no sync is set
         return []
 
     requests = []
@@ -626,9 +626,8 @@ async def _handle_membership_change(bot, event):
         bot (hangupsbot.core.HangupsBot): the running instance
         event (hangupsbot.sync.event.SyncEventMembership): a data wrapper
     """
-    if not (bot.memory.exists(['telesync', 'ho2tg', event.conv_id]) and
-            (await bot.tg_bot.is_running())):
-        # no sync is set or the bot is not responding:
+    if not bot.memory.exists(['telesync', 'ho2tg', event.conv_id]):
+        # no sync is set
         return
 
     tg_chat_ids = bot.memory.get_by_path(['telesync', 'ho2tg', event.conv_id])

@@ -5,7 +5,6 @@ import asyncio
 import io
 import json
 import logging
-import time
 import random
 
 import aiohttp
@@ -65,6 +64,13 @@ IGNORED_MESSAGE_TYPES = (
     'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
 )
 
+telepot.aio.api._timeout = 15  # pylint: disable=protected-access
+PERMANENT_SERVER_ERROR = telepot.exception.TelegramError(
+    'Request failed permanent',
+    500,
+    {}
+)
+
 _RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
                            '<i>{chat_name}</i> could <b>not</b> be restricted, '
                            'please check manually!')
@@ -79,7 +85,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
     def __init__(self, ho_bot):
         Message.tg_bot = self
         self.user = None
-        self._receive_next_updates = 0
 
         api_key = self.config('api_key', False)
         super().__init__(api_key)
@@ -109,6 +114,74 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                           '/sync_config': command_sync_config,
                           '/restrict_user': command_restrict_user,
                          }
+
+    @staticmethod
+    def _get_error_message(error, code, reason):
+        """get a custom error message for an error
+
+        telepot.exception.BadHTTPResponse and telepot.exception.TelegramError
+         have a different API. This demands the two additional arguments.
+
+        Args:
+            error (Exception): the full error
+            code (int): the resp status code
+            reason (str): the error message
+
+        Returns:
+            str: a status message
+        """
+        if code >= 500:
+            flat = repr(error).lower()
+            if 'restart' in flat or 'gateway' in flat:
+                reason = 'pending server restart'
+            message = 'Telegram server error'
+        elif code:
+            message = 'Unexpected response'
+        else:
+            message = 'Unexpected error'
+        return '%s (%s)' % (message, reason)
+
+    async def _api_request(self, method, params=None, files=None, **kwargs):
+        retry = 0
+        limit = 1   # ensure at least one try
+
+        while retry <= limit:
+            delay = 0
+            try:
+                return await super()._api_request(
+                    method=method,
+                    params=params,
+                    files=files,
+                    **kwargs
+                )
+            except (asyncio.CancelledError,
+                    telepot.exception.UnauthorizedError):
+                raise
+            except telepot.exception.TooManyRequestsError as err:
+                msg = 'too many requests!'
+                delay = 30
+
+            except telepot.exception.BadHTTPResponse as err:
+                msg = self._get_error_message(err, err.status, err.text)
+
+            except telepot.exception.TelegramError as err:
+                if err.error_code < 500:
+                    raise
+
+                msg = self._get_error_message(err, err.error_code,
+                                              err.description)
+
+            logger.info('Request %s/%s failed: %s\n %r | %r | %r| %r\n%r',
+                        retry, limit, msg, method, params, files, kwargs, err)
+            retry += 1
+            limit = self.config('request_retry_limit')
+            await asyncio.sleep(delay or max(2**retry, 30))
+
+        logger.warning(
+            'Request failed permanent: %r | %r | %r | %r\nLast Error:\n%s',
+            method, params, files, kwargs, err
+        )
+        raise PERMANENT_SERVER_ERROR
 
     def config(self, key=None, fallback=True):
         """get a telegram config entry
@@ -165,8 +238,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             except telepot.exception.TelegramError as err:
                 logger.warning('discard of last messages failed: %s', str(err))
 
-    async def is_running(self, retry=True):
-        """check if Telegram api requests can be made
+    async def can_log_in(self, retry=True):
+        """check whether Telegram api requests can be made
 
         Args:
             retry (bool): toggle to allow a single retry on a Server Error
@@ -174,38 +247,20 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         Returns:
             bool: True if the TelegramBot is running, otherwise False
         """
-        if self._receive_next_updates > time.time():
-            return True
-
         try:
             await self.getMe()
         except telepot.exception.UnauthorizedError:
             logger.critical('API-KEY is not valid, unloading the plugin')
             asyncio.ensure_future(plugins.unload(self.bot, 'plugins.telesync'))
             retry = False
-        except telepot.exception.TooManyRequestsError as err:
-            delay = err.json.get('parameters', {}).get('retry_after', 60)
-            logger.warning('too many requests! received a delay=%s', delay)
-            await asyncio.sleep(delay)
-            return True
-        except telepot.exception.BadHTTPResponse as err:
-            if err.status >= 500:
-                message = 'a Telegram server error'
-            else:
-                message = 'an unexpected response'
-            logger.error('getMe received %s: %d - %s',
-                         message, err.status, err.text)
-            await asyncio.sleep(10)
-            if retry:
-                return await self.is_running(retry=False)
         except (telepot.exception.TelegramError, aiohttp.ClientError) as err:
-            logger.info('getMe: %s', repr(err))
+            logger.info('API check: %s', repr(err))
         else:
             return True
 
         if retry:
             logger.warning('not running, reloading the plugin')
-            # detach the execution as the current call will be cancelled soon
+            # detach the execution as the current call may be cancelled soon
             asyncio.ensure_future(
                 plugins.reload_plugin(self.bot, 'plugins.telesync'))
         return False
@@ -382,7 +437,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         Returns:
             bool: True in case of a successful api-call, otherwise False
         """
-        if not await self.is_running() or not text:
+        if not text:
             return False
 
         text = get_formatted(text, 'html_flat', internal_source=True)
@@ -399,12 +454,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                                          parse_mode='HTML' if as_html else None,
                                          disable_web_page_preview=True,
                                          disable_notification=silent)
-
-        except telepot.exception.TooManyRequestsError as err:
-            delay = err.json.get('parameters', {}).get('retry_after')
-            logger.warning('too many requests! received a delay of %s', delay)
-            await asyncio.sleep(int(delay or 60))
-            status = await self._send_html(tg_chat_id, text, as_html, silent)
 
         except telepot.exception.TelegramError as err:
             status = False
@@ -721,46 +770,24 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             nonlocal hard_reset
             hard_reset = 0
 
-        def _process_http_error(error, code, reason):
-            """update local counter and log a custom error message for an error
-
-            Args:
-                error (Exception): the full error
-                code (int): the resp status code
-                reason (str): the error message
-            """
-            if code >= 500:
-                nonlocal delay
-                delay = 30.
-                flat = repr(error).lower()
-                if 'restart' in flat or 'gateway' in flat:
-                    _reset_error_count()
-                    reason = 'pending server restart'
-                message = 'Telegram server error'
-            elif code:
-                message = 'Unexpected response'
-            else:
-                message = 'Unexpected error'
-            logger.error('%s in message loop: %s', message, reason)
-
-        async def _handle_update(update_):
+        async def _handle_update(update):
             """extract and handle a message of an `Update`
 
             Args:
-                update_ (dict): see `https://core.telegram.org/bots/api#update`
+                update (dict): see `https://core.telegram.org/bots/api#update`
 
             Raises:
                 CancelledError: plugin unload in progress
             """
             message = None
             try:
-                message = _extract_message(update_)[1]
+                message = _extract_message(update)[1]
                 await asyncio.shield(self._handle(message))
             except asyncio.CancelledError:
                 raise
             except Exception:                      # pylint:disable=broad-except
                 logger.exception('error in handling message %s of update %s',
-                                 repr(message), repr(update_))
+                                 repr(message), repr(update))
             else:
                 # valid message received and handled, exit fail-state
                 _reset_error_count()
@@ -777,22 +804,15 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     updates = await self.getUpdates(offset=offset, timeout=120)
                     logger.debug(updates)
                     delay = .2
-                    self._receive_next_updates = time.time() + 120
-                    for update in updates:
-                        offset = update['update_id'] + 1
-                        await _handle_update(update)
+                    for update_ in updates:
+                        offset = update_['update_id'] + 1
+                        await _handle_update(update_)
 
                     await asyncio.sleep(delay)
 
             except (asyncio.CancelledError,
                     telepot.exception.UnauthorizedError):
                 raise
-            except telepot.exception.TooManyRequestsError as err:
-                delay += err.json.get('parameters', {}).get('retry_after', 60.)
-                logger.warning('too many requests! received a delay=%s', delay)
-
-            except telepot.exception.BadHTTPResponse as err:
-                _process_http_error(err, err.status, err.text)
 
             except telepot.exception.TelegramError as err:
                 if err.error_code == 409:
@@ -802,12 +822,5 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     delay += 120
                     await asyncio.sleep(delay)
                     continue
-
-                _process_http_error(err, err.error_code, err.description)
-
-            except Exception:                     # pylint: disable=broad-except
-                logger.exception('unexpected error in message loop')
-            finally:
-                self._receive_next_updates = 0
 
         logger.critical('ran out of retries, closing the message loop')
