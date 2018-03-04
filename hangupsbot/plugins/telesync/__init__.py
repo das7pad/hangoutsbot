@@ -134,6 +134,9 @@ def setup_config(bot):
 
             # remove the edit-tag from live-locations
             'location_sharing_remove_edit_tag': True,
+
+            # retry request that failed due to a server error n times
+            'request_retry_limit': 5,
         },
         # new chat users are unrestricted by default, possible values are:
         # messages, media, sticker, websites, sticker+websites

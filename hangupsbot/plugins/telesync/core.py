@@ -64,6 +64,11 @@ if 'default' not in POOLS or POOLS['default'].closed:
 IGNORED_MESSAGE_TYPES = (
     'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
 )
+PERMANENT_SERVER_ERROR = telepot.exception.TelegramError(
+    'Request failed permanent',
+    500,
+    {}
+)
 
 _RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
                            '<i>{chat_name}</i> could <b>not</b> be restricted, '
@@ -109,6 +114,74 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                           '/sync_config': command_sync_config,
                           '/restrict_user': command_restrict_user,
                          }
+
+    @staticmethod
+    def _get_error_message(error, code, reason):
+        """get a custom error message for an error
+
+        telepot.exception.BadHTTPResponse and telepot.exception.TelegramError
+         have a different API. This demands the two additional arguments.
+
+        Args:
+            error (Exception): the full error
+            code (int): the resp status code
+            reason (str): the error message
+
+        Returns:
+            str: a status message
+        """
+        if code >= 500:
+            flat = repr(error).lower()
+            if 'restart' in flat or 'gateway' in flat:
+                reason = 'pending server restart'
+            message = 'Telegram server error'
+        elif code:
+            message = 'Unexpected response'
+        else:
+            message = 'Unexpected error'
+        return '%s (%s)' % (message, reason)
+
+    async def _api_request(self, method, params=None, files=None, **kwargs):
+        retry = 0
+        limit = 1   # ensure at least one try
+
+        while retry <= limit:
+            delay = 0
+            try:
+                return await super()._api_request(
+                    method=method,
+                    params=params,
+                    files=files,
+                    **kwargs
+                )
+            except (asyncio.CancelledError,
+                    telepot.exception.UnauthorizedError):
+                raise
+            except telepot.exception.TooManyRequestsError as err:
+                msg = 'too many requests!'
+                delay = 30
+
+            except telepot.exception.BadHTTPResponse as err:
+                msg = self._get_error_message(err, err.status, err.text)
+
+            except telepot.exception.TelegramError as err:
+                if err.error_code < 500:
+                    raise
+
+                msg = self._get_error_message(err, err.error_code,
+                                              err.description)
+
+            logger.info('Request %s/%s failed: %s\n %r | %r | %r| %r\n%r',
+                        retry, limit, msg, method, params, files, kwargs, err)
+            retry += 1
+            limit = self.config('request_retry_limit')
+            await asyncio.sleep(delay or max(2**retry, 30))
+
+        logger.warning(
+            'Request failed permanent: %r | %r | %r | %r\nLast Error:\n%s',
+            method, params, files, kwargs, err
+        )
+        raise PERMANENT_SERVER_ERROR
 
     def config(self, key=None, fallback=True):
         """get a telegram config entry
@@ -721,28 +794,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             nonlocal hard_reset
             hard_reset = 0
 
-        def _process_http_error(error, code, reason):
-            """update local counter and log a custom error message for an error
-
-            Args:
-                error (Exception): the full error
-                code (int): the resp status code
-                reason (str): the error message
-            """
-            if code >= 500:
-                nonlocal delay
-                delay = 30.
-                flat = repr(error).lower()
-                if 'restart' in flat or 'gateway' in flat:
-                    _reset_error_count()
-                    reason = 'pending server restart'
-                message = 'Telegram server error'
-            elif code:
-                message = 'Unexpected response'
-            else:
-                message = 'Unexpected error'
-            logger.error('%s in message loop: %s', message, reason)
-
         async def _handle_update(update):
             """extract and handle a message of an `Update`
 
@@ -787,12 +838,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             except (asyncio.CancelledError,
                     telepot.exception.UnauthorizedError):
                 raise
-            except telepot.exception.TooManyRequestsError as err:
-                delay += err.json.get('parameters', {}).get('retry_after', 60.)
-                logger.warning('too many requests! received a delay=%s', delay)
-
-            except telepot.exception.BadHTTPResponse as err:
-                _process_http_error(err, err.status, err.text)
 
             except telepot.exception.TelegramError as err:
                 if err.error_code == 409:
@@ -803,10 +848,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     await asyncio.sleep(delay)
                     continue
 
-                _process_http_error(err, err.error_code, err.description)
-
-            except Exception:                     # pylint: disable=broad-except
-                logger.exception('unexpected error in message loop')
             finally:
                 self._receive_next_updates = 0
 
