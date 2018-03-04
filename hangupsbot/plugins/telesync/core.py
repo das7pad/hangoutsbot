@@ -64,6 +64,8 @@ if 'default' not in POOLS or POOLS['default'].closed:
 IGNORED_MESSAGE_TYPES = (
     'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
 )
+
+telepot.aio.api._timeout = 15  # pylint: disable=protected-access
 PERMANENT_SERVER_ERROR = telepot.exception.TelegramError(
     'Request failed permanent',
     500,
