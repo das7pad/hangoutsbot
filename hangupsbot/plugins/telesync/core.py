@@ -743,24 +743,24 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 message = 'Unexpected error'
             logger.error('%s in message loop: %s', message, reason)
 
-        async def _handle_update(update_):
+        async def _handle_update(update):
             """extract and handle a message of an `Update`
 
             Args:
-                update_ (dict): see `https://core.telegram.org/bots/api#update`
+                update (dict): see `https://core.telegram.org/bots/api#update`
 
             Raises:
                 CancelledError: plugin unload in progress
             """
             message = None
             try:
-                message = _extract_message(update_)[1]
+                message = _extract_message(update)[1]
                 await asyncio.shield(self._handle(message))
             except asyncio.CancelledError:
                 raise
             except Exception:                      # pylint:disable=broad-except
                 logger.exception('error in handling message %s of update %s',
-                                 repr(message), repr(update_))
+                                 repr(message), repr(update))
             else:
                 # valid message received and handled, exit fail-state
                 _reset_error_count()
@@ -778,9 +778,9 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     logger.debug(updates)
                     delay = .2
                     self._receive_next_updates = time.time() + 120
-                    for update in updates:
-                        offset = update['update_id'] + 1
-                        await _handle_update(update)
+                    for update_ in updates:
+                        offset = update_['update_id'] + 1
+                        await _handle_update(update_)
 
                     await asyncio.sleep(delay)
 
