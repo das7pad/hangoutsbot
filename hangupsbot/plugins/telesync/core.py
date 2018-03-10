@@ -144,6 +144,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
     async def _api_request(self, method, params=None, files=None, **kwargs):
         retry = 0
         limit = 1   # ensure at least one try
+        last_err = None
 
         while retry <= limit:
             delay = 0
@@ -158,28 +159,32 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     telepot.exception.UnauthorizedError):
                 raise
             except telepot.exception.TooManyRequestsError as err:
+                last_err = err
                 msg = 'too many requests!'
                 delay = 30
 
             except telepot.exception.BadHTTPResponse as err:
+                last_err = err
                 msg = self._get_error_message(err, err.status, err.text)
 
             except telepot.exception.TelegramError as err:
+                last_err = err
                 if err.error_code < 500:
                     raise
 
                 msg = self._get_error_message(err, err.error_code,
                                               err.description)
 
-            logger.info('Request %s/%s failed: %s\n %r | %r | %r| %r\n%r',
-                        retry, limit, msg, method, params, files, kwargs, err)
             retry += 1
             limit = self.config('request_retry_limit')
+            logger.info(
+                'Request %s/%s failed: %s\n %r | %r | %r| %r\n%r',
+                retry, limit, msg, method, params, files, kwargs, last_err)
             await asyncio.sleep(delay or max(2**retry, 30))
 
         logger.warning(
             'Request failed permanent: %r | %r | %r | %r\nLast Error:\n%s',
-            method, params, files, kwargs, err
+            method, params, files, kwargs, last_err
         )
         raise PERMANENT_SERVER_ERROR
 
