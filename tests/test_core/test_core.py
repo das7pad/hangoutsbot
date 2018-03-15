@@ -20,7 +20,7 @@ from tests.utils import build_user_conversation_list_base
 NOOP = b'17\n[[1,["noop"]\n]\n]\n'
 GSESSIONID = b'52\n[[0,["c","MYSID","",8]\n]\n,[1,[{"gsid":"MYGSID"}]]\n]\n'
 
-LONG_POLLING_URL = hangups.channel.CHANNEL_URL_PREFIX.format('channel/bind')
+LONG_POLLING_URL = hangups.channel.CHANNEL_URL
 FETCH_CHANNEL_SID_PARAMS = {'VER': 8, 'RID': 81188, 'ctype': 'hangouts'}
 FETCH_CHANNEL_SID_URL = merge_url_params(url=LONG_POLLING_URL,
                                          params=FETCH_CHANNEL_SID_PARAMS)
