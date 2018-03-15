@@ -1,5 +1,5 @@
 # core
-aiohttp>2,<3
+aiohttp>2,<4
 
 # message
 emoji==0.4.5
