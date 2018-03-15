@@ -7,9 +7,9 @@ import sys
 
 from setuptools import setup
 
-if sys.version_info < (3, 5, 0):
-    # This is the minimum version to support async def
-    raise RuntimeError("hangupsbot requires Python 3.5.0+")
+if sys.version_info < (3, 5, 3):
+    # This is the minimum version to support async-def and aiohttp>=3
+    raise RuntimeError("hangupsbot requires Python 3.5.3+")
 
 VERSION_PATH = os.path.join(os.path.dirname(__file__), 'hangupsbot/version.py')
 with open(VERSION_PATH, 'r') as file:
