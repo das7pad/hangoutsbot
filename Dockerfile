@@ -6,11 +6,12 @@ WORKDIR /app
 RUN adduser --system --uid 10000 --group --home /data hangupsbot
 
 VOLUME /data
-ENTRYPOINT ["/app/venv/bin/hangupsbot", "--base_dir", "/data"]
+ENTRYPOINT ["/usr/local/bin/hangupsbot", "--base_dir", "/data"]
+
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
 
 COPY . /app
-RUN make install
+RUN pip3 install /app --process-dependency-links
 
 USER hangupsbot
