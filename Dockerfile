@@ -12,6 +12,9 @@ ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
 
 COPY . /app
-RUN pip3 install /app --process-dependency-links
+RUN pip3 install /app --process-dependency-links; \
+    python3 -c "import imageio; imageio.plugins.ffmpeg.download()" && \
+        cd /usr/local/lib/python3*/site-packages/imageio/resources/ && \
+        mv /root/.imageio/ffmpeg ./ && chown -R hangupsbot ffmpeg/
 
 USER hangupsbot
