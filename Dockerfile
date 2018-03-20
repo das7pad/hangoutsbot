@@ -9,8 +9,8 @@ VOLUME /data
 ENTRYPOINT ["/app/venv/bin/hangupsbot", "--base_dir", "/data"]
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
-COPY Makefile setup.py requirements.txt ./
-COPY hangupsbot ./hangupsbot
+
+COPY . /app
 RUN make install
 
 USER hangupsbot
