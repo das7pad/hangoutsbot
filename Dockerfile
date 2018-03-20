@@ -5,9 +5,9 @@ WORKDIR /app
 RUN mkdir /data
 VOLUME /data
 RUN mkdir -p /root/.local/share && ln -s /data /root/.local/share/hangupsbot
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["/app/venv/bin/hangupsbot"]
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
-COPY docker-entrypoint.sh Makefile setup.py requirements.txt ./
+COPY Makefile setup.py requirements.txt ./
 COPY hangupsbot ./hangupsbot
 RUN make install
