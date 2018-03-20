@@ -4,8 +4,7 @@ LABEL maintainer="http://github.com/das7pad/hangoutsbot"
 WORKDIR /app
 RUN mkdir /data
 VOLUME /data
-RUN mkdir -p /root/.local/share && ln -s /data /root/.local/share/hangupsbot
-ENTRYPOINT ["/app/venv/bin/hangupsbot"]
+ENTRYPOINT ["/app/venv/bin/hangupsbot", "--base_dir", "/data"]
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
 COPY Makefile setup.py requirements.txt ./
