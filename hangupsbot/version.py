@@ -1,1 +1,1 @@
-__version__ = "3.2.5+das7pad"
+__version__ = "3.2.6+das7pad"
