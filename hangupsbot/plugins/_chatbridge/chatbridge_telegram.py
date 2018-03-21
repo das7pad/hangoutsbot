@@ -83,7 +83,7 @@ class BridgeInstance(WebFramework):
             except asyncio.TimeoutError:
                 raise
             except asyncio.CancelledError:
-                session.close()
+                await session.close()
                 raise
 
             if chunk:

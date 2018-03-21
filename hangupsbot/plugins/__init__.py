@@ -727,7 +727,7 @@ async def unload(bot, module_path):
         command.arguments_parser.deregister_preprocessor_group(groupname)
 
     for session in plugin['aiohttp.session']:
-        session.close()
+        await session.close()
 
     logger.debug("%s unloaded", module_path)
     return True

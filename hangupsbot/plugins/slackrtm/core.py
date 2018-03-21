@@ -232,7 +232,7 @@ class SlackRTM(BotMixin):
                 self.logger.warning('Connection failed, waiting %s sec',
                                     hard_reset * 10)
             except SlackAuthError as err:
-                self._session.close()           # do not allow further api-calls
+                await self._session.close()      # do not allow further api-calls
                 self.logger.critical('closing SlackRTM: %s', repr(err))
                 return
             except Exception:                     # pylint: disable=broad-except
@@ -250,6 +250,8 @@ class SlackRTM(BotMixin):
                     await plugins.unload(self.bot, self.identifier)
                 except plugins.NotLoaded:
                     pass
+                finally:
+                    await self._session.close()
                 self.logger.debug('unloaded')
 
         self.logger.critical('ran out of retries, closing the connection')
@@ -989,7 +991,3 @@ class SlackRTM(BotMixin):
                      'messages in Slack as well.*')
 
         await self.bot.coro_send_message(conv_1on1, text)
-
-    def __del__(self):
-        if self._session is not None:
-            self._session.close()
