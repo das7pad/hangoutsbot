@@ -1,6 +1,6 @@
 FROM python:3.6
-LABEL description="Google Hangouts Bot"
-LABEL maintainer="http://github.com/das7pad/hangoutsbot"
+LABEL description="Google Hangouts Bot" \
+      maintainer="https://github.com/das7pad/hangoutsbot"
 
 RUN adduser --system --uid 10000 --group --home /data hangupsbot
 
