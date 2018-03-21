@@ -142,7 +142,7 @@ def main():
                                "quitting"))
     parser.add_argument("--version", action="version",
                         version="%(prog)s {}".format(version.__version__),
-                        help=_("show program\"s version number and exit"))
+                        help=_("show program's version number and exit"))
     args = parser.parse_args()
 
     # Update the paths for all files in case they are not specified explicit

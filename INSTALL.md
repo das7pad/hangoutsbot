@@ -5,7 +5,7 @@ and get it up and running.
 
 **Docker Users:** See the [**Docker Usage**](#docker-usage) section.
 
-1.  Ensure that your system has Python 3.5.0 or newer. It's most likely already
+1.  Ensure that your system has Python 3.5.3 or newer. It's most likely already
     installed on your system if you are using a fairly new Linux distribution.
 
     * To check for the existence and version of the language, you can run the
@@ -98,10 +98,8 @@ supplied configuration.
 
 After the first successful run of the bot, it should generate a
   `config.json` somewhere in your user directory.
-
-You should be able to find it in:
-  `/<username>/.local/share/hangupsbot/`, where `<username>` is your operating
-  system username.
+  
+Issue the command `/bot files` to find the exact location.
 
 You can edit this file and reload any new configs by
 * sending the message `/bot reload` in a hangout with the bot account

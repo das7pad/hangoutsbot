@@ -27,7 +27,7 @@ Please see:
 * **Cross-chat Syncouts** :
   Half of your team is on Slack? No problem! You can connect them into the same
   room to communicate.
-  Checkout telesync for using Telegram with the hangoutsbot.
+  Checkout `telesync` for using Telegram with the hangoutsbot.
 * **[Hubot Integration](https://github.com/hangoutsbot/hangoutsbot/wiki/Hubot-Integration)**:
   Hangupsbot allows you to connect to [Hubot](https://hubot.github.com/), instantly providing you access
   to hundreds of developed chat tools and plugins.
@@ -46,20 +46,29 @@ Note: **First run?** See the [installation instructions](INSTALL.md)
 run `/path/to/venv/bin/hangupsbot` with these optional arguments:
 
 ```
-usage: hangupsbot [-h] [-d] [--log LOG] [--cookies COOKIES] [--memory MEMORY] [--config CONFIG] [--version]
+usage: hangupsbot [-h] [-d] [-s] [--base_dir BASE_DIR] [--log LOG]
+                  [--cookies COOKIES] [--memory MEMORY] [--config CONFIG]
+                  [--retries RETRIES] [--version]
 
 optional arguments:
--h, --help         show this help message and exit
--d, --debug        log detailed debugging messages (default: False)
---log LOG          log file path (default:
-                   ~/.local/share/hangupsbot/hangupsbot.log)
---cookies COOKIES  cookie storage path (default:
-                   ~/.local/share/hangupsbot/cookies.json)
---memory MEMORY    memory storage path (default:
-                   ~/.local/share/hangupsbot/memory.json)
---config CONFIG    config storage path (default:
-                   ~/.local/share/hangupsbot/config.json)
---version          show program's version number and exit
+  -h, --help           show this help message and exit
+  -d, --debug          log detailed debugging messages
+                       (default: False)
+  -s, --service        strip the timestamp from the stdout-log
+                       (default: False)
+  --base_dir BASE_DIR  base dir for the log-, cookies-, config- and memory-path
+                       (default: ~/.local/share/hangupsbot)
+  --log LOG            log file path
+                       (default: ~/.local/share/hangupsbot/hangupsbot.log)
+  --cookies COOKIES    cookie storage path
+                       (default: ~/.local/share/hangupsbot/cookies.json)
+  --memory MEMORY      memory storage path
+                       (default: ~/.local/share/hangupsbot/memory.json)
+  --config CONFIG      config storage path
+                       (default: ~/.local/share/hangupsbot/config.json)
+  --retries RETRIES    Maximum disconnect / reconnect retries before quitting
+                       (default: 5)
+  --version            show program's version number and exit
 ```
 
 Example: `/opt/venv/bin/hangupsbot --cookies ~/mybot/cookies.secret`

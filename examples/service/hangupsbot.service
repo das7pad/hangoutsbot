@@ -7,20 +7,25 @@
 # local changes, such as the user to run the daemon as, and where the daemon
 # is located
 #
-# the default assums that the installation was made by the user hangoutsbot into
+# the default assumes that the installation was made by the user hangupsbot into
 # its home directory:
-# $ cd ~
-# $ git clone https://github.com/das7pad/hangoutsbot.git hangoutsbot
-# $ cd hangoutsbot
-# $ python3 -m venv venv
-# $ ./venv/bin/pip3 install -r requirements.txt
+# $ cd /home/hangupsbot
+# $ git clone https://github.com/das7pad/hangoutsbot.git src
+# $ make -C src install
+
+# to check the logs run
+# $ tail -f /home/hangupsbot/my_bot/hangupsbot.log
+
+# config.json and memory.json are in the users home dir:
+# /home/hangupsbot/my_bot/config.json
+# /home/hangupsbot/my_bot/memory.json
 
 [Unit]
-Description=HangoutsBot
+Description=Hangouts Bot
 After=network-online.target
 
 [Service]
-ExecStart=/home/hangoutsbot/hangoutsbot/venv/bin/python3 /home/hangoutsbot/hangoutsbot/hangupsbot/hangupsbot.py
+ExecStart=/home/hangupsbot/venv/bin/hangupsbot --service --base_dir /home/hangupsbot/my_bot
 User=hangupsbot
 Group=hangupsbot
 
