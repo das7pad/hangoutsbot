@@ -97,11 +97,26 @@ def configure_logging(args):
 def main():
     """Main entry point"""
     # Build default paths for files.
-    dirs = appdirs.AppDirs("hangupsbot", "hangupsbot")
-    default_log_path = os.path.join(dirs.user_data_dir, "hangupsbot.log")
-    default_cookies_path = os.path.join(dirs.user_data_dir, "cookies.json")
-    default_config_path = os.path.join(dirs.user_data_dir, "config.json")
-    default_memory_path = os.path.join(dirs.user_data_dir, "memory.json")
+    user_dirs = appdirs.AppDirs("hangupsbot")
+    default_base_dir = user_dirs.user_data_dir
+    files = {
+        'log': 'hangupsbot.log',
+        'cookies': 'cookies.json',
+        'config': 'config.json',
+        'memory': 'memory.json',
+    }
+
+    def get_path(file, base=default_base_dir):
+        """Create the full path for a given file
+
+        Args:
+            file (str): one of `log`, `cookies`, `config`, `memory`
+            base (str): a custom base dir
+
+        Returns:
+            str: the full path
+        """
+        return os.path.join(base, files[file])
 
     # Configure argument parser
     parser = argparse.ArgumentParser(
@@ -111,13 +126,16 @@ def main():
                         help=_("log detailed debugging messages"))
     parser.add_argument("-s", "--service", action="store_true",
                         help=_("strip the timestamp from the stdout-log"))
-    parser.add_argument("--log", default=default_log_path,
+    parser.add_argument("--base_dir", default=default_base_dir,
+                        help=_("base dir for the log-, cookies-, config- "
+                               "and memory-path"))
+    parser.add_argument("--log", default=get_path('log'),
                         help=_("log file path"))
-    parser.add_argument("--cookies", default=default_cookies_path,
+    parser.add_argument("--cookies", default=get_path('cookies'),
                         help=_("cookie storage path"))
-    parser.add_argument("--memory", default=default_memory_path,
+    parser.add_argument("--memory", default=get_path('memory'),
                         help=_("memory storage path"))
-    parser.add_argument("--config", default=default_config_path,
+    parser.add_argument("--config", default=get_path('config'),
                         help=_("config storage path"))
     parser.add_argument("--retries", default=5, type=int,
                         help=_("Maximum disconnect / reconnect retries before "
@@ -127,6 +145,14 @@ def main():
                         help=_("show program\"s version number and exit"))
     args = parser.parse_args()
 
+    # Update the paths for all files in case they are not specified explicit
+    if args.base_dir != default_base_dir:
+        # custom base dir set
+        for item in ('log', 'cookies', 'config', 'memory'):
+            user_path = getattr(args, item)
+            if user_path == get_path(item):
+                # no custom path set, update it with the new base dir
+                setattr(args, item, get_path(item, args.base_dir))
 
     # Create all necessary directories.
     for path in (args.log, args.cookies, args.config, args.memory):
