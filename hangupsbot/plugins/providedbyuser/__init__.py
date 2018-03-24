@@ -6,14 +6,14 @@ from hangupsbot.commands import command, Help
 
 _CATEGORY_HELP = {
     'set': _('Add or update your %(label)s.\n'
-             'Usage: {bot_cmd} set%(category)s %(upper_label)s'),
+             'Usage: {bot_cmd} %(set_cmd)s %(upper_label)s'),
     'delete': _('Delete your %(label)s.\n'
-                'Usage: {bot_cmd} delete%(category)s'),
-    '': _('Search for %(label)s by user or by value.\n'
-          'Usage:\n'
-          ' - {bot_cmd} %(category)s G+ ID\n'
-          ' - {bot_cmd} %(category)s User Name\n'
-          ' - {bot_cmd} %(category)s %(upper_label)s'),
+                'Usage: {bot_cmd} %(delete_cmd)s'),
+    'search': _('Search for %(label)s by user or by value.\n'
+                'Usage:\n'
+                ' - {bot_cmd} %(search_cmd)s G+ ID\n'
+                ' - {bot_cmd} %(search_cmd)s User Name\n'
+                ' - {bot_cmd} %(search_cmd)s %(upper_label)s'),
 }
 _HELP = {
     'providedbyuser': _(
@@ -59,20 +59,27 @@ def register_category(bot, category):
 
     meta = bot.config.get_by_path(path)
     label = meta.get('label', category)
+    set_cmd = meta.get('set_cmd', 'set' + category)
+    delete_cmd = meta.get('delete_cmd', 'delete' + category)
+    search_cmd = meta.get('search_cmd', category)
 
-    register_delete(category, label)
-    register_search(category)
-    register_set(category, label)
+    register_delete(category, label, delete_cmd)
+    register_search(category, search_cmd)
+    register_set(category, label, set_cmd)
 
     template_content = {
         'category': category,
         'label': label,
         'upper_label': label.upper(),
+        'delete_cmd': delete_cmd,
+        'search_cmd': search_cmd,
+        'set_cmd': set_cmd,
     }
-    category_help = {}
-    for prefix, template in _CATEGORY_HELP.items():
-        category_help[prefix + category] = template % template_content
-
+    category_help = {
+        delete_cmd: _CATEGORY_HELP['delete'] % template_content,
+        search_cmd: _CATEGORY_HELP['search'] % template_content,
+        set_cmd: _CATEGORY_HELP['set'] % template_content,
+    }
     plugins.register_help(category_help)
 
 
@@ -178,14 +185,15 @@ async def providedbyuser(bot, event, *args):
     return msg
 
 
-def register_set(category, value_label):
+def register_set(category, value_label, cmd_name):
     """factory for the setCATEGORY command
 
     Args:
         category (str): the category name
         value_label (str): a pretty name for the category
+        cmd_name (str): a custom command name
     """
-    @command.register(name='set' + category, final=True)
+    @command.register(name=cmd_name, final=True)
     async def _cmd_set(bot, event, *args):
         """
 
@@ -221,17 +229,18 @@ def register_set(category, value_label):
 
         return msg
 
-    plugins.register_user_command(['set' + category])
+    plugins.register_user_command([cmd_name])
 
 
-def register_delete(category, value_label):
+def register_delete(category, value_label, cmd_name):
     """factory for the deleteCATEGORY command
 
     Args:
         category (str): the category name
         value_label (str): a pretty name for the category
+        cmd_name (str): a custom command name
     """
-    @command.register(name='delete' + category, final=True)
+    @command.register(name=cmd_name, final=True)
     async def _cmd_delete(bot, event, *_dummy):
         """
 
@@ -257,16 +266,17 @@ def register_delete(category, value_label):
             msg = _('%s deleted.') % last_value
         return msg
 
-    plugins.register_user_command(['delete' + category])
+    plugins.register_user_command([cmd_name])
 
 
-def register_search(category):
+def register_search(category, cmd_name):
     """factory for the CATEGORY search command
 
     Args:
         category (str): the category name
+        cmd_name (str): a custom command name
     """
-    @command.register(name=category, final=True)
+    @command.register(name=cmd_name, final=True)
     async def _cmd_search(bot, event, *args):
         """
 
@@ -307,4 +317,4 @@ def register_search(category):
             )
         return '\n'.join(lines)
 
-    plugins.register_user_command([category])
+    plugins.register_user_command([cmd_name])

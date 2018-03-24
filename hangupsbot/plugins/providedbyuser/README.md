@@ -59,3 +59,28 @@ One could add a `timezone` category:
     ```
     /bot deletetimezone
     ```
+
+## Advanced configuration
+
+Each category may use a custom set-, delete- and search-command.
+
+Add the values into the `CATEGORY`s config entry in the bot config:
+
+```
+{
+    ...
+    "providedbyuser": {
+        ...
+        "CATEGORY": {
+            "label": "LABEL",
+            "delete_cmd": "your_delete_command_name",
+            "search_cmd": "your_search_command_name",
+            "set_cmd": "your_set_command_name",
+        },
+        ...
+    },
+    ...
+}
+```
+
+Changes made in the config require a plugin reload.
