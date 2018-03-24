@@ -64,6 +64,8 @@ One could add a `timezone` category:
 
 Each category may use a custom set-, delete- and search-command.
 
+Your label may be specified in a plural version for the search command.
+
 Add the values into the `CATEGORY`s config entry in the bot config:
 
 ```
@@ -73,6 +75,7 @@ Add the values into the `CATEGORY`s config entry in the bot config:
         ...
         "CATEGORY": {
             "label": "LABEL",
+            "label_plural": "LABEL_PLURAL",
             "delete_cmd": "your_delete_command_name",
             "search_cmd": "your_search_command_name",
             "set_cmd": "your_set_command_name",

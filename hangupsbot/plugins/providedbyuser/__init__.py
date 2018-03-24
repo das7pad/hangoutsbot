@@ -9,7 +9,7 @@ _CATEGORY_HELP = {
              'Usage: {bot_cmd} %(set_cmd)s %(upper_label)s'),
     'delete': _('Delete your %(label)s.\n'
                 'Usage: {bot_cmd} %(delete_cmd)s'),
-    'search': _('Search for %(label)s by user or by value.\n'
+    'search': _('Search for %(label_plural)s by user or by %(label)s.\n'
                 'Usage:\n'
                 ' - {bot_cmd} %(search_cmd)s G+ ID\n'
                 ' - {bot_cmd} %(search_cmd)s User Name\n'
@@ -70,6 +70,7 @@ def register_category(bot, category):
     template_content = {
         'category': category,
         'label': label,
+        'label_plural': meta.get('label_plural', label),
         'upper_label': label.upper(),
         'delete_cmd': delete_cmd,
         'search_cmd': search_cmd,
