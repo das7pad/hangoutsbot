@@ -87,7 +87,7 @@ async def help(bot, event, *args):
             await command.unknown_command(bot, event)
             return
 
-        help_lines.append("<b>{}</b>: {}".format(func.__name__,
+        help_lines.append("<b>{}</b>: {}".format(cmd,
                                                  get_func_help(bot, cmd, func)))
 
     await bot.coro_send_to_user_and_conversation(
