@@ -108,6 +108,7 @@ async def providedbyuser(bot, event, *args):
             meta['label'] = ' '.join(args[2:])
 
         bot.config.set_by_path(path, meta)
+        bot.config.save()
 
         await plugins.tracking.start({'module': 'providedbyuser',
                                       'module.path': __name__})
@@ -127,10 +128,13 @@ async def providedbyuser(bot, event, *args):
         except KeyError:
             msg = _('The category %r does not exist!') % category
         else:
+            bot.config.save()
             try:
                 bot.memory.pop_by_path(path)
             except KeyError:
                 pass
+            else:
+                bot.memory.save()
 
             msg = _('Category %r deleted.') % category
             for cmd_name in ('set' + category, 'delete' + category, category):
@@ -207,6 +211,7 @@ def register_set(category, value_label):
 
         value = ' '.join(args)
         bot.memory.set_by_path(path, value, create_path=False)
+        bot.memory.save()
         if last_value is None:
             msg = _('{value!r} set as your {label}').format(
                 value=value, label=value_label)
@@ -243,6 +248,8 @@ def register_delete(category, value_label):
             last_value = bot.memory.pop_by_path(path)
         except KeyError:
             last_value = None
+        else:
+            bot.memory.save()
 
         if last_value is None:
             msg = _('There was no %s set.') % value_label
