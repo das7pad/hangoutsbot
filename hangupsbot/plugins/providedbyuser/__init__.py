@@ -26,7 +26,7 @@ _HELP = {
         ' - {bot_cmd} providedbyuser list\n'
         '    Show all added categories.\n'
         ' - {bot_cmd} providedbyuser show CATEGORY\n'
-        '    Show all user entries for the given label'
+        '    Show all user entries for the given label.'
     )
 }
 
@@ -222,10 +222,10 @@ def register_set(category, value_label, cmd_name):
         bot.memory.set_by_path(path, value, create_path=False)
         bot.memory.save()
         if last_value is None:
-            msg = _('{value!r} set as your {label}').format(
+            msg = _('{value!r} set as your {label}.').format(
                 value=value, label=value_label)
         else:
-            msg = _('Updated your {label} from {last!r} to {new!r}').format(
+            msg = _('Updated your {label} from {last!r} to {new!r}.').format(
                 label=value_label, last=last_value, new=value)
 
         return msg
