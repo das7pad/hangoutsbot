@@ -295,6 +295,22 @@ def register_search(category, cmd_name):
         if not args:
             raise Help(_('A search query is required!'))
 
+        access_path = ['providedbyuser', category, 'access']
+        try:
+            conversation_or_alias = bot.config.get_by_path(access_path)
+        except KeyError:
+            pass
+        else:
+            conversation = bot.call_shared('alias2convid', conversation_or_alias)
+            users = await bot.sync.get_users_in_conversation(
+                conversation, profilesync_only=True)
+            required_chat_id = event.user_id.chat_id
+            for user in users:
+                if user.id_.chat_id == required_chat_id:
+                    break
+            else:
+                return _('Access denied!')
+
         query = ' '.join(args).lower()
         path = ['providedbyuser', category]
         values = bot.memory.get_by_path(path)

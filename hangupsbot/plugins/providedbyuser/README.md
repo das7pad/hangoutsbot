@@ -66,6 +66,11 @@ Each category may use a custom set-, delete- and search-command.
 
 Your label may be specified in a plural version for the search command.
 
+You can restrict the access to the search command in specifying a conversation
+ in which the users must be participating. The conversation can be noted as the
+ `Hangouts-conversation-id` or by creating an `alias` via the `commands.alias`
+ module and adding this `alias` into the config. 
+
 Add the values into the `CATEGORY`s config entry in the bot config:
 
 ```
@@ -79,6 +84,7 @@ Add the values into the `CATEGORY`s config entry in the bot config:
             "delete_cmd": "your_delete_command_name",
             "search_cmd": "your_search_command_name",
             "set_cmd": "your_set_command_name",
+            "access": "CONVERSATION_ID_or_ALIAS",
         },
         ...
     },
