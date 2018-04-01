@@ -134,6 +134,14 @@ You will first need to build the image:
 docker build -t hangoutsbot/hangoutsbot .
 ```
 
+The default timezone of the image is `Europe/Berlin`, you can adjust it with the
+ build argument `TZ`: `--build-arg TZ="TIMEZONE"`. For a full list see
+ [Wikipedia](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List).
+
+```
+docker build -t hangoutsbot/hangoutsbot --build-arg TZ="America/New_York" .
+```
+
 If you need to change ports add `--build-arg PORTS="new port list"`, for
 example:
 

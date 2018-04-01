@@ -8,6 +8,7 @@ VOLUME /data
 WORKDIR /data
 ENTRYPOINT ["/usr/local/bin/hangupsbot", "--base_dir", "/data"]
 
+ARG TZ="Europe/Berlin"
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
 
@@ -17,6 +18,7 @@ RUN \
     python3 -c "import imageio; imageio.plugins.ffmpeg.download()" && \
         cd /usr/local/lib/python3*/site-packages/imageio/resources/ && \
         mv /root/.imageio/ffmpeg ./ && chown -R hangupsbot ffmpeg/; \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone; \
     true
 
 USER hangupsbot
