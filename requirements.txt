@@ -6,7 +6,7 @@
 #
 
 git+https://github.com/das7pad/hangups@v0.4.4.1#egg=hangups==hangups-0.4.4.1
-aiohttp==3.0.9
+aiohttp==3.1.2
 appdirs==1.4.3
 async-timeout==2.0.1
 attrs==17.4.0
@@ -19,14 +19,14 @@ configargparse==0.11.0
 decorator==4.0.11
 emoji==0.4.5
 fudge==1.1.1
-google-api-python-client==1.6.5
-httplib2==0.10.3
+google-api-python-client==1.6.6
+httplib2==0.11.3
 idna-ssl==1.0.1
 idna==2.6
 imageio==2.1.2
 inflect==0.2.5
-jaraco.itertools==2.1.1
-lxml==4.2.0
+jaraco.itertools==2.2
+lxml==4.2.1
 mechanicalsoup==0.6.0
 more-itertools==4.1.0
 moviepy==0.2.3.2
@@ -34,14 +34,14 @@ multidict==4.1.0
 numpy==1.14.2
 oauth2client==4.1.2
 oauthlib==2.0.7
-pillow==5.0.0
+pillow==5.1.0
 protobuf==3.1.0.post1
 psutil==5.2.2
 pushbullet.py==0.11.0
 pyasn1-modules==0.2.1
 pyasn1==0.4.2
 pyslack==0.3.0
-python-dateutil==2.7.0
+python-dateutil==2.7.2
 python-magic==0.4.15
 readlike==0.1.2
 reparser==1.4.3
