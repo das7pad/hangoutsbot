@@ -18,7 +18,7 @@ bs4==0.0.1
 certifi==2018.1.18
 chardet==3.0.4
 cleverwrap==0.2.3.6
-configargparse==0.11.0
+configargparse==0.13.0
 decorator==4.0.11
 emoji==0.4.5
 fudge==1.1.1
