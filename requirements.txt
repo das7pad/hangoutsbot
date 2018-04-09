@@ -6,7 +6,7 @@
 #
 
 git+https://github.com/das7pad/hangups@v0.4.4.1#egg=hangups==hangups-0.4.4.1
-aiohttp==3.0.9
+aiohttp==3.1.2
 appdirs==1.4.3
 async-timeout==2.0.1
 attrs==17.4.0
