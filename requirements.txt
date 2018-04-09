@@ -23,7 +23,7 @@ google-api-python-client==1.6.6
 httplib2==0.11.3
 idna-ssl==1.0.1
 idna==2.6
-imageio==2.1.2
+imageio==2.3.0
 inflect==0.2.5
 jaraco.itertools==2.1.1
 lxml==4.2.0
