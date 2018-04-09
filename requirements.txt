@@ -27,7 +27,7 @@ imageio==2.3.0
 inflect==0.2.5
 jaraco.itertools==2.2
 lxml==4.2.1
-mechanicalsoup==0.6.0
+mechanicalsoup==0.10.0
 more-itertools==4.1.0
 moviepy==0.2.3.2
 multidict==4.1.0
