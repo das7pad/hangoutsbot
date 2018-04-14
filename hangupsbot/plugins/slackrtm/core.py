@@ -80,7 +80,6 @@ class SlackRTM(BotMixin):
         self.name = None
         self.team = {}
         self.command_prefixes = tuple()
-        self._session = aiohttp.ClientSession()
         self._cache_sending_queue = None
 
     @property
@@ -208,6 +207,7 @@ class SlackRTM(BotMixin):
         hard_reset = 0
         last_drop = time.time()
         while hard_reset < self.bot.config.get_option('slackrtm.retries'):
+            self._session = aiohttp.ClientSession()
             self.bot.config.on_reload.add_observer(self.rebuild_base)
             try:
                 await asyncio.sleep(hard_reset*10)
