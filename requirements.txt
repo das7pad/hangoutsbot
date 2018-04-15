@@ -6,6 +6,7 @@
 #
 
 git+https://github.com/das7pad/hangups@v0.4.4.1#egg=hangups-0.4.4.1
+git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot-12.6.1
 aiohttp==3.1.2
 appdirs==1.4.3
 async-timeout==2.0.1
@@ -53,7 +54,6 @@ simplejson==3.13.2
 six==1.11.0
 soundcloud==0.5.0
 spotipy==2.4.4
-telepot==12.6
 tld==0.7.9
 tqdm==4.11.2
 twitterapi==2.5.0
