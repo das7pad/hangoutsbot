@@ -72,13 +72,12 @@ venv-create:
 
 # house keeping: update `requirements.txt`:
 # the output is cached and extra requirements can be added - e.g. git-targets
-# NOTE: adding URLs/git-targets into the final file breaks pip-compile
 # pip-compile prints everything to stdout as well, direct it to /dev/null
 .PHONY: gen-requirements
 gen-requirements: .gen-requirements
 	@echo "Gathering requirements"
 	@cat `find hangupsbot -name requirements.extra` \
-		| sed -r 's/(.+)#egg=(.+)==(.+)-(.+)/-e \1#egg=\2==\4\n/' \
+		| sed -r 's/^(.+)/-e \1/g' \
 		> .cache/.requirements.extra
 	@$(venv)/bin/pip-compile --upgrade --output-file .cache/.requirements.tmp \
 		.cache/.requirements.extra `find hangupsbot -name requirements.in` \
@@ -87,7 +86,7 @@ gen-requirements: .gen-requirements
 	run:\n#\n#   make gen-requirements\n#\n" \
 		> requirements.txt
 	@cat .cache/.requirements.tmp \
-		|sed -r 's/^-e (.+)#egg=(.+)==(.+)/\1#egg=\2==\2-\3/' \
+		| sed -r 's/^-e (.+)/\1/g' \
 		| sed '/^\s*#/d;s/\s#.*//g;s/[ \t]*//g' \
 		>> requirements.txt
 	@echo "Done"
@@ -98,7 +97,7 @@ gen-requirements: .gen-requirements
 gen-dev-requirements: .gen-requirements
 	@echo "Gathering development requirements"
 	@cat `find hangupsbot tests -name requirements.extra` \
-		| sed -r 's/(.+)#egg=(.+)==(.+)-(.+)/-e \1#egg=\2==\4\n/' \
+		| sed -r 's/^(.+)/-e \1/g' \
 		> .cache/.requirements-dev.extra
 	@$(venv)/bin/pip-compile --upgrade \
 		--output-file .cache/.requirements-dev.tmp \
@@ -108,7 +107,7 @@ gen-dev-requirements: .gen-requirements
 	run:\n#\n#   make gen-dev-requirements\n#\n" \
 		> requirements-dev.txt
 	@cat .cache/.requirements-dev.tmp \
-		|sed -r 's/^-e (.+)#egg=(.+)==(.+)/\1#egg=\2==\2-\3/' \
+		| sed -r 's/^-e (.+)/\1/g' \
 		| sed '/^\s*#/d;s/\s#.*//g;s/[ \t]*//g' \
 		>> requirements-dev.txt
 	@echo "Done"

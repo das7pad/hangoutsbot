@@ -5,7 +5,7 @@
 #   make gen-requirements
 #
 
-git+https://github.com/das7pad/hangups@v0.4.4.1#egg=hangups==hangups-0.4.4.1
+git+https://github.com/das7pad/hangups@v0.4.4.1#egg=hangups-0.4.4.1
 aiohttp==3.1.2
 appdirs==1.4.3
 async-timeout==2.0.1

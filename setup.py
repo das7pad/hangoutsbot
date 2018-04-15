@@ -29,7 +29,7 @@ with open('requirements.txt', 'r') as file:
 
 # parse packages from urls:
 # e.g. `pkg==0.2.1` from
-#      `git+https://github.com/username/reponame@identifier#egg=pkg==pkg-0.2.1`
+#      `git+https://github.com/username/reponame@identifier#egg=pkg-0.2.1`
 for line in DEPENDENCY_LINKS:
     raw = None
     for item in line.split('#'):
@@ -39,8 +39,8 @@ for line in DEPENDENCY_LINKS:
     else:
         continue
 
-    # parse `pkg==pkg-0.2.1` to `pkg==0.2.1` and add it into the requirements
-    dependency_locked = raw.split('==', 1)[-1].replace('-', '==', 1)
+    # parse `pkg-0.2.1` to `pkg==0.2.1` and add it into the requirements
+    dependency_locked = raw.replace('-', '==', 1)
     INSTALL_REQUIRES.append(dependency_locked)
 
 
