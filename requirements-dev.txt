@@ -34,7 +34,7 @@ jaraco.itertools==2.2
 lazy-object-proxy==1.3.1
 lxml==4.2.1
 mccabe==0.6.1
-mechanicalsoup==0.6.0
+mechanicalsoup==0.10.0
 more-itertools==4.1.0
 moviepy==0.2.3.2
 multidict==4.1.0
