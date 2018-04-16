@@ -54,7 +54,7 @@ simplejson==3.13.2
 six==1.11.0
 soundcloud==0.5.0
 spotipy==2.4.4
-tld==0.7.9
+tld==0.7.10
 tqdm==4.11.2
 twitterapi==2.5.0
 uritemplate==3.0.0
