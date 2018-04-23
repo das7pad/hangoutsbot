@@ -30,7 +30,7 @@ jaraco.itertools==2.2
 lxml==4.2.1
 mechanicalsoup==0.6.0
 more-itertools==4.1.0
-moviepy==0.2.3.2
+moviepy==0.2.3.4
 multidict==4.1.0
 numpy==1.14.2
 oauth2client==4.1.2

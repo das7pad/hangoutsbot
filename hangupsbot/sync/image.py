@@ -126,8 +126,8 @@ class MovieConverter(VideoFileClip):
         except (OSError, IOError):
             logger.warning('failed to remove %s', self._path)
 
-    def __del__(self):
-        super().__del__()
+    def close(self):
+        super().close()
         self.cleanup()
 
 
@@ -489,6 +489,7 @@ class SyncImage(BotMixin):
     def __del__(self):
         """explicit cleanup"""
         if self._movie is not None:
+            self._movie.close()
             self._movie = None
         for data, dummy in self._size_cache.values():
             data.close()

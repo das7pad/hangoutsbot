@@ -1,4 +1,4 @@
 aiohttp>2,<4
 Pillow
 imageio
-moviepy
+moviepy>=0.2.3.3,<0.3.0.0
