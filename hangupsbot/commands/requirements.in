@@ -1,2 +1,2 @@
 # commands.basic
-psutil>4,<=5.2.2
+psutil>4,<6
