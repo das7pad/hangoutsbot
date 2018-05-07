@@ -76,4 +76,4 @@ wikipedia==1.4.0
 wolframalpha==3.0.1
 wrapt==1.10.11
 xmltodict==0.11.0
-yarl==1.2.0
+yarl==1.2.3
