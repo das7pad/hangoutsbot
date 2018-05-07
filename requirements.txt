@@ -10,7 +10,7 @@ git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot-12.6.1
 aiohttp==3.2.0
 appdirs==1.4.3
 async-timeout==3.0.0
-attrs==17.4.0
+attrs==18.1.0
 beautifulsoup4==4.6.0
 bs4==0.0.1
 certifi==2018.4.16
