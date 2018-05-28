@@ -12,7 +12,7 @@ aioresponses==0.4.1
 appdirs==1.4.3
 astroid==1.6.4
 async-generator==1.9
-async-timeout==2.0.1
+async-timeout==3.0.0
 attrs==17.4.0
 beautifulsoup4==4.6.0
 bs4==0.0.1
