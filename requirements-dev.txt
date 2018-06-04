@@ -60,7 +60,7 @@ reparser==1.4.3
 requests-oauthlib==1.0.0
 requests==2.18.4
 rsa==3.4.2
-selenium==3.11.0
+selenium==3.12.0
 simplejson==3.14.0
 six==1.11.0
 soundcloud==0.5.0
