@@ -10,7 +10,7 @@ git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot-12.6.1
 aiohttp==3.3.0
 aioresponses==0.4.1
 appdirs==1.4.3
-astroid==1.6.3
+astroid==1.6.4
 async-generator==1.9
 async-timeout==2.0.1
 attrs==17.4.0
