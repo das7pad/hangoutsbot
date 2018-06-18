@@ -57,7 +57,7 @@ python-dateutil==2.7.3
 python-magic==0.4.15
 readlike==0.1.3
 reparser==1.4.3
-requests-oauthlib==0.8.0
+requests-oauthlib==1.0.0
 requests==2.18.4
 rsa==3.4.2
 selenium==3.11.0
