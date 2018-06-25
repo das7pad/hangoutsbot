@@ -48,7 +48,7 @@ psutil==5.4.6
 pushbullet.py==0.11.0
 py==1.5.3
 pyasn1-modules==0.2.1
-pyasn1==0.4.2
+pyasn1==0.4.3
 pylint==1.8.4
 pyslack==0.3.0
 pytest-asyncio==0.8.0
