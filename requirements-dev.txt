@@ -25,7 +25,7 @@ emoji==0.5.0
 fudge==1.1.1
 google-api-python-client==1.7.3
 httplib2==0.11.3
-idna-ssl==1.0.1
+idna-ssl==1.1.0
 idna==2.6
 imageio==2.3.0
 inflect==0.2.5
