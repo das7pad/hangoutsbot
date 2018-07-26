@@ -150,8 +150,9 @@ class SlackRTM(BotMixin):
 
             if any(key not in login_data for key in ('self', 'team', 'url')):
                 raise IncompleteLoginError()
-            self.logger = logging.getLogger('plugins.slackrtm.%s'
-                                            % login_data['team']['domain'])
+            self.logger = logging.getLogger('%s.%s'
+                                            % (__package__,
+                                               login_data['team']['domain']))
             return login_data
 
         async def _build_cache(login_data):
@@ -338,8 +339,9 @@ class SlackRTM(BotMixin):
                                  ('@hobot', '@%s' % bot_username))
 
         self.identifier = 'slackrtm:%s' % self.slack_domain
-        self.logger = logging.getLogger('plugins.slackrtm.%s'
-                                        % self.slack_domain)
+        self.logger = logging.getLogger('%s.%s'
+                                        % (__package__,
+                                           self.slack_domain))
 
         migrate_on_domain_change(self, old_domain)
 
