@@ -16,7 +16,7 @@ async-timeout==3.0.0
 attrs==18.1.0
 beautifulsoup4==4.6.3
 bs4==0.0.1
-certifi==2018.4.16
+certifi==2018.8.13
 chardet==3.0.4
 cleverwrap==0.2.3.6
 configargparse==0.13.0
