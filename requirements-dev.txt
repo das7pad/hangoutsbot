@@ -46,7 +46,7 @@ pluggy==0.7.1
 protobuf==3.6.1
 psutil==5.4.7
 pushbullet.py==0.11.0
-py==1.5.3
+py==1.5.4
 pyasn1-modules==0.2.1
 pyasn1==0.4.2
 pylint==1.8.4
