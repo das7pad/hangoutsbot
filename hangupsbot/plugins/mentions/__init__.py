@@ -306,7 +306,7 @@ async def mention(bot, event, *args):
 
     # more than one recipient, not @all and more than one user in the recipients
     if (len(mention_list) > 1 and username_lower != "all" and
-            len(set([user.id_.chat_id for user in mention_list])) > 1):
+            len({user.id_.chat_id for user in mention_list}) > 1):
 
         send_multiple_user_message = bot.user_memory_get(
             event.user_id.chat_id, "mentionmultipleusermessage") or True

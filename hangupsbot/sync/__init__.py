@@ -802,7 +802,7 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
     if summery:
         summery.insert(0, _('Kick requests:'))
 
-    new_user = allowed_users - set([user.id_.chat_id for user in users])
+    new_user = allowed_users - {user.id_.chat_id for user in users}
 
     if new_user and not kick_only:
         await bot.add_user(
