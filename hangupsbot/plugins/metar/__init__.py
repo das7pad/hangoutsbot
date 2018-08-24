@@ -65,7 +65,7 @@ async def metar(dummy0, dummy1, *args):
 
     if data is None:
         return _("There was an error retrieving the METAR information.")
-    elif not data:
+    if not data:
         return _("The response did not contain METAR information, check the "
                  "ICAO airport code and try again.")
     return data[0].text
@@ -82,7 +82,7 @@ async def taf(dummy0, dummy1, *args):
 
     if data is None:
         return _("There was an error retrieving the TAF information.")
-    elif not data:
+    if not data:
         return _("The response did not contain TAF information, check the "
                  "ICAO airport code and try again.")
     return data[0].text

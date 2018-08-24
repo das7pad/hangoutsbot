@@ -69,13 +69,13 @@ async def topic(bot, event, *args):
     bot.memory.set_by_path(["conv_data", event.conv_id, "topic"], name)
     bot.memory.save()
 
-    if topic == '':
+    if name == '':
         message = _("Removing topic")
         logger.info("topic cleared from %s", event.conv_id)
 
     else:
         message = _("Setting topic to '{}'").format(name)
-        logger.info("topic for %s set to: %s", event.conv_id, topic)
+        logger.info("topic for %s set to: %s", event.conv_id, name)
 
     # Rename Hangout
     await command.run(bot, event, *["convrename", "id:" + event.conv_id, name])

@@ -428,11 +428,6 @@ class EventHandler(BotMixin):
         except HangupsBotExceptions.SuppressAllHandlers:
             pass
 
-        except HangupsBotExceptions.SuppressEventHandling:
-            # handle requested to do not handle the event at all, skip all
-            # handler and do not continue with event handling in the parent
-            raise
-
     async def _handle_event(self, conv_event):
         """Handle conversation events
 

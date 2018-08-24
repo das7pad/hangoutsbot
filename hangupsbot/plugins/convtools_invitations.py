@@ -219,7 +219,7 @@ async def invite(bot, event, *args):
     if not parameters:
         return _("<em>insufficient parameters for invite</em>")
 
-    elif parameters[0].isdigit():
+    if parameters[0].isdigit():
         # wildcard invites can be used by any user with access to the bot
         # note: wildcard invite command can still be superseded by specifying a "users" list
         #   as a parameter
@@ -329,8 +329,7 @@ async def invite(bot, event, *args):
         if not list_users:
             if target_conv == event.conv_id:
                 return _('<em>invite: specify "from" or explicit list of "users"</em>')
-            else:
-                source_conv = event.conv_id
+            source_conv = event.conv_id
 
     # sanity checking
 
@@ -411,29 +410,28 @@ async def invite(bot, event, *args):
 
         return _('<em>invite: nobody invited</em>')
 
-    else:
-        # create new conversation (if required)
+    # create new conversation (if required)
 
-        if target_conv == "NEW_GROUP":
-            invitation_log.append("create new group")
-            if not test:
-                target_conv = await _new_group_conversation(bot, event.user.id_.chat_id)
+    if target_conv == "NEW_GROUP":
+        invitation_log.append("create new group")
+        if not test:
+            target_conv = await _new_group_conversation(bot, event.user.id_.chat_id)
 
-        # issue the invites
+    # issue the invites
 
-        invitation_ids = []
-        for new_invite in invitations:
-            invitation_log.append("invite {} to {}, uses: {}".format(
-                new_invite["user_id"], target_conv, new_invite["uses"]))
-            if not test:
-                # invites are not created in test mode
-                invitation_ids.append(
-                    _issue_invite(bot, new_invite["user_id"], target_conv, new_invite["uses"]))
+    invitation_ids = []
+    for new_invite in invitations:
+        invitation_log.append("invite {} to {}, uses: {}".format(
+            new_invite["user_id"], target_conv, new_invite["uses"]))
+        if not test:
+            # invites are not created in test mode
+            invitation_ids.append(
+                _issue_invite(bot, new_invite["user_id"], target_conv, new_invite["uses"]))
 
-        if invitation_ids:
-            await bot.coro_send_message(
-                event.conv_id,
-                _("<em>invite: {} invitations created</em>").format(len(invitation_ids)))
+    if invitation_ids:
+        await bot.coro_send_message(
+            event.conv_id,
+            _("<em>invite: {} invitations created</em>").format(len(invitation_ids)))
 
     if test:
         invitation_log.insert(0, "<b>Invite Test Mode</b>")

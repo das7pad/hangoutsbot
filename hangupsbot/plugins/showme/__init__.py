@@ -105,12 +105,12 @@ async def showme(bot, event, *args):
     sources = bot.config.get_option("showme")
     if not args:
         return _("Show you what?")
-    elif args[0].lower() == 'sources':
+    if args[0].lower() == 'sources':
         html = """My sources are:\n"""
         for name in sources.keys():
             html += " * {}\n".format(name)
         return _(html)
-    elif args[0].lower() == 'all':
+    if args[0].lower() == 'all':
         for name, source in sources.items():
             await _send_source(bot, event, name, source)
     elif not args[0] in sources:

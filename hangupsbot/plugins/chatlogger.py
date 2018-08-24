@@ -18,7 +18,7 @@ def _initialise(bot):
         plugins.register_handler(file_writer.on_chat_message, "allmessages")
 
 
-class FileWriter(object):
+class FileWriter:
     paths = []
     initialised = False
 

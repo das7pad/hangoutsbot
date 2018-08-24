@@ -183,8 +183,8 @@ class Tracker(BotMixin):
         commands_tagged.setdefault(command_name, {})
         commands_tagged[command_name].setdefault(type_, set())
 
-        tag_sets = set([frozenset(item if isinstance(item, list)
-                                  else [item]) for item in tags])
+        tag_sets = {frozenset(item if isinstance(item, list)
+                              else [item]) for item in tags}
 
         # registration might be called repeatedly,
         #  so only add the tag_sets if it doesnt exist
@@ -504,6 +504,8 @@ async def load_user_plugins(bot):
         try:
             await load(bot, module_path)
         except asyncio.CancelledError:
+            logger.warning('plugin load for %r got cancelled',
+                           module_path)
             raise
         except Exception:                         # pylint: disable=broad-except
             logger.exception(module_path)

@@ -19,7 +19,7 @@ from .utils import get_sync_config_entry
 logger = logging.getLogger(__name__)
 
 
-class FakeConvEvent(object):
+class FakeConvEvent:
     """Dummy Event for a Hangups Conversation Event
 
     Args:

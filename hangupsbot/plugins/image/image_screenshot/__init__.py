@@ -109,41 +109,40 @@ async def screenshot(bot, event, *args):
                  " provided manually.").format(event.user.full_name)
         return html
 
-    else:
-        _EXTERNALS["running"] = True
+    _EXTERNALS["running"] = True
 
-        if not re.match(r'^[a-zA-Z]+://', url):
-            url = 'http://' + url
-        filename = event.conv_id + "." + str(time.time()) +".png"
-        file_path = tempfile.NamedTemporaryFile(
-            prefix=event.conv_id, suffix=".png", delete=False).name
-        logger.debug("temporary screenshot file: %s", file_path)
+    if not re.match(r'^[a-zA-Z]+://', url):
+        url = 'http://' + url
+    filename = event.conv_id + "." + str(time.time()) +".png"
+    file_path = tempfile.NamedTemporaryFile(
+        prefix=event.conv_id, suffix=".png", delete=False).name
+    logger.debug("temporary screenshot file: %s", file_path)
 
+    try:
+        browser = webdriver.PhantomJS(desired_capabilities=_DCAP,
+                                      service_log_path=os.path.devnull)
+    except selenium.common.exceptions.WebDriverException:
+        _EXTERNALS["running"] = False
+        return "<i>phantomjs could not be started - is it installed?</i>"
+
+    try:
+        image_data = await _screen_cap(browser, url, file_path)
+    except selenium.common.exceptions.WebDriverException:
+        logger.exception("screen cap failed %s", url)
+        _EXTERNALS["running"] = False
+        return "<i>error getting screenshot</i>"
+
+    try:
         try:
-            browser = webdriver.PhantomJS(desired_capabilities=_DCAP,
-                                          service_log_path=os.path.devnull)
-        except selenium.common.exceptions.WebDriverException:
-            _EXTERNALS["running"] = False
-            return "<i>phantomjs could not be started - is it installed?</i>"
-
-        try:
-            image_data = await _screen_cap(browser, url, file_path)
-        except selenium.common.exceptions.WebDriverException:
-            logger.exception("screen cap failed %s", url)
-            _EXTERNALS["running"] = False
-            return "<i>error getting screenshot</i>"
-
-        try:
-            try:
-                image_id = await bot.call_shared('image_upload_raw', image_data,
-                                                 filename=filename)
-            except KeyError:
-                logger.info('image plugin not loaded - using legacy code')
-                image_id = await bot.upload_image(image_data,
-                                                  filename=filename)
-            await bot.coro_send_message(event.conv_id, url, image_id=image_id)
-        except hangups.NetworkError:
-            logger.exception("upload failed %s", url)
-            return "<i>error uploading screenshot</i>"
-        finally:
-            _EXTERNALS["running"] = False
+            image_id = await bot.call_shared('image_upload_raw', image_data,
+                                             filename=filename)
+        except KeyError:
+            logger.info('image plugin not loaded - using legacy code')
+            image_id = await bot.upload_image(image_data,
+                                              filename=filename)
+        await bot.coro_send_message(event.conv_id, url, image_id=image_id)
+    except hangups.NetworkError:
+        logger.exception("upload failed %s", url)
+        return "<i>error uploading screenshot</i>"
+    finally:
+        _EXTERNALS["running"] = False

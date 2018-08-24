@@ -48,7 +48,7 @@ def _get_slackrtm(bot, slack_name):
             matches.append(slackrtm)
     if len(matches) == 1:
         return matches[0]
-    elif matches:
+    if matches:
         raise Help(_('these slack teams match "%s", be more specific!') %
                    (slack_name, ', '.join([slackrtm.name
                                            for slackrtm in matches])))

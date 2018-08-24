@@ -75,24 +75,24 @@ async def _get_comic(bot, num=None):
 
     if num in _CACHE:
         return _CACHE[num]
-    else:
-        async with aiohttp.ClientSession() as session:
-            async with session.request('get', url) as request:
-                raw = await request.read()
-        info = json.loads(raw.decode())
 
-        if info['num'] in _CACHE:
-            # may happen when searching for the latest comic
-            return _CACHE[info['num']]
+    async with aiohttp.ClientSession() as session:
+        async with session.request('get', url) as request:
+            raw = await request.read()
+    info = json.loads(raw.decode())
 
-        filename = os.path.basename(info["img"])
-        async with aiohttp.ClientSession() as session:
-            async with session.request('get', info["img"]) as request:
-                raw = await request.read()
-        image_data = io.BytesIO(raw)
-        info['image_id'] = await bot.upload_image(image_data, filename=filename)
-        _CACHE[info['num']] = info
-        return info
+    if info['num'] in _CACHE:
+        # may happen when searching for the latest comic
+        return _CACHE[info['num']]
+
+    filename = os.path.basename(info["img"])
+    async with aiohttp.ClientSession() as session:
+        async with session.request('get', info["img"]) as request:
+            raw = await request.read()
+    image_data = io.BytesIO(raw)
+    info['image_id'] = await bot.upload_image(image_data, filename=filename)
+    _CACHE[info['num']] = info
+    return info
 
 async def _print_comic(bot, event, num=None):
     info = await _get_comic(bot, num)

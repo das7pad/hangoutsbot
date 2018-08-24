@@ -155,9 +155,8 @@ async def mention(bot, event, *args):
                                  event.user.full_name)
                     await bot.coro_send_message(event.conv, text)
                 return
-            else:
-                _log("quidproquo: user {full} ({chat}) has 1-on-1", event,
-                     debug=True)
+            _log("quidproquo: user {full} ({chat}) has 1-on-1", event,
+                 debug=True)
         else:
             _log("quidproquo: user {full} ({chat}) has no 1-on-1", event)
             if noisy_mention_test or bot.get_config_suboption(event.conv_id,
@@ -212,9 +211,9 @@ async def mention(bot, event, *args):
                                 ).format(event.user.full_name)
                         await bot.coro_send_message(event.conv, text)
                     return
-                else:
-                    _log(("@ all in {conv}: allowed, "
-                          "{full} ({chat}) is whitelisted"), event)
+
+                _log(("@ all in {conv}: allowed, "
+                      "{full} ({chat}) is whitelisted"), event)
             else:
                 _log("@ all in {conv}: allowed, {full} ({chat}) is an admin",
                      event)
@@ -306,7 +305,7 @@ async def mention(bot, event, *args):
 
     # more than one recipient, not @all and more than one user in the recipients
     if (len(mention_list) > 1 and username_lower != "all" and
-            len(set([user.id_.chat_id for user in mention_list])) > 1):
+            len({user.id_.chat_id for user in mention_list}) > 1):
 
         send_multiple_user_message = bot.user_memory_get(
             event.user_id.chat_id, "mentionmultipleusermessage") or True

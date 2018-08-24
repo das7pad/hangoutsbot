@@ -48,7 +48,7 @@ DEFAULT_CONFIG = {
     "max_threads": 10,
 }
 
-class HangupsBot(object):
+class HangupsBot:
     """Hangouts bot listening on all conversations
 
     Args:
@@ -676,7 +676,7 @@ class HangupsBot(object):
             logger.info("user %s is optout, no message sent", chat_id)
             return True
 
-        elif conv_1on1 is None:
+        if conv_1on1 is None:
             logger.info("1-to-1 for user %s is unavailable", chat_id)
             return False
 

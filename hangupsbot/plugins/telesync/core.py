@@ -155,9 +155,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     files=files,
                     **kwargs
                 )
-            except (asyncio.CancelledError,
-                    telepot.exception.UnauthorizedError):
-                raise
             except telepot.exception.TooManyRequestsError as err:
                 last_err = err
                 msg = 'too many requests!'
@@ -234,7 +231,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             await asyncio.gather(*tasks, return_exceptions=True)
 
             try:
-                # discard the last few message
+                # discard the last few messages
+                # TODO(das7pad): move the update discarding into the message loop
                 old_messages = [item['update_id']
                                 for item in await self.getUpdates(offset=-1)]
                 if old_messages:
@@ -789,6 +787,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 message = _extract_message(update)[1]
                 await asyncio.shield(self._handle(message))
             except asyncio.CancelledError:
+                logger.info('message loop stopped, finishing the handling of the'
+                            ' current update in the background')
                 raise
             except Exception:                      # pylint:disable=broad-except
                 logger.exception('error in handling message %s of update %s',
@@ -814,10 +814,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                         await _handle_update(update_)
 
                     await asyncio.sleep(delay)
-
-            except (asyncio.CancelledError,
-                    telepot.exception.UnauthorizedError):
-                raise
 
             except telepot.exception.TelegramError as err:
                 if err.error_code == 409:

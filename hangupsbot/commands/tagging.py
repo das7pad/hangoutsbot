@@ -81,8 +81,8 @@ def tagscommand(bot, _event, *args):
         if command_name not in source or not source[command_name]:
             return set()
 
-        items = set([frozenset(value if isinstance(value, list) else [value])
-                     for value in source[command_name]])
+        items = {frozenset(value if isinstance(value, list) else [value])
+                 for value in source[command_name]}
         all_tags.update(items)
         return items
 

@@ -424,7 +424,7 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
                                                                  current_title)
 
     new_title = ' '.join(args)
-    new_title = '' if new_title == '""' or new_title == "''" else new_title
+    new_title = '' if new_title in ('""', "''") else new_title
 
     bot.memory.set_by_path(path, new_title)
     bot.memory.save()
@@ -802,7 +802,7 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
     if summery:
         summery.insert(0, _('Kick requests:'))
 
-    new_user = allowed_users - set([user.id_.chat_id for user in users])
+    new_user = allowed_users - {user.id_.chat_id for user in users}
 
     if new_user and not kick_only:
         await bot.add_user(

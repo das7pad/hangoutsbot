@@ -74,12 +74,12 @@ async def _handle_autoreply(bot, event):
 
         # If the global settings loaded from get_config_suboption then we now have them twice and don't need them, so can be ignored.
         if (autoreplies_list_global
-                and (set([frozenset([frozenset(x) if isinstance(x, list) else x,
-                                     frozenset(y) if isinstance(y, list) else y])
-                          for x, y in autoreplies_list_global])
-                     != set([frozenset([frozenset(x) if isinstance(x, list) else x,
-                                        frozenset(y) if isinstance(y, list) else y])
-                             for x, y in autoreplies_list]))):
+                and ({frozenset([frozenset(x) if isinstance(x, list) else x,
+                                 frozenset(y) if isinstance(y, list) else y])
+                      for x, y in autoreplies_list_global}
+                     != {frozenset([frozenset(x) if isinstance(x, list) else x,
+                                    frozenset(y) if isinstance(y, list) else y])
+                         for x, y in autoreplies_list})):
 
             add_to_autoreplies = []
 
