@@ -209,6 +209,8 @@ class CommandDispatcher(BotMixin, TrackingMixin):
 
         except asyncio.CancelledError:
             # shutdown in progress
+            logger.warning('stopped command execution of %r, triggered by %r',
+                           command_name, event)
             raise
 
         except asyncio.TimeoutError:

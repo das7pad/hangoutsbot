@@ -504,6 +504,8 @@ async def load_user_plugins(bot):
         try:
             await load(bot, module_path)
         except asyncio.CancelledError:
+            logger.warning('plugin load for %r got cancelled',
+                           module_path)
             raise
         except Exception:                         # pylint: disable=broad-except
             logger.exception(module_path)
