@@ -12,7 +12,7 @@ venv: install-requirements
 .PHONY: install-requirements
 install-requirements: venv-create
 	@echo "Installing requirements"
-	@$(pip) install -q --requirement requirements.txt
+	@$(pip) install --requirement requirements.txt
 	@echo "Done"
 
 # install the hangupsbot package into a venv
@@ -20,14 +20,14 @@ install-requirements: venv-create
 install: venv-create
 	@echo "Install: started"
 	@rm -rf `find hangupsbot -name __pycache__`
-	@$(pip) install -q . --process-dependency-links --upgrade
+	@$(pip) install . --process-dependency-links --upgrade
 	@echo "Install: finished"
 
 # update or reinstall all packages
 .PHONY: update-requirements
 update-requirements: venv-create
 	@echo "Updating requirements"
-	@$(pip) install -q --requirement requirements.txt --upgrade
+	@$(pip) install --requirement requirements.txt --upgrade
 	@echo "Done"
 
 # check the venv and run pylint
@@ -116,7 +116,7 @@ gen-dev-requirements: .gen-requirements
 .PHONY: venv-dev
 venv-dev: venv-create
 	@echo "Installing Dev requirements"
-	@$(pip) install -q --requirement requirements-dev.txt
+	@$(pip) install --requirement requirements-dev.txt
 	@echo "Done"
 
 # internal: run pylint, prepend extra blank lines for each module
@@ -130,7 +130,7 @@ venv-dev: venv-create
 .PHONY: .test-only
 .test-only:
 	@echo "Tests: started"
-	@$(venv)/bin/py.test --quiet tests
+	@$(venv)/bin/py.test -v tests
 	@echo "Tests: all completed"
 
 # internal: run pylint and the test-suite
@@ -141,5 +141,5 @@ venv-dev: venv-create
 .PHONY: test-only-verbose
 test-only-verbose:
 	@echo "Tests: started in verbose mode"
-	@$(venv)/bin/py.test -vv tests
+	@$(venv)/bin/py.test -vvv tests
 	@echo "Tests: all completed"
