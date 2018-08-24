@@ -121,6 +121,18 @@ def setup_config(bot):
             # interval in hours to update the user profiles
             'profile_update_interval': 5,
 
+            # check the membership data
+            'enable_membership_check': 0,
+
+            # interval in hours to check the membership data per chat
+            # additionally, this feature must be enabled in the config:
+            # - globally:
+            #     "telesync"->"enable_membership_check" = 1
+            # - or per chat:
+            #     for example for the chat with id 123:
+            #     "conversations"->"telesync:123"->"enable_membership_check" = 1
+            'membership_check_interval': 5,
+
             # html message a user receives on /start
             # available keys:
             # name (user who triggered /start), botusername, botname
