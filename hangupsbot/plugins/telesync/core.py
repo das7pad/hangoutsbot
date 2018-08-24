@@ -321,7 +321,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                         try:
                             self.bot.memory.pop_by_path(
                                 ['telesync', 'chat_data', str(chat_id),
-                                 'users', str(user_id)])
+                                 'user', str(user_id)])
                         except KeyError:
                             logger.warning(
                                 'failed to remove user %s from chat %s',
@@ -748,7 +748,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
                 # update last_seen values
                 for chat_id, data in memory.get_by_path(chat_path).items():
-                    for user_id in data.get('users', ()):
+                    for user_id in data.get('user', ()):
                         memory.set_by_path(data_path + [user_id, 'last_seen'],
                                            chat_id)
 
