@@ -389,8 +389,8 @@ class SlackRTM(BotMixin):
         parsed = None
         try:
             async with await asyncio.shield(self._session.post(
-                'https://slack.com/api/' + method,
-                data={'token': self.api_key, **kwargs})) as resp:
+                    'https://slack.com/api/' + method,
+                    data={'token': self.api_key, **kwargs})) as resp:
 
                 parsed = await resp.json()
                 self.logger.debug('api_call %s: %s', tracker, repr(parsed))
