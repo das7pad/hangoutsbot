@@ -180,7 +180,7 @@ def spotify(bot, event, *args):
 
     command = args[0]
 
-    if command == "on" or command == "off":
+    if command in ('on', 'off'):
         state = "was" if enabled else "wasn't"
         enabled = command == "on"
         result = _("<em>Spotify {} on. Now it's <b>{}</b>.</em>").format(

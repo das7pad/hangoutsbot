@@ -188,10 +188,10 @@ class Tags(BotMixin):
         """completely remove the specified tag_type (tag_type="user|convuser|conv|tag|usertag|convtag") and label"""
         remove = []
 
-        if tag_type == "user" or tag_type == "convuser":
+        if tag_type in ('user', 'convuser'):
             for key in self.indices["user-tags"]:
 
-                match_user = (tag_type == "user" and (key == id_ or id_ == "ALL"))
+                match_user = (tag_type == "user" and id_ in (key, 'ALL'))
                     # runs if tag_type=="user"
                 match_convuser = (key.endswith("|" + id_) or (id_ == "ALL" and "|" in key))
                     # runs if tag_type=="user" or tag_type=="convuser"
@@ -202,11 +202,11 @@ class Tags(BotMixin):
 
         elif tag_type == "conv":
             for key in self.indices["conv-tags"]:
-                if key == id_ or id_ == "ALL":
+                if id_ in (key, 'ALL'):
                     for tag in self.indices["conv-tags"][key]:
                         remove.append(("conv", key, tag))
 
-        elif tag_type == "tag" or tag_type == "usertag" or tag_type == "convtag":
+        elif tag_type in ('tag', 'usertag', 'convtag'):
             if tag_type == "usertag":
                 _types = ["user"]
             elif tag_type == "convtag":
@@ -218,7 +218,7 @@ class Tags(BotMixin):
             for _type in _types:
                 _index_name = "tag-{}s".format(_type)
                 for tag in self.indices[_index_name]:
-                    if tag == id_ or id_ == "ALL":
+                    if id_ in (tag, 'ALL'):
                         for key in self.indices[_index_name][tag]:
                             remove.append((_type, key, id_))
 

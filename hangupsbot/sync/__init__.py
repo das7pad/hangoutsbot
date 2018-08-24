@@ -424,7 +424,7 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
                                                                  current_title)
 
     new_title = ' '.join(args)
-    new_title = '' if new_title == '""' or new_title == "''" else new_title
+    new_title = '' if new_title in ('""', "''") else new_title
 
     bot.memory.set_by_path(path, new_title)
     bot.memory.save()
