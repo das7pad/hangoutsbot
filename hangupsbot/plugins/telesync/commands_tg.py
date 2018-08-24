@@ -387,7 +387,7 @@ async def command_sync_profile(tg_bot, msg, *dummys):
         tg_bot.send_html(user_id, text)
         return
 
-    elif bot.memory.exists(base_path + ['pending_2ho', user_id]):
+    if bot.memory.exists(base_path + ['pending_2ho', user_id]):
         await tg_bot.profilesync_info(user_id, is_reminder=True)
         return
 

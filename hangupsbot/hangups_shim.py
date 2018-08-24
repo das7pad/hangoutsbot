@@ -17,7 +17,7 @@ def namedtuplify(mapping, name='NT'):
         for key, value in list(mapping.items()):
             mapping[key] = namedtuplify(value)
         return namedtuple_wrapper(name, **mapping)
-    elif isinstance(mapping, list):
+    if isinstance(mapping, list):
         return [namedtuplify(item) for item in mapping]
     return mapping
 

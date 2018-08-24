@@ -99,7 +99,7 @@ def sethoalias(bot, event, *args):
         return _('<i>HO alias for</i>  {conv_id} <i>deleted</i>').format(
             conv_id=conv_id)
 
-    elif conv_id == event.conv_id:
+    if conv_id == event.conv_id:
         return _('<i>HO alias set to</i>  <b>{new_alias}</b>').format(
             new_alias=new_alias)
 
@@ -144,7 +144,7 @@ def gethoalias(bot, event, *args):
         return _('<i>There is no alias set for the HO</i> {conv_id}').format(
             conv_id=conv_id)
 
-    elif conv_id == event.conv_id:
+    if conv_id == event.conv_id:
         return _('<i>Current HO alias is</i>  <b>{alias}</b>').format(
             alias=alias)
 

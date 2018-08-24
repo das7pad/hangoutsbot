@@ -676,7 +676,7 @@ class HangupsBot:
             logger.info("user %s is optout, no message sent", chat_id)
             return True
 
-        elif conv_1on1 is None:
+        if conv_1on1 is None:
             logger.info("1-to-1 for user %s is unavailable", chat_id)
             return False
 

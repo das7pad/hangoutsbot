@@ -103,11 +103,11 @@ async def urbandict(dummy0, dummy1, *args):
             html_text += the_definition["example"].strip()
 
         return html_text
-    else:
-        if term:
-            return _('<i>no urban dictionary definition for "{}"</i>').format(
-                term)
-        return _('<i>no term from urban dictionary</i>')
+
+    if term:
+        return _('<i>no urban dictionary definition for "{}"</i>').format(
+            term)
+    return _('<i>no term from urban dictionary</i>')
 
 
 def _initialise():

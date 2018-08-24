@@ -310,8 +310,8 @@ def _time_ago(timestamp):
     time_difference = time.time() - timestamp
     if time_difference < 60:  # seconds
         return _("{}s").format(int(time_difference))
-    elif time_difference < 60 * 60:  # minutes
+    if time_difference < 60 * 60:  # minutes
         return _("{}m").format(int(time_difference / 60))
-    elif time_difference < 60 * 60 * 24:  # hours
+    if time_difference < 60 * 60 * 24:  # hours
         return _("{}h").format(int(time_difference / (60 * 60)))
     return _("{}d").format(int(time_difference / (60 * 60 * 24)))
