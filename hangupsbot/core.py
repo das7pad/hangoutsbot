@@ -48,7 +48,7 @@ DEFAULT_CONFIG = {
     "max_threads": 10,
 }
 
-class HangupsBot(object):
+class HangupsBot:
     """Hangouts bot listening on all conversations
 
     Args:
