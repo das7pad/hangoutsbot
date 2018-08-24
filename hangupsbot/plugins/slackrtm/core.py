@@ -649,7 +649,6 @@ class SlackRTM(BotMixin):
         self.logger.info('adding sync: %s', new_sync)
         self.syncs.append(new_sync)
         self.bot.memory.save()
-        return
 
     def config_disconnect(self, channel, hangoutid):
         """remove a sync from the memory
@@ -670,7 +669,6 @@ class SlackRTM(BotMixin):
             raise NotSyncingError
 
         self.bot.memory.save()
-        return
 
     async def _process_websocket(self, url):
         """read and process events from a slack websocket
