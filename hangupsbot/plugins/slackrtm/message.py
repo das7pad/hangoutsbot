@@ -9,6 +9,11 @@ from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.parser import get_formatted
 
+from .constants import (
+    MESSAGE_TYPES_TO_SKIP,
+    MESSAGE_SUBTYPES_MEMBERSHIP_JOIN,
+    MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE,
+)
 from .exceptions import (
     IgnoreMessage,
     ParseError,
@@ -21,16 +26,6 @@ from .user import SlackUser
 emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
 emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = (
     emoji.EMOJI_UNICODE[':smiling_face:'])
-
-TYPES_TO_SKIP = (
-    'file_created', 'file_public', 'file_change',
-    'file_shared', 'file_unshared',
-    'file_comment_added', 'file_comment_deleted', 'file_comment_edited',
-    'message_deleted',
-)
-
-TYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
-TYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')
 
 GUC_FMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
                      re.MULTILINE | re.DOTALL)
@@ -127,7 +122,7 @@ class SlackMessage(BotMixin):
     _last_messages = {}
 
     def __init__(self, slackrtm, reply):
-        if reply['type'] in TYPES_TO_SKIP:
+        if reply['type'] in MESSAGE_TYPES_TO_SKIP:
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
 
         self.channel = reply.get('channel') or reply.get('group')
@@ -145,13 +140,13 @@ class SlackMessage(BotMixin):
 
         # membership part
         self.participant_user = []
-        if subtype in TYPES_MEMBERSHIP_JOIN:
+        if subtype in MESSAGE_SUBTYPES_MEMBERSHIP_JOIN:
             self.is_join_leave = 1
             if 'inviter' in reply:
                 self.participant_user.append(self.user)
                 self.user = SlackUser(slackrtm, user_id=reply['inviter'],
                                       channel=self.channel)
-        elif subtype in TYPES_MEMBERSHIP_LEAVE:
+        elif subtype in MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE:
             self.is_join_leave = 2
         else:
             self.is_join_leave = None
