@@ -195,18 +195,14 @@ class SlackMessage(BotMixin):
                        else reply['comment']['user'])
 
             # set text
-            if 'file' in reply:
+            if 'files' in reply:
                 if reply.get('upload') is False:
                     raise IgnoreMessage('already seen this image')
 
-                file = reply['file']
+                file = reply['files'][0]
                 file_attachment = file['url_private_download']
-                text = file.get('title', '')
-                text += ('\n> ' + file['initial_comment']['comment']
-                         if ('initial_comment' in file
-                             and 'comment' in file['initial_comment']) else '')
-                # no title and no comment -> use the default text as fallback
-                text = text.strip() or reply.get('text')
+                # file caption -> file title
+                text = reply.get('text') or file.get('title', '')
 
             elif 'text' in reply and reply['text']:
                 text = reply['text']
@@ -279,24 +275,6 @@ class SlackMessage(BotMixin):
                 slackrtm, channel=self.channel,
                 name=reply['attachments'][0].get('author_name'),
                 nickname=reply['attachments'][0].get('author_subname'))
-
-        elif reply.get('subtype') == 'file_comment' and 'comment' in reply:
-            r_user = self.user
-            if 'file' in reply:
-                r_text = reply['file'].get('title',
-                                           reply['file'].get('name', ''))
-                timestamp = reply['file'].get('created') or 0
-            else:
-                r_text = ''
-                timestamp = 0
-
-            self.segments = parse_text(slackrtm,
-                                       reply['comment'].get('comment', '~'))[0]
-
-            self.user = SlackUser(slackrtm, channel=self.channel,
-                                  user_id=reply['comment'].get('user'))
-            image = self.image
-            self.image = None
 
         elif ('attachments' in reply and reply['attachments'][0].get('is_share')
               and 'from_url' in reply['attachments'][0]):
