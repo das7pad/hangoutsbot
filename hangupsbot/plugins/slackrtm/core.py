@@ -441,8 +441,8 @@ class SlackRTM(BotMixin):
         kwargs = dict(channel=channel, as_user=as_user, link_names=link_names,
                       username=username, icon_url=icon_url)
 
-        while len(text) > 3999:
-            first_part = text[:3999].rsplit('\n', 1)[0]
+        while len(text) > 39999:
+            first_part = text[:39999].rsplit('\n', 1)[0]
             queue.schedule(text=first_part, **kwargs)
             text = text[len(first_part):]
 

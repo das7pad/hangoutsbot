@@ -80,3 +80,11 @@ CACHE_UPDATE_TEAM = (
     'team_rename',
     'team_domain_changed',
 )
+
+# message type / subtype
+MESSAGE_TYPES_TO_SKIP = (
+    'file_created', 'file_public', 'file_change',
+    'message_deleted',
+)
+MESSAGE_SUBTYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
+MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')

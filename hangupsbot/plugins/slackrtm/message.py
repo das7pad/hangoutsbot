@@ -9,6 +9,11 @@ from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.parser import get_formatted
 
+from .constants import (
+    MESSAGE_TYPES_TO_SKIP,
+    MESSAGE_SUBTYPES_MEMBERSHIP_JOIN,
+    MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE,
+)
 from .exceptions import (
     IgnoreMessage,
     ParseError,
@@ -21,16 +26,6 @@ from .user import SlackUser
 emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
 emoji.EMOJI_ALIAS_UNICODE[':simple_smile:'] = (
     emoji.EMOJI_UNICODE[':smiling_face:'])
-
-TYPES_TO_SKIP = (
-    'file_created', 'file_public', 'file_change',
-    'file_shared', 'file_unshared',
-    'file_comment_added', 'file_comment_deleted', 'file_comment_edited',
-    'message_deleted',
-)
-
-TYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
-TYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')
 
 GUC_FMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
                      re.MULTILINE | re.DOTALL)
@@ -127,7 +122,7 @@ class SlackMessage(BotMixin):
     _last_messages = {}
 
     def __init__(self, slackrtm, reply):
-        if reply['type'] in TYPES_TO_SKIP:
+        if reply['type'] in MESSAGE_TYPES_TO_SKIP:
             raise IgnoreMessage('reply is not a "message": %s' % reply['type'])
 
         self.channel = reply.get('channel') or reply.get('group')
@@ -145,13 +140,13 @@ class SlackMessage(BotMixin):
 
         # membership part
         self.participant_user = []
-        if subtype in TYPES_MEMBERSHIP_JOIN:
+        if subtype in MESSAGE_SUBTYPES_MEMBERSHIP_JOIN:
             self.is_join_leave = 1
             if 'inviter' in reply:
                 self.participant_user.append(self.user)
                 self.user = SlackUser(slackrtm, user_id=reply['inviter'],
                                       channel=self.channel)
-        elif subtype in TYPES_MEMBERSHIP_LEAVE:
+        elif subtype in MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE:
             self.is_join_leave = 2
         else:
             self.is_join_leave = None
@@ -200,18 +195,14 @@ class SlackMessage(BotMixin):
                        else reply['comment']['user'])
 
             # set text
-            if 'file' in reply:
+            if 'files' in reply:
                 if reply.get('upload') is False:
                     raise IgnoreMessage('already seen this image')
 
-                file = reply['file']
+                file = reply['files'][0]
                 file_attachment = file['url_private_download']
-                text = file.get('title', '')
-                text += ('\n> ' + file['initial_comment']['comment']
-                         if ('initial_comment' in file
-                             and 'comment' in file['initial_comment']) else '')
-                # no title and no comment -> use the default text as fallback
-                text = text.strip() or reply.get('text')
+                # file caption -> file title
+                text = reply.get('text') or file.get('title', '')
 
             elif 'text' in reply and reply['text']:
                 text = reply['text']
@@ -284,24 +275,6 @@ class SlackMessage(BotMixin):
                 slackrtm, channel=self.channel,
                 name=reply['attachments'][0].get('author_name'),
                 nickname=reply['attachments'][0].get('author_subname'))
-
-        elif reply.get('subtype') == 'file_comment' and 'comment' in reply:
-            r_user = self.user
-            if 'file' in reply:
-                r_text = reply['file'].get('title',
-                                           reply['file'].get('name', ''))
-                timestamp = reply['file'].get('created') or 0
-            else:
-                r_text = ''
-                timestamp = 0
-
-            self.segments = parse_text(slackrtm,
-                                       reply['comment'].get('comment', '~'))[0]
-
-            self.user = SlackUser(slackrtm, channel=self.channel,
-                                  user_id=reply['comment'].get('user'))
-            image = self.image
-            self.image = None
 
         elif ('attachments' in reply and reply['attachments'][0].get('is_share')
               and 'from_url' in reply['attachments'][0]):
