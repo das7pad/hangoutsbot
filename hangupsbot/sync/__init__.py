@@ -126,9 +126,9 @@ DEFAULT_CONFIG = {
     'sync_reply_spam_offset': 10,
 
     # available keys: name, text
-    'sync_format_reply': ('| <i><b>{name}</b>:</i>\n| <i>{image_tag}{text}</i>'
-                          '\n'),
-    'sync_format_reply_empty': '| <i><b>{name}</b>: {image_tag}~</i>\n',
+    'sync_format_reply': ('| <i><b>{name}</b></i> :\n'
+                          '| <i>{image_tag}{text}</i>\n'),
+    'sync_format_reply_empty': '| <i><b>{name}</b></i> : <i>{image_tag}~</i>\n',
     'sync_format_reply_bot': '| <i>{image_tag}{text}</i>\n',
     'sync_format_reply_bot_empty': '| <i>{image_tag}~</i>\n',
 }
