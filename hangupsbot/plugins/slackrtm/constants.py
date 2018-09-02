@@ -84,6 +84,7 @@ CACHE_UPDATE_TEAM = (
 # message type / subtype
 MESSAGE_TYPES_TO_SKIP = (
     'file_created', 'file_public', 'file_change',
+    'file_shared', 'file_unshared',
     'message_deleted',
 )
 MESSAGE_SUBTYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
