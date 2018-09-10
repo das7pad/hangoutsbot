@@ -22,7 +22,7 @@ chardet==3.0.4
 cleverwrap==0.2.3.6
 configargparse==0.13.0
 decorator==4.3.0
-emoji==0.4.5
+emoji==0.5.0
 fudge==1.1.1
 google-api-python-client==1.7.4
 google-auth-httplib2==0.0.3
