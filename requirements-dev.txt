@@ -73,7 +73,7 @@ typed-ast==1.1.0
 uritemplate==3.0.0
 urllib3==1.23
 urwid==2.0.1
-websocket-client==0.51.0
+websocket-client==0.53.0
 wikipedia==1.4.0
 wolframalpha==3.0.1
 wrapt==1.10.11
