@@ -890,6 +890,14 @@ class SyncHandler(handlers.EventHandler):
             return
         event.previous_targets.add(ho_tag)
 
+        try:
+            # performance: vertical integration of `plugins.mute`
+            if self.bot.call_shared('is_muted', event.conv_id, event.context):
+                return
+        except KeyError:
+            # plugin not loaded
+            pass
+
         text = event.get_formatted_text(names_text_only=True)
         if text is None:
             return
