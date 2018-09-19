@@ -1,5 +1,6 @@
 """Skip sending into given conversations"""
 
+import functools
 import logging
 
 from hangupsbot import plugins
@@ -16,7 +17,12 @@ HELP = {
 }
 
 
-def _initialise():
+def _initialise(bot):
+    """register the handler, command, command help and shared
+
+    Args:
+        bot (hangupsbot.core.HangupsBot): the running instance
+    """
     plugins.register_handler(
         function=_watch_sending,
         pluggable='sending',
@@ -25,6 +31,28 @@ def _initialise():
     plugins.register_user_command(['mute'])
     plugins.register_help(HELP)
 
+    plugins.register_shared('is_muted', functools.partial(_is_muted, bot))
+
+
+def _is_muted(bot, conv_id, context):
+    """Drop sending targets that are muted
+
+    Args:
+        bot (hangupsbot.core.HangupsBot): the running instance
+        conv_id (str): a conversation identifier
+        context (dict): message sending context
+
+    Returns:
+        bool: True in case the conversation is muted, otherwise False
+    """
+    if not bot.memory.exists(['mute', conv_id]):
+        return False
+
+    if __name__ in context:
+        return False
+
+    return True
+
 
 async def _watch_sending(bot, targets, context):
     """Drop sending targets that are muted
@@ -32,15 +60,13 @@ async def _watch_sending(bot, targets, context):
     Args:
         bot (hangupsbot.core.HangupsBot): the running instance
         targets (list[tuple[str,str,int]]): a message content wrapper
+        context (dict): message sending context
 
     Raises:
         SuppressEventHandling: ignore all other handlers
     """
     for target in targets.copy():
-        if not bot.memory.exists(['mute', target[0]]):
-            continue
-
-        if __name__ in context:
+        if not _is_muted(bot, target[0], context):
             continue
 
         logger.debug('%s is muted', target[0])
