@@ -215,6 +215,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     self.user.usr_id, self.user.first_name, self.user.username)
 
         tasks = [
+            asyncio.ensure_future(self._periodic_membership_checker()),
             asyncio.ensure_future(self._periodic_profile_updater()),
             asyncio.ensure_future(self._periodic_profilesync_reminder()),
         ]
