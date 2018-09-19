@@ -64,8 +64,14 @@ class Message(dict, BotMixin):
         self.add_message(self.bot, chat_id, self['message_id'])
 
         base_path = ['telesync', 'chat_data', self.chat_id]
-        user_path = base_path + ['user', self.user.usr_id]
-        self.bot.memory.set_by_path(user_path, 1)
+
+        if self.user.usr_id != '0':
+            # list valid users in the chats users only
+            user_path = base_path + ['user', self.user.usr_id]
+            self.bot.memory.set_by_path(user_path, 1)
+        else:
+            self.bot.memory.ensure_path(base_path)
+
         self.bot.memory.get_by_path(base_path).update(msg['chat'])
 
     @property

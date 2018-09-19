@@ -201,7 +201,23 @@ def setup_memory(bot):
             profilesync['telesync']['ho2'][data[key]] = user_id
         telesync_data['version'] = 20170609
 
+    def _cleanup20180919():
+        """drop the fall back user from the users and chats user list"""
+        telesync_data = bot.memory['telesync']
+        if telesync_data['version'] >= 20180919:
+            return
+
+        telesync_data['user_data'].pop('0', None)
+
+        for chat in telesync_data['chat_data'].values():
+            if 'user' not in chat:
+                continue
+            chat['user'].pop('0', None)
+
+        telesync_data['version'] = 20180919
+
     _migrate_20170609()
+    _cleanup20180919()
     bot.memory.save()
 
 def telesync(bot, event, *args):
