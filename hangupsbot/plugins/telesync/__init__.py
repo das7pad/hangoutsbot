@@ -249,7 +249,7 @@ def telesync(bot, event, *args):
 
     def _add():
         """add the given telegram chat ids to the current convs' sync targets"""
-        tg_chat_id = args[1]
+        tg_chat_id = args[0]
 
         ho2tg = bot.memory.get_by_path(['telesync', 'ho2tg'])
         targets = ho2tg.setdefault(ho_chat_id, [])
@@ -280,7 +280,7 @@ def telesync(bot, event, *args):
 
         tg_chat_ids = (bot.memory.get_by_path(path) if bot.memory.exists(path)
                        else ())
-        remove = tuple(tg_chat_ids) if args[1] == _('all') else args[1:]
+        remove = tuple(tg_chat_ids) if args[0] == _('all') else args
         for tg_chat_id in remove:
             if tg_chat_id in tg_chat_ids:
                 tg_chat_ids.remove(tg_chat_id)
@@ -313,24 +313,27 @@ def telesync(bot, event, *args):
 
     ho_chat_id = event.conv_id
     lines = []
-    args = args if args else (_('show'),)
+    if args:
+        cmd, *args = args
+    else:
+        cmd = _('show')
     one_way = _('oneway') in args
     channel = _('channel') in args
     args = (tuple(set(args) - {_('oneway'), _('channel')})
             if one_way or channel else args)
 
-    if len(args) > 1:
+    if args:
         tg2ho = bot.memory.get_by_path(['telesync', ('channel2ho' if channel
                                                      else 'tg2ho')])
-        if args[0] == _('remove'):
+        if cmd == _('remove'):
             _remove()
-        elif args[0] == _('add'):
+        elif cmd == _('add'):
             _add()
 
         bot.memory.save()
         bot.config.save()
 
-    if args[0] == _('show'):
+    if cmd == _('show'):
         _show()
 
     if not lines:
