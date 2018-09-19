@@ -212,6 +212,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     self.user.usr_id, self.user.first_name, self.user.username)
 
         tasks = [
+            asyncio.ensure_future(self._periodic_membership_checker()),
             asyncio.ensure_future(self._periodic_profile_updater()),
             asyncio.ensure_future(self._periodic_profilesync_reminder()),
         ]
@@ -760,6 +761,46 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             return
         except Exception:                         # pylint: disable=broad-except
             logger.exception('low level error in profile updater')
+
+    async def _periodic_membership_checker(self):
+        """verify the membership list per chat periodically
+
+        sleep for x hours after checking all conversations
+        x is determined by telesync config entry 'membership_check_interval'
+
+        in addition to the interval, this feature must be enabled in the config:
+          - globally:
+            "telesync"->"enable_membership_check" = 1
+          - or per chat:
+            for example for the chat with id 123:
+            "conversations"->"telesync:123"->"enable_membership_check" = 1
+
+        this could likely end in a rate limit, delay each query by 10-20 seconds
+        """
+        chat_path = ['telesync', 'chat_data']
+        try:
+            while True:
+                chat_data = self.bot.memory.get_by_path(chat_path)
+                for chat_id, data in chat_data.copy().items():
+                    enabled = self.bot.get_config_suboption(
+                        conv_id='telesync:%s' % chat_id,
+                        option='enable_membership_check',
+                    )
+                    if not enabled:
+                        continue
+
+                    for user_id in tuple(data.get('user', ())):
+                        await self.get_tg_user(user_id=user_id,
+                                               chat_id=chat_id,
+                                               use_cache=False)
+                        await asyncio.sleep(random.randint(10, 20))
+
+                await asyncio.sleep(
+                    3600 * self.config('membership_check_interval'))
+        except asyncio.CancelledError:
+            return
+        except Exception:                         # pylint: disable=broad-except
+            logger.exception('low level error in membership checker')
 
     async def _message_loop(self):
         """long polling for updates and handle errors gracefully
