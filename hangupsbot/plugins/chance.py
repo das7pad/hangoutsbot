@@ -33,11 +33,14 @@ async def _handle_me_action(bot, event):
 
     if any(item in event.text for item in ["roll dice", "rolls dice",
                                            "rolls a dice", "rolled dice"]):
-        await diceroll(bot, event)
+        message = diceroll(bot, event)
 
     elif any(item in event.text for item in ["flips a coin", "flips coin",
                                              "flip coin", "flipped a coin"]):
-        await coinflip(bot, event)
+        message = coinflip(bot, event)
+    else:
+        return
+    await bot.coro_send_message(event.conv_id, message)
 
 def diceroll(dummy, event, dice="1d6"):
     """get random numbers from a fake diceroll
@@ -56,7 +59,7 @@ def diceroll(dummy, event, dice="1d6"):
     try:
         repeat, sides = dice.split('d')
     except ValueError:
-        sides = None
+        sides = repeat = None
     if not sides:
         raise Help('Check argument!')
     if not repeat:
