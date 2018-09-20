@@ -13,7 +13,12 @@ optional arguments:
 example usage:
 python3 api-send.py http://127.0.0.1:9999 XxXxXxXxXxX YyYyYyYyYyYy "echo hello world"
 """
+
 import argparse
+import json
+
+import requests
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url", help="url to send the data")
@@ -21,9 +26,6 @@ parser.add_argument("target", help="target conversation id")
 parser.add_argument("apikey", help="api key from config.apikey")
 parser.add_argument("content", help="content to send, quote if it contains spaces")
 args = parser.parse_args()
-
-import json
-import requests
 
 payload = {
     'key': args.apikey,

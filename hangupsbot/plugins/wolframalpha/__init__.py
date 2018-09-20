@@ -17,6 +17,7 @@ import wolframalpha
 
 from hangupsbot import plugins
 
+
 logger = logging.getLogger(__name__)
 
 API_URL = "https://api.wolframalpha.com/v2/query"

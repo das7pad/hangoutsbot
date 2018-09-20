@@ -1,10 +1,11 @@
-import random
 import asyncio
+import random
 
 import hangups
 
 from hangupsbot import plugins
 from hangupsbot.commands import Help
+
 
 EGGS = (
     'ponies',

@@ -12,14 +12,15 @@ import pytest
 
 import hangupsbot.config
 from tests.constants import (
+    CHAT_ID_2,
+    CHAT_ID_ADMIN,
+    CONFIG_DATA,
+    CONFIG_DATA_DUMPED,
     CONFIG_PATH,
     CONV_ID_1,
     CONV_ID_2,
-    CONFIG_DATA,
-    CONFIG_DATA_DUMPED,
-    CHAT_ID_ADMIN,
-    CHAT_ID_2,
 )
+
 
 CONFIG_DEFAULT = object()
 # pylint:disable=redefined-outer-name, protected-access

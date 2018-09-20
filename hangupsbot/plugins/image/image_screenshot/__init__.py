@@ -3,8 +3,8 @@ import io
 import logging
 import os
 import re
-import time
 import tempfile
+import time
 
 import hangups
 import selenium

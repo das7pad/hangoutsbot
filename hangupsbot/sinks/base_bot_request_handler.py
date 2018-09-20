@@ -1,12 +1,16 @@
 # pylint: skip-file
-import asyncio, base64, io, imghdr, json, logging, time
-
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+import base64
+import imghdr
+import io
+import json
+import logging
+import time
+from urllib.parse import parse_qs
 
 from aiohttp import web
 
 from hangupsbot.base_models import BotMixin
+
 
 logger = logging.getLogger(__name__)
 

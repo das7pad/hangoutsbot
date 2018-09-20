@@ -3,12 +3,16 @@ __author__ = 'das7pad@outlook.com'
 
 import html as html_module
 import logging
-import urllib.parse
 import re
+import urllib.parse
 
 import hangups
 import hangups.hangouts_pb2
-from hangups.message_parser import ChatMessageParser, Tokens
+from hangups.message_parser import (
+    ChatMessageParser,
+    Tokens,
+)
+
 
 logger = logging.getLogger(__name__)
 

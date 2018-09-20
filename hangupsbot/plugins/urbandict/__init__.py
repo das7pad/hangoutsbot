@@ -3,12 +3,13 @@
 Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
 """
 import logging
-from urllib.parse import quote as urlquote
 from html.parser import HTMLParser
+from urllib.parse import quote as urlquote
 
 import aiohttp
 
 from hangupsbot import plugins
+
 
 logger = logging.getLogger(__name__)
 

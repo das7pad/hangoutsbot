@@ -10,12 +10,14 @@ import sys
 
 import hangups
 
-from hangupsbot import config
-from hangupsbot import handlers
-from hangupsbot import permamem
-from hangupsbot import plugins
-from hangupsbot import tagging
-from hangupsbot import sinks
+from hangupsbot import (
+    config,
+    handlers,
+    permamem,
+    plugins,
+    sinks,
+    tagging,
+)
 from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 from hangupsbot.exceptions import HangupsBotExceptions
@@ -25,6 +27,7 @@ from hangupsbot.hangups_conversation import (
 )
 from hangupsbot.sync.handler import SyncHandler
 from hangupsbot.sync.sending_queue import AsyncQueue
+
 
 logger = logging.getLogger(__name__)
 

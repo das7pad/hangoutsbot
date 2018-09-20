@@ -11,7 +11,10 @@ import os
 import sys
 
 from hangupsbot import utils
-from hangupsbot.base_models import BotMixin, TrackingMixin
+from hangupsbot.base_models import (
+    BotMixin,
+    TrackingMixin,
+)
 from hangupsbot.commands import command
 from hangupsbot.sinks import aiohttp_terminate
 

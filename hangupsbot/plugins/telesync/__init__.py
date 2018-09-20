@@ -9,15 +9,22 @@ import logging
 
 import telepot.exception
 
-from hangupsbot import commands
-from hangupsbot import plugins
+from hangupsbot import (
+    commands,
+    plugins,
+)
 from hangupsbot.sync.parser import get_formatted
+
 
 # reload the other modules
 for _path_ in ('user', 'message', 'commands_tg', 'parsers', 'core'):
     plugins.load_module('plugins.telesync.' + _path_)
 
-from .core import TelegramBot, POOLS, User
+from .core import (
+    TelegramBot,
+    POOLS,
+    User,
+)
 
 HELP = {
     'telesync': _('usage:\n{bot_cmd} telesync add <telegram chat id>\n'

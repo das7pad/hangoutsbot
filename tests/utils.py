@@ -13,28 +13,32 @@ from collections import namedtuple
 
 import hangups
 from hangups import hangouts_pb2
-from hangups.user import User, UserID
-from hangupsbot.commands import command
+from hangups.user import (
+    User,
+    UserID,
+)
 
+from hangupsbot.commands import command
 from tests.constants import (
-    DEFAULT_TIMESTAMP,
+    CHAT_ID_1,
+    CHAT_ID_2,
+    CHAT_ID_BOT,
     CONV_ID_1,
     CONV_ID_2,
     CONV_ID_3,
     CONV_NAME_1,
     CONV_NAME_2,
     CONV_NAME_3,
-    CHAT_ID_BOT,
-    CHAT_ID_1,
-    CHAT_ID_2,
-    USER_NAME_BOT,
+    DEFAULT_TIMESTAMP,
+    USER_EMAIL_BOT,
     USER_NAME_1,
     USER_NAME_2,
-    USER_EMAIL_BOT,
-    USER_PHOTO_BOT,
+    USER_NAME_BOT,
     USER_PHOTO_1,
     USER_PHOTO_2,
+    USER_PHOTO_BOT,
 )
+
 
 Message = namedtuple('Message', ['conv_id', 'text', 'context', 'image_id'])
 ConvData = namedtuple('ConvData', ('id_', 'name', 'users'))

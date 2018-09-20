@@ -1,15 +1,15 @@
 # TODO(das7pad): refactor needed
-import logging
 import json
+import logging
 import random
 import re
 
 import hangups
 
 from hangupsbot import plugins
+from hangupsbot.plugins.image import image_validate_and_upload_single
 from hangupsbot.sync import event as sync_events
 
-from hangupsbot.plugins.image import image_validate_and_upload_single
 
 logger = logging.getLogger(__name__)
 

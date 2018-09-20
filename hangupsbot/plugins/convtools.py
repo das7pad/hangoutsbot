@@ -5,8 +5,10 @@ import logging
 
 import hangups
 
-from hangupsbot import commands
-from hangupsbot import plugins
+from hangupsbot import (
+    commands,
+    plugins,
+)
 
 
 logger = logging.getLogger(__name__)

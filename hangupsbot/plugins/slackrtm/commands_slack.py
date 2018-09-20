@@ -6,8 +6,8 @@ import sys
 
 from .exceptions import (
     AlreadySyncingError,
-    NotSyncingError,
     IgnoreMessage,
+    NotSyncingError,
 )
 from .user import SlackUser
 

@@ -3,32 +3,40 @@ __author__ = 'das7pad@outlook.com'
 
 import asyncio
 import collections
-import itertools
 import hashlib
+import itertools
 import logging
 import random
 
 import hangups
 from hangups import hangouts_pb2
 
-from hangupsbot import handlers
-from hangupsbot import plugins
+from hangupsbot import (
+    handlers,
+    plugins,
+)
 from hangupsbot.commands import command
 from hangupsbot.exceptions import SuppressEventHandling
 from hangupsbot.utils.cache import Cache
-
-from . import DEFAULT_CONFIG, SYNCPROFILE_HELP
-from .exceptions import (
-    MissingArgument,
-    UnRegisteredProfilesync,
-    ProfilesyncAlreadyCompleted,
-    HandlerFailed,
+from . import (
+    DEFAULT_CONFIG,
+    SYNCPROFILE_HELP,
 )
-from .event import SyncEvent, SyncEventMembership
+from .event import (
+    SyncEvent,
+    SyncEventMembership,
+)
+from .exceptions import (
+    HandlerFailed,
+    MissingArgument,
+    ProfilesyncAlreadyCompleted,
+    UnRegisteredProfilesync,
+)
 from .image import SyncImage
 from .parser import MessageSegment
-from .user import SyncUser
 from .sending_queue import AsyncQueueCache
+from .user import SyncUser
+
 
 logger = logging.getLogger(__name__)
 

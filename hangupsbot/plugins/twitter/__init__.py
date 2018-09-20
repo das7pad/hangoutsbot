@@ -1,6 +1,5 @@
-
-import io
 import datetime
+import io
 import json
 import logging
 import os
@@ -8,11 +7,15 @@ import re
 
 import aiohttp
 import hangups
-from TwitterAPI import TwitterAPI, TwitterConnectionError
+from TwitterAPI import (
+    TwitterAPI,
+    TwitterConnectionError,
+)
 from bs4 import BeautifulSoup
 
 from hangupsbot import plugins
 from hangupsbot.commands import Help
+
 
 logger = logging.getLogger(__name__)
 

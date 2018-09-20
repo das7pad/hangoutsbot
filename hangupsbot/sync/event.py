@@ -3,18 +3,21 @@ __author__ = 'das7pad@outlook.com'
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
 import asyncio
-from datetime import datetime
 import logging
+from datetime import datetime
 
 import hangups
 
 from hangupsbot.base_models import BotMixin
-
 from .exceptions import MissingArgument
 from .image import SyncImage
-from .parser import MessageSegment, get_formatted
+from .parser import (
+    MessageSegment,
+    get_formatted,
+)
 from .user import SyncUser
 from .utils import get_sync_config_entry
+
 
 logger = logging.getLogger(__name__)
 

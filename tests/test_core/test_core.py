@@ -6,16 +6,16 @@ import os
 from unittest import mock
 
 import hangups
-import pytest
 import hangups.channel
+import pytest
 from aioresponses import aioresponses
 from aioresponses.compat import merge_url_params
 
 import hangupsbot.core
 import hangupsbot.hangups_conversation
-
 from tests.constants import DEFAULT_BOT_KWARGS
 from tests.utils import build_user_conversation_list_base
+
 
 NOOP = b'17\n[[1,["noop"]\n]\n]\n'
 GSESSIONID = b'52\n[[0,["c","MYSID","",8]\n]\n,[1,[{"gsid":"MYGSID"}]]\n]\n'

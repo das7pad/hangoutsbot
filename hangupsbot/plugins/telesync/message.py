@@ -9,9 +9,9 @@ from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.utils.cache import Cache
-
 from .exceptions import IgnoreMessage
 from .user import User
+
 
 logger = logging.getLogger(__name__)
 

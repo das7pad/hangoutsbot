@@ -2,7 +2,10 @@
 import logging
 
 from hangupsbot import plugins
-from hangupsbot.commands import command, Help
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 from hangupsbot.sinks import aiohttp_list
 
 

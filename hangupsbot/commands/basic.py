@@ -1,12 +1,16 @@
 # TODO(das7pad) further refactor needed
-import logging
 import importlib
+import logging
 import sys
 
 import psutil
 
+from hangupsbot.commands import (
+    Help,
+    command,
+    get_func_help,
+)
 from hangupsbot.version import __version__
-from hangupsbot.commands import command, get_func_help, Help
 
 
 logger = logging.getLogger(__name__)

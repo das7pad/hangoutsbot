@@ -1,4 +1,7 @@
-from hangupsbot.webbridge import WebFramework, IncomingRequestHandler
+from hangupsbot.webbridge import (
+    IncomingRequestHandler,
+    WebFramework,
+)
 
 
 class BridgeInstance(WebFramework):

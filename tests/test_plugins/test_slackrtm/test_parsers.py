@@ -2,7 +2,10 @@
 __author__ = 'das7pad@outlook.com'
 
 from hangupsbot.plugins.slackrtm import parsers
-from hangupsbot.sync.parser import get_formatted, MessageSegment
+from hangupsbot.sync.parser import (
+    MessageSegment,
+    get_formatted,
+)
 
 
 SEGMENTS = [

@@ -9,8 +9,8 @@ from aiohttp import web
 
 from hangupsbot.base_models import TrackingMixin
 from hangupsbot.utils import class_from_name
-
 from .base_bot_request_handler import AsyncRequestHandler
+
 
 logger = logging.getLogger(__name__)
 

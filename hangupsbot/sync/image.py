@@ -9,9 +9,10 @@ import time
 import warnings
 
 import aiohttp
-
-from PIL import Image
 import imageio
+from PIL import Image
+
+
 # Note: the moviepy import depends an available ffmpeg binary
 # A download will happen only once, as it will be cached into a path similar to
 #  ~/.imageio/ffmpeg/ffmpeg.linux64

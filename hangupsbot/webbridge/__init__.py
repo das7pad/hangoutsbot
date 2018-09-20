@@ -2,15 +2,16 @@
 import asyncio
 import logging
 import uuid
-
 from collections import namedtuple
 
 from hangups import ChatMessageEvent
 
 from hangupsbot import plugins
-from hangupsbot.sinks import aiohttp_start
-from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
 from hangupsbot.parsers.markdown import html_to_hangups_markdown
+from hangupsbot.sinks import (
+    AsyncRequestHandler as IncomingRequestHandler,
+    aiohttp_start,
+)
 
 
 logger = logging.getLogger(__name__)

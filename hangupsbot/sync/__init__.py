@@ -7,7 +7,6 @@ from hangups import hangouts_pb2
 
 from hangupsbot import plugins
 from hangupsbot.commands import Help
-
 from .user import SyncUser
 from .utils import get_sync_config_entry
 

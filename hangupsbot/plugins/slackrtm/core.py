@@ -11,38 +11,36 @@ from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.sending_queue import AsyncQueueCache
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.sync.utils import get_sync_config_entry
-
+from .commands_slack import slack_command_handler
 from .constants import (
-    CACHE_UPDATE_USERS,
-    CACHE_UPDATE_GROUPS,
-    CACHE_UPDATE_GROUPS_HIDDEN,
     CACHE_UPDATE_CHANNELS,
     CACHE_UPDATE_CHANNELS_HIDDEN,
-    SYSTEM_MESSAGES,
+    CACHE_UPDATE_GROUPS,
+    CACHE_UPDATE_GROUPS_HIDDEN,
     CACHE_UPDATE_TEAM,
+    CACHE_UPDATE_USERS,
+    SYSTEM_MESSAGES,
 )
-
-from .commands_slack import slack_command_handler
 from .exceptions import (
     AlreadySyncingError,
-    NotSyncingError,
     IgnoreMessage,
-    ParseError,
     IncompleteLoginError,
-    WebsocketFailed,
+    NotSyncingError,
+    ParseError,
     SlackAPIError,
-    SlackRateLimited,
     SlackAuthError,
     SlackConfigError,
+    SlackRateLimited,
+    WebsocketFailed,
 )
 from .message import SlackMessage
 from .parsers import (
     SLACK_STYLE,
 )
-from .user import SlackUser
 from .storage import (
     migrate_on_domain_change,
 )
+from .user import SlackUser
 
 
 _RENAME_TEMPLATE = _('_<https://plus.google.com/{chat_id}|{name}> has renamed '

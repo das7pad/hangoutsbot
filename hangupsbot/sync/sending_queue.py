@@ -6,8 +6,8 @@ import functools
 import logging
 
 from hangupsbot.utils.cache import Cache
-
 from . import DEFAULT_CONFIG
+
 
 logger = logging.getLogger(__name__)
 

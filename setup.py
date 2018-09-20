@@ -7,6 +7,7 @@ import sys
 
 from setuptools import setup
 
+
 if sys.version_info < (3, 5, 3):
     # This is the minimum version to support async-def and aiohttp>=3
     raise RuntimeError("hangupsbot requires Python 3.5.3+")

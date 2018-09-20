@@ -15,7 +15,13 @@ optional arguments:
 example usage:
 python3 base-send.py http://127.0.0.1:9999/<CONV_ID>/ "echo hello world" --imagepath hangoutsbot.png
 """
-import argparse, base64
+
+import argparse
+import base64
+import json
+
+import requests
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url", help="url to send the data")
@@ -24,9 +30,6 @@ parser.add_argument('-i', '--imagepath', help="image to send as base64-encoded s
 parser.add_argument('-n', '--imagefilename', help="image filename")
 
 args = parser.parse_args()
-
-import json
-import requests
 
 payload = {
     'echo': args.content

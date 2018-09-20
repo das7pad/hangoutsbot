@@ -1,17 +1,20 @@
 """parser to process slack markdown"""
 # -*- coding: utf-8 -*-
 
+from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
+from hangups.message_parser import (
+    Tokens,
+    markdown,
+    url_complete,
+)
 from reparser import (
-    Token,
     MatchGroup,
+    Token,
 )
 
-from hangups.message_parser import markdown, Tokens, url_complete
-from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
-
 from hangupsbot.sync.parser import (
-    MessageSegment,
     MessageParser,
+    MessageSegment,
 )
 
 

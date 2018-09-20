@@ -8,11 +8,10 @@ import emoji
 from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.parser import get_formatted
-
 from .constants import (
-    MESSAGE_TYPES_TO_SKIP,
     MESSAGE_SUBTYPES_MEMBERSHIP_JOIN,
     MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE,
+    MESSAGE_TYPES_TO_SKIP,
 )
 from .exceptions import (
     IgnoreMessage,
@@ -21,6 +20,7 @@ from .exceptions import (
 )
 from .parsers import SlackMessageSegment
 from .user import SlackUser
+
 
 # fix for simple_smile support
 emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']

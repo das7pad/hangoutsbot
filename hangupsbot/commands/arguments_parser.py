@@ -2,7 +2,10 @@
 
 import re
 
-from hangupsbot.base_models import BotMixin, TrackingMixin
+from hangupsbot.base_models import (
+    BotMixin,
+    TrackingMixin,
+)
 
 
 class ArgumentsParser(BotMixin, TrackingMixin):

@@ -1,7 +1,10 @@
 """Hangupsbot plugin for user data storage by category with dynamic commands"""
 
 from hangupsbot import plugins
-from hangupsbot.commands import command, Help
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 
 
 _CATEGORY_HELP = {

@@ -2,11 +2,10 @@
 
 import asyncio
 import collections
-from datetime import datetime
 import functools
+import glob
 import io
 import json
-import glob
 import logging
 import operator
 import os
@@ -14,8 +13,10 @@ import shutil
 import sys
 import time
 import traceback
+from datetime import datetime
 
 import hangups.event
+
 
 class Config(collections.MutableMapping):
     """Configuration JSON storage class

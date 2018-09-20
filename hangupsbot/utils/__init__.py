@@ -4,10 +4,15 @@
 import importlib
 import logging
 import os
-import unicodedata
 import traceback
+import unicodedata
 
-from hangupsbot.parsers import simple_parse_to_segments, segment_to_html
+# noinspection PyUnresolvedReferences
+from hangupsbot.parsers import (
+    segment_to_html,
+    simple_parse_to_segments,
+)
+
 
 BASE_PATH = os.path.dirname(os.path.dirname(__file__)) + '/'
 

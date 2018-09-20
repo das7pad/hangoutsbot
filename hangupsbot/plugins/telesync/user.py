@@ -10,6 +10,7 @@ import telepot.exception
 
 from hangupsbot.sync.user import SyncUser
 
+
 logger = logging.getLogger(__name__)
 
 class User(SyncUser):

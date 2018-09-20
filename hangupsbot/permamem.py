@@ -1,13 +1,15 @@
 """hangups conversation data cache"""
 # pylint: disable=W0212
-from datetime import datetime
+
 import logging
 import random
 import re
+from datetime import datetime
 
 import hangups
 
 from hangupsbot.base_models import BotMixin
+
 
 logger = logging.getLogger(__name__)
 

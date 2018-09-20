@@ -1,6 +1,5 @@
 import logging
 import re
-
 from random import shuffle
 
 from hangupsbot import plugins

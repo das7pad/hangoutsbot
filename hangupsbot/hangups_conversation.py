@@ -6,8 +6,9 @@ import hangups
 from hangups import hangouts_pb2
 
 from hangupsbot.base_models import BotMixin
-from hangupsbot.utils.cache import Cache
 from hangupsbot.sync.parser import MessageSegmentHangups
+from hangupsbot.utils.cache import Cache
+
 
 logger = logging.getLogger(__name__)
 

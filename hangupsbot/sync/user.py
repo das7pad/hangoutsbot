@@ -6,8 +6,8 @@ import logging
 import hangups.user
 
 from hangupsbot.base_models import BotMixin
-
 from .utils import get_sync_config_entry
+
 
 logger = logging.getLogger(__name__)
 

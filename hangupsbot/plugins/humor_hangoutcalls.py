@@ -1,6 +1,7 @@
 import time
 
 import hangups
+
 from hangupsbot import plugins
 
 

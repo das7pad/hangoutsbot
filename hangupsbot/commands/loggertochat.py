@@ -6,6 +6,7 @@ import sys
 from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
 
+
 logger = logging.getLogger(__name__)
 
 

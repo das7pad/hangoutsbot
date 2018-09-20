@@ -5,15 +5,19 @@ import asyncio
 import logging
 
 import telepot.exception
-from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
-                                ReplyKeyboardRemove)
+from telepot.namedtuple import (
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
 
 from hangupsbot.commands import command
 from hangupsbot.sync import SYNC_CONFIG_KEYS
 from hangupsbot.sync.event import FakeEvent
 from hangupsbot.sync.exceptions import ProfilesyncAlreadyCompleted
-from hangupsbot.sync.utils import get_sync_config_entry
 from hangupsbot.sync.user import SyncUser
+from hangupsbot.sync.utils import get_sync_config_entry
+
 
 logger = logging.getLogger(__name__)
 

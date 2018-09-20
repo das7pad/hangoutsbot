@@ -1,13 +1,16 @@
 """basic commands for the HangupsBot"""
-import re
 import json
 import logging
+import re
 
 import hangups
 
 from hangupsbot import plugins
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 from hangupsbot.utils import remove_accents
-from hangupsbot.commands import command, Help
 
 
 logger = logging.getLogger(__name__)

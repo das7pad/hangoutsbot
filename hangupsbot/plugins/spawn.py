@@ -64,15 +64,19 @@ The environment variables from this program are passed along to
 the subprocess, along with additional helpers (see code below).
 """
 
+import asyncio
+import logging
 import os
 import re
-import logging
-import asyncio
-from asyncio.subprocess import PIPE
-from datetime import datetime, timedelta, timezone
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 
 from hangupsbot import plugins
 from hangupsbot.commands import command
+
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +170,11 @@ async def _spawn(bot, event, *args):
     environment.update(dict(os.environ))
 
     process = await asyncio.create_subprocess_exec(
-        *executable, stdout=PIPE, stderr=PIPE, env=environment)
+        *executable,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=environment
+    )
 
     (stdout_data, stderr_data) = await process.communicate()
     stdout_str = stdout_data.decode().rstrip()

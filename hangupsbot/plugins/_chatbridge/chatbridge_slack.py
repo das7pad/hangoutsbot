@@ -1,26 +1,20 @@
 # pylint: skip-file
-import aiohttp
 import asyncio
 import json
 import logging
 import re
-import requests
-
 from html import unescape
 from urllib.parse import parse_qs
 from urllib.request import urlopen
 
 import emoji
-
 from pyslack import SlackClient
 
-from hangupsbot import plugins
 from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
 from hangupsbot.webbridge import (
     WebFramework,
-    IncomingRequestHandler,
-    FakeEvent,
 )
+
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,11 @@ identify a user of a message, the message content and the conversation
 
 import logging
 
-from hangups import TYPING_TYPE_STARTED, TYPING_TYPE_PAUSED, ChatMessageEvent
+from hangups import (
+    ChatMessageEvent,
+    TYPING_TYPE_PAUSED,
+    TYPING_TYPE_STARTED,
+)
 
 from hangupsbot.base_models import BotMixin
 

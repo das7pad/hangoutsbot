@@ -1,14 +1,17 @@
-import time
-import string
-import random
 import asyncio
-import logging
 import datetime
+import logging
+import random
+import string
+import time
 
 import hangups
 
 from hangupsbot import plugins
-from hangupsbot.commands import command, Help
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 
 
 logger = logging.getLogger(__name__)

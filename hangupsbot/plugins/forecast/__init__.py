@@ -13,6 +13,7 @@ import aiohttp
 
 from hangupsbot import plugins
 
+
 logger = logging.getLogger(__name__)
 _INTERNAL = {}
 

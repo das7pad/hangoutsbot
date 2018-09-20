@@ -6,7 +6,9 @@ Author: @cd334
 """
 
 import hangups
+
 from hangupsbot import plugins
+
 
 def _initialise():
     plugins.register_sync_handler(_handle_join_notify, "membership_once")

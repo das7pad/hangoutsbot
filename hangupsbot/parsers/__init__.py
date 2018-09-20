@@ -8,8 +8,11 @@ __all__ = (
     'simple_parse_to_segments',
 )
 
-from hangupsbot.sync.parser import get_formatted
-from hangupsbot.sync.parser import MessageSegmentHangups
+from hangupsbot.sync.parser import (
+    MessageSegmentHangups,
+    get_formatted,
+)
+
 
 def simple_parse_to_segments(formatted_text):
     """deprecated: parse text to hangups.ChatMessageSegments

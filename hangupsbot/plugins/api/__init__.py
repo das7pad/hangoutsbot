@@ -18,7 +18,6 @@ import functools
 import json
 import logging
 import time
-
 from urllib.parse import unquote
 
 from aiohttp import web

@@ -1,15 +1,10 @@
 # pylint: skip-file
-import aiohttp
-import json
 import logging
-import requests
-
-from hangupsbot import plugins
 
 from hangupsbot.webbridge import (
     WebFramework,
-    FakeEvent,
 )
+
 
 logger = logging.getLogger(__name__)
 

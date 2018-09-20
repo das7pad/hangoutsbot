@@ -1,13 +1,25 @@
 """legacy schema of hangups"""
 # pylint: disable=unused-import, invalid-name
 
-from collections import Mapping, namedtuple
+from collections import (
+    Mapping,
+    namedtuple,
+)
 
-from hangups import (conversation, hangouts_pb2, user,
-                     ChatMessageEvent, MembershipChangeEvent, RenameEvent,
-                     ChatMessageSegment, NetworkError)
-
+# noinspection PyUnresolvedReferences
+from hangups import (
+    ChatMessageEvent,
+    ChatMessageSegment,
+    MembershipChangeEvent,
+    NetworkError,
+    RenameEvent,
+    conversation,
+    hangouts_pb2,
+    user,
+)
+# noinspection PyUnresolvedReferences
 from hangups.conversation_event import ConversationEvent as conversation_event
+
 
 def namedtuplify(mapping, name='NT'):
     """Convert mappings to namedtuples recursively.

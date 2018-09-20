@@ -14,12 +14,13 @@ from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
 from hangupsbot.commands import command
 from hangupsbot.event import (
+    ConversationEvent,
     TypingEvent,
     WatermarkEvent,
-    ConversationEvent
 )
 from hangupsbot.exceptions import HangupsBotExceptions
 from hangupsbot.utils.cache import Cache
+
 
 logger = logging.getLogger(__name__)
 

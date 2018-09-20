@@ -9,8 +9,11 @@ import sys
 
 import appdirs
 
-from hangupsbot import config
-from hangupsbot import version
+from hangupsbot import (
+    config,
+    version,
+)
+
 
 def configure_logging(args):
     """Configure Logging

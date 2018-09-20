@@ -6,8 +6,12 @@ import re
 
 import hangups
 
-from hangupsbot.base_models import BotMixin, TrackingMixin
+from hangupsbot.base_models import (
+    BotMixin,
+    TrackingMixin,
+)
 from hangupsbot.commands.arguments_parser import ArgumentsParser
+
 
 logger = logging.getLogger(__name__)
 

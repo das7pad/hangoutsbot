@@ -25,10 +25,10 @@ config.json
 """
 
 import logging
-
 from random import randrange
 
 from hangupsbot import plugins
+
 
 logger = logging.getLogger(__name__)
 

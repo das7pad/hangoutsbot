@@ -6,8 +6,10 @@ import aiohttp
 
 from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
-from hangupsbot.sinks import aiohttp_start
-from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
+from hangupsbot.sinks import (
+    AsyncRequestHandler as IncomingRequestHandler,
+    aiohttp_start,
+)
 
 
 logger = logging.getLogger(__name__)

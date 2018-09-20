@@ -35,9 +35,13 @@ Additional config entries that can be set manually:
 __author__ = 'das7pad@outlook.com'
 
 import asyncio
-from datetime import timedelta, datetime
 import os
 import time
+from datetime import (
+    datetime,
+    timedelta,
+)
+
 
 try:
     from datadog import statsd

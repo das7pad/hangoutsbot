@@ -3,11 +3,15 @@ __author__ = 'das7pad@outlook.com'
 
 import asyncio
 import functools
-import time
 import logging
+import time
 from collections import namedtuple
 
-from hangupsbot.base_models import BotMixin, TrackingMixin
+from hangupsbot.base_models import (
+    BotMixin,
+    TrackingMixin,
+)
+
 
 logger = logging.getLogger(__name__)
 

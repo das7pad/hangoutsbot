@@ -1,14 +1,19 @@
 """plugin to watermark conversations periodically determined by config entry"""
 
 import asyncio
-from datetime import datetime, timezone
 import logging
 import random
 import time
+from datetime import (
+    datetime,
+    timezone,
+)
 
 import hangups.exceptions
+
 from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
+
 
 logger = logging.getLogger(__name__)
 

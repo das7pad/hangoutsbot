@@ -36,9 +36,12 @@ __author__ = "Daniel Casner <www.artificelab.com>"
 import io
 import logging
 import time
+
 import aiohttp
 import hangups
+
 from hangupsbot import plugins
+
 
 logger = logging.getLogger(__name__)
 

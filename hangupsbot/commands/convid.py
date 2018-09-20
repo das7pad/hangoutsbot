@@ -6,7 +6,6 @@ import shlex
 import hangups
 
 from hangupsbot import plugins
-
 from hangupsbot.commands import Help
 
 

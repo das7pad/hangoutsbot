@@ -11,6 +11,7 @@ from hangups import ChatMessageSegment
 
 from hangupsbot import plugins
 
+
 _CACHE = {}
 
 def _initialise():

@@ -6,23 +6,27 @@ for YouTube, Soundcloud, and Spotify links (or manually with a Spotify query).
 See https://github.com/hangoutsbot/hangoutsbot/wiki/Spotify-Plugin for help
 """
 
-from collections import namedtuple
-
 import logging
 import os
 import re
-
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError as YouTubeHTTPError
-from requests.exceptions import HTTPError as SoundcloudHTTPError
-from spotipy.client import Spotify, SpotifyException
-from spotipy.util import prompt_for_user_token as spotify_get_auth_stdin
+from collections import namedtuple
 
 import appdirs
 import soundcloud
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError as YouTubeHTTPError
+from requests.exceptions import HTTPError as SoundcloudHTTPError
+from spotipy.client import (
+    Spotify,
+    SpotifyException,
+)
+from spotipy.util import prompt_for_user_token as spotify_get_auth_stdin
 
-from hangupsbot import commands
-from hangupsbot import plugins
+from hangupsbot import (
+    commands,
+    plugins,
+)
+
 
 logger = logging.getLogger(__name__)
 
