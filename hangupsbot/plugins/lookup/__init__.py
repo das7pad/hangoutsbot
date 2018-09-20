@@ -12,8 +12,11 @@ HELP = {
     'lookup': _('find keywords in a specified spreadsheet'),
 }
 
+
 def _initialise():
-    plugins.register_user_command(["lookup"])
+    plugins.register_user_command([
+        "lookup",
+    ])
     plugins.register_help(HELP)
 
 
@@ -27,10 +30,11 @@ async def lookup(bot, event, *args):
         return _("Spreadsheet URL not set")
 
     spreadsheet_url = bot.get_config_suboption(event.conv_id, 'spreadsheet_url')
-    table_class = "waffle" # Name of table class to search. Note that 'waffle' seems to be the default for all spreadsheets
+    table_class = "waffle"  # Name of table class to search.
+    #  Note that 'waffle' seems to be the default for all spreadsheets
 
     if args[0].startswith('<'):
-        counter_max = int(args[0][1:]) # Maximum rows displayed per query
+        counter_max = int(args[0][1:])  # Maximum rows displayed per query
         keyword = ' '.join(args[1:])
     else:
         counter_max = 5
@@ -58,11 +62,13 @@ async def lookup(bot, event, *args):
 
     counter = 0
 
-    # Adapted from http://stackoverflow.com/questions/23377533/python-beautifulsoup-parsing-table
+    # Adapted from
+    # http://stackoverflow.com/questions/23377533/python-beautifulsoup-parsing
+    # -table
     from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(html, 'html.parser')
-    table = soup.find('table', attrs={'class':table_class})
+    table = soup.find('table', attrs={'class': table_class})
     table_body = table.find('tbody')
 
     rows = table_body.find_all('tr')
@@ -70,29 +76,36 @@ async def lookup(bot, event, *args):
     for row in rows:
         col = row.find_all('td')
         cols = [ele.text.strip() for ele in col]
-        data.append([ele for ele in cols if ele]) # Get rid of empty values
+        data.append([ele for ele in cols if ele])  # Get rid of empty values
 
     for row in data:
         for cell in row:
             cell_content_raw = str(cell).lower().strip()
             cell_content_ascii = unicode_to_ascii(cell_content_raw)
 
-            if keyword_raw in cell_content_raw or keyword_ascii in cell_content_ascii:
+            if (keyword_raw in cell_content_raw
+                    or keyword_ascii in cell_content_ascii):
                 if counter < counter_max:
-                    message += _('\nRow {}: ').format(counter+1)
+                    message += _('\nRow {}: ').format(counter + 1)
                     for data_point in row:
                         message += '{} | '.format(data_point)
                     message += '\n'
                     counter += 1
-                    break # prevent multiple subsequent cell matches appending identical rows
+                    # prevent multiple subsequent cell matches appending
+                    #  identical rows
+                    break
                 else:
-                    # count row matches only beyond the limit, to avoid over-long message
+                    # count row matches only beyond the limit, to avoid
+                    #  over-long message
                     counter += 1
 
     if counter > counter_max:
-        message += _('\n{0} rows found. Only returning first {1}.').format(counter, counter_max)
+        message += _('\n{0} rows found. Only returning first {1}.').format(
+            counter, counter_max)
         if counter_max == 5:
-            message += _('\nHint: Use <b>/bot lookup <{0} {1}</b> to view {0} rows').format(counter_max*2, keyword)
+            message += _(
+                '\nHint: Use <b>/bot lookup <{0} {1}</b> to view {0} rows'
+            ).format(counter_max * 2, keyword)
 
     if counter == 0:
         message += _('No match found')

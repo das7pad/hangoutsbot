@@ -25,6 +25,7 @@ def simple_parse_to_segments(formatted_text):
     """
     return MessageSegmentHangups.from_str(formatted_text)
 
+
 def segment_to_html(segment):
     """deprecated: parse the segment content to html
 
@@ -34,4 +35,4 @@ def segment_to_html(segment):
     Returns:
         str: html formatted message segment
     """
-    return get_formatted([segment,], 'html')
+    return get_formatted([segment, ], 'html')

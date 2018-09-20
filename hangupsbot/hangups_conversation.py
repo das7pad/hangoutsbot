@@ -19,7 +19,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
     Args:
         see `hangups.conversation.Conversation`
     """
-    _cache = Cache(default_timeout=60*60, name='Event Id Storage')
+    _cache = Cache(default_timeout=60 * 60, name='Event Id Storage')
 
     @classmethod
     def register_cache(cls):
@@ -163,7 +163,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
             ValueError: no image and also no text provided
         """
         # pylint:disable=arguments-differ
-        context = context or {"__ignore__": True}        # replace empty context
+        context = context or {"__ignore__": True}  # replace empty context
 
         # parse message
         if not message or isinstance(message, str) and not message.strip():

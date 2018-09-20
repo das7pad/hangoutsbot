@@ -20,8 +20,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument("url", help="url to send the data")
 args = parser.parse_args()
 
-payload = {"message" : "HELLO FROM **NOT** GOOGLE!!! DATE AND TIME:" + str(datetime.now())}
+payload = {
+    "message": "HELLO FROM **NOT** GOOGLE!!! DATE AND TIME:" + str(
+        datetime.now()),
+}
 headers = {'content-type': 'application/json'}
-r = requests.post(args.url, data = json.dumps(payload), headers = headers, verify=False)
+r = requests.post(args.url, data=json.dumps(payload), headers=headers,
+                  verify=False)
 
 print(r)

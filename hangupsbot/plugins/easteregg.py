@@ -23,8 +23,11 @@ HELP = {
                    '  - period between eastereggs (in seconds)\n'),
 }
 
+
 def _initialise():
-    plugins.register_admin_command(["easteregg"])
+    plugins.register_admin_command([
+        "easteregg",
+    ])
     plugins.register_help(HELP)
 
 

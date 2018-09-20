@@ -37,11 +37,19 @@ HELP = {
                   "[<user ids, space-separated if more than one>]"),
 }
 
+
 def _initialise():
     """register commands and their user help"""
-    plugins.register_admin_command(["addme", "addusers", "createconversation",
-                                    "refresh", "kick", "realkick"])
+    plugins.register_admin_command([
+        "addme",
+        "addusers",
+        "createconversation",
+        "refresh",
+        "kick",
+        "realkick",
+    ])
     plugins.register_help(HELP)
+
 
 async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
     """add users to a conversation but split the queue in parts
@@ -66,11 +74,11 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
     chat_ids = not_there
 
     users_added = 0
-    chunks = [chat_ids[i:i+batch_max]
+    chunks = [chat_ids[i:i + batch_max]
               for i in range(0, len(chat_ids), batch_max)]
     for number, partial_list in enumerate(chunks):
         logger.info("batch add users: %s/%s %s user(s) into %s",
-                    number+1, len(chunks), len(partial_list), conv_id)
+                    number + 1, len(chunks), len(partial_list), conv_id)
 
         await bot.add_user(
             hangups.hangouts_pb2.AddUserRequest(
@@ -86,6 +94,7 @@ async def _batch_add_users(bot, conv_id, chat_ids, batch_max=20):
         await asyncio.sleep(0.5)
 
     return users_added
+
 
 async def _batch_remove_users(bot, target_conv, chat_ids):
     """remove a list of users from a given conversation
@@ -117,6 +126,7 @@ async def _batch_remove_users(bot, target_conv, chat_ids):
 
         await asyncio.sleep(0.5)
     return chat_ids - remove
+
 
 async def addusers(bot, event, *args):
     """add users from a conversation
@@ -151,6 +161,7 @@ async def addusers(bot, event, *args):
         added = await _batch_add_users(bot, target_conv, list_add)
         logger.info("addusers: %s added to %s", added, target_conv)
 
+
 async def addme(bot, event, *args):
     """let a user add himself to a conversation
 
@@ -169,6 +180,7 @@ async def addme(bot, event, *args):
         raise commands.Help(_("I am not attending this conversation"))
 
     await addusers(bot, event, *[event.user_id.chat_id, "into", args[0]])
+
 
 async def createconversation(bot, dummy, *args):
     """create a new conversation with given users
@@ -202,6 +214,7 @@ async def createconversation(bot, dummy, *args):
     new_conversation_id = _response.conversation.conversation_id.id
 
     return new_conversation_id, _("<i>conversation created</i>")
+
 
 async def refresh(bot, event, *args):
     """recreate a conversation and remove or add certain users
@@ -288,16 +301,18 @@ async def refresh(bot, event, *args):
                  source_conv, len(list_removed), len(list_added))
 
     if test:
-        return _("<b>refresh:</b> {}\n"
-                 "<b>rename old: {}</b>\n"
-                 "<b>removed {}:</b> {}\n"
-                 "<b>added {}:</b> {}").format(
-                     source_conv,
-                     old_title if rename_old else _("<em>unchanged</em>"),
-                     len(text_removed_users),
-                     ", ".join(text_removed_users) or _("<em>none</em>"),
-                     len(list_added),
-                     " ".join(list_added) or _("<em>none</em>"))
+        return _(
+            "<b>refresh:</b> {}\n"
+            "<b>rename old: {}</b>\n"
+            "<b>removed {}:</b> {}\n"
+            "<b>added {}:</b> {}"
+        ).format(
+            source_conv,
+            old_title if rename_old else _("<em>unchanged</em>"),
+            len(text_removed_users),
+            ", ".join(text_removed_users) or _("<em>none</em>"),
+            len(list_added),
+            " ".join(list_added) or _("<em>none</em>"))
 
     if len(list_added) <= 1:
         return _("<b>nobody to add in the new conversation</b>")
@@ -379,6 +394,7 @@ async def kick(bot, event, *args):
         arguments.append(_("quietly"))
 
     await commands.command.run(bot, event, *arguments)
+
 
 async def realkick(bot, event, *args):
     """remove users from a conversation

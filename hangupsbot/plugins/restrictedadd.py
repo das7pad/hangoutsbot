@@ -33,10 +33,14 @@ HELP = {
                       'if no other botkeepers are present.'),
 }
 
+
 def _initialise():
     plugins.register_sync_handler(_check_if_admin_added_me, "membership_once")
     plugins.register_sync_handler(_verify_botkeeper_presence, "message_once")
-    plugins.register_admin_command(["allowbotadd", "removebotadd"])
+    plugins.register_admin_command([
+        "allowbotadd",
+        "removebotadd",
+    ])
     plugins.register_help(HELP)
 
 
@@ -75,7 +79,8 @@ async def _check_if_admin_added_me(bot, event, command):
             elif initiator_user_id == bot.user_self()["chat_id"]:
                 logger.info("bot added self to %s", event.conv_id)
 
-            elif event.conv_id in bot.conversations.get("tag:restrictedadd-whitelist"):
+            elif event.conv_id in bot.conversations.get(
+                    "tag:restrictedadd-whitelist"):
                 logger.info("bot added to whitelisted %s", event.conv_id)
 
             else:
@@ -85,7 +90,9 @@ async def _check_if_admin_added_me(bot, event, command):
 
                 await bot.coro_send_message(
                     event.conv,
-                    _("<i>{}, you need to be authorised to add me to another conversation. I'm leaving now...</i>").format(event.user.full_name))
+                    _("<i>{}, you need to be authorised to add me to another "
+                      "conversation. I'm leaving now...</i>"
+                      ).format(event.user.full_name))
 
                 asyncio.ensure_future(_leave_the_chat_quietly(
                     bot, event, command))
@@ -154,7 +161,7 @@ def allowbotadd(bot, dummy, *args):
     allowbotadd_ids.append(user_id)
     bot.memory.save()
 
-    _INTERNAL.last_verified = {} # force checks everywhere
+    _INTERNAL.last_verified = {}  # force checks everywhere
     return _("user id {} added as botkeeper").format(user_id)
 
 
@@ -172,7 +179,7 @@ def removebotadd(bot, dummy, *args):
         allowbotadd_ids.remove(user_id)
         bot.memory.save()
 
-        _INTERNAL.last_verified = {} # force checks everywhere
+        _INTERNAL.last_verified = {}  # force checks everywhere
 
         return _("user id {} removed as botkeeper").format(user_id)
     return _("user id {} is not authorised").format(user_id)

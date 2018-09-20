@@ -32,6 +32,7 @@ GUC_FMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
 
 REF_FMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
 
+
 def parse_text(slackrtm, text):
     """clean the text from slack tags/markdown and search for an image
 
@@ -43,6 +44,7 @@ def parse_text(slackrtm, text):
         tuple[list[parsers.SlackMessageSegment], str]: formatted text and an
             image url - if present otherwise None
     """
+
     def matchreference(match):
         """replace slack tags with the full descriptor
 
@@ -77,7 +79,6 @@ def parse_text(slackrtm, text):
         out = out.replace('*', '%2A')
         out = out.replace('`', '%60')
         return out
-
 
     if not text:
         # performance
@@ -255,7 +256,7 @@ class SlackMessage(BotMixin):
             hangupsbot.sync.event.SyncReply: the wrapped reply content or `None`
         """
         if (reply['type'] == 'message' and 'text' in reply
-                and reply.get('attachments')    # covers missing/empty
+                and reply.get('attachments')  # covers missing/empty
                 and reply['attachments'][0].get('is_share')
                 and 'text' in reply['attachments'][0]):
 

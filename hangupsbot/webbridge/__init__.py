@@ -16,6 +16,7 @@ from hangupsbot.sinks import (
 
 logger = logging.getLogger(__name__)
 
+
 class FakeEvent:
     def __init__(self, text, user, passthru, conv_id=None):
         self.text = text
@@ -23,11 +24,12 @@ class FakeEvent:
         self.passthru = passthru
         self.conv_id = conv_id
 
-FakeUser = namedtuple( 'user', [ 'full_name',
-                                 'id_' ])
 
-FakeUserID = namedtuple( 'userID', [ 'chat_id',
-                                     'gaia_id' ])
+FakeUser = namedtuple('user', ['full_name',
+                               'id_'])
+
+FakeUserID = namedtuple('userID', ['chat_id',
+                                   'gaia_id'])
 
 
 class WebFramework:
@@ -101,8 +103,10 @@ class WebFramework:
         applicable_configurations = []
         for configuration in self.configuration:
             if conv_id in configuration["hangouts"]:
-                applicable_configurations.append({ "trigger": conv_id,
-                                                   "config.json": configuration })
+                applicable_configurations.append({
+                    "trigger": conv_id,
+                    "config.json": configuration,
+                })
 
         return applicable_configurations
 
@@ -121,7 +125,9 @@ class WebFramework:
             passthru["norelay"] = []
         if self.uid in passthru["norelay"]:
             # prevent message broadcast duplication
-            logger.info("{}:{}:NORELAY:broadcast:{}".format(self.plugin_name, self.uid, passthru["norelay"]))
+            logger.info(
+                "{}:{}:NORELAY:broadcast:{}".format(self.plugin_name, self.uid,
+                                                    passthru["norelay"]))
             return
         else:
             # halt messaging handler from re-relaying
@@ -132,16 +138,17 @@ class WebFramework:
 
         # context preserves as much of the original request as possible
 
-        logger.info("{}:{}:broadcast:{}".format(self.plugin_name, self.uid, passthru["norelay"]))
+        logger.info("{}:{}:broadcast:{}".format(self.plugin_name, self.uid,
+                                                passthru["norelay"]))
 
         if "original_request" in passthru:
             message = passthru["original_request"]["message"]
             image_id = passthru["original_request"]["image_id"]
             if "user" in passthru["original_request"]:
                 if isinstance(passthru["original_request"]["user"], str):
-                    user = FakeUser( full_name = str,
-                                     id_ = FakeUserID( chat_id = chat_id,
-                                                       gaia_id = chat_id ))
+                    user = FakeUser(full_name=str,
+                                    id_=FakeUserID(chat_id=chat_id,
+                                                   gaia_id=chat_id))
                 else:
                     user = passthru["original_request"]["user"]
             else:
@@ -154,29 +161,35 @@ class WebFramework:
             only the first handler to run will assign all the variables
                 we need for the other bridges to work"""
 
-            logger.info("hangouts bot raised an event, first seen by {}, {}".format(self.plugin_name, self.uid))
+            logger.info(
+                "hangouts bot raised an event, first seen by {}, {}".format(
+                    self.plugin_name, self.uid))
 
             message = html_to_hangups_markdown(message)
 
-            passthru["original_request"] = { "message": message,
-                                             "image_id": image_id,
-                                             "segments": None,
-                                             "user": user }
+            passthru["original_request"] = {
+                "message": message,
+                "image_id": image_id,
+                "segments": None,
+                "user": user,
+            }
 
-            passthru["chatbridge"] = { "source_title": bot.conversations.get_name(conv_id),
-                                       "source_user": user,
-                                       "source_uid": chat_id,
-                                       "source_gid": conv_id,
-                                       "source_plugin": self.plugin_name }
+            passthru["chatbridge"] = {
+                "source_title": bot.conversations.get_name(conv_id),
+                "source_user": user,
+                "source_uid": chat_id,
+                "source_gid": conv_id,
+                "source_plugin": self.plugin_name,
+            }
 
         # for messages from other plugins, relay them
         for config in applicable_configurations:
             await self._send_to_external_chat(
                 config,
                 FakeEvent(
-                    text = message,
-                    user = user,
-                    passthru = passthru ))
+                    text=message,
+                    user=user,
+                    passthru=passthru))
 
     async def _repeat(self, bot, event, command):
         conv_id = event.conv_id
@@ -191,13 +204,16 @@ class WebFramework:
             passthru["norelay"] = []
         if self.uid in passthru["norelay"]:
             # prevent message relay duplication
-            logger.info("{}:{}:NORELAY:repeat:{}".format(self.plugin_name, self.uid, passthru["norelay"]))
+            logger.info(
+                "{}:{}:NORELAY:repeat:{}".format(self.plugin_name, self.uid,
+                                                 passthru["norelay"]))
             return
         else:
             # halt sending handler from re-relaying
             passthru["norelay"].append(self.uid)
 
-        logger.info("{}:{}:repeat:{}".format(self.plugin_name, self.uid, passthru["norelay"]))
+        logger.info("{}:{}:repeat:{}".format(self.plugin_name, self.uid,
+                                             passthru["norelay"]))
 
         user = event.user
         message = event.text
@@ -210,17 +226,23 @@ class WebFramework:
             only the first handler to run will assign all the variables
                 we need for the other bridges to work"""
 
-            logger.info("hangouts user raised an event, first seen by {}".format(self.plugin_name))
+            logger.info("hangouts user raised an event, first seen by {}".format(
+                self.plugin_name))
 
-            if (hasattr(event, "conv_event") and isinstance(event.conv_event, ChatMessageEvent) and
-                    any(a.type == 4 for a in event.conv_event._event.chat_message.annotation)):
+            if (hasattr(event, "conv_event") and isinstance(event.conv_event,
+                                                            ChatMessageEvent) and
+                    any(a.type == 4 for a in
+                        event.conv_event._event.chat_message.annotation)):
                 # This is a /me message sent from desktop Hangouts.
                 is_action = True
-                # The user's first name prefixes the message, so try to strip that.
+                # The user's first name prefixes the message, so try to strip
+                # that.
                 name = self._get_user_details(event.user).get("full_name")
                 if name:
-                    # We don't have a clear-cut first name, so try to match parts of names.
-                    # Try the full name first, then split successive words off the end.
+                    # We don't have a clear-cut first name, so try to match
+                    # parts of names.
+                    # Try the full name first, then split successive words off
+                    #  the end.
                     parts = name.split()
                     for pos in range(len(parts), 0, -1):
                         sub_name = " ".join(parts[:pos])
@@ -235,29 +257,37 @@ class WebFramework:
                                        name, user_id)
 
             attach = None
-            if hasattr(event, "conv_event") and getattr(event.conv_event, "attachments"):
+            if hasattr(event, "conv_event") and getattr(event.conv_event,
+                                                        "attachments"):
                 attach = event.conv_event.attachments[0]
                 if attach == message:
-                    # Message consists solely of the attachment URL, no need to send that.
+                    # Message consists solely of the attachment URL, no need
+                    # to send that.
                     message = "shared an image"
                     is_action = True
                 elif attach in message:
-                    # Message includes some text too, strip the attachment URL from the end if present.
+                    # Message includes some text too, strip the attachment URL
+                    #  from the end if present.
                     message = message.replace("\n{}".format(attach), "")
 
-            passthru["original_request"] = { "message": message,
-                                             "image_id": None, # XXX: should be attachments
-                                             "attachments": event.conv_event.attachments,
-                                             "segments": event.conv_event.segments,
-                                             "user": event.user }
+            passthru["original_request"] = {
+                "message": message,
+                "image_id": None,
+                # XXX: should be attachments
+                "attachments": event.conv_event.attachments,
+                "segments": event.conv_event.segments,
+                "user": event.user,
+            }
 
-            passthru["chatbridge"] = { "source_title": bot.conversations.get_name(conv_id),
-                                       "source_user": event.user,
-                                       "source_uid": event.user.id_.chat_id,
-                                       "source_gid": conv_id,
-                                       "source_action": is_action,
-                                       "source_edit": False,
-                                       "source_plugin": self.plugin_name }
+            passthru["chatbridge"] = {
+                "source_title": bot.conversations.get_name(conv_id),
+                "source_user": event.user,
+                "source_uid": event.user.id_.chat_id,
+                "source_gid": conv_id,
+                "source_action": is_action,
+                "source_edit": False,
+                "source_plugin": self.plugin_name,
+            }
 
         for config in applicable_configurations:
             await self._send_to_external_chat(config, event)
@@ -265,8 +295,10 @@ class WebFramework:
     async def _send_to_external_chat(self, config, event):
         pass
 
-    async def _send_to_internal_chat(self, conv_id, message, external_context, image_id=None):
-        formatted_message = self.format_incoming_message(message, external_context)
+    async def _send_to_internal_chat(self, conv_id, message, external_context,
+                                     image_id=None):
+        formatted_message = self.format_incoming_message(message,
+                                                         external_context)
 
         source_user = self.plugin_name
         if "source_user" in external_context:
@@ -284,16 +316,18 @@ class WebFramework:
         linked_hangups_user = False
         if "source_uid" in external_context:
             source_uid = external_context["source_uid"]
-            linked_hangups_user = self.map_external_uid_with_hangups_user(source_uid, external_context)
+            linked_hangups_user = self.map_external_uid_with_hangups_user(
+                source_uid, external_context)
             if linked_hangups_user:
                 source_user = linked_hangups_user
 
-        passthru =  {
+        passthru = {
             "original_request": {
                 "message": message,
                 "image_id": image_id,
                 "segments": None,
-                "user": source_user },
+                "user": source_user,
+            },
             "chatbridge": {
                 "source_title": source_title,
                 "source_user": source_user,
@@ -301,19 +335,22 @@ class WebFramework:
                 "source_gid": source_gid,
                 "source_edited": external_context.get("source_edited"),
                 "source_action": external_context.get("source_action"),
-                "plugin": self.plugin_name },
-            "norelay": [ self.uid ] }
+                "plugin": self.plugin_name,
+            },
+            "norelay": [self.uid],
+        }
 
         if linked_hangups_user:
-            passthru["executable"] = "{}-{}".format(self.plugin_name, str(uuid.uuid4()))
+            passthru["executable"] = "{}-{}".format(self.plugin_name,
+                                                    str(uuid.uuid4()))
 
         logger.info("{}:receive:{}".format(self.plugin_name, passthru))
 
         await self.bot.coro_send_message(
             conv_id,
             formatted_message,
-            image_id = image_id,
-            context = { "passthru": passthru })
+            image_id=image_id,
+            context={"passthru": passthru})
 
     def map_external_uid_with_hangups_user(self, source_uid, external_context):
         return False
@@ -330,7 +367,8 @@ class WebFramework:
         if source_attrs:
             sender = "{} ({})".format(sender, ", ".join(source_attrs))
 
-        template = "<i>{} {}</i>" if external_context.get("source_action") else "{}: {}"
+        template = "<i>{} {}</i>" if external_context.get(
+            "source_action") else "{}: {}"
         return template.format(sender, message)
 
     def format_outgoing_message(self, message, internal_context):
@@ -340,7 +378,7 @@ class WebFramework:
 
     def _get_user_details(self, user, external_context=None):
         chat_id = None
-        preferred_name = None # guaranteed
+        preferred_name = None  # guaranteed
         full_name = None
         nickname = None
         photo_url = None
@@ -369,17 +407,19 @@ class WebFramework:
         if not chat_id:
             chat_id = False
 
-        return { "chat_id": chat_id,
-                 "preferred_name": preferred_name,
-                 "nickname": nickname,
-                 "full_name": full_name,
-                 "photo_url": photo_url }
+        return {
+            "chat_id": chat_id,
+            "preferred_name": preferred_name,
+            "nickname": nickname,
+            "full_name": full_name,
+            "photo_url": photo_url,
+        }
 
     def _format_message(self, message, user, userwrap="MARKDOWN_BOLD2"):
-        if userwrap == "MARKDOWN_BOLD": # telegram/slack
+        if userwrap == "MARKDOWN_BOLD":  # telegram/slack
             userwrap_left = "*"
             userwrap_right = "*"
-        elif userwrap == "MARKDOWN_BOLD2": # github/hangups/hangoutsbot
+        elif userwrap == "MARKDOWN_BOLD2":  # github/hangups/hangoutsbot
             userwrap_left = "**"
             userwrap_right = "**"
         elif userwrap == "HTML_BOLD":
@@ -390,10 +430,14 @@ class WebFramework:
             userwrap_right = ""
 
         if isinstance(user, str):
-            formatted_message = "{2}{0}{3}: {1}".format(user, message, userwrap_left, userwrap_right)
+            formatted_message = "{2}{0}{3}: {1}".format(user, message,
+                                                        userwrap_left,
+                                                        userwrap_right)
         else:
             bridge_user = self._get_user_details(user)
-            formatted_message = "{2}{0}{3}: {1}".format(bridge_user["preferred_name"], message, userwrap_left, userwrap_right)
+            formatted_message = "{2}{0}{3}: {1}".format(
+                bridge_user["preferred_name"], message, userwrap_left,
+                userwrap_right)
 
         return formatted_message
 
@@ -410,12 +454,16 @@ class WebFramework:
                 try:
                     certfile = listener["certfile"]
                     if not certfile:
-                        logger.warning("config.{}[{}].certfile must be configured".format(self.configkey, itemNo))
+                        logger.warning(
+                            "config.{}[{}].certfile must be configured".format(
+                                self.configkey, itemNo))
                         continue
                     name = listener["name"]
                     port = listener["port"]
                 except KeyError as e:
-                    logger.warning("config.{}[{}] missing keyword".format(self.configkey, itemNo))
+                    logger.warning(
+                        "config.{}[{}] missing keyword".format(self.configkey,
+                                                               itemNo))
                     continue
 
                 aiohttp_start(
@@ -426,4 +474,6 @@ class WebFramework:
                     requesthandlerclass=self.RequestHandler,
                     group="webbridge." + self.configkey)
 
-        logger.info("webbridge.sinks: {} thread(s) started for {}".format(itemNo + 1, self.configkey))
+        logger.info(
+            "webbridge.sinks: {} thread(s) started for {}".format(itemNo + 1,
+                                                                  self.configkey))

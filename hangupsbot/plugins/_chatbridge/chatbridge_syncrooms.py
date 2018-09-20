@@ -35,12 +35,17 @@ class BridgeInstance(WebFramework):
         syncouts = self.configuration
         for sync_rooms_list in syncouts:
             if conv_id in sync_rooms_list:
-                syncout = list(sync_rooms_list) # clones the list
+                syncout = list(sync_rooms_list)  # clones the list
                 syncout.remove(conv_id)
                 if syncout:
-                    # ensures at least 2 items were in the list, trigger conv_id was removed
-                    applicable_configurations.append({ "trigger": conv_id,
-                                                       "config.json": { "hangouts": syncout }})
+                    # ensures at least 2 items were in the list, trigger
+                    # conv_id was removed
+                    applicable_configurations.append({
+                        "trigger": conv_id,
+                        "config.json": {
+                            "hangouts": syncout,
+                        }
+                    })
 
         return applicable_configurations
 
@@ -56,31 +61,36 @@ class BridgeInstance(WebFramework):
         image_id = event.passthru["original_request"]["image_id"]
 
         attach = None
-        if hasattr(event, "conv_event") and getattr(event.conv_event, "attachments"):
+        if hasattr(event, "conv_event") and getattr(event.conv_event,
+                                                    "attachments"):
             attach = event.conv_event.attachments[0]
 
         for relay_id in relay_ids:
             """XXX: media sending:
 
             * if media link is already available, send it immediately
-              * real events from google servers will have the medialink in event.conv_event.attachment
+              * real events from google servers will have the medialink in 
+              event.conv_event.attachment
             """
 
-            # catch actual events with media link, upload it to get a valid image id
+            # catch actual events with media link, upload it to get a valid
+            # image id
             if attach:
                 logger.info("media link in original event: {}".format(attach))
-                image_id = await self.bot.call_shared("image_upload_single", attach)
+                image_id = await self.bot.call_shared("image_upload_single",
+                                                      attach)
 
             """standard message relay"""
 
-            formatted_message = self.format_incoming_message( message,
-                                                              event.passthru["chatbridge"] )
+            formatted_message = self.format_incoming_message(message,
+                                                             event.passthru[
+                                                                 "chatbridge"])
 
             await self.bot.coro_send_message(
                 relay_id,
                 formatted_message,
-                image_id = image_id,
-                context = { "passthru": event.passthru })
+                image_id=image_id,
+                context={"passthru": event.passthru})
 
     def start_listening(self, bot):
         """syncrooms do not need any special listeners"""

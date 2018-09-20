@@ -27,22 +27,24 @@ logger = logging.getLogger(__name__)
 
 class EventHandler(BotMixin):
     """Handle Hangups conversation events"""
+
     def __init__(self):
         self.bot_command = ['/bot']
 
-        self.pluggables = {"allmessages": [],
-                           "call": [],
-                           "membership": [],
-                           "message": [],
-                           "rename": [],
-                           "history": [],
-                           "sending":[],
-                           "typing": [],
-                           "watermark": [],
-                          }
+        self.pluggables = {
+            "allmessages": [],
+            "call": [],
+            "membership": [],
+            "message": [],
+            "rename": [],
+            "history": [],
+            "sending": [],
+            "typing": [],
+            "watermark": [],
+        }
 
         # timeout for messages to be received for reprocessing: 6hours
-        receive_timeout = 60*60*6
+        receive_timeout = 60 * 60 * 6
 
         self._reprocessors = Cache(receive_timeout,
                                    increase_on_access=False)
@@ -62,8 +64,10 @@ class EventHandler(BotMixin):
         Args:
             _conv_list (hangups.conversation.ConversationList): data wrapper
         """
-        await plugins.tracking.start({"module": "handlers",
-                                      "module.path": "handlers"})
+        await plugins.tracking.start({
+            "module": "handlers",
+            "module.path": "handlers",
+        })
 
         plugins.register_shared("reprocessor.attach_reprocessor",
                                 self.attach_reprocessor)
@@ -163,10 +167,12 @@ class EventHandler(BotMixin):
             dict: the reprocessor id and a reference to the provided func
                 {'id': <reprocessor_id, str>, 'callable': <reprocessor, mixed>}
         """
-        #pylint:disable=unused-argument
+        # pylint:disable=unused-argument
         reprocessor_id = self.register_reprocessor(func)
-        return {"id": reprocessor_id,
-                "callable": func}
+        return {
+            "id": reprocessor_id,
+            "callable": func,
+        }
 
     # handler core
 
@@ -363,6 +369,7 @@ class EventHandler(BotMixin):
             KeyError: unknown pluggable specified
             SuppressEventHandling: do not handle further
         """
+
         async def _run_single_handler(function, meta, expected, names):
             """execute a single handler function
 
@@ -382,11 +389,12 @@ class EventHandler(BotMixin):
                                       function.__name__)]
             try:
                 # a function may use not all args or kwargs, filter here
-                positional = (args[num] for num in range(len(args))
-                              if (len(names) > num and (
-                                  expected[names[num]].default ==
-                                  inspect.Parameter.empty or
-                                  names[num] not in kwargs)))
+                positional = (
+                    args[num] for num in range(len(args))
+                    if (len(names) > num and
+                        (expected[names[num]].default == inspect.Parameter.empty
+                         or names[num] not in kwargs))
+                )
                 keyword = {key: value for key, value in kwargs.items()
                            if key in names}
 
@@ -407,7 +415,7 @@ class EventHandler(BotMixin):
             except HangupsBotExceptions.SuppressEventHandling:
                 # handle requested to skip all pluggables
                 raise
-            except Exception:                     # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 # exception is not related to the handling of this
                 # pluggable, log and continue with the next handler
                 message.append("args=" + str([str(arg) for arg in args]))
@@ -423,7 +431,7 @@ class EventHandler(BotMixin):
                 return
 
             for (function, dummy, meta, expected, names
-                ) in self.pluggables[name].copy():
+                 ) in self.pluggables[name].copy():
                 await _run_single_handler(function, meta, expected, names)
 
         except HangupsBotExceptions.SuppressAllHandlers:
@@ -431,6 +439,11 @@ class EventHandler(BotMixin):
 
     async def _handle_event(self, conv_event):
         """Handle conversation events
+
+        The `conv_event` argument is an object from the library `hangups`, the
+        code is hosted on github: https://github.com/tdryer/hangups
+        The `ConversationEvent` classes for hangups v0.4.5 are defined in
+            <repository root>/hangups/conversation_event.py
 
         Args:
             conv_event (hangups.conversation_event.ConversationEvent): raw event
@@ -455,7 +468,7 @@ class EventHandler(BotMixin):
         else:
             # Unsupported Events:
             # * GroupLinkSharingModificationEvent
-            # https://github.com/tdryer/hangups/blob/master/hangups/conversation_event.py
+            # see the method doc string for additional info
             logger.warning("unrecognised event type: %s", type(conv_event))
             return
 
@@ -496,7 +509,7 @@ class EventHandler(BotMixin):
 
         self.pluggables.clear()
 
-        conv_list = self.bot._conv_list        # pylint:disable=protected-access
+        conv_list = self.bot._conv_list  # pylint:disable=protected-access
         conv_list.on_event.remove_observer(self._handle_event)
         conv_list.on_typing.remove_observer(self._handle_status_change)
         conv_list.on_watermark_notification.remove_observer(
@@ -535,6 +548,7 @@ class HandlerBridge(BotMixin):
             Returns:
                 coroutine: compatible function that matches the defaults
             """
+
             def thunk(bot, event, dummy):
                 """call the original function without the command_"""
                 return func(bot, event)
@@ -555,4 +569,5 @@ class HandlerBridge(BotMixin):
             return wrapper(args[0])
         return wrapper
 
-handler = HandlerBridge()   # pylint: disable=invalid-name
+
+handler = HandlerBridge()  # pylint: disable=invalid-name

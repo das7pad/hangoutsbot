@@ -4,8 +4,10 @@ from hangupsbot import plugins
 
 
 def _initialise():
-    plugins.register_admin_command(["testcoroutinecontext",
-                                    "testnoncoroutinecontext"])
+    plugins.register_admin_command([
+        "testcoroutinecontext",
+        "testnoncoroutinecontext",
+    ])
 
 
 async def testcoroutinecontext(bot, event, *dummys):
@@ -15,7 +17,8 @@ async def testcoroutinecontext(bot, event, *dummys):
         "This message has hidden context",
         context={
             "reprocessor": bot.call_shared("reprocessor.attach_reprocessor",
-                                           coro_reprocess_the_event)})
+                                           coro_reprocess_the_event),
+        })
 
 
 async def testnoncoroutinecontext(bot, event, *dummys):
@@ -25,7 +28,8 @@ async def testnoncoroutinecontext(bot, event, *dummys):
         "This message has hidden context",
         context={
             "reprocessor": bot.call_shared("reprocessor.attach_reprocessor",
-                                           reprocess_the_event)})
+                                           reprocess_the_event),
+        })
 
 
 async def coro_reprocess_the_event(bot, event, id_):

@@ -13,6 +13,7 @@ from hangupsbot import plugins
 def _initialise():
     plugins.register_sync_handler(_handle_join_notify, "membership_once")
 
+
 async def _handle_join_notify(bot, event):
     if not event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
         return

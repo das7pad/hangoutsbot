@@ -16,6 +16,7 @@ from hangupsbot.parsers import (
 
 BASE_PATH = os.path.dirname(os.path.dirname(__file__)) + '/'
 
+
 def print_to_logger(*args, **dummys):
     """redirect the input to a logger with the name of the last entry in stack
 
@@ -28,15 +29,18 @@ def print_to_logger(*args, **dummys):
         '.__init__.py', '').replace('.py', '')
     logging.getLogger('%s.%s()' % (module, caller.name)).info(*args)
 
+
 def remove_accents(text):
     """remove accents from unicode text, allows east asian languages through"""
     return ''.join(c for c in unicodedata.normalize('NFD', text)
                    if unicodedata.category(c) != 'Mn')
 
+
 def unicode_to_ascii(text):
     """Transliterate unicode characters to ASCII"""
     return unicodedata.normalize('NFKD',
                                  text).encode('ascii', 'ignore').decode()
+
 
 def class_from_name(module_name, class_name):
     """adapted from http://stackoverflow.com/a/13808375
@@ -62,6 +66,7 @@ class FormatBaseException(Exception):
     requires a `._template` member to pass the provided arguments into it
     """
     _template = 'Template is missing'
+
     def __str__(self):
         base = '%s: %s' % (self.__class__.__name__, self._template)
         required_args = base.count('%s')

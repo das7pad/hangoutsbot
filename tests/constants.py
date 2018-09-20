@@ -32,6 +32,7 @@ import json
 import os
 import sys
 
+
 PYTHON36 = sys.version_info >= (3, 6, 0)
 
 _BASE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),
@@ -73,12 +74,12 @@ CONFIG_DATA = {
     ],
     'conversations': {
         CONV_ID_1: {
-            'PER_CONV': True
+            'PER_CONV': True,
         }
     },
     'one': {
         'two': {
-            'three': None
+            'three': None,
         }
     },
     'GLOBAL': True,

@@ -11,12 +11,12 @@ from . import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
 
-SENDING_BLOCK_RETRY_DELAY = 5   # seconds
+SENDING_BLOCK_RETRY_DELAY = 5  # seconds
 
 
 class Status(asyncio.Event):
     """Blocker for scheduled tasks"""
-    __slots__ = ('_status', )
+    __slots__ = ('_status',)
 
     FAILED = False
     SUCCESS = True
@@ -209,7 +209,7 @@ class Queue(list):
 
                 except asyncio.CancelledError:
                     pass
-                except Exception:                 # pylint: disable=broad-except
+                except Exception:  # pylint: disable=broad-except
                     status.set(Status.FAILED)
                     self._logger.exception(
                         'sending args="%s", kwargs="%s" failed',

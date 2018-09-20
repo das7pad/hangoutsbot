@@ -1,7 +1,8 @@
 """memory unit test
 all these commands work on memory.json
 * creating, updating, removing a string in memory["unittest"] (memory test)
-* creating, updating, removing a string in memory["unittest"]["timestamp"] (submemory test)
+* creating, updating, removing a string in memory["unittest"]["timestamp"] (
+submemory test)
 * retrieving and setting taint status of memory
 """
 
@@ -15,9 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise():
-    plugins.register_admin_command(["memorytaint", "memoryuntaint", "memorystatus",
-                                    "memoryset", "memoryget", "memorypop", "memorysave", "memorydelete",
-                                    "submemoryinit", "submemoryclear", "submemoryset", "submemoryget", "submemorypop", "submemorydelete"])
+    plugins.register_admin_command([
+        "memorytaint",
+        "memoryuntaint",
+        "memorystatus",
+        "memoryset",
+        "memoryget",
+        "memorypop",
+        "memorysave",
+        "memorydelete",
+        "submemoryinit",
+        "submemoryclear",
+        "submemoryset",
+        "submemoryget",
+        "submemorypop",
+        "submemorydelete",
+    ])
 
 
 def memoryset(bot, *dummys):
@@ -77,7 +91,8 @@ def submemoryset(bot, *dummys):
 
 
 def submemoryget(bot, *dummys):
-    logger.info("submemoryget: %s", bot.memory["unittest-submemory"]["timestamp"])
+    logger.info("submemoryget: %s",
+                bot.memory["unittest-submemory"]["timestamp"])
 
 
 def submemorypop(bot, *dummys):

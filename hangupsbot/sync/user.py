@@ -116,10 +116,12 @@ class SyncUser(hangups.user.User, BotMixin):
             name_template_key = 'sync_format_name_only'
 
         name = get_sync_config_entry(
-            self.bot, conv_id, name_template_key).format(
-                firstname=self.first_name,
-                fullname=self.full_name,
-                nickname=self.nickname)
+            self.bot, conv_id, name_template_key
+        ).format(
+            firstname=self.first_name,
+            fullname=self.full_name,
+            nickname=self.nickname,
+        )
 
         if text_only or user_link is None:
             template = '{name}'

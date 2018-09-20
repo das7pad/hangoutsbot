@@ -65,7 +65,7 @@ class SlackRTM(BotMixin):
     _tracker = 0
 
     def __init__(self, sink_config):
-        if  not isinstance(sink_config, dict) or 'key' not in sink_config:
+        if not isinstance(sink_config, dict) or 'key' not in sink_config:
             raise SlackConfigError('API-`key` is missing in config %s'
                                    % repr(sink_config))
         self.api_key = sink_config['key']
@@ -128,6 +128,7 @@ class SlackRTM(BotMixin):
 
     async def start(self):
         """login, build the cache, register handler and start event polling"""
+
         async def _login():
             """connect to the slack api and fetch the base data
 
@@ -202,14 +203,13 @@ class SlackRTM(BotMixin):
                                  'filter messages. The instance can not work '
                                  'efficient now or may send duplicates.')
 
-
         hard_reset = 0
         last_drop = time.time()
         while hard_reset < self.bot.config.get_option('slackrtm.retries'):
             self._session = aiohttp.ClientSession()
             self.bot.config.on_reload.add_observer(self.rebuild_base)
             try:
-                await asyncio.sleep(hard_reset*10)
+                await asyncio.sleep(hard_reset * 10)
                 hard_reset += 1
 
                 login_data = await _login()
@@ -231,10 +231,10 @@ class SlackRTM(BotMixin):
                 self.logger.warning('Connection failed, waiting %s sec',
                                     hard_reset * 10)
             except SlackAuthError as err:
-                await self._session.close()      # do not allow further api-calls
+                await self._session.close()  # do not allow further api-calls
                 self.logger.critical('closing SlackRTM: %s', repr(err))
                 return
-            except Exception:                     # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 self.logger.exception('core error')
             else:
                 self.logger.info('websocket closed gracefully, restarting')
@@ -257,6 +257,7 @@ class SlackRTM(BotMixin):
 
     async def rebuild_base(self):
         """reset everything that is based on the sink config or team data"""
+
         async def _send_message(**kwargs):
             """send the content to slack
 
@@ -283,8 +284,10 @@ class SlackRTM(BotMixin):
         async def _register_handler():
             """register the profilesync and the sync handler"""
             label = 'Slack (%s)' % self.config.get('name', self.team['name'])
-            await plugins.tracking.start({'module.path': self.identifier,
-                                          'identifier': label})
+            await plugins.tracking.start({
+                'module.path': self.identifier,
+                'identifier': label,
+            })
 
             self.bot.sync.register_profile_sync(
                 self.identifier,
@@ -700,7 +703,7 @@ class SlackRTM(BotMixin):
                         # covers invalid json-replies, replies without a `type`
                         self.logger.warning('bad websocket read: %s', repr(err))
                         soft_reset += 1
-                        await asyncio.sleep(2**soft_reset)
+                        await asyncio.sleep(2 ** soft_reset)
                         continue
 
                     await self._handle_slack_message(reply)
@@ -720,6 +723,7 @@ class SlackRTM(BotMixin):
         Args:
             reply (dict): response from slack
         """
+
         async def _update_cache_on_event(event_type):
             """update the internal cache based on team changes
 
@@ -753,7 +757,7 @@ class SlackRTM(BotMixin):
                 or await _update_cache_on_event(reply.get('subtype'))
                 # we do not sync this type
                 or reply.get('is_ephemeral') or reply.get('hidden')):
-                # hidden message from slack
+            #   hidden message from slack
             self.logger.debug('reply is system event')
             return
 
@@ -786,7 +790,7 @@ class SlackRTM(BotMixin):
         except SlackAuthError as err:
             self.logger.critical(repr(err))
             # continue with message handling
-        except Exception:                         # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             self.logger.exception(error_message, repr(reply))
             if error_is_critical:
                 return

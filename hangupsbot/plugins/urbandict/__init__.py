@@ -22,6 +22,7 @@ HELP = {
                    'responsibility for any hurt feelings.'),
 }
 
+
 class UrbanDictParser(HTMLParser):
 
     def __init__(self, *args, **kwargs):
@@ -44,7 +45,7 @@ class UrbanDictParser(HTMLParser):
 
     def handle_endtag(self, tag):
         if tag == 'div':
-            #NOTE: assume there is no nested <div> in the known sections
+            # NOTE: assume there is no nested <div> in the known sections
             self._section = None
 
     def handle_data(self, data):
@@ -60,6 +61,7 @@ class UrbanDictParser(HTMLParser):
 
     def error(self, message):
         logger.error(message)
+
 
 def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
@@ -112,5 +114,7 @@ async def urbandict(dummy0, dummy1, *args):
 
 
 def _initialise():
-    plugins.register_user_command(["urbandict"])
+    plugins.register_user_command([
+        "urbandict",
+    ])
     plugins.register_help(HELP)

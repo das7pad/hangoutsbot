@@ -69,6 +69,7 @@ HELP = {
     'who': _('list current ssh-session on the host in our private chat'),
 }
 
+
 def _initialise(bot):
     """register the admin commands and start the coroutines
 
@@ -96,6 +97,7 @@ def _initialise(bot):
 
     if statsd is not None and bot.config.get_option('datadog_log_level'):
         plugins.register_sync_handler(log_event, 'allmessages_once')
+
 
 def log_event(bot, event):
     """increments the metrics for an incoming message
@@ -129,6 +131,7 @@ def log_event(bot, event):
 
     statsd.increment('hangupsbot.messages.' + '.'.join(metric), 1)
 
+
 def _seconds_to_str(seconds):
     """get a printable representation of a time span
 
@@ -139,6 +142,7 @@ def _seconds_to_str(seconds):
         str: pretty output
     """
     return str(timedelta(seconds=seconds)).split('.')[0]
+
 
 def _uptime_in_seconds(now):
     """get the system uptime in seconds
@@ -151,6 +155,7 @@ def _uptime_in_seconds(now):
     """
     return now.timestamp() - psutil.boot_time()
 
+
 async def _update(bot, event, feature):
     """flip the state of a given feature and reload the plugin
 
@@ -159,7 +164,7 @@ async def _update(bot, event, feature):
         event (hangupsbot.event.ConversationEvent): message data wrapper
         feature (str): plugin feature to update targets for
     """
-    targets = bot.config.get_option(feature) or []   # do not overwrite defaults
+    targets = bot.config.get_option(feature) or []  # do not overwrite defaults
     target = event.conv_id
     output = _('Notifications ')
 
@@ -177,6 +182,7 @@ async def _update(bot, event, feature):
 
     asyncio.ensure_future(plugins.reload_plugin(bot, 'plugins.host'))
 
+
 async def check_load(bot, event, *dummys):
     """add/remove the current conv_id from 'check_load' in config
 
@@ -187,6 +193,7 @@ async def check_load(bot, event, *dummys):
     """
     await _update(bot, event, 'check_load')
 
+
 async def report_online(bot, event, *dummys):
     """add/remove the current conv_id from 'report_online' in config
 
@@ -196,6 +203,7 @@ async def report_online(bot, event, *dummys):
         dummys (str): not used
     """
     await _update(bot, event, 'report_online')
+
 
 async def uptime(bot, event, *dummys):
     """display the current system uptime
@@ -217,6 +225,7 @@ async def uptime(bot, event, *dummys):
                  load_avg[0], load_avg[1], load_avg[2]),
              'bot uptime:        ' + bot_uptime]
     await bot.coro_send_to_user(event.user_id.chat_id, '\n'.join(lines))
+
 
 async def who(bot, event, *dummys):
     """display ssh-sessions
@@ -247,9 +256,11 @@ async def who(bot, event, *dummys):
         for row in raw_output:
             # align the output
             # Hangouts blanks are about two 'normal' ones
-            row = ['{value:<{wid}}'.format(value=row[pos], wid=space[pos])
-                   .replace(' ', '  ').replace(' '*7, ' '*8)
-                   for pos in range(4)]
+            row = [
+                '{value:<{wid}}'.format(
+                    value=row[pos], wid=space[pos]
+                ).replace(' ', '  ').replace(' ' * 7, ' ' * 8)
+                for pos in range(4)]
 
             lines.append('  '.join(row))
 
@@ -267,6 +278,7 @@ async def who(bot, event, *dummys):
 
     output = '\n'.join(lines)
     await bot.coro_send_to_user(event.user_id.chat_id, output)
+
 
 async def _report_online(bot):
     """report the startup and send periodically an online state to datadog
@@ -316,6 +328,7 @@ async def _report_online(bot):
         statsd.event(_('{name} is going down').format(name=bot_name), body,
                      alert_type='warning')
 
+
 async def _check_load(bot):
     """check periodically the system load and notify above the threshold
 
@@ -337,13 +350,13 @@ async def _check_load(bot):
                 online_time = _seconds_to_str(_uptime_in_seconds(now))
                 output = ('<b>LOAD-WARNING</b>\n{}\n'
                           'server uptime:  {}\nserver load:       {}  {}  {}'
-                         ).format(today, online_time,
-                                  load_avg[0], load_avg[1], load_avg[2])
+                          ).format(today, online_time,
+                                   load_avg[0], load_avg[1], load_avg[2])
 
                 for conv_id in bot.config['check_load'].copy():
                     await bot.coro_send_message(conv_id, output)
 
-                await asyncio.sleep(600)        # do not spam with load warnings
+                await asyncio.sleep(600)  # do not spam with load warnings
             elif load_avg[1] > load_threshold:
                 # we might hit the threshold soon
                 await asyncio.sleep(60)

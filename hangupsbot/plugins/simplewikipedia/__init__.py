@@ -9,6 +9,7 @@ HELP = {
     'wiki': _('lookup a term on Wikipedia'),
 }
 
+
 def wiki(dummy0, dummy1, *args):
     """lookup a term on Wikipedia"""
 
@@ -22,7 +23,8 @@ def wiki(dummy0, dummy1, *args):
         summary = page.summary.strip()
         summary = summary.replace('\r\n', '\n').replace('\r', '\n')
         summary = re.sub('\n+', "\n", summary).replace('\n', '\n\n')
-        source = _('<i>source: <a href="{}">{}</a></i>').format(page.url, page.url)
+        source = _('<i>source: <a href="{}">{}</a></i>').format(page.url,
+                                                                page.url)
 
         html_text = '<b>"{}"</b>\n\n{}\n\n{}'.format(term, summary, source)
     except wikipedia.exceptions.PageError:
@@ -35,5 +37,7 @@ def wiki(dummy0, dummy1, *args):
 
 
 def _initialise():
-    plugins.register_user_command(["wiki"])
+    plugins.register_user_command([
+        "wiki",
+    ])
     plugins.register_help(HELP)

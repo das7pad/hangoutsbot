@@ -65,6 +65,7 @@ def module_wrapper(request):
         if PYTHON36:
             CLEANUP_LOOP.run_until_complete(EVENT_LOOP.shutdown_asyncgens())
         EVENT_LOOP.run_until_complete(asyncio.sleep(0.1))
+
     request.addfinalizer(_cleanup)
     logger.info('Loaded Module %s', request.module.__name__)
 
@@ -81,6 +82,7 @@ class TestChatMessageEvent(ChatMessageEvent):
     Raises:
         ValueError: invalid content provided
     """
+
     def __init__(self, conv_id, chat_id, text=None, segments=None):
         if isinstance(text, str):
             segments = ChatMessageSegment.from_str(text)
@@ -102,6 +104,7 @@ class TestChatMessageEvent(ChatMessageEvent):
             event_id='EVENT_ID-%s' % time.time(),
             event_type=hangouts_pb2.EVENT_TYPE_REGULAR_CHAT_MESSAGE))
 
+
 class TestConversationEvent(ConversationEvent):
     """High level `hangupsbot.event.ConversationEvent`
 
@@ -114,6 +117,7 @@ class TestConversationEvent(ConversationEvent):
     Raises:
         ValueError: invalid content provided
     """
+
     def __init__(self, conv_id, chat_id, text=None, segments=()):
         conv_event = TestChatMessageEvent(conv_id, chat_id, text, segments)
         super().__init__(conv_event)

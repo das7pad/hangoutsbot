@@ -60,7 +60,7 @@ if 'default' not in POOLS or POOLS['default'].closed:
         connector=aiohttp.TCPConnector(limit=10))
 
 IGNORED_MESSAGE_TYPES = (
-    'migrate_from_chat_id',                  # duplicate of 'migrate_to_chat_id'
+    'migrate_from_chat_id',  # duplicate of 'migrate_to_chat_id'
 )
 
 telepot.aio.api._timeout = 15  # pylint: disable=protected-access
@@ -73,6 +73,7 @@ PERMANENT_SERVER_ERROR = telepot.exception.TelegramError(
 _RESTRICT_USERS_FAILED = _('<b>WARNING</b>: Rights for {names} in TG '
                            '<i>{chat_name}</i> could <b>not</b> be restricted, '
                            'please check manually!')
+
 
 class TelegramBot(telepot.aio.Bot, BotMixin):
     """enhanced telepot bot with Hangouts sync
@@ -92,27 +93,28 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                                                     bot=ho_bot)
         self._cache_sending_queue.start()
 
-        self._commands = {'/whoami': command_whoami,
-                          '/whereami': command_whereami,
-                          '/whois': command_whois,
-                          '/setsyncho': command_set_sync_ho,
-                          '/clearsyncho': command_clear_sync_ho,
-                          '/addadmin': command_add_admin,
-                          '/removeadmin': command_remove_admin,
-                          '/syncprofile': command_sync_profile,
-                          '/setsyncprofile': command_set_sync_profile,
-                          '/unsyncprofile': command_unsync_profile,
-                          '/tldr': command_tldr,
-                          '/getme': command_get_me,
-                          '/start': command_start,
-                          '/getadmins': command_get_admins,
-                          '/echo': command_echo,
-                          '/leave': command_leave,
-                          '/cancel': command_cancel,
-                          '/chattitle': command_chattitle,
-                          '/sync_config': command_sync_config,
-                          '/restrict_user': command_restrict_user,
-                         }
+        self._commands = {
+            '/whoami': command_whoami,
+            '/whereami': command_whereami,
+            '/whois': command_whois,
+            '/setsyncho': command_set_sync_ho,
+            '/clearsyncho': command_clear_sync_ho,
+            '/addadmin': command_add_admin,
+            '/removeadmin': command_remove_admin,
+            '/syncprofile': command_sync_profile,
+            '/setsyncprofile': command_set_sync_profile,
+            '/unsyncprofile': command_unsync_profile,
+            '/tldr': command_tldr,
+            '/getme': command_get_me,
+            '/start': command_start,
+            '/getadmins': command_get_admins,
+            '/echo': command_echo,
+            '/leave': command_leave,
+            '/cancel': command_cancel,
+            '/chattitle': command_chattitle,
+            '/sync_config': command_sync_config,
+            '/restrict_user': command_restrict_user,
+        }
 
     @staticmethod
     def _get_error_message(error, code, reason):
@@ -142,7 +144,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
     async def _api_request(self, method, params=None, files=None, **kwargs):
         retry = 0
-        limit = 1   # ensure at least one try
+        limit = 1  # ensure at least one try
         last_err = None
 
         while retry <= limit:
@@ -176,7 +178,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             logger.info(
                 'Request %s/%s failed: %s\n %r | %r | %r| %r\n%r',
                 retry, limit, msg, method, params, files, kwargs, last_err)
-            await asyncio.sleep(delay or max(2**retry, 30))
+            await asyncio.sleep(delay or max(2 ** retry, 30))
 
         logger.warning(
             'Request failed permanent: %r | %r | %r | %r\nLast Error:\n%s',
@@ -415,8 +417,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             'private Hangouts. Use <i>split</i>  next to the token to block '
             'this sync.\n'
             'Use /unsyncprofile to cancel the process.'
-            ).format(bot_cmd=bot_cmd, bot_id=self.bot.user_self()['chat_id'],
-                     name=self.user.first_name)
+        ).format(bot_cmd=bot_cmd, bot_id=self.bot.user_self()['chat_id'],
+                 name=self.user.first_name)
 
         if not await self.send_html(user_id, html):
             base_path = ['profilesync', 'telesync']
@@ -676,9 +678,9 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         elif mode:
             message = _(
                 'Check the config value `restrict_users` for the chat '
-                '{name} ({chat_id}), expected one of {valid_values}').format(
-                    name=chat_name, chat_id=msg.chat_id,
-                    valid_values=', '.join(RESTRICT_OPTIONS))
+                '{name} ({chat_id}), expected one of {valid_values}'
+            ).format(name=chat_name, chat_id=msg.chat_id,
+                     valid_values=', '.join(RESTRICT_OPTIONS))
             logger.warning(message)
             if mod_chat:
                 self.send_html(mod_chat, '<b>ERROR</b>: %s' % message)
@@ -727,7 +729,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     await self.profilesync_info(user_id, is_reminder=True)
         except asyncio.CancelledError:
             return
-        except Exception:                         # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             logger.exception('low level error in periodic profilesync reminder')
 
     async def _periodic_profile_updater(self):
@@ -758,7 +760,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     3600 * self.config('profile_update_interval'))
         except asyncio.CancelledError:
             return
-        except Exception:                         # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             logger.exception('low level error in profile updater')
 
     async def _periodic_membership_checker(self):
@@ -798,7 +800,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     3600 * self.config('membership_check_interval'))
         except asyncio.CancelledError:
             return
-        except Exception:                         # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             logger.exception('low level error in membership checker')
 
     async def _message_loop(self):
@@ -808,6 +810,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             UnauthorizedError: API-token invalid
             CancelledError: plugin unload in progress
         """
+
         def _reset_error_count():
             """reset the current error counter of the message loop"""
             nonlocal hard_reset
@@ -830,7 +833,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 logger.info('message loop stopped, finishing the handling of the'
                             ' current update in the background')
                 raise
-            except Exception:                      # pylint:disable=broad-except
+            except Exception:  # pylint:disable=broad-except
                 logger.exception('error in handling message %s of update %s',
                                  repr(message), repr(update))
             else:
@@ -841,7 +844,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         delay = 0.
         offset = None
         while hard_reset < self.config('message_loop_retries'):
-            await asyncio.sleep(hard_reset*10 + delay)
+            await asyncio.sleep(hard_reset * 10 + delay)
             hard_reset += 1
 
             try:

@@ -6,6 +6,7 @@ __all__ = (
 
 from hangupsbot.sync.parser import get_formatted
 
+
 def html_to_hangups_markdown(html):
     """deprecated: parse html to markdown
 

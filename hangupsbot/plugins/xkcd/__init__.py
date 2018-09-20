@@ -14,14 +14,19 @@ from hangupsbot import plugins
 
 _CACHE = {}
 
+
 def _initialise():
-    plugins.register_user_command(["xkcd"])
+    plugins.register_user_command([
+        "xkcd",
+    ])
     plugins.register_help(HELP)
     plugins.register_sync_handler(_watch_xkcd_link, "message_once")
 
+
 REGEXPS = (
     r"https?://(?:www\.)?(?:explain)?xkcd.com/([0-9]+)(?:/|\s|$)",
-    r"https?://(?:www\.)?explainxkcd.com/wiki/index\.php(?:/|\?title=)([0-9]+)(?:[^0-9]|$)",
+    r"https?://(?:www\.)?explainxkcd.com/wiki/index\.php(?:/|\?title=)(["
+    r"0-9]+)(?:[^0-9]|$)",
     r"(?:\s|^)xkcd\s+(?:#\s*)?([0-9]+)(?:\s|$)",
 )
 
@@ -34,6 +39,7 @@ HELP = {
               'search for a comic\n'
               '  {bot_cmd} xkcd search <query>'),
 }
+
 
 async def xkcd(bot, event, *args):
     """xkcd interface"""
@@ -52,6 +58,7 @@ async def xkcd(bot, event, *args):
 
     await _print_comic(bot, event)
 
+
 async def _watch_xkcd_link(bot, event):
     # Don't handle events caused by the bot himself
     if event.user.is_self:
@@ -64,7 +71,8 @@ async def _watch_xkcd_link(bot, event):
 
         num = match.group(1)
         await _print_comic(bot, event, num)
-        return # only one match per message
+        return  # only one match per message
+
 
 async def _get_comic(bot, num=None):
     if num:
@@ -95,6 +103,7 @@ async def _get_comic(bot, num=None):
     _CACHE[info['num']] = info
     return info
 
+
 async def _print_comic(bot, event, num=None):
     info = await _get_comic(bot, num)
     image_id = info['image_id']
@@ -107,30 +116,37 @@ async def _print_comic(bot, event, num=None):
         ChatMessageSegment("xkcd #%s: " % info['num']),
         ChatMessageSegment(info["title"], is_bold=True),
     ]
-    msg2 = [
-        ChatMessageSegment(info["alt"]),
-    ] + ChatMessageSegment.from_str('\n- <i><a href="https://xkcd.com/%s">CC-BY-SA xkcd</a></i>' % info['num'])
+    msg2 = [ChatMessageSegment(info["alt"])] + ChatMessageSegment.from_str(
+        '\n- <i><a href="https://xkcd.com/%s">CC-BY-SA xkcd</a></i>'
+        % info['num'])
+
     if "link" in info and info["link"]:
-        msg2.extend(ChatMessageSegment.from_str("\n* see also %s" % info["link"]))
+        msg2.extend(
+            ChatMessageSegment.from_str("\n* see also %s" % info["link"]))
 
     await bot.coro_send_message(event.conv.id_, msg1, context)
-    await bot.coro_send_message(event.conv.id_, msg2, context, image_id=image_id) # image appears above text, so order is [msg1, image, msg2]
+    await bot.coro_send_message(event.conv.id_, msg2, context, image_id=image_id)
+    # image appears above text, so order is [msg1, image, msg2]
+
 
 async def _search_comic(bot, event, terms):
-    url = ("https://relevantxkcd.appspot.com/process?%s"
-           % urllib.parse.urlencode({"action": "xkcd",
-                                     "query": " ".join(terms)}))
+    url = ("https://relevantxkcd.appspot.com/process?"
+           "{0}").format(urllib.parse.urlencode({"action": "xkcd",
+                                                 "query": " ".join(terms)}))
     async with aiohttp.ClientSession() as session:
         async with session.request('get', url) as request:
             raw = await request.read()
-    values = [row.strip().split(" ")[0] for row in raw.decode().strip().split("\n")]
+    values = [row.strip().split(" ")[0] for row in
+              raw.decode().strip().split("\n")]
 
     weight = float(values.pop(0))
-    values.pop(0) # selection - ignore?
+    values.pop(0)  # selection - ignore?
     comics = [int(i) for i in values]
     num = comics.pop(0)
 
-    msg = 'Most relevant xkcd: #%d (relevance: %.2f%%)\nOther relevant comics: %s' % (num, weight*100, ", ".join("#%d" % i for i in comics))
+    msg = ('Most relevant xkcd: #%d (relevance: %.2f%%)\n'
+           'Other relevant comics: %s'
+           % (num, weight * 100, ", ".join("#%d" % i for i in comics)))
 
     # get info and upload image if necessary
     await _get_comic(bot, num)

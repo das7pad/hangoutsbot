@@ -1,11 +1,12 @@
-"""API plugin for listening for server commands and treating them as ConversationEvents
+"""API plugin for listening for server commands and treating them as
+ConversationEvents
 config.json will have to be configured as follows:
 
 "api_key": "API_KEY",
 "api": [{
   "certfile": null,
   "name": "SERVER_NAME",
-  "port": LISTENING_PORT
+  "port": LISTENING_PORT,
 }]
 
 Also you will need to append the bot's own user_id to the admin list if you want
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 def _initialise(bot):
     _start_api(bot)
+
 
 REPROCESSOR_QUEUE = {}
 
@@ -91,8 +93,8 @@ class APIRequestHandler(AsyncRequestHandler):
     def addroutes(self, router):
         router.add_route("OPTIONS", "/", self.adapter_do_options)
         router.add_route("POST", "/", self.adapter_do_post)
-        router.add_route('GET', '/{api_key}/{id}/{message:.*?}', self.adapter_do_get)
-
+        router.add_route('GET', '/{api_key}/{id}/{message:.*?}',
+                         self.adapter_do_get)
 
     async def adapter_do_options(self, request):
         origin = request.headers["Origin"]
@@ -117,12 +119,14 @@ class APIRequestHandler(AsyncRequestHandler):
         })
 
     async def adapter_do_get(self, request):
-        payload = {"sendto": request.match_info["id"],
-                   "key": request.match_info["api_key"],
-                   "content": unquote(request.match_info["message"])}
+        payload = {
+            "sendto": request.match_info["id"],
+            "key": request.match_info["api_key"],
+            "content": unquote(request.match_info["message"]),
+        }
 
-        results = await self.process_request('', # IGNORED
-                                             '', # IGNORED
+        results = await self.process_request('',  # IGNORED
+                                             '',  # IGNORED
                                              payload)
         if results:
             content_type = "text/html"
@@ -137,9 +141,11 @@ class APIRequestHandler(AsyncRequestHandler):
         # XXX: bit hacky due to different routes...
         payload = content
         if isinstance(payload, str):
-            # XXX: POST - payload in incoming request BODY (and not yet parsed, do it here)
+            # XXX: POST - payload in incoming request BODY (and not yet
+            # parsed, do it here)
             payload = json.loads(payload)
-        # XXX: else GET - everything in query string (already parsed before it got here)
+        # XXX: else GET - everything in query string (already parsed before it
+        #  got here)
 
         api_key = self._bot.config.get_option("api_key")
 

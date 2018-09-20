@@ -30,7 +30,6 @@ load-plugins=pylint.extensions.docparams
 # TODO(das7pad): remove all disabled items
 disable=
     fixme,
-    line-too-long,
     missing-docstring,
     too-few-public-methods,
     too-many-branches,
@@ -136,7 +135,7 @@ notes=FIXME,XXX,TODO
 [FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length=80
+max-line-length=81
 
 # urls
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$

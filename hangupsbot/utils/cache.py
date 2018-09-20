@@ -15,7 +15,6 @@ from hangupsbot.base_models import (
 
 logger = logging.getLogger(__name__)
 
-
 CacheItemBase = namedtuple('CacheItemBase',
                            ('value', 'timeout', 'destroy_timeout'))
 
@@ -171,6 +170,7 @@ class Cache(dict, BotMixin, TrackingMixin):
     async def _periodic_dump(self):
         """load the last cache state from memory and schedule dumping to memory
         """
+
         def _dump(path, only_on_new_items=True):
             """export the currently cached items to memory
 

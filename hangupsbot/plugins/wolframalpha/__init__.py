@@ -26,13 +26,17 @@ HELP = {
     'ask': _('solve a question with wolfram alpha'),
 }
 
+
 def _initialise(bot):
     """register the user command"""
     if _api_token(bot):
-        plugins.register_user_command(["ask"])
+        plugins.register_user_command([
+            "ask",
+        ])
         plugins.register_help(HELP)
     else:
         logger.info('WOLFRAMALPHA: config["wolframalpha-apikey"] required')
+
 
 def _api_token(bot):
     """get the configured api token
@@ -45,10 +49,12 @@ def _api_token(bot):
     """
     return bot.config.get_option("wolframalpha-apikey")
 
+
 async def ask(bot, dummy, *args):
     """solve a question with wolfram alpha"""
     result = await _fetch(bot, args)
     return result
+
 
 async def _fetch(bot, args):
     """fetch data from wolframalpha and parse the response

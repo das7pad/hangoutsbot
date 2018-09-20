@@ -13,7 +13,8 @@ class WebhookReceiver(AsyncRequestHandler):
         path = path.split("/")
         conv_or_user_id = path[1]
         if conv_or_user_id is None:
-            logger.error("conversation or user id must be provided as part of path")
+            logger.error(
+                "conversation or user id must be provided as part of path")
             return
 
         payload = content
@@ -29,7 +30,6 @@ class WebhookReceiver(AsyncRequestHandler):
             return
 
         await self.send_actionable_message(conv_or_user_id, payload["message"])
-
 
     async def send_actionable_message(self, target, content):
         if target in self.bot.conversations:

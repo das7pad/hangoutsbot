@@ -51,6 +51,7 @@ DEFAULT_CONFIG = {
     "max_threads": 10,
 }
 
+
 class HangupsBot:
     """Hangouts bot listening on all conversations
 
@@ -70,13 +71,13 @@ class HangupsBot:
         self._unloaded = True
 
         # These are populated by ._on_connect when it's called.
-        self.shared = None # safe place to store references to objects
-        self._conv_list = None # hangups.ConversationList
-        self._user_list = None # hangups.UserList
-        self._handlers = None # handlers.py::EventHandler
-        self.tags = None # tagging.Tags
-        self.conversations = None # permamem.ConversationMemory
-        self.sync = None # sync.handler.SyncHandler
+        self.shared = None  # safe place to store references to objects
+        self._conv_list = None  # hangups.ConversationList
+        self._user_list = None  # hangups.UserList
+        self._handlers = None  # handlers.py::EventHandler
+        self.tags = None  # tagging.Tags
+        self.conversations = None  # permamem.ConversationMemory
+        self.sync = None  # sync.handler.SyncHandler
 
         self._locales = {}
 
@@ -119,7 +120,7 @@ class HangupsBot:
             loop = asyncio.get_event_loop()
             for signum in (signal.SIGINT, signal.SIGTERM):
                 loop.add_signal_handler(
-                    signum, lambda: self.stop())         # pylint: disable=W0108
+                    signum, lambda: self.stop())  # pylint: disable=W0108
                 # lambda necessary here as we overwrite the method .stop
         except NotImplementedError:
             pass
@@ -201,6 +202,7 @@ class HangupsBot:
 
     def run(self):
         """Connect to Hangouts and run bot"""
+
         def _login():
             """Login to Google account
 
@@ -276,7 +278,7 @@ class HangupsBot:
             except SystemExit:
                 logger.critical("bot is exiting")
                 raise
-            except:                                 # pylint:disable=bare-except
+            except:  # pylint:disable=bare-except
                 logger.exception("low-level error")
 
             finally:
@@ -546,6 +548,7 @@ class HangupsBot:
         Args:
             dummy (hangups.conversation_event.ConversationEvent): ignored
         """
+
         async def _delayed_reset():
             """delayed reset of the retry count"""
             try:
@@ -622,8 +625,10 @@ class HangupsBot:
 
         # update the context
         if not context:
-            context = {"passthru": {},
-                       "__ignore__": True}
+            context = {
+                "passthru": {},
+                "__ignore__": True,
+            }
 
         # get the conversation id
         if hasattr(conversation, "id_"):
@@ -711,14 +716,14 @@ class HangupsBot:
 
         responses = {
             "standard":
-                None, # no public message
+                None,  # no public message
             "optout":
                 _("<i>{}, you are currently opted-out. Private message me or "
                   "enter <b>{} optout</b> to get me to talk to you.</i>"
-                 ).format(full_name, self.command_prefix),
+                  ).format(full_name, self.command_prefix),
             "no1to1":
                 _("<i>{}, before I can help you, you need to private message me"
-                  " and say hi.</i>").format(full_name, self.command_prefix)
+                  " and say hi.</i>").format(full_name, self.command_prefix),
         }
 
         keys = ["standard", "optout", "no1to1"]
@@ -758,9 +763,9 @@ class HangupsBot:
         myself = {
             "chat_id": None,
             "full_name": None,
-            "email": None
+            "email": None,
         }
-        user = self._user_list._self_user   # pylint: disable=W0212
+        user = self._user_list._self_user  # pylint: disable=W0212
 
         myself["chat_id"] = user.id_.chat_id
 

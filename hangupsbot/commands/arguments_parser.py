@@ -28,13 +28,13 @@ class ArgumentsParser(BotMixin, TrackingMixin):
       * wxyz@user
       * @user@wxyz
     """
+
     def __init__(self):
         self._preprocessors = {
             "inbuilt": {
                 r"^(#?[\w|]+[^#]\|)?@[\w]+[^@]$": self._one_chat_id,
                 r"^#[\w|]+[^#]$": self._one_conv_id,
             },
-
         }
 
     def register_preprocessor_group(self, name, preprocessors):
@@ -129,12 +129,11 @@ class ArgumentsParser(BotMixin, TrackingMixin):
         force_groups = [g for g in force_groups if g in all_groups]
         all_groups = force_groups or all_groups
 
-        _implicit = (bool(force_groups)
-                     or not self.bot.config.get_option(
+        _implicit = (bool(force_groups) or
+                     not self.bot.config.get_option(
                          "commands.preprocessor.explicit"))
-        _trigger = (force_trigger
-                    or self.bot.config.get_option(
-                        "commands.preprocessor.trigger")
+        _trigger = (force_trigger or
+                    self.bot.config.get_option("commands.preprocessor.trigger")
                     or "resolve").lower()
 
         _trigger_on = "+" + _trigger
@@ -151,10 +150,13 @@ class ArgumentsParser(BotMixin, TrackingMixin):
         #   * full trigger keywords are:
         #     * +<trigger> (add)
         #     * -<trigger> (remove)
-        #   * customised trigger word must be unique enough to prevent conflicts for other plugin parameters
+        #   * customised trigger word must be unique enough to prevent conflicts
+        #      for other plugin parameters
         #   * all examples here assume the trigger keyword is the default
-        #   * devs: if conflict arises, other plugins have higher priority than this
-        # * activate all resolvers for subsequent keywords (not required if implicit):
+        #   * devs: if conflict arises, other plugins have higher priority than
+        #            this
+        # * activate all resolvers for subsequent keywords (not required if
+        #    implicit):
         #     +resolve
         # * deactivate all resolvers for subsequent keywords:
         #     -resolve
@@ -249,6 +251,7 @@ class ArgumentsParser(BotMixin, TrackingMixin):
             new_args.append(arg)
 
         return new_args
+
 
 def _initialize(bot):
     """register the arguments parser as shared

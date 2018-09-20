@@ -54,6 +54,7 @@ HELP = {
                 ' {bot_cmd} showme all'),
 }
 
+
 def _initialize(bot):
     """register the showme command if sources are configured in config
 
@@ -61,10 +62,13 @@ def _initialize(bot):
         bot (hangupsbot.core.HangupsBot): the running instance
     """
     if bot.config.get_option("showme") is not None:
-        plugins.register_user_command(["showme"])
+        plugins.register_user_command([
+            "showme",
+        ])
         plugins.register_help(HELP, "showme")
     else:
         logger.info('SHOWME: config["showme"] dict required')
+
 
 async def _send_source(bot, event, name, img_link):
     """fetch the provided source, upload the image and send a message
@@ -92,6 +96,7 @@ async def _send_source(bot, event, name, img_link):
             _("I'm sorry, I couldn't upload a {} image".format(ext)))
     else:
         await bot.coro_send_message(event.conv.id_, None, image_id=image_id)
+
 
 async def showme(bot, event, *args):
     """retrieve images from web cameras

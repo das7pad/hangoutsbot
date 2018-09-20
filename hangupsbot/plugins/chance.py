@@ -15,11 +15,16 @@ HELP = {
     "coinflip": _("flip a coin"),
 }
 
+
 def _initialise():
     """register the message handler, commands and the help entries"""
     plugins.register_sync_handler(_handle_me_action, "message_once")
-    plugins.register_user_command(["diceroll", "coinflip"])
+    plugins.register_user_command([
+        "diceroll",
+        "coinflip",
+    ])
     plugins.register_help(HELP)
+
 
 async def _handle_me_action(bot, event):
     """run the diceroll or coinflip command from context
@@ -38,6 +43,7 @@ async def _handle_me_action(bot, event):
     elif any(item in event.text for item in ["flips a coin", "flips coin",
                                              "flip coin", "flipped a coin"]):
         await coinflip(bot, event)
+
 
 def diceroll(dummy, event, dice="1d6"):
     """get random numbers from a fake diceroll
@@ -77,6 +83,7 @@ def diceroll(dummy, event, dice="1d6"):
     else:
         msg += "</i>"
     return msg
+
 
 def coinflip(dummy, event, *dummys):
     """get the result of a fake coinflip

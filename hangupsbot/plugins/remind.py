@@ -15,10 +15,15 @@ HELP = {
                    "\nexample: {bot_cmd} remindall 5 The 5 Minutes are OVER"),
 }
 
+
 def _initialise():
     """register the commands and their help entries"""
-    plugins.register_user_command(["remindme", "remindall"])
+    plugins.register_user_command([
+        "remindme",
+        "remindall",
+    ])
     plugins.register_help(HELP)
+
 
 def _get_delay(args):
     """check if enough args are specified and whether a valid delay is given
@@ -36,10 +41,11 @@ def _get_delay(args):
         raise Help(_("specify delay and message"))
 
     try:
-        return float(args[0])*60.0
+        return float(args[0]) * 60.0
     except ValueError:
         raise Help(_('invalid delay "%s" given, integer or float required')
                    % args[0])
+
 
 async def remindme(bot, event, *args):
     """schedule a message for the private chat with the bot
@@ -65,6 +71,7 @@ async def remindme(bot, event, *args):
 
     return _("Private reminder for <b>{}</b> in {}m").format(full_name, args[0])
 
+
 async def remindall(bot, event, *args):
     """schedule a message in the current conversation
 
@@ -84,6 +91,7 @@ async def remindall(bot, event, *args):
     asyncio.ensure_future(_reminder(bot, event.conv_id, delay, args))
 
     return _("Public reminder in {}m").format(args[0])
+
 
 async def _reminder(bot, conv_id, delay, args):
     """detached execution of a remind/remindall request

@@ -30,7 +30,6 @@ from hangupsbot import (
 
 logger = logging.getLogger(__name__)
 
-
 _DETECT_LINKS = re.compile(
     (r"(https?://)?([a-z0-9.]*?\.)?"
      "(youtube.com/|youtu.be/|soundcloud.com/|spotify.com/track/)"
@@ -76,12 +75,16 @@ HELP = {
 class _MissingAuth(Exception):
     """Could not find a token to authenticate an api-call"""
 
+
 class _PlaylistCreationFailed(Exception):
     """could not create a playlist for a given conversation"""
+
 
 # pylint:disable=invalid-name
 SpotifyTrack = namedtuple("SpotifyTrack", ("id_", "name", "artist"))
 SpotifyPlaylist = namedtuple("SpotifyPlaylist", ("owner", "id_", "url"))
+
+
 # pylint:enable=invalid-name
 
 def _initialise(bot):
@@ -104,8 +107,11 @@ def _initialise(bot):
         bot.config.save()
 
     plugins.register_handler(_watch_for_music_link, "message")
-    plugins.register_user_command(["spotify"])
+    plugins.register_user_command([
+        "spotify",
+    ])
     plugins.register_help(HELP)
+
 
 async def _watch_for_music_link(bot, event):
     """resolve music links to their titles and add the tracks to spotify
@@ -159,6 +165,7 @@ async def _watch_for_music_link(bot, event):
 
         await bot.coro_send_message(event.conv.id_, success)
 
+
 def spotify(bot, event, *args):
     """the core command for the plugin
 
@@ -192,9 +199,10 @@ def spotify(bot, event, *args):
         bot.conversation_memory_set(
             event.conv_id, "spotify_enabled", enabled)
     elif not enabled:
-        result = _("<em>Spotify is <b>off</b>. To turn it on, "
-                   "use <b>{bot_cmd} spotify on</b></em>").format(
-                       bot_cmd=bot.command_prefix)
+        result = _(
+            "<em>Spotify is <b>off</b>.\n"
+            "To turn it on, use <b>{bot_cmd} spotify on</b></em>"
+        ).format(bot_cmd=bot.command_prefix)
     elif command == "help" and len(args) == 1:
         raise commands.Help()
     elif command == "playlist" and len(args) == 1:
@@ -217,6 +225,7 @@ def spotify(bot, event, *args):
             result = _("Authentication is missing to file spotify requests")
 
     return result
+
 
 def extract_music_links(text):
     """get media urls from YouTube, Soundcloud or Spotify
@@ -254,6 +263,7 @@ def add_to_spotify(bot, event, query):
     result = _("<em>No tracks found for '{}'.</em>".format(query))
     logger.info(result)
     return result
+
 
 def search_spotify(bot, query):
     """Searches spotify for the cleaned query
@@ -297,6 +307,7 @@ def search_spotify(bot, query):
               if not any(item in g.lower() for item in _CLEANUP_CONTAINS)]
     return _search(bot, groups)
 
+
 def _clean(query):
     """Splits the query into groups and removes unrelated items.
 
@@ -318,6 +329,7 @@ def _clean(query):
     groups = [_CLEANUP_FEAT.split(g)[0] for g in groups]
 
     return groups
+
 
 def _search(bot, groups):
     """perform an api-request to get tracks from spotify
@@ -352,6 +364,7 @@ def _search(bot, groups):
         logger.critical("Spotify API-Change: %s", repr(err))
         return None
 
+
 def add_to_playlist(bot, event, track):
     """add a track to the conversations spotify playlist
 
@@ -383,6 +396,7 @@ def add_to_playlist(bot, event, track):
     else:
         return _("<em>Added <b>{} by {}</b></em>").format(
             track.name, track.artist)
+
 
 def remove_from_playlist(bot, event, track_url):
     """remove a track from the conversations spotify playlist
@@ -419,6 +433,7 @@ def remove_from_playlist(bot, event, track_url):
         logger.critical("Spotify API-Change: %s", repr(err))
         return _("<i>Removed track {}, but could not fetch additional "
                  "information about the track</i>").format(track_url)
+
 
 def get_chat_playlist(bot, event):
     """get a cached playlist for the conversation or create a new one
@@ -475,6 +490,7 @@ def get_chat_playlist(bot, event):
 
     return SpotifyPlaylist(spotify_user, playlist_id, playlist_url)
 
+
 def get_title_from_youtube(bot, url):
     """get the title of a youtube video
 
@@ -503,7 +519,7 @@ def get_title_from_youtube(bot, url):
 
     # YouTube response is JSON.
     try:
-        response = youtube_client.videos().list(      # pylint:disable=no-member
+        response = youtube_client.videos().list(  # pylint:disable=no-member
             part="snippet", id=video_id).execute()
         items = response.get("items", [])
         if items:
@@ -513,6 +529,7 @@ def get_title_from_youtube(bot, url):
     except (YouTubeHTTPError, KeyError) as err:
         logger.error("Unable to get video entry from %s, %s", url, repr(err))
         return None
+
 
 def get_title_from_soundcloud(bot, url):
     """get the title of a soundcloud track
@@ -537,6 +554,7 @@ def get_title_from_soundcloud(bot, url):
     except SoundcloudHTTPError as err:
         logger.error("Unable to resolve url %s, %s", url, repr(err))
         return None
+
 
 def get_spotify_client(bot):
     """get a spotify client with configured auth or start the auth process

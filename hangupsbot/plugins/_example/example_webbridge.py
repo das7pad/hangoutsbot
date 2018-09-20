@@ -6,7 +6,8 @@ from hangupsbot.webbridge import (
 
 class BridgeInstance(WebFramework):
     """initialises the base framework
-    to send messages to external chats, override WebFramework._send_to_external_chat()
+    to send messages to external chats, override
+    WebFramework._send_to_external_chat()
     """
     pass
 
@@ -18,7 +19,8 @@ class IncomingMessages(IncomingRequestHandler):
         process_request()
         send_data()
 
-    more info: https://github.com/hangoutsbot/hangoutsbot/wiki/Sinks-(2.4-and-above)#reference-documentation
+    more info:
+     https://github.com/hangoutsbot/hangoutsbot/wiki/Sinks-(2.4-and-above)
     """
     pass
 

@@ -37,7 +37,6 @@ SLACK_STYLE = {
 SEGMENT_LINE_BREAK = MessageSegment(text='\n',
                                     segment_type=SEGMENT_TYPE_LINE_BREAK)
 
-
 MRKDWN_LINK = r'<(?P<url>.*?)\|(?P<text>.*?)>'
 
 TOKENS_SLACK = [
@@ -53,6 +52,7 @@ TOKENS_SLACK = [
 
 class SlackMessageParser(MessageParser):
     """message parser for slack markdown"""
+
     def __init__(self):
         super().__init__(TOKENS_SLACK + Tokens.basic)
 

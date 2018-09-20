@@ -1,5 +1,6 @@
 """exceptions for slackrtm"""
 
+
 class IgnoreMessage(Exception):
     """do not sync a given message"""
 

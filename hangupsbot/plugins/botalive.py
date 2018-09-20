@@ -17,6 +17,7 @@ from hangupsbot.base_models import BotMixin
 
 logger = logging.getLogger(__name__)
 
+
 def _initialise(bot):
     """setup watermarking plugin
 
@@ -99,8 +100,8 @@ class WatermarkUpdater(BotMixin):
         self._lock = asyncio.Lock()
 
         self.queue = set()
-        self.failed = dict() # track errors
-        self.failed_permanent = set() # track conv_ids that failed 5 times
+        self.failed = dict()  # track errors
+        self.failed_permanent = set()  # track conv_ids that failed 5 times
 
         self.bot.config.set_defaults({'maxfuzz': 10, 'permafail': 5},
                                      path=['botalive'])

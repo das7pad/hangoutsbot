@@ -44,7 +44,6 @@ for line in DEPENDENCY_LINKS:
     dependency_locked = raw.replace('-', '==', 1)
     INSTALL_REQUIRES.append(dependency_locked)
 
-
 PACKAGES = [path[:-12].replace('/', '.')
             for path in glob.glob('hangupsbot/**/__init__.py', recursive=True)]
 
@@ -52,7 +51,6 @@ PACKAGE_DATA = {}
 for path in glob.glob('hangupsbot/**/package_data.json', recursive=True):
     with open(path, 'r') as file:
         PACKAGE_DATA.update(json.load(file))
-
 
 setup(
     name='hangupsbot',

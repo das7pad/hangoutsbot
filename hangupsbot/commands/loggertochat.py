@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise():
-    plugins.register_admin_command(["lograise", "logconfig"])
+    plugins.register_admin_command([
+        "lograise",
+        "logconfig",
+    ])
 
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
@@ -21,7 +24,8 @@ def _initialise():
 
     chat_handler = ChatMessageLogger()
 
-    chat_handler.setFormatter(logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
+    chat_handler.setFormatter(
+        logging.Formatter("<b>%(levelname)s %(name)s </b>: %(message)s"))
     chat_handler.setLevel(logging.WARNING)
     chat_handler.addFilter(PluginFilter())
 
@@ -32,11 +36,13 @@ def logconfig(bot, dummy, logger_name, level):
     if logger_name in sys.modules:
         config_logging = bot.get_config_option("logging") or {}
 
-        mapping = {"critical": 50,
-                   "error": 40,
-                   "warning": 30,
-                   "info": 20,
-                   "debug": 10}
+        mapping = {
+            "critical": 50,
+            "error": 40,
+            "warning": 30,
+            "info": 20,
+            "debug": 10,
+        }
 
         effective_level = 0
         if level.isdigit():
@@ -60,7 +66,8 @@ def logconfig(bot, dummy, logger_name, level):
             current["level"] = effective_level
 
             config_logging[logger_name] = current
-            message = "logging: {} set to {} / {}".format(logger_name, effective_level, level)
+            message = "logging: {} set to {} / {}".format(logger_name,
+                                                          effective_level, level)
 
         bot.config.set_by_path(["logging"], config_logging)
         bot.config.save()

@@ -16,6 +16,7 @@ def _initialise(bot):
     """set default config entry"""
     bot.config.set_defaults({"conversations": {}})
 
+
 def _tagshortcuts(event, type_, conv_id):
     """given type=conv, type=convuser, conv_id=here expands to event.conv_id"""
 
@@ -64,7 +65,8 @@ def tagdel(bot, event, *args):
 
 @command.register(admin=True)
 def tagspurge(bot, event, *args):
-    """batch remove tags. usage: tagspurge <"user"|"conv"|"convuser"|"tag"|"usertag"|"convtag"> <id|"ALL">"""
+    """batch remove tags. usage: tagspurge
+    <"user"|"conv"|"convuser"|"tag"|"usertag"|"convtag"> <id|"ALL">"""
     if len(args) == 2:
         type_, conv_id = args
         type_, conv_id = _tagshortcuts(event, type_, conv_id)
@@ -169,7 +171,8 @@ def tagindexdump(bot, _event, *_args):
 
 @command.register(admin=True)
 def tagsconv(bot, event, *args):
-    """get tag assignments for conversation (default: current conversation). usage: tagsconv [here|<conv id>]"""
+    """get tag assignments for conversation (default: current conversation).
+    usage: tagsconv [here|<conv id>]"""
     if len(args) == 1:
         conv_id = args[0]
     else:
@@ -190,7 +193,8 @@ def tagsconv(bot, event, *args):
 
 @command.register(admin=True)
 def tagsuser(bot, event, *args):
-    """get tag assignments for a user in an (optional) conversation. usage: tagsuser <user id> [<conv id>]"""
+    """get tag assignments for a user in an (optional) conversation. usage:
+    tagsuser <user id> [<conv id>]"""
     if len(args) == 1:
         conv_id = "*"
         chat_id = args[0]
@@ -216,7 +220,9 @@ def tagsuser(bot, event, *args):
 
 @command.register(admin=True)
 def tagsuserlist(bot, event, *args):
-    """get tag assignments for all users in a conversation, filtered by (optional) taglist. usage: tagsuserlist <conv id> [<tag name> [<tag name>] [...]]"""
+    """get tag assignments for all users in a conversation, filtered by (
+    optional) taglist. usage: tagsuserlist <conv id> [<tag name> [<tag name>]
+    [...]]"""
     if len(args) == 1:
         conv_id = args[0]
         filter_tags = False

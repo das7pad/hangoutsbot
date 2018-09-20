@@ -48,11 +48,11 @@ SYNC_PLUGGABLES = ('conv_sync', 'conv_user', 'user_kick', 'profilesync',
 
 DEFAULT_MEMORY = {
     'cache': {
-        'image_upload_info': {}
+        'image_upload_info': {},
     },
     'profilesync': {
-        '_pending_': {}
-    }
+        '_pending_': {},
+    },
 }
 
 
@@ -572,8 +572,10 @@ class SyncHandler(handlers.EventHandler):
             label (str): set a custom display label for this platform
         """
         path = ['profilesync', platform]
-        structure = {'ho2': {}, '2ho': {},
-                     'pending_2ho': {}, 'pending_ho2': {}}
+        structure = {
+            'ho2': {}, '2ho': {},
+            'pending_2ho': {}, 'pending_ho2': {},
+        }
         self.bot.memory.validate(structure, path)
         self.bot.memory.save()
 
@@ -695,9 +697,13 @@ class SyncHandler(handlers.EventHandler):
     async def setup(self, _conv_list=None):
         """async init part of the handler"""
         # create a new entry
-        await plugins.tracking.start({'module': 'sync.handler',
-                                      'module.path': 'sync.handler',
-                                      'identifier': 'hangouts'})
+        await plugins.tracking.start(
+            metadata={
+                'module': 'sync.handler',
+                'module.path': 'sync.handler',
+                'identifier': 'hangouts',
+            },
+        )
         self._cache_image.start()
         self._cache_conv_user.start()
         self._cache_sending_queue.start()
@@ -788,7 +794,7 @@ class SyncHandler(handlers.EventHandler):
             url = image_raw.url or image_raw.image_url
 
             size = (image_raw.width_px, image_raw.height_px)
-            await asyncio.sleep((size[0] * size[1]) / 10**7)
+            await asyncio.sleep((size[0] * size[1]) / 10 ** 7)
 
             image = self.get_sync_image(
                 url=url, filename=image_raw.image_url, type_=image_type,
@@ -966,6 +972,7 @@ class SyncHandler(handlers.EventHandler):
                 a dict, plugins names as key, values are the results
             otherwise: tuple with all results
         """
+
         async def _run(handler):
             """run a handler with provided arguments and log any exception
 
@@ -983,7 +990,7 @@ class SyncHandler(handlers.EventHandler):
                 if asyncio.iscoroutinefunction(handler):
                     return await result
                 return result
-            except Exception:                     # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 logger.exception('%s: %s with args=%s',
                                  pluggable, handler.__name__,
                                  str([str(arg) for arg in args]))
@@ -1019,6 +1026,7 @@ class SyncHandler(handlers.EventHandler):
                 a dict, plugins names as key, values are the results
                 otherwise: tuple with all results
         """
+
         def _run(handler):
             """run a handler with provided arguments and log any exception
 
@@ -1033,7 +1041,7 @@ class SyncHandler(handlers.EventHandler):
             """
             try:
                 return handler(self.bot, *args)
-            except Exception:                     # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 logger.exception('%s: %s with args=%s',
                                  pluggable, handler.__name__,
                                  str([str(arg) for arg in args]))

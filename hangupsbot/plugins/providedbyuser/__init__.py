@@ -30,7 +30,7 @@ _HELP = {
         '    Show all added categories.\n'
         ' - {bot_cmd} providedbyuser show CATEGORY\n'
         '    Show all user entries for the given label.'
-    )
+    ),
 }
 
 
@@ -46,7 +46,9 @@ def _initialize(bot):
     for category in bot.config['providedbyuser']:
         register_category(bot, category)
     plugins.register_help(_HELP)
-    plugins.register_admin_command(['providedbyuser'])
+    plugins.register_admin_command([
+        'providedbyuser',
+    ])
 
 
 def register_category(bot, category):
@@ -121,8 +123,10 @@ async def providedbyuser(bot, event, *args):
         bot.config.set_by_path(path, meta)
         bot.config.save()
 
-        await plugins.tracking.start({'module': 'providedbyuser',
-                                      'module.path': __name__})
+        await plugins.tracking.start({
+            'module': 'providedbyuser',
+            'module.path': __name__,
+        })
 
         register_category(bot, category=category)
         plugins.tracking.end()
@@ -197,6 +201,7 @@ def register_set(category, value_label, cmd_name):
         value_label (str): a pretty name for the category
         cmd_name (str): a custom command name
     """
+
     @command.register(name=cmd_name, final=True)
     async def _cmd_set(bot, event, *args):
         """
@@ -244,6 +249,7 @@ def register_delete(category, value_label, cmd_name):
         value_label (str): a pretty name for the category
         cmd_name (str): a custom command name
     """
+
     @command.register(name=cmd_name, final=True)
     async def _cmd_delete(bot, event, *_dummy):
         """
@@ -280,6 +286,7 @@ def register_search(category, cmd_name):
         category (str): the category name
         cmd_name (str): a custom command name
     """
+
     @command.register(name=cmd_name, final=True)
     async def _cmd_search(bot, event, *args):
         """

@@ -21,22 +21,29 @@ HELP = {
         "autoreply"),
 }
 
+
 def _initialise(bot):
     """register the handlers, autoreply command and the help entry"""
     plugins.register_sync_handler(_handle_autoreply, "message_once")
     plugins.register_sync_handler(_handle_autoreply, "rename")
-    plugins.register_admin_command(["autoreply"])
+    plugins.register_admin_command([
+        "autoreply",
+    ])
     plugins.register_help(HELP)
     bot.config.set_defaults({"autoreplies_enabled": True})
 
+
 async def _handle_autoreply(bot, event):
-    config_autoreplies = bot.get_config_suboption(event.conv.id_, 'autoreplies_enabled')
-    tagged_autoreplies = "autoreplies-enable" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
+    config_autoreplies = bot.get_config_suboption(event.conv.id_,
+                                                  'autoreplies_enabled')
+    tagged_autoreplies = "autoreplies-enable" in bot.tags.useractive(
+        event.user_id.chat_id, event.conv.id_)
 
     if not (config_autoreplies or tagged_autoreplies):
         return
 
-    if "autoreplies-disable" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_):
+    if "autoreplies-disable" in bot.tags.useractive(event.user_id.chat_id,
+                                                    event.conv.id_):
         logger.debug("explicitly disabled by tag for %s %s",
                      event.user_id.chat_id, event.conv_id)
         return
@@ -55,24 +62,31 @@ async def _handle_autoreply(bot, event):
     else:
         raise RuntimeError("unhandled event type")
 
-    # get_config_suboption returns the conv specific autoreply settings. If none set, it returns the global settings.
+    # get_config_suboption returns the conv specific autoreply settings. If
+    # none set, it returns the global settings.
     autoreplies_list = bot.get_config_suboption(event.conv_id, 'autoreplies')
 
     # option to merge per-conversation and global autoreplies, by:
-    # * tagging a conversation with "autoreplies-merge" explicitly or by wildcard conv tag
+    # * tagging a conversation with "autoreplies-merge" explicitly or by
+    # wildcard conv tag
     # * setting global config key: autoreplies.merge = true
-    # note: you must also define the appropriate autoreply keys for a specific conversation
-    # (by default per-conversation autoreplies replaces global autoreplies settings completely)
+    # note: you must also define the appropriate autoreply keys for a specific
+    #  conversation
+    # (by default per-conversation autoreplies replaces global autoreplies
+    # settings completely)
 
-    tagged_autoreplies_merge = "autoreplies-merge" in bot.tags.convactive(event.conv_id)
-    config_autoreplies_merge = bot.config.get_option('autoreplies.merge') or False
+    tagged_autoreplies_merge = "autoreplies-merge" in bot.tags.convactive(
+        event.conv_id)
+    config_autoreplies_merge = bot.config.get_option(
+        'autoreplies.merge') or False
 
     if tagged_autoreplies_merge or config_autoreplies_merge:
 
         # load any global settings as well
         autoreplies_list_global = bot.config.get_option('autoreplies')
 
-        # If the global settings loaded from get_config_suboption then we now have them twice and don't need them, so can be ignored.
+        # If the global settings loaded from get_config_suboption then we now
+        # have them twice and don't need them, so can be ignored.
         if (autoreplies_list_global
                 and ({frozenset([frozenset(x) if isinstance(x, list) else x,
                                  frozenset(y) if isinstance(y, list) else y])
@@ -83,16 +97,21 @@ async def _handle_autoreply(bot, event):
 
             add_to_autoreplies = []
 
-            # If the two are different, then iterate through each of the triggers in the global list and if they
+            # If the two are different, then iterate through each of the
+            # triggers in the global list and if they
             # match any of the triggers in the conv list then discard them.
-            # Any remaining at the end of the loop are added to the first list to form a consolidated list
-            # of per-conv and global triggers & replies, with per-conv taking precedent.
+            # Any remaining at the end of the loop are added to the first list
+            #  to form a consolidated list
+            # of per-conv and global triggers & replies, with per-conv taking
+            # precedent.
 
-            # Loop through list of global triggers e.g. ["hi","hello","hey"],["baf","BAF"].
+            # Loop through list of global triggers e.g. ["hi","hello","hey"],
+            # ["baf","BAF"].
             for kwds_gbl, sentences_gbl in autoreplies_list_global:
                 overlap = False
                 for kwds_lcl, dummy in autoreplies_list:
-                    if type(kwds_gbl) is type(kwds_lcl) is list and (set(kwds_gbl) & set(kwds_lcl)):
+                    if type(kwds_gbl) is type(kwds_lcl) is list and (
+                            set(kwds_gbl) & set(kwds_lcl)):
                         overlap = True
                         break
                 if not overlap:
@@ -125,22 +144,27 @@ async def send_reply(bot, event, message):
     if not isinstance(message, str):
         return
 
-    values = {"event": event,
-              "conv_title": bot.conversations.get_name(
-                  event.conv_id, _("Unidentified Conversation"))}
+    values = {
+        "event": event,
+        "conv_title": bot.conversations.get_name(
+            event.conv_id, _("Unidentified Conversation")),
+    }
 
     if "participant_ids" in dir(event.conv_event):
         values["participants"] = [event.conv.get_user(user_id)
-                                  for user_id in event.conv_event.participant_ids]
-        values["participants_namelist"] = ", ".join([u.full_name for u in values["participants"]])
+                                  for user_id in
+                                  event.conv_event.participant_ids]
+        values["participants_namelist"] = ", ".join(
+            [u.full_name for u in values["participants"]])
 
-    # tldr plugin integration: inject current conversation tldr text into auto-reply
+    # tldr plugin integration: inject current conversation tldr text into
+    # auto-reply
     if '{tldr}' in message:
         args = {'conv_id': event.conv_id, 'params': ''}
         try:
             values["tldr"] = bot.call_shared("plugin_tldr_shared", bot, args)
         except KeyError:
-            values["tldr"] = "**[TLDR UNAVAILABLE]**" # prevents exception
+            values["tldr"] = "**[TLDR UNAVAILABLE]**"  # prevents exception
             logger.warning("tldr plugin is not loaded")
 
     envelopes = []
@@ -162,7 +186,7 @@ async def send_reply(bot, event, message):
                 logger.error("1-to-1 unavailable for %s (%s)",
                              guest.full_name, guest.id_.chat_id)
                 return False
-            values["guest"] = guest # add the guest as extra info
+            values["guest"] = guest  # add the guest as extra info
             envelopes.append((target_conv, message.format(**values)))
 
     else:

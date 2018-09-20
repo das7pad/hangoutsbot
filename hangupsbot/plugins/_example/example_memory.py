@@ -6,8 +6,14 @@ from hangupsbot import plugins
 
 
 def _initialise():
-    plugins.register_admin_command(["rememberme", "whatme", "forgetme",
-                                    "rememberchat", "whatchat", "forgetchat"])
+    plugins.register_admin_command([
+        "rememberme",
+        "whatme",
+        "forgetme",
+        "rememberchat",
+        "whatchat",
+        "forgetchat",
+    ])
 
 
 def rememberme(bot, event, *args):
@@ -62,7 +68,7 @@ def rememberchat(bot, event, *args):
         return _("<b>{}</b>, remembered for this conversation").format(
             event.user.full_name, text)
     return _("<b>{}</b>, remembered something else for this conversation!"
-            ).format(event.user.full_name)
+             ).format(event.user.full_name)
 
 
 def whatchat(bot, event, *dummys):

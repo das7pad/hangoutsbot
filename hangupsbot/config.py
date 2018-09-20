@@ -156,6 +156,7 @@ class Config(collections.MutableMapping):
         Raises:
             ValueError: the string is not a valid json representing of a dict
         """
+
         def _deep_replace(old, new):
             """replace the content but keep the old data structure
 
@@ -221,7 +222,7 @@ class Config(collections.MutableMapping):
             return
 
         if stack is None:
-            frame = sys._getframe().f_back     # pylint:disable=protected-access
+            frame = sys._getframe().f_back  # pylint:disable=protected-access
             with io.StringIO() as writer:
                 traceback.print_stack(frame, file=writer)
                 stack = writer.getvalue()

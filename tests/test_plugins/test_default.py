@@ -61,6 +61,7 @@ async def test_reload(bot, event):
         bot (tests.fixtures.TestHangupsBot): current test instance
         event (tests.fixtures.TestConversationEvent): message wrapper
     """
+
     def on_reload_config():
         reloaded.append('config')
 

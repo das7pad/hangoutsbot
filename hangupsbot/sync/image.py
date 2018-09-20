@@ -33,6 +33,7 @@ from hangupsbot.base_models import BotMixin
 
 from .exceptions import MissingArgument
 
+
 VALID_IMAGE_TYPES = ('photo', 'sticker', 'gif', 'video')
 
 FORMAT_MAPPING = {
@@ -42,7 +43,7 @@ FORMAT_MAPPING = {
     'gif': 'GIF',
     'gifv': 'GIF',
     'mp4': 'MP4',
-    'avi': 'AVI'
+    'avi': 'AVI',
 }
 
 TYPE_MAPPING = {
@@ -54,7 +55,7 @@ TYPE_MAPPING = {
     'gif': 'gif',
     'gifv': 'gif',
     'mp4': 'video',
-    'avi': 'video'
+    'avi': 'video',
 }
 
 DEFAULT_SIZE = (0, 0)
@@ -64,6 +65,7 @@ PATH = '/tmp/image_sync_RAW'
 
 logger = logging.getLogger(__name__)
 
+
 class MovieConverter(VideoFileClip):
     """Converter that saves one dump to file on gif convert of a video
 
@@ -71,6 +73,7 @@ class MovieConverter(VideoFileClip):
         raw (io.BytesIO): the raw video data
         file_format (str): file extension of the video
     """
+
     def __init__(self, raw, file_format):
         self._path = '{}-{}.{}'.format(PATH, time.time(), file_format)
         raw.seek(0)
@@ -106,7 +109,7 @@ class MovieConverter(VideoFileClip):
         """
         logger.debug('to_gif')
         data = io.BytesIO()
-        with imageio.save(data, format='gif', duration=1/fps,
+        with imageio.save(data, format='gif', duration=1 / fps,
                           quantizer=0, palettesize=256) as writer:
             for frame in self.iter_frames(fps=fps, dtype='uint8'):
                 writer.append_data(frame)
@@ -166,9 +169,11 @@ class SyncImage(BotMixin):
         self._data = data
         self._download_auth = {'cookies': cookies, 'headers': headers}
         self._filename = None
-        self._size = (size if isinstance(size, tuple) and len(size) == 2
-                      else (size, size) if isinstance(size, (int, float))
-                      else DEFAULT_SIZE)
+        self._size = (
+            size if isinstance(size, tuple) and len(size) == 2 else
+            (size, size) if isinstance(size, (int, float)) else
+            DEFAULT_SIZE
+        )
         self._movie = None
 
         self.update_from_filename(
@@ -252,7 +257,7 @@ class SyncImage(BotMixin):
                     if not self._meets_size_limit:
                         image_data_size = len(self._data.getvalue())
                         return None, ('[%s is too big to convert to GIF: %dKB]'
-                                      % (self._type, image_data_size/1024))
+                                      % (self._type, image_data_size / 1024))
                     data = self._movie.to_gif()
                     filename = filename_raw + '.gif'
                 else:
@@ -347,6 +352,7 @@ class SyncImage(BotMixin):
         Returns:
             tuple[io.BytesIO, str]: the resized image data and the new filename
         """
+
         def _remove_background(data, filename):
             """remove background in saving as PNG
 
@@ -411,10 +417,10 @@ class SyncImage(BotMixin):
                 logger.debug(message, filename)
                 new_size = self._size
                 if new_size[1] > limit:
-                    new_size = (int(new_size[0]/(new_size[1]/limit)), limit)
+                    new_size = (int(new_size[0] / (new_size[1] / limit)), limit)
 
                 if new_size[0] > limit:
-                    new_size = (limit, int(new_size[1]/(new_size[0]/limit)))
+                    new_size = (limit, int(new_size[1] / (new_size[0] / limit)))
 
                 if new_size == self._size:
                     # there is no need to change the size
@@ -472,7 +478,7 @@ class SyncImage(BotMixin):
             bool: True if size is below the limit, otherwise False
         """
         below = (len(self._data.getvalue())
-                 < (self.bot.config['sync_process_animated_max_size']*1024))
+                 < (self.bot.config['sync_process_animated_max_size'] * 1024))
         if not below:
             logger.info("%s does not meet the video-to-gif process size limit",
                         str(self))

@@ -11,7 +11,8 @@ optional arguments:
   -h, --help  show this help message and exit
 
 example usage:
-python3 api-send.py http://127.0.0.1:9999 XxXxXxXxXxX YyYyYyYyYyYy "echo hello world"
+python3 api-send.py http://127.0.0.1:9999 XxXxXxXxXxX YyYyYyYyYyYy \
+    "echo hello world"
 """
 
 import argparse
@@ -24,17 +25,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument("url", help="url to send the data")
 parser.add_argument("target", help="target conversation id")
 parser.add_argument("apikey", help="api key from config.apikey")
-parser.add_argument("content", help="content to send, quote if it contains spaces")
+parser.add_argument("content",
+                    help="content to send, quote if it contains spaces")
 args = parser.parse_args()
 
 payload = {
     'key': args.apikey,
     'sendto': args.target,
-    'content': args.content
+    'content': args.content,
 }
 
 headers = {'content-type': 'application/json'}
-r = requests.post(args.url, data = json.dumps(payload), headers = headers, verify=False)
+r = requests.post(args.url, data=json.dumps(payload), headers=headers,
+                  verify=False)
 
 print(r.text)
 print(r)
