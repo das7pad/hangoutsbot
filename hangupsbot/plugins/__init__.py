@@ -8,6 +8,7 @@ import importlib
 import inspect
 import logging
 import os
+import re
 import sys
 
 from hangupsbot import utils
@@ -17,6 +18,11 @@ from hangupsbot.sinks import aiohttp_terminate
 
 
 logger = logging.getLogger(__name__)
+
+PROTECTED_MODULES = re.compile('|'.join(re.escape(module) for module in (
+    'commands',
+    'plugins',
+)))
 
 
 def recursive_tag_format(array, **kwargs):
@@ -36,6 +42,11 @@ class NotLoaded(utils.FormatBaseException):
     """Tried to unload a plugin which is not loaded or already got unloaded"""
     _template = ('Tried to unload the plugin "%s" which is not loaded or '
                  'already got unloaded')
+
+
+class Protected(utils.FormatBaseException):
+    """Tried to load a protected plugin"""
+    _template = _('Tried to load the plugin "%s" which is marked as protected')
 
 
 class Tracker(BotMixin):
@@ -531,6 +542,19 @@ async def unload_all(bot):
         logger.error('`unload("%s")` failed with Exception %s',
                      module, repr(result))
 
+
+def _is_protected_module(module_name):
+    """Check the loading protection of a module
+
+    Args:
+        module_name (str): module name inside the hangupsbot package
+
+    Returns:
+        bool: True if the given module is protected
+    """
+    return bool(PROTECTED_MODULES.fullmatch(module_name))
+
+
 async def load(bot, module_path, module_name=None):
     """loads a single plugin-like object as identified by module_path
 
@@ -544,9 +568,13 @@ async def load(bot, module_path, module_name=None):
 
     Raises:
         AlreadyLoaded: the plugin is already loaded
+        Protected: the given module is protected
     """
     if module_path in tracking.list:
         raise AlreadyLoaded(module_path)
+
+    if _is_protected_module(module_path):
+        raise Protected(module_path)
 
     module_name = module_name or module_path.split(".")[-1]
 
