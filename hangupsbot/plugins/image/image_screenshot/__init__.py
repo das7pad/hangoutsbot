@@ -128,7 +128,8 @@ async def screenshot(bot, event, *args):
     try:
         image_data = await _screen_cap(browser, url, file_path)
     except selenium.common.exceptions.WebDriverException:
-        logger.exception("screen cap failed %s", url)
+        logger.info('screenshot %s: url %r', id(url), url)
+        logger.exception("screenshot %s: screen cap failed", id(url))
         _EXTERNALS["running"] = False
         return "<i>error getting screenshot</i>"
 
@@ -142,7 +143,8 @@ async def screenshot(bot, event, *args):
                                               filename=filename)
         await bot.coro_send_message(event.conv_id, url, image_id=image_id)
     except hangups.NetworkError:
-        logger.exception("upload failed %s", url)
+        logger.info('screenshot %s: url %r', id(url), url)
+        logger.exception("screenshot %s: upload failed", id(url))
         return "<i>error uploading screenshot</i>"
     finally:
         _EXTERNALS["running"] = False
