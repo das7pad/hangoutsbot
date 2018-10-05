@@ -278,8 +278,11 @@ class SlackRTM(BotMixin):
                               kwargs['channel'], kwargs['text'])
             try:
                 reply = await self.api_call('chat.postMessage', **kwargs)
-            except SlackAPIError:
-                # already logged
+            except SlackAPIError as err:
+                self.logger.error(
+                    'failed to send a message %r',
+                    err
+                )
                 return False
             channel_tag = self.identifier + ':' + kwargs['channel']
             SlackMessage.track_message(self.bot, channel_tag, reply)
@@ -403,7 +406,7 @@ class SlackRTM(BotMixin):
                 if 'rate_limited' in error:
                     raise SlackRateLimited()
                 if 'auth' in error:
-                    raise SlackAuthError(parsed)
+                    raise SlackAuthError(tracker, parsed)
 
                 raise RuntimeError('invalid request')
         except SlackRateLimited:
@@ -411,10 +414,10 @@ class SlackRTM(BotMixin):
             delay += parsed.get('Retry-After', 30)
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
-            self.logger.error(
+            self.logger.info(
                 'api_call %s: failed with %s, method=%s, kwargs=%s, parsed=%s',
                 tracker, repr(err), method, kwargs, parsed)
-        raise SlackAPIError(parsed)
+        raise SlackAPIError(tracker, parsed)
 
     def send_message(self, *, channel, text, as_user=True, attachments=None,
                      link_names=True, username=None, icon_url=None):
@@ -466,10 +469,20 @@ class SlackRTM(BotMixin):
         """
         if userid not in self.users:
             self.users[userid] = {}
-        if '1on1' not in self.users[userid]:
-            channel = (await self.api_call('im.open', user=userid))['channel']
-            self.users[userid]['1on1'] = channel['id']
-        return self.users[userid]['1on1']
+        if '1on1' in self.users[userid]:
+            return self.users[userid]['1on1']
+
+        try:
+            id_ = (await self.api_call('im.open', user=userid))['channel']['id']
+        except (SlackAPIError, KeyError) as err:
+            self.logger.error(
+                'failed to get 1on1: %r',
+                err
+            )
+            raise SlackAPIError
+
+        self.users[userid]['1on1'] = id_
+        return id_
 
     async def update_cache(self, type_):
         """update the cached data from api-source
@@ -481,9 +494,11 @@ class SlackRTM(BotMixin):
                   'im.list' if type_ == 'ims' else type_ + '.list')
         try:
             response = await self.api_call(method)
-        except SlackAPIError:
-            # the raw exception with more details is already logged
-            self.logger.info('cache update for %s failed', type_)
+        except SlackAPIError as err:
+            self.logger.error(
+                'cache update for %r failed: %r',
+                type_, err
+            )
             return
 
         data_key = 'members' if type_ == 'users' else type_
@@ -983,8 +998,10 @@ class SlackRTM(BotMixin):
                 await self.api_call(method, channel=channel, user=user.usr_id)
             except SlackAPIError as err:
                 kicked = False
-                self.logger.warning('failed to kick user "%s" from "%s": %s',
-                                    user.usr_id, channel, repr(err))
+                self.logger.error(
+                    'failed to kick user via %r: %r',
+                    method, err
+                )
             else:
                 # do not overwrite an error state
                 kicked = True if kicked is not False else False

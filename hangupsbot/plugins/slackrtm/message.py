@@ -289,7 +289,11 @@ class SlackMessage(BotMixin):
                     channel=self.channel,
                     latest=float(timestamp) / 1000000,
                     inclusive=True, count=1)
-            except SlackAPIError:
+            except SlackAPIError as err:
+                slackrtm.logger.error(
+                    'failed to get a history item via %r, age: %s: %r',
+                    method, timestamp, err
+                )
                 return None
 
             if not resp.get('messages'):
