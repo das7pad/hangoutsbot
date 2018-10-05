@@ -146,7 +146,7 @@ class SlackRTM(BotMixin):
             try:
                 login_data = await self.api_call('rtm.connect')
             except SlackAPIError:
-                raise IncompleteLoginError() from None
+                raise IncompleteLoginError()
 
             if any(key not in login_data for key in ('self', 'team', 'url')):
                 raise IncompleteLoginError()
