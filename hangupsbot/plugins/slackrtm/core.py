@@ -149,7 +149,7 @@ class SlackRTM(BotMixin):
                 raise IncompleteLoginError()
 
             if any(key not in login_data for key in ('self', 'team', 'url')):
-                raise IncompleteLoginError()
+                raise IncompleteLoginError(login_data.keys())
             self.logger = logging.getLogger('%s.%s'
                                             % (__package__,
                                                login_data['team']['domain']))
@@ -223,8 +223,11 @@ class SlackRTM(BotMixin):
                 await self._process_websocket(login_data['url'])
             except asyncio.CancelledError:
                 return
-            except IncompleteLoginError:
-                self.logger.error('Incomplete Login, restarting')
+            except IncompleteLoginError as err:
+                self.logger.error(
+                    'Incomplete Login: %r, restarting',
+                    err
+                )
             except WebsocketFailed:
                 if time.time() - last_drop > hard_reset * 30:
                     hard_reset = 1
