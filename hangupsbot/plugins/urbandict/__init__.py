@@ -57,6 +57,9 @@ class UrbanDictParser(HTMLParser):
 
         self.translations[-1][self._section] += normalize_newlines(data)
 
+    def error(self, message):
+        logger.error('parse error: %r', message)
+
 
 def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
