@@ -604,9 +604,12 @@ async def command_leave(tg_bot, msg, *dummys):
 
     try:
         has_left = await tg_bot.leaveChat(msg.chat_id)
-    except telepot.exception.TelegramError:
-        logger.exception('leave request for %s failed',
-                         msg.chat_id)
+    except telepot.exception.TelegramError as err:
+        logger.info('leave request %s: %s', id(msg), msg.chat_id)
+        logger.error(
+            'leave request %s: failed: %r',
+            id(msg), err
+        )
     else:
         if has_left:
             # there will be no bot api message for this membership change

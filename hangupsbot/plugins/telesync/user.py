@@ -96,8 +96,8 @@ class User(SyncUser):
             # IndexError or KeyError: the user has no profile picture
             return
         except telepot.exception.TelegramError as err:
-            logger.debug('no profile picture available for %s\nReason: %s',
-                         self.usr_id, str(err))
+            logger.debug('no profile picture available for %s, Reason: %s',
+                         self.usr_id, err)
             return
 
         photo = sorted(photos, key=lambda k: k['width'])[- 1]

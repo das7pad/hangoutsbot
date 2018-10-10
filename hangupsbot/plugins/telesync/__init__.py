@@ -445,13 +445,25 @@ async def _handle_user_kick(bot, conv_id, user):
         # not a telesync user
         return None
 
+    # tracker for log entries
+    tracker = object()
+
+    tg_chat_id = user.identifier.split(':', 1)[1]
+    logger.info(
+        'user kick request %s: user %s, chat %s',
+        id(tracker), user.usr_id, tg_chat_id
+    )
+
     if user.usr_id in bot.tg_bot.config('admins'):
+        logger.info(
+            'user kick request %s: admin is whitelisted',
+            id(tracker)
+        )
         return 'whitelisted'
 
     path = ['telesync', 'ho2tg', conv_id]
 
     kicked = False
-    tg_chat_id = user.identifier.split(':', 1)[1]
     try:
         tg_chat_ids = bot.memory.get_by_path(path)
         tg_chat_ids.index(tg_chat_id)
@@ -461,20 +473,28 @@ async def _handle_user_kick(bot, conv_id, user):
             kicked = await bot.tg_bot.kickChatMember(tg_chat_id, user.usr_id)
         else:
             kicked = False
-            logger.error('%s not kicked from %s, as %s is set', user.usr_id,
-                         tg_chat_id, '"all_members_are_administrators"')
+            logger.info(
+                'user kick request %s: failed: all members are administrators',
+                id(tracker)
+            )
     except (KeyError, ValueError):
         # no sync set for this conversation
-        logger.info('ignoring deleted sync: HO %s -> TG %s',
-                    conv_id, tg_chat_id)
+        logger.info(
+            'user kick request %s: deleted sync: HO %s -> TG %s',
+            id(tracker), conv_id, tg_chat_id,
+        )
 
     except telepot.exception.UnauthorizedError:
-        logger.error('bot is not authorized to kick %s from %s',
-                     user.usr_id, tg_chat_id)
+        logger.warning(
+            'user kick request %s: bot is not authorized to kick',
+            id(tracker)
+        )
 
     except telepot.exception.TelegramError as err:
-        logger.error('failed to kick user %s from chat %s: %s',
-                     user.usr_id, tg_chat_id, repr(err))
+        logger.error(
+            'user kick request %s: low level error %r',
+            id(tracker), err
+        )
 
     if not kicked:
         return False
@@ -559,8 +579,10 @@ async def _send_media(*, tg_bot, event, tg_chat_id, chat_tag,
     else:
         next_part = None
 
-    logger.debug('sending media with size: %s',
-                 len(image_data.getbuffer()))
+    logger.info(
+        'sending media %s: org size: %s',
+        id(image), len(image_data.getbuffer())
+    )
     try:
         if filename.endswith(('gif', 'mp4', 'avi')):
             # handle animated
@@ -581,14 +603,18 @@ async def _send_media(*, tg_bot, event, tg_chat_id, chat_tag,
                                        (filename, image_data),
                                        caption=caption)
             except telepot.exception.TelegramError as err:
-                logger.warning('error sending %s in 500px: %s',
-                               filename, repr(err))
+                logger.error(
+                    'sending media %s: error sending in 500px: %r',
+                    id(image), err
+                )
             else:
                 # force no tag as we already send it
                 return False, next_part
         else:
-            logger.warning('error sending %s as photo: %s',
-                           filename, repr(err))
+            logger.error(
+                'sending media %s: low level error: %r',
+                id(image), err
+            )
 
         # force a tag as we could not send it
         return True, next_part
