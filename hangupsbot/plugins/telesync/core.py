@@ -177,6 +177,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             last_err = msg
             retry += 1
             limit = self.config('request_retry_limit')
+            if retry == 1 and not logger.isEnabledFor(logging.DEBUG):
+                logger.info(
+                    'api request %s: method %r, params %s, file %r, kwargs %r',
+                    id(tracker), method, params, files, kwargs,
+                )
             logger.info(
                 'api request %s: %s/%s failed: %r',
                 id(tracker), retry, limit, msg
