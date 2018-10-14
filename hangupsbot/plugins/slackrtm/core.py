@@ -767,7 +767,7 @@ class SlackRTM(BotMixin):
             return True
 
         self.logger.debug(
-            '%s: incoming message: %r',
+            'msg %s: incoming message: %r',
             id(reply), reply
         )
 
@@ -778,7 +778,7 @@ class SlackRTM(BotMixin):
                 or reply.get('is_ephemeral') or reply.get('hidden')):
                 # hidden message from slack
             self.logger.debug(
-                '%s: reply is system event',
+                'msg %s: reply is system event',
                 id(reply)
             )
             return
@@ -787,12 +787,12 @@ class SlackRTM(BotMixin):
                 ('bot_id' in reply and reply['bot_id'] == self.my_bid)):
             # message from the bot user, skip it as we already handled it
             self.logger.debug(
-                '%s: reply content already seen',
+                'msg %s: reply content already seen',
                 id(reply)
             )
             return
 
-        error_message = '%s: error while parsing a Slack reply'
+        error_message = 'msg %s: error while parsing a Slack reply'
         error_is_critical = True
         sync_reply = None
         try:
@@ -800,27 +800,27 @@ class SlackRTM(BotMixin):
             channel_tag = '%s:%s' % (self.identifier, msg.channel)
             SlackMessage.track_message(self.bot, channel_tag, reply)
 
-            error_message = '%s: error in command handling'
+            error_message = 'msg %s: error in command handling'
             error_is_critical = False
             await slack_command_handler(self, msg)
 
-            error_message = '%s: error while parsing the SyncReply'
+            error_message = 'msg %s: error while parsing the SyncReply'
             sync_reply = await msg.get_sync_reply(self, reply)
         except ParseError as err:
             self._log_message_context(reply)
             self.logger.error(
-                '%s: parse error for message: %r',
+                'msg %s: parse error for message: %r',
                 id(reply), err,
             )
             return
         except IgnoreMessage as err:
-            self.logger.debug('%s: ignore: %r',
+            self.logger.debug('msg %s: ignore: %r',
                               id(reply), err)
             return
         except SlackAuthError as err:
             self._log_message_context(reply)
             self.logger.warning(
-                '%s: auth error during message handling: %r',
+                'msg %s: auth error during message handling: %r',
                 id(reply), err
             )
             # continue with message handling
@@ -860,7 +860,7 @@ class SlackRTM(BotMixin):
             # NOTE: messages are logged by default in DEBUG mode
             return
         self.logger.info(
-            '%s: incoming message: %r',
+            'msg %s: incoming message: %r',
             id(reply), reply
         )
 
