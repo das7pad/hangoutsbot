@@ -43,14 +43,14 @@ async def meme(bot, event, *args):
         if results['result']:
             url_image = random.choice(results['result'])['instanceImageUrl']
 
-            response = None
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url_image) as response:
                         response.raise_for_status()
                         image_data = await response.read()
-            except aiohttp.ClientError:
-                logger.error('url: %s, response: %s', url_image, repr(response))
+            except aiohttp.ClientError as err:
+                logger.info('meme %s: %r', id(url_image), url_image)
+                logger.error('meme %s: failed %r', id(url_image), err)
                 raise
 
             filename = os.path.basename(url_image)
