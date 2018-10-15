@@ -874,8 +874,12 @@ class SyncHandler(handlers.EventHandler):
             participant_id=hangouts_pb2.ParticipantId(gaia_id=chat_id))
         try:
             await self.bot.remove_user(request)
-        except hangups.NetworkError:
-            logger.exception('kick %s from %s', chat_id, conv_id)
+        except hangups.NetworkError as err:
+            logger.info(
+                'kick %s: chat_id=%r conv_id=%r',
+                id(request), chat_id, conv_id
+            )
+            logger.error('kick %s: failed %r', id(request), err)
             return False
         return True
 
