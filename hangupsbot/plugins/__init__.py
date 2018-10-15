@@ -707,16 +707,15 @@ async def unload(bot, module_path):
     try:
         done = await asyncio.wait_for(asyncio.gather(*plugin["asyncio.task"],
                                                      return_exceptions=True), 5)
-        failed = []
         for task in plugin["asyncio.task"]:
             result = done.pop(0)
             if not isinstance(result, Exception):
                 continue
-            failed.append("%s\nexited with Exception %s" % (task, repr(result)))
+            logger.error(
+                "unload: %s: task %r exited with %r",
+                module_path, task, result
+            )
 
-        if failed:
-            logger.info("not all tasks of %s were shutdown gracefully:\n%s",
-                        module_path, "\n".join(failed))
     except TimeoutError:
         logger.info("not all tasks of %s were shutdown gracefully after 5sec",
                     module_path)
