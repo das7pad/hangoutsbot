@@ -467,27 +467,29 @@ class HangupsBot:
         if chat_id == "sync":
             return None
         if chat_id == self.user_self()["chat_id"]:
-            logger.warning("1to1 conversations with myself are not supported",
-                           stack_info=True)
+            logger.warning(
+                "get_1to1: 1to1 conversations with myself are not supported",
+                stack_info=True,
+            )
             return False
 
         optout = False if force else self.user_memory_get(chat_id, "optout")
         if optout and (isinstance(optout, bool) or
                        (isinstance(optout, list) and isinstance(context, dict)
                         and context.get("initiator_convid") in optout)):
-            logger.debug("get_1on1: user %s has optout", chat_id)
+            logger.debug("get_1to1: user %s has optout", chat_id)
             return False
 
         memory_1on1 = self.user_memory_get(chat_id, "1on1")
 
         if memory_1on1 is not None:
-            logger.debug("get_1on1: remembered %s for %s",
+            logger.debug("get_1to1: remembered %s for %s",
                          memory_1on1, chat_id)
             return self.get_conversation(memory_1on1)
 
         # create a new 1-to-1 conversation with the designated chat id and send
         # an introduction message as the invitation text
-        logger.info("get_1on1: creating 1to1 with %s", chat_id)
+        logger.info("get_1to1 %s: creating 1to1 with %s", id(chat_id), chat_id)
 
         request = hangups.hangouts_pb2.CreateConversationRequest(
             request_header=self.get_request_header(),
@@ -496,13 +498,15 @@ class HangupsBot:
             invitee_id=[hangups.hangouts_pb2.InviteeID(gaia_id=chat_id)])
         try:
             response = await self.create_conversation(request)
-        except hangups.NetworkError:
-            logger.exception("GET_1TO1: failed to create 1-to-1 for user %s",
-                             chat_id)
+        except hangups.NetworkError as err:
+            logger.error(
+                "get_1to1 %s: failed to create conversation: %r",
+                id(chat_id), err,
+            )
             return None
 
         new_conv_id = response.conversation.conversation_id.id
-        logger.info("get_1on1: determined %s for %s", new_conv_id, chat_id)
+        logger.info("get_1to1 %s: determined %s", id(chat_id), new_conv_id)
 
         # remember the conversation so we do not have to do this again
         self.user_memory_set(chat_id, "1on1", new_conv_id)
