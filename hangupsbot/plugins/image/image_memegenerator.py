@@ -43,13 +43,10 @@ async def meme(bot, event, *args):
         if results['result']:
             url_image = random.choice(results['result'])['instanceImageUrl']
 
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url_image) as response:
-                        response.raise_for_status()
-                        image_data = await response.read()
-            except aiohttp.ClientError:
-                raise
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url_image) as response:
+                    response.raise_for_status()
+                    image_data = await response.read()
 
             filename = os.path.basename(url_image)
             segments = [hangups.ChatMessageSegment(
