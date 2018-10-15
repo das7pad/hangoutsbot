@@ -227,8 +227,9 @@ class ConversationMemory(BotMixin):
                 for chat_id in chat_ids])
         try:
             response = await self.bot.get_entity_by_id(request)
-        except hangups.exceptions.NetworkError:
-            logger.exception("getentitybyid(): FAILED for %s", chat_ids)
+        except hangups.exceptions.NetworkError as err:
+            logger.info("get_entity_by_id %s: %r", id(chat_ids), chat_ids)
+            logger.error("get_entity_by_id %s: failed %r", id(chat_ids), err)
             return 0
 
         for entity in response.entity:
