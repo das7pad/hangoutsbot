@@ -324,8 +324,12 @@ class EventHandler(BotMixin):
         event.text = event.text.replace(u'\xa0', u' ')
         try:
             line_args = shlex.split(event.text, posix=False)
-        except ValueError:
-            logger.exception('shlex.split failed parsing "%s"', event.text)
+        except ValueError as err:
+            logger.info('shlex.split %s: text=%r', id(event.text), event.text)
+            logger.error(
+                'shlex.split %s: parsing failed: %r',
+                id(event.text), err
+            )
             line_args = event.text.split()
 
         commands = command.get_available_commands(bot, event.user_id.chat_id,
