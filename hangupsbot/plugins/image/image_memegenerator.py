@@ -48,9 +48,7 @@ async def meme(bot, event, *args):
                     async with session.get(url_image) as response:
                         response.raise_for_status()
                         image_data = await response.read()
-            except aiohttp.ClientError as err:
-                logger.info('meme %s: %r', id(url_image), url_image)
-                logger.error('meme %s: failed %r', id(url_image), err)
+            except aiohttp.ClientError:
                 raise
 
             filename = os.path.basename(url_image)
@@ -70,9 +68,13 @@ async def meme(bot, event, *args):
         else:
             await bot.coro_send_message(event.conv_id, "<i>couldn't find a nice picture :( try again</i>")
 
-    except (aiohttp.ClientError, KeyError, IndexError, hangups.NetworkError):
-        await bot.coro_send_message(event.conv_id, "<i>couldn't find a suitable meme! try again</i>")
-        logger.exception("FAILED TO RETRIEVE MEME: %s", repr(parameters))
+    except (KeyError, IndexError, aiohttp.ClientError, hangups.NetworkError):
+        logger.info('meme %s: %r', id(parameters), parameters)
+        logger.exception('meme %s: failed', id(parameters))
+        await bot.coro_send_message(
+            event.conv_id,
+            "<i>couldn't find a suitable meme! try again</i>"
+        )
 
     finally:
         _EXTERNALS["running"] = False
