@@ -9,7 +9,7 @@ git+https://github.com/das7pad/hangups@v0.4.5.1#egg=hangups-0.4.5.1
 git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot-12.6.1
 aiohttp==3.4.4
 appdirs==1.4.3
-async-timeout==3.0.0
+async-timeout==3.0.1
 attrs==18.2.0
 beautifulsoup4==4.6.3
 bs4==0.0.1
@@ -28,16 +28,16 @@ httplib2==0.11.3
 idna-ssl==1.1.0
 idna==2.7
 imageio==2.4.1
-inflect==1.0.0
+inflect==1.0.1
 jaraco.itertools==2.5.2
 lxml==4.2.5
 mechanicalsoup==0.11.0
 more-itertools==4.3.0
 moviepy==0.2.3.5
 multidict==4.4.2
-numpy==1.15.1
+numpy==1.15.2
 oauthlib==2.1.0
-pillow==5.2.0
+pillow==5.3.0
 protobuf==3.1.0.post1
 psutil==5.4.7
 pushbullet.py==0.11.0
@@ -51,7 +51,7 @@ reparser==1.4.3
 requests-oauthlib==1.0.0
 requests==2.19.1
 rsa==4.0
-selenium==3.14.0
+selenium==3.14.1
 simplejson==3.16.0
 six==1.11.0
 soundcloud==0.5.0
