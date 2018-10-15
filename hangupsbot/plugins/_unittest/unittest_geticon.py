@@ -19,7 +19,8 @@ async def geticon(bot, event, *dummys):
     try:
         photo_uri = _response.entity[0].properties.photo_url
     except IndexError as err:
-        logger.exception("%s %s %s", event.user_id.chat_id, err, _response)
+        logger.info("%s %s %s", event.user_id.chat_id, err, _response,
+                    exc_info=True)
         return
 
     await bot.coro_send_message(event.conv_id, photo_uri)
