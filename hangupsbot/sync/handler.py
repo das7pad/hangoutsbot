@@ -333,7 +333,12 @@ class SyncHandler(handlers.EventHandler):
         except hangups.NetworkError as err:
             logger.info('image upload: label: %s | size: %s',
                         image_filename, len(image_raw))
-            logger.warning('image upload failed: %s', repr(err))
+
+            # cleanup the stack
+            # noinspection PyUnusedLocal
+            # pylint: disable=unused-variable
+            image_raw = ('%r <size=%d>' % (image_raw[:10], len(image_raw)))
+            logger.error('image upload failed: %r', err)
             return None
 
         else:
