@@ -117,7 +117,13 @@ class SlackAsyncListener(AsyncRequestHandler):
                     logger.debug("slack label resolved from API: {} = {}".format(id, label))
 
             except Exception as e:
-                logger.exception("FAILED to resolve slack label for {}".format(id))
+                import builtins
+                token = builtins.id(id)
+                logger.info('resolve slack label %s: %r', token, id)
+                logger.exception(
+                    "resolve slack label %s: failed for type %r",
+                    token, type_str
+                )
 
         return prefix + label
 
