@@ -723,7 +723,10 @@ class SyncHandler(handlers.EventHandler):
         try:
             await call
         except SuppressEventHandling:
-            logger.exception('event suppressing blocked by SyncHandler')
+            logger.warning(
+                'event suppressing blocked by SyncHandler',
+                exc_info=True
+            )
 
     async def _handle_sending(self, bot, broadcast_targets, context):
         """forward an outgoing (non-sync) message to the message handler
@@ -981,9 +984,12 @@ class SyncHandler(handlers.EventHandler):
                     return await result
                 return result
             except Exception:                     # pylint: disable=broad-except
-                logger.exception('%s: %s with args=%s',
-                                 pluggable, handler.__name__,
-                                 str([str(arg) for arg in args]))
+                tracker = object()
+                logger.info('run handler %s: args=%r', id(tracker), args)
+                logger.exception(
+                    'run handler %s: category=%r handler=%r',
+                    id(tracker), pluggable, handler
+                )
                 raise HandlerFailed()
 
         handlers_ = self.pluggables[pluggable].copy()
@@ -1031,9 +1037,12 @@ class SyncHandler(handlers.EventHandler):
             try:
                 return handler(self.bot, *args)
             except Exception:                     # pylint: disable=broad-except
-                logger.exception('%s: %s with args=%s',
-                                 pluggable, handler.__name__,
-                                 str([str(arg) for arg in args]))
+                tracker = object()
+                logger.info('run handler %s: args=%r', id(tracker), args)
+                logger.exception(
+                    'run handler %s: category=%r handler=%r',
+                    id(tracker), pluggable, handler
+                )
                 raise HandlerFailed()
 
         results = {}
