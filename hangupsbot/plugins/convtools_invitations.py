@@ -103,16 +103,25 @@ async def _claim_invite(bot, invite_code, user_id):
     invitation = bot.memory.get_by_path(memory_path)
     if invitation["user_id"] in ("*", user_id) and invitation["expiry"] > time.time():
         conv_id = invitation["group_id"]
-        logger.debug("_claim_invite: adding %s to %s",
-                     user_id, conv_id)
+        logger.info(
+            '_claim_invite %s: user=%r conv=%r',
+            id(invite_code), user_id, conv_id
+        )
         conv = bot.get_conversation(conv_id)
         try:
             await conv.add_users(
                 hangups.user.UserID(chat_id=user_id, gaia_id=user_id))
 
-        except hangups.NetworkError:
-            logger.exception("_CLAIM_INVITE: FAILED %s %s",
-                             invite_code, user_id)
+        except hangups.NetworkError as err:
+            if not logger.isEnabledFor(logging.DEBUG):
+                logger.info(
+                    '_claim_invite %s: user=%r conv=%r',
+                    id(invite_code), user_id, conv_id
+                )
+            logger.error(
+                "_claim_invite %s: conv.add_users failed: %r",
+                id(invite_code), err
+            )
             return
 
         invitation["uses"] -= 1
