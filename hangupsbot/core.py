@@ -82,7 +82,10 @@ class HangupsBot:
         try:
             self.config.load()
         except ValueError:
-            logger.exception("FAILED TO LOAD CONFIG FILE")
+            logger.warning(
+                "FAILED TO LOAD CONFIG FILE",
+                exc_info=True
+            )
             sys.exit(1)
         self.config.set_defaults(DEFAULT_CONFIG)
         self.get_config_option = self.config.get_option
@@ -105,7 +108,10 @@ class HangupsBot:
         try:
             self.memory.load()
         except (OSError, IOError, ValueError):
-            logger.exception("FAILED TO LOAD/RECOVER A MEMORY FILE")
+            logger.warning(
+                "FAILED TO LOAD/RECOVER A MEMORY FILE",
+                exc_info=True
+            )
             sys.exit(1)
         self.get_memory_option = self.memory.get_option
 
@@ -150,14 +156,14 @@ class HangupsBot:
 
                 logger.debug("locale loaded: %s", language_code)
             except OSError:
-                logger.exception("no translation for %s", language_code)
+                logger.warning("no translation for %s", language_code)
 
         if language_code in self._locales:
             self._locales[language_code].install()
             logger.info("locale set to %s", language_code)
             return True
 
-        logger.warning("LOCALE %s is not available", language_code)
+        logger.warning("locale %r is not available", language_code)
         return False
 
     def register_shared(self, id_, objectref):
@@ -213,8 +219,14 @@ class HangupsBot:
                 return hangups.get_auth_stdin(self._cookies_path)
 
             except hangups.GoogleAuthError as err:
-                logger.error("LOGIN FAILED: %s", repr(err))
-            logger.critical("Valid login required, exiting")
+                logger.warning(
+                    "LOGIN FAILED: %r",
+                    err
+                )
+
+            logger.warning(
+                "Valid login required, exiting"
+            )
             sys.exit(1)
 
         def _delay_restart():
@@ -229,7 +241,7 @@ class HangupsBot:
             try:
                 loop.run_until_complete(task)
             except asyncio.CancelledError:
-                logger.critical("bot is exiting")
+                logger.warning("bot is exiting")
                 sys.exit()
             else:
                 # restore the functionality to stop the bot on KeyboardInterrupt
@@ -263,15 +275,15 @@ class HangupsBot:
             self._client = hangups.Client(cookies, max_retries_longpolling)
             self._client.on_connect.add_observer(self._on_connect)
             self._client.on_disconnect.add_observer(
-                lambda: logger.warning("Event polling stopped"))
+                lambda: logger.info("Event polling stopped"))
             self._client.on_reconnect.add_observer(
-                lambda: logger.warning("Event polling continued"))
+                lambda: logger.info("Event polling continued"))
 
             self._unloaded = False
             try:
                 loop.run_until_complete(self._client.connect())
             except SystemExit:
-                logger.critical("bot is exiting")
+                logger.warning("bot is exiting")
                 raise
             except:                                 # pylint:disable=bare-except
                 logger.exception("low-level error")
@@ -467,7 +479,7 @@ class HangupsBot:
         if chat_id == "sync":
             return None
         if chat_id == self.user_self()["chat_id"]:
-            logger.warning(
+            logger.error(
                 "get_1to1: 1to1 conversations with myself are not supported",
                 stack_info=True,
             )
@@ -671,7 +683,7 @@ class HangupsBot:
                 otherwise False - unknown user, opt out or error on .get_1to1()
         """
         if not self.memory.exists(["user_data", chat_id, "_hangups"]):
-            logger.info("%s is not a valid user", chat_id)
+            logger.error("%s is not a valid user", chat_id)
             return False
 
         conv_1on1 = await self.get_1to1(chat_id)

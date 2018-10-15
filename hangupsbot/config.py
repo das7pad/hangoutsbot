@@ -104,11 +104,13 @@ class Config(collections.MutableMapping):
                 self.logger.warning('Failed to remove %s, check permissions',
                                     recovery_filename)
             except ValueError:
-                self.logger.error("corrupted recovery: %s", self.filename)
+                self.logger.warning("corrupted recovery: %s", self.filename)
             else:
                 self.save(delay=False)
-                self.logger.info("recovered %s successful from %s",
-                                 self.filename, recovery_filename)
+                self.logger.warning(
+                    "recovered %s successful from %s",
+                    self.filename, recovery_filename
+                )
                 return True
         return False
 

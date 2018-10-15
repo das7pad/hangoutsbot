@@ -25,7 +25,8 @@ class WebhookReceiver(AsyncRequestHandler):
             return
 
         if "message" not in payload:
-            logger.error("payload does not contain message")
+            logger.info('payload %s: %r', id(payload), payload)
+            logger.error("payload %s: does not contain message", id(payload))
             return
 
         await self.send_actionable_message(conv_or_user_id, payload["message"])

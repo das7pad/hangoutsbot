@@ -82,7 +82,7 @@ class AsyncRequestHandler(BotMixin):
         if image_data:
             if not image_filename:
                 image_filename = str(int(time.time())) + ".jpg"
-                logger.warning("fallback image filename: {}".format(image_filename))
+                logger.info("fallback image filename: {}".format(image_filename))
 
             image_id = await self.bot.upload_image(image_data, filename=image_filename)
 

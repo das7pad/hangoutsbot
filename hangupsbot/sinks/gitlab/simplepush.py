@@ -26,10 +26,10 @@ class WebhookReceiver(AsyncRequestHandler):
         try:
             payload = json.loads(content)
         except json.JSONDecodeError as err:
-            logger.exception("invalid payload @%d:%d: %s", err.lineno, err.colno, err)
+            logger.error("invalid payload %r", err)
             return
 
-        logger.error("GitLab message: %s", json.dumps(payload))
+        logger.info("GitLab message: %s", json.dumps(payload))
 
         refs = payload.get("ref", '').split("/")
 
@@ -74,7 +74,10 @@ class WebhookReceiver(AsyncRequestHandler):
 
         else:
             message.append("{}: unknown gitlab webhook object kind".format(payload["object_kind"]))
-            logger.warning("%s: unknown gitlab webhook object kind", payload["object_kind"])
+            logger.error(
+                "unknown gitlab webhook object kind: %r",
+                payload["object_kind"]
+            )
 
         if message:
             await self.send_data(conv_or_user_id, "\n".join(message))

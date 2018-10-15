@@ -66,8 +66,8 @@ def migrate_on_domain_change(slackrtm, old_domain):
                        'there is already data present for the domain %(new)s',
                        dict(old=repr(old_domain), new=repr(new_domain)))
         return
-    logger.info('Migrating data from domain %s to %s',
-                repr(old_domain), repr(new_domain))
+    logger.info('Migrating data from domain %r to %r',
+                old_domain, new_domain)
 
     old_path = ['slackrtm', old_domain]
 

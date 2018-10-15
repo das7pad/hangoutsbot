@@ -126,7 +126,7 @@ async def image_upload_single(image_uri):
                     return False
 
     except aiohttp.ClientError as exc:
-        logger.warning("failed to get %s - %s", filename, exc)
+        logger.warning("failed to get %r - %r", filename, exc)
         return False
 
     image_data = io.BytesIO(raw)
@@ -139,7 +139,7 @@ async def image_upload_raw(image_data, filename):
     try:
         image_id = await _EXTERNALS["bot"].upload_image(image_data, filename=filename)
     except KeyError as exc:
-        logger.warning("_client.upload_image failed: %s", exc)
+        logger.warning("upload_image failed: %r", exc)
     return image_id
 
 
@@ -168,5 +168,5 @@ async def image_convert_to_png(image):
         return stdout_data
 
     except FileNotFoundError:
-        logger.error("imagemagick not found at path %s", path_imagemagick)
+        logger.warning("imagemagick not found at path %s", path_imagemagick)
         return False

@@ -136,7 +136,7 @@ async def _lookup_address(location):
         }
     except (IndexError, KeyError) as err:
         logger.info('lookup_address %s: %r', id(payload), raw)
-        logger.error('lookup_address %s: parse error %r', id(payload), repr(err))
+        logger.error('lookup_address %s: parse error %r', id(payload), err)
         return None
 
 async def _lookup_weather(coordinates):

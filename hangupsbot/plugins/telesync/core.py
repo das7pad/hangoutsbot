@@ -231,7 +231,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         except asyncio.CancelledError:
             return
         except telepot.exception.UnauthorizedError:
-            logger.critical('API-Key revoked!')
+            logger.warning('API-Key revoked!')
         finally:
             await self._cache_sending_queue.stop(timeout=5)
 
@@ -716,7 +716,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     'restricting new users %s: failed for users %r',
                     id(changed_members), failed
                 )
-                logger.warning(
+                logger.error(
                     'restricting new users %s: failed with %r',
                     id(changed_members), failed.values()
                 )

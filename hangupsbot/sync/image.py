@@ -123,8 +123,11 @@ class MovieConverter(VideoFileClip):
         try:
             if os.path.exists(path):
                 os.remove(path)
-        except (OSError, IOError):
-            logger.warning('failed to remove %s', self._path)
+        except (OSError, IOError) as err:
+            logger.warning(
+                'failed to remove %r: %r',
+                self._path, err,
+            )
 
     def close(self):
         super().close()

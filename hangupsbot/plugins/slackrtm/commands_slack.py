@@ -54,8 +54,7 @@ async def slack_command_handler(slack_bot, msg):
         response = func(slack_bot, msg, args)
         if asyncio.iscoroutinefunction(func):
             response = await response
-        logger.debug('command %s returned %s',
-                     repr(command), repr(response))
+        logger.debug('command %r returned %r', command, response)
 
     if isinstance(response, str):
         text = response

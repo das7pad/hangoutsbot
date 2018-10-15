@@ -18,8 +18,8 @@ class WebhookReceiver(AsyncRequestHandler):
 
         try:
             payload = json.loads(content)
-        except ValueError:
-            logger.exception("invalid payload")
+        except ValueError as err:
+            logger.error("invalid payload: %r", err)
             return
 
         if all(key in payload for key in ('repository', 'commits', 'pusher')):
