@@ -127,14 +127,14 @@ async def _watch_twitter_link(bot, event):
         await bot.coro_send_message(event.conv, message)
     except (TwitterConnectionError, aiohttp.ClientError, hangups.NetworkError):
         url = event.text.lower()
-        response = None
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
                     response.raise_for_status()
                     body = await response.text()
-        except aiohttp.ClientError:
-            logger.error('url: %s, response: %s', url, repr(response))
+        except aiohttp.ClientError as err:
+            logger.info('get %s: %s', id(url), url)
+            logger.error('get %s: failed with %r', id(url), err)
             return
 
         username = re.match(r".+twitter\.com/([a-zA-Z0-9_]+)/", url).group(1)
