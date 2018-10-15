@@ -23,9 +23,10 @@ async def catfact(dummy0, dummy1, *args):
                 response.raise_for_status()
                 raw = await response.json()
                 facts = [fact['fact'] for fact in raw['data']]
-    except (aiohttp.ClientError, KeyError):
+    except (aiohttp.ClientError, KeyError) as err:
         text = "Unable to get catfacts right now"
-        logger.exception(url)
+        logger.info('catfact %s: %r', id(args), args)
+        logger.error('catfact %s: %r', id(args), err)
         return text
     else:
         return '<br>'.join(facts)
