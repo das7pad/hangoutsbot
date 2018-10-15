@@ -67,9 +67,10 @@ class SlackRTM(BotMixin):
     _tracker = 0
 
     def __init__(self, sink_config):
-        if  not isinstance(sink_config, dict) or 'key' not in sink_config:
-            raise SlackConfigError('API-`key` is missing in config %s'
-                                   % repr(sink_config))
+        if not isinstance(sink_config, dict):
+            raise SlackConfigError('Invalid config type')
+        if 'key' not in sink_config:
+            raise SlackConfigError('API-`key` is missing in config')
         self.api_key = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}

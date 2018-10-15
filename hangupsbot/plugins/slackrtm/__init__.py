@@ -87,7 +87,7 @@ def _initialise(bot):
         try:
             slackrtm = SlackRTM(sink_config)
         except SlackConfigError as err:
-            logger.error(repr(err))
+            logger.warning('skipping instance: %r, %r', err, sink_config)
         else:
             SLACKRTMS.append(slackrtm)
             plugins.start_asyncio_task(slackrtm.start)
