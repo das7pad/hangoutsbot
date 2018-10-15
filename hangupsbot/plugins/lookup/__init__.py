@@ -40,14 +40,14 @@ async def lookup(bot, event, *args):
     logger.debug("%s (%s) has requested to lookup '%s'",
                  event.user.full_name, event.user_id.chat_id, keyword)
 
-    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(spreadsheet_url) as response:
                 response.raise_for_status()
                 html = await response.text()
-    except aiohttp.ClientError:
-        logger.error('url: %s, response: %s', spreadsheet_url, repr(response))
+    except aiohttp.ClientError as err:
+        logger.info('request %s: %r', id(args), spreadsheet_url)
+        logger.error('request %s: failed: %r', id(args), err)
         return _('lookup: request failed :(')
 
     keyword_raw = keyword.strip().lower()
