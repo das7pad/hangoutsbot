@@ -55,6 +55,7 @@ def _initialize(bot):
             AioHttpTransport,
             timeout=30,
         ),
+        enable_breadcrumbs=sentry.get('enable_breadcrumbs', False),
         **options
     )
 
