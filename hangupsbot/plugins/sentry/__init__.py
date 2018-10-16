@@ -15,10 +15,8 @@ try:
     from raven import Client
     from raven_aiohttp import AioHttpTransport
 except ImportError:
-    Client = AioHttpTransport = None
-    HAS_RAVEN = False
-else:
-    HAS_RAVEN = True
+    logging.getLogger(__name__).info('raven and raven_aiohttp are required')
+    raise
 
 from hangupsbot import plugins
 from hangupsbot.version import __version__
@@ -32,10 +30,6 @@ def _initialize(bot):
     Args:
         bot:
     """
-    if not HAS_RAVEN:
-        logger.info('raven is not installed')
-        return
-
     sentry = bot.config.get_option('sentry')
     if not sentry:
         logger.info('Sentry DSN is not specified in the config')
