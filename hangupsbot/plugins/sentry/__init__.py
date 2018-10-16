@@ -57,4 +57,8 @@ def _initialize(bot):
         ),
         **options
     )
+
+    if not client.is_enabled():
+        return
+
     plugins.register_aiohttp_session(client.remote.get_transport())
