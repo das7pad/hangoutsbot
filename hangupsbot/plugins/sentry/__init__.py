@@ -4,6 +4,20 @@ Sentry is an Open-source error tracking that can help you monitor and fix crashe
  in real time.
 
 You can either use their SaaS or on premise service.
+
+The configuration can be a mixture of config and environment variables.
+    - config:
+        'sentry': {
+            'dsn': str, a Sentry DSN,
+            'enable_breadcrumbs': bool, track previous log messages,
+            'level': int, logging level that triggers the sending
+            'options': {
+                see Raven Client documentation
+            }
+        }
+    - environment:
+        'SENTRY_DSN': str, a Sentry DSN
+        for more environment variables see Raven Client documentation
 """
 __author__ = 'Jakob Ackermann <das7pad@outlook.com>'
 
@@ -29,10 +43,10 @@ logger = logging.getLogger(__name__)
 
 
 def _initialize(bot):
-    """
+    """setup the sentry integration
 
     Args:
-        bot:
+        bot (hangupsbot.core.HangupsBot): the running instance
     """
     sentry = bot.config.get_option('sentry')
     if not isinstance(sentry, dict):
