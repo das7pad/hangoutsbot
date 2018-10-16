@@ -51,6 +51,15 @@ CLEANUP_LOOP = asyncio.new_event_loop()
 logger = logging.getLogger('tests')
 
 
+@pytest.fixture
+def event_loop(request):
+    """Fixture for the current event loop.
+
+    Patch for pytest-asyncio, which creates a new instance for every function.
+    """
+    yield asyncio.get_event_loop()
+
+
 @pytest.fixture(scope='module', autouse=True)
 def module_wrapper(request):
     def _cleanup():
