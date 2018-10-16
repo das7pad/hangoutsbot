@@ -19,6 +19,9 @@ except ImportError:
     logging.getLogger(__name__).info('raven and raven_aiohttp are required')
     raise
 
+from raven.conf import setup_logging
+from raven.handlers.logging import SentryHandler
+
 from hangupsbot import plugins
 from hangupsbot.version import __version__
 
@@ -65,3 +68,19 @@ def _initialize(bot):
     logging.warning('Reporting to Sentry is enabled')
 
     plugins.register_aiohttp_session(client.remote.get_transport())
+
+    level = sentry.get('level', logging.ERROR)
+    setup_logging(SentryHandler(client, level=level), exclude=())
+
+    block_internal_log_messages()
+
+
+def block_internal_log_messages():
+    """block the processing of log messages from raven"""
+    internal_logger = (
+        'raven',
+        'sentry.errors',
+    )
+    for name in internal_logger:
+        instance = logging.getLogger(name)
+        instance.propagate = False
