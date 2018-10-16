@@ -59,6 +59,8 @@ def _initialize(bot):
     )
 
     if not client.is_enabled():
+        logging.warning('Reporting to Sentry is disabled')
         return
+    logging.warning('Reporting to Sentry is enabled')
 
     plugins.register_aiohttp_session(client.remote.get_transport())
