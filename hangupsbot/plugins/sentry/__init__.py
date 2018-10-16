@@ -10,6 +10,7 @@ __author__ = 'Jakob Ackermann <das7pad@outlook.com>'
 
 import functools
 import logging
+import os
 
 try:
     from raven import Client
@@ -31,9 +32,17 @@ def _initialize(bot):
         bot:
     """
     sentry = bot.config.get_option('sentry')
-    if not sentry:
-        logger.info('Sentry DSN is not specified in the config')
-        return
+    if not isinstance(sentry, dict):
+        sentry = {}
+
+    if 'dsn' in sentry:
+        dsn = sentry['dsn']
+    else:
+        if 'SENTRY_DSN' not in os.environ:
+            logger.info('Sentry is not configured')
+            return
+        logger.info('Using Sentry DSN from environment')
+        dsn = os.environ['SENTRY_DSN']
 
     options = {
         'release': __version__,
@@ -41,7 +50,7 @@ def _initialize(bot):
     options.update(sentry.get('options', {}))
 
     client = Client(
-        dsn=sentry['dsn'],
+        dsn=dsn,
         transport=functools.partial(
             AioHttpTransport,
             timeout=30,
