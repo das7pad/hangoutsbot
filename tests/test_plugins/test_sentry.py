@@ -63,7 +63,15 @@ async def test_load_plugin(bot):
     bot.config.set_by_path(['sentry', 'options', 'raise_send_errors'], True)
     bot.config.set_by_path(['sentry', 'options', 'environment'], 'dev')
     await plugins.load(bot, 'plugins.sentry')
+    check_loaded()
 
+
+async def test_reload_plugin(bot):
+    await plugins.reload_plugin(bot, 'plugins.sentry')
+    check_loaded()
+
+
+def check_loaded():
     if not raven.base.Raven:
         pytest.fail('Raven not configured', False)
         return

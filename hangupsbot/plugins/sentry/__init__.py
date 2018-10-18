@@ -37,8 +37,9 @@ except ImportError:
     logging.getLogger(__name__).info('raven and raven_aiohttp are required')
     raise
 
+import raven.base
 import raven.breadcrumbs
-from raven.conf import setup_logging
+import raven.conf
 from raven.handlers.logging import SentryHandler
 
 from hangupsbot import plugins
@@ -73,6 +74,7 @@ def _initialize(bot):
     }
     options.update(sentry.get('options', {}))
 
+    raven.base.Raven = None
     client = Client(
         dsn=dsn,
         transport=functools.partial(
@@ -90,7 +92,7 @@ def _initialize(bot):
     plugins.register_aiohttp_session(client.remote.get_transport())
 
     level = sentry.get('level', logging.ERROR)
-    setup_logging(SentryHandler(client, level=level), exclude=())
+    setup_global_logger(client, level)
 
     block_internal_log_messages()
     setup_breadcrumbs_handler(
@@ -109,12 +111,31 @@ def block_internal_log_messages():
         instance.propagate = False
 
 
+def setup_global_logger(client, level):
+    """cleanup old logger, add a new instance
+
+    Args:
+        client (raven.base.Client): the current instance
+        level (int): the minimum level that triggers event sending
+    """
+    # remove a previous instance
+    current = logging.getLogger().handlers
+    for handler in current.copy():
+        if isinstance(handler, SentryHandler):
+            current.remove(handler)
+
+    raven.conf.setup_logging(SentryHandler(client, level=level), exclude=())
+
+
 def setup_breadcrumbs_handler(send_level):
     """cleanup old handler, add a new logging handler
 
     Args:
         send_level (int): the minimum level that triggers sending
     """
+    # remove old handler
+    raven.breadcrumbs.special_logging_handlers.clear()
+
     def level_filter(_logger, level, _msg, _args, _kwargs):
         return level < send_level
 
