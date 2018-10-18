@@ -6,8 +6,12 @@ import re
 
 import hangups
 
-from hangupsbot.base_models import BotMixin, TrackingMixin
+from hangupsbot.base_models import (
+    BotMixin,
+    TrackingMixin,
+)
 from hangupsbot.commands.arguments_parser import ArgumentsParser
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +26,8 @@ DEFAULT_CONFIG = {
 
     'commands.tags.escalate': False,
 
-    # default timeout for command-coroutines to return: 5minutes
-    'command_timeout': 5*60,
+    # default timeout for a command-coroutine to return: 5 minutes
+    'command_timeout': 5 * 60,
 }
 
 
@@ -37,6 +41,7 @@ class Help(Exception):
 
 class CommandDispatcher(BotMixin, TrackingMixin):
     """Register commands and run them"""
+
     def __init__(self):
         self.commands = {}
         self.admin_commands = []
@@ -70,13 +75,13 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         self.bot.config.set_defaults(DEFAULT_CONFIG)
 
     def register_tags(self, command_name, tags):
-        if command_name not in self.command_tagsets:
-            self.command_tagsets[command_name] = set()
-
         if isinstance(tags, str):
             tags = {tags}
 
-        self.command_tagsets[command_name] = self.command_tagsets[command_name] | tags
+        if command_name in self.command_tagsets:
+            tags = self.command_tagsets[command_name] | tags
+
+        self.command_tagsets[command_name] = tags
 
     @property
     def deny_prefix(self):
@@ -236,7 +241,7 @@ class CommandDispatcher(BotMixin, TrackingMixin):
             text = "\n".join(help_entry).strip()
             conv_id = await bot.get_1to1(event.user_id.chat_id) or conv_id
 
-        except Exception as err:    # plugin-error - pylint:disable=broad-except
+        except Exception as err:  # plugin-error - pylint:disable=broad-except
             if raise_exceptions:
                 raise
 
@@ -285,8 +290,9 @@ class CommandDispatcher(BotMixin, TrackingMixin):
 
             return func
 
-        # If there is one (and only one) positional argument and this argument is callable,
-        # assume it is the decorator (without any optional keyword arguments)
+        # If there is one (and only one) positional argument and this argument
+        #  is callable, assume it is the decorator (without any optional keyword
+        #  arguments)
         if len(args) == 1 and callable(args[0]):
             return wrapper(args[0])
         return wrapper
@@ -301,8 +307,10 @@ class CommandDispatcher(BotMixin, TrackingMixin):
         self.blocked_command = asyncio.coroutine(func)
         return func
 
+
 # CommandDispatcher singleton
-command = CommandDispatcher()                      # pylint:disable=invalid-name
+command = CommandDispatcher()  # pylint:disable=invalid-name
+
 
 def get_func_help(bot, cmd, func):
     """get a custom help message from memory or parse the doc string of the func

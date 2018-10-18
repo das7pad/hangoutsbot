@@ -6,7 +6,6 @@ import shlex
 import hangups
 
 from hangupsbot import plugins
-
 from hangupsbot.commands import Help
 
 
@@ -14,7 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise():
-    plugins.register_admin_command(["convecho", "convfilter", "convleave", "convrename", "convusers"])
+    plugins.register_admin_command([
+        "convecho",
+        "convfilter",
+        "convleave",
+        "convrename",
+        "convusers",
+    ])
 
 
 def get_posix_args(raw_args):
@@ -36,14 +41,18 @@ async def convfilter(bot, event, *args):
         raise Help(_("<em>supply 1 parameter</em>"))
     else:
         lines = []
-        for convid, convdata in bot.conversations.get(filter=posix_args[0]).items():
-            lines.append("`{}` <b>{}</b> ({})".format(convid, convdata["title"], len(convdata["participants"])))
+        for convid, convdata in bot.conversations.get(
+                filter=posix_args[0]).items():
+            lines.append(
+                "`{}` <b>{}</b> ({})".format(
+                    convid, convdata["title"], len(convdata["participants"]))
+            )
         lines.append(_('<b>Total: {}</b>').format(len(lines)))
         message = '\n'.join(lines)
 
         await bot.coro_send_message(event.conv_id, message)
 
-        return {"api.response" : message}
+        return {"api.response": message}
 
 
 async def convecho(bot, dummy, *args):
@@ -57,7 +66,8 @@ async def convecho(bot, dummy, *args):
         convlist = bot.conversations.get(filter=posix_args[0])
         text = ' '.join(posix_args[1:])
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
-        # specialised error message for /bot echo (implied convid: <event.conv_id>)
+        # specialised error message for
+        #  /bot echo (implied convid: <event.conv_id>)
         raise Help(_("<em>missing text</em>"))
     else:
         # general error
@@ -76,7 +86,8 @@ async def convrename(bot, dummy, *args):
 
     if len(posix_args) > 1:
         if not posix_args[0].startswith(("id:", "text:")):
-            # always force explicit search for single conversation on vague user request
+            # always force explicit search for single conversation on
+            #  vague user request
             posix_args[0] = "id:" + posix_args[0]
         convlist = bot.conversations.get(filter=posix_args[0])
         title = ' '.join(posix_args[1:])
@@ -91,7 +102,8 @@ async def convrename(bot, dummy, *args):
             return _('Failed to rename!')
 
     elif len(posix_args) == 1 and posix_args[0].startswith("id:"):
-        # specialised error message for /bot rename (implied convid: <event.conv_id>)
+        # specialised error message for
+        #  /bot rename (implied convid: <event.conv_id>)
         raise Help(_("<em>missing title</em>"))
     else:
         # general error
@@ -109,11 +121,12 @@ async def convusers(bot, event, *args):
         # don't do it in all conversations - might crash hangups
         return _("<em>retrieving ALL conversations blocked</em>")
 
-    chunks = [] # one "chunk" = info for 1 hangout
+    chunks = []  # one "chunk" = info for 1 hangout
     for convdata in bot.conversations.get(filter=posix_args[0]).values():
-        lines = []
-        lines.append(_('Users in <b>{}</b>').format(
-            convdata["title"], len(convdata["participants"])))
+        lines = [
+            _('Users in <b>{}</b>').format(
+                convdata["title"], len(convdata["participants"])),
+        ]
         for chat_id in convdata["participants"]:
             user = bot.get_hangups_user(chat_id)
             # name and G+ link
@@ -124,7 +137,7 @@ async def convusers(bot, event, *args):
                 _line += '\n... (<a href="mailto:{0}">{0}</a>)'.format(
                     user.emails[0])
             # user id
-            _line += "\n... {}".format(user.id_.chat_id) # user id
+            _line += "\n... {}".format(user.id_.chat_id)
             lines.append(_line)
         lines.append(_('<b>Users: {}</b>').format(
             len(convdata["participants"])))
@@ -133,7 +146,7 @@ async def convusers(bot, event, *args):
 
     await bot.coro_send_message(event.conv_id, message)
 
-    return {"api.response" : message}
+    return {"api.response": message}
 
 
 async def convleave(bot, dummy, *args):

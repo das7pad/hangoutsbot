@@ -3,9 +3,11 @@
 from hangupsbot import plugins
 from hangupsbot.exceptions import HangupsBotExceptions
 
+
 def _initialise():
     """register a handler for a given pluggable"""
     plugins.register_handler(_shutup, "sending", priority=49)
+
 
 def _shutup():
     """suppress registered handler to work entirely above the configured level

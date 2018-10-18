@@ -3,8 +3,8 @@ import io
 import logging
 import os
 import re
-import time
 import tempfile
+import time
 
 import hangups
 import selenium
@@ -30,7 +30,6 @@ HELP = {
 
 _EXTERNALS = {"running": False}
 
-
 _DCAP = dict(DesiredCapabilities.PHANTOMJS)
 _DCAP["phantomjs.page.settings.userAgent"] = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.34  "
@@ -39,8 +38,13 @@ _DCAP["phantomjs.page.settings.userAgent"] = (
 
 
 def _initialise():
-    plugins.register_user_command(["screenshot"])
-    plugins.register_admin_command(["seturl", "clearurl"])
+    plugins.register_user_command([
+        "screenshot",
+    ])
+    plugins.register_admin_command([
+        "seturl",
+        "clearurl",
+    ])
     plugins.register_help(HELP)
 
 
@@ -94,6 +98,7 @@ def clearurl(bot, event, *dummys):
 
     return html.format(event.user.full_name)
 
+
 async def screenshot(bot, event, *args):
     """get a screenshot of a user provided URL or the hangouts' default URL"""
     if _EXTERNALS["running"]:
@@ -113,7 +118,7 @@ async def screenshot(bot, event, *args):
 
     if not re.match(r'^[a-zA-Z]+://', url):
         url = 'http://' + url
-    filename = event.conv_id + "." + str(time.time()) +".png"
+    filename = event.conv_id + "." + str(time.time()) + ".png"
     file_path = tempfile.NamedTemporaryFile(
         prefix=event.conv_id, suffix=".png", delete=False).name
     logger.debug("temporary screenshot file: %s", file_path)

@@ -9,15 +9,23 @@ import logging
 
 import telepot.exception
 
-from hangupsbot import commands
-from hangupsbot import plugins
+from hangupsbot import (
+    commands,
+    plugins,
+)
 from hangupsbot.sync.parser import get_formatted
+
 
 # reload the other modules
 for _path_ in ('user', 'message', 'commands_tg', 'parsers', 'core'):
     plugins.load_module('plugins.telesync.' + _path_)
 
-from .core import TelegramBot, POOLS, User
+from .core import (
+    TelegramBot,
+    POOLS,
+    User,
+)
+
 
 HELP = {
     'telesync': _('usage:\n{bot_cmd} telesync add <telegram chat id>\n'
@@ -32,10 +40,10 @@ HELP = {
 
     'telesync_set_token': _('usage:\n{bot_cmd} telesync_set_token <api_key>\n'
                             'update the api key for the telesync plugin'),
-
 }
 
 logger = logging.getLogger(__name__)
+
 
 async def _initialise(bot):
     """init bot for telesync, create and start a TelegramBot, register handler
@@ -53,11 +61,15 @@ async def _initialise(bot):
     setup_config(bot)
 
     plugins.register_aiohttp_session(POOLS['default'])
-    plugins.register_admin_command(['telesync_set_token'])
+    plugins.register_admin_command([
+        'telesync_set_token',
+    ])
     if not bot.config.get_by_path(['telesync', 'enabled']):
         return
 
-    plugins.register_admin_command(['telesync'])
+    plugins.register_admin_command([
+        'telesync',
+    ])
 
     bot.tg_bot = TelegramBot(bot)
     if not await bot.tg_bot.can_log_in(retry=False):
@@ -82,6 +94,7 @@ async def _initialise(bot):
 
     plugins.start_asyncio_task(bot.tg_bot.start)
 
+
 def setup_config(bot):
     """register all attributes in config
 
@@ -97,7 +110,7 @@ def setup_config(bot):
                    for key in ('gif', 'photo', 'sticker', 'video')},
                 **{'sync_size_%s' % key: 0
                    for key in ('gif', 'photo', 'sticker', 'video')},
-            }
+            },
         },
         'telesync': {
             # telegram-admin ids
@@ -161,6 +174,7 @@ def setup_config(bot):
         bot.config.set_by_path(['telesync', 'enabled'], False)
 
     bot.config.save()
+
 
 def setup_memory(bot):
     """create all dicts in memory
@@ -232,6 +246,7 @@ def setup_memory(bot):
     _cleanup20180919()
     bot.memory.save()
 
+
 def telesync(bot, event, *args):
     """set a telegram chat as sync target for the current ho
 
@@ -246,6 +261,7 @@ def telesync(bot, event, *args):
     Raises:
         commands.Help: no sub command such as `remove`, `add` or `show` provided
     """
+
     def _set_message_format(channel_id, remove_name=True):
         """remove or add the username from a forwarded message to a channel
 
@@ -357,6 +373,7 @@ def telesync(bot, event, *args):
         raise commands.Help()
     return '\n'.join(lines)
 
+
 async def telesync_set_token(bot, event, *args):
     """sets the api key for the telesync bot
 
@@ -392,6 +409,7 @@ async def telesync_set_token(bot, event, *args):
     asyncio.ensure_future(
         commands.command.run(bot, event, 'pluginreload', __name__))
     return 'Telegram API Key set.'
+
 
 async def _handle_profilesync(bot, platform, remote_user, conv_1on1,
                               split_1on1s):
@@ -429,6 +447,7 @@ async def _handle_profilesync(bot, platform, remote_user, conv_1on1,
 
     bot.memory.save()
     await bot.coro_send_message(conv_1on1, text)
+
 
 async def _handle_user_kick(bot, conv_id, user):
     """kick a user from a given conversation
@@ -508,8 +527,9 @@ async def _handle_user_kick(bot, conv_id, user):
         'from': bot.memory.get_by_path(path_user + [bot.tg_bot.user.usr_id]),
         'message_id': 0,
     }
-    await bot.tg_bot._handle(msg)              # pylint:disable=protected-access
+    await bot.tg_bot._handle(msg)  # pylint:disable=protected-access
     return True
+
 
 async def _handle_conv_user(bot, conv_id, profilesync_only):
     """get all telegram user for this conv_id

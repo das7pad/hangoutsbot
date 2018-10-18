@@ -3,12 +3,16 @@ __author__ = 'das7pad@outlook.com'
 
 import html as html_module
 import logging
-import urllib.parse
 import re
+import urllib.parse
 
 import hangups
 import hangups.hangouts_pb2
-from hangups.message_parser import ChatMessageParser, Tokens
+from hangups.message_parser import (
+    ChatMessageParser,
+    Tokens,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +125,7 @@ STYLE_MAPPING = {
         'allow_hidden_url': True,
         'escape_html': False,
         'escape_markdown': True,
-    }
+    },
 }
 
 MARKDOWN_START_CHAR = r'*_~`=\\['
@@ -138,6 +142,7 @@ class MessageParser(ChatMessageParser):
     Args:
         tokens: list of reparser.Token instances
     """
+
     @staticmethod
     def postprocess(text):
         # single tokens such as links are not covered by this method,
@@ -198,6 +203,7 @@ class MessageParser(ChatMessageParser):
         Returns:
             str: escaped markdown text
         """
+
         def _single_replace(match):
             """url encode markdown char
 
@@ -252,7 +258,7 @@ class MessageSegmentInternal(MessageSegmentHangups):
         text (str): message part without formatting
         kwargs: see MessageSegmentInternal
     """
-    line_breaks = [Tokens.basic[1]]     # drop autolinking
+    line_breaks = [Tokens.basic[1]]  # drop autolinking
     _parser = MessageParser(line_breaks + Tokens.html)
 
 
@@ -266,6 +272,7 @@ class MessageSegment(MessageSegmentHangups):
         text (str): message part without formatting
         kwargs: see MessageSegmentInternal
     """
+
     def __init__(self, text, **kwargs):
         super().__init__(self._parser.replace_markdown(text),
                          **kwargs)
@@ -309,6 +316,7 @@ def get_formatted(segments, raw_style, *, internal_source=False):
     Raises:
         ValueError: invalid style provided
     """
+
     def _get_style():
         """verify the provided style
 

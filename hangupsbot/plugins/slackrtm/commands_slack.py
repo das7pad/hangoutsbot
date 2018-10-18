@@ -6,8 +6,8 @@ import sys
 
 from .exceptions import (
     AlreadySyncingError,
-    NotSyncingError,
     IgnoreMessage,
+    NotSyncingError,
 )
 from .user import SlackUser
 
@@ -72,6 +72,7 @@ async def slack_command_handler(slack_bot, msg):
     slack_bot.send_message(channel=channel, text=text)
     raise _IGNORE_COMMAND_MESSAGE
 
+
 # command access
 
 COMMANDS_USER = [
@@ -91,7 +92,6 @@ COMMANDS_ADMIN = [
     'chattitle',
     'sync_config',
 ]
-
 
 # command help
 
@@ -122,7 +122,7 @@ HELP = {
 
 # command definitions
 
-def help(slack_bot, msg, args):                # pylint:disable=redefined-builtin
+def help(slack_bot, msg, args):  # pylint:disable=redefined-builtin
     """list help for all available commands or query a single commands help
 
     Args:
@@ -149,6 +149,7 @@ def help(slack_bot, msg, args):                # pylint:disable=redefined-builti
 
     return '1on1', '\n\n'.join(lines)
 
+
 def whereami(dummy, msg, dummys):
     """tells you the current channel/group id
 
@@ -163,6 +164,7 @@ def whereami(dummy, msg, dummys):
     return _('@{user_name}: you are in channel {channel_id}').format(
         user_name=msg.user.username, channel_id=msg.channel)
 
+
 def whoami(dummy, msg, dummys):
     """tells you your own user id
 
@@ -176,6 +178,7 @@ def whoami(dummy, msg, dummys):
     """
     return '1on1', _('@{user_name}: your userid is {user_id}').format(
         user_name=msg.user.username, user_id=msg.user.usr_id)
+
 
 def whois(slack_bot, msg, args):
     """whois @username tells you the user id of @username
@@ -196,15 +199,16 @@ def whois(slack_bot, msg, args):
     for uid in slack_bot.users:
         if slack_bot.get_username(uid) == search:
             message = _('@{user_name}: the user id of _{name}_ is {other_id}'
-                       ).format(user_name=msg.user.username,
-                                name=slack_bot.get_username(uid),
-                                other_id=uid)
+                        ).format(user_name=msg.user.username,
+                                 name=slack_bot.get_username(uid),
+                                 other_id=uid)
             break
     else:
         message = _('@{user_name}: sorry, but I could not find user _{search}_ '
                     'in this slack.').format(user_name=msg.user.username,
                                              search=search)
     return '1on1', message
+
 
 def admins(slack_bot, msg, dummys):
     """lists the slack users with admin privileges
@@ -224,6 +228,7 @@ def admins(slack_bot, msg, dummys):
 
     return '1on1', '\n'.join(message)
 
+
 async def syncprofile(slack_bot, msg, dummys):
     """start the process to sync your slack profile with a G+profile
 
@@ -242,7 +247,7 @@ async def syncprofile(slack_bot, msg, dummys):
     if bot.memory.exists(path + ['2ho', user_id]):
         text = _('Your profile is already linked to a G+Profile, use '
                  '*<@{name}> unsyncprofile* to unlink your profiles'
-                ).format(name=slack_bot.my_uid)
+                 ).format(name=slack_bot.my_uid)
         return '1on1', text
 
     if bot.memory.exists(path + ['pending_2ho', user_id]):
@@ -274,6 +279,7 @@ async def syncprofile(slack_bot, msg, dummys):
     conv_1on1 = await slack_bot.get_slack1on1(user_id)
     for message in messages:
         slack_bot.send_message(channel=conv_1on1, text=message)
+
 
 async def unsyncprofile(slack_bot, msg, dummys):
     """detach the slack profile from a previously attached G+ profile
@@ -312,9 +318,10 @@ async def unsyncprofile(slack_bot, msg, dummys):
     else:
         text = _('There is no G+Profile connected to your Slack Profile'
                  '.\nUse *<@{name}> syncprofile* to connect one'
-                ).format(name=slack_bot.my_uid)
+                 ).format(name=slack_bot.my_uid)
 
     return private_chat, text
+
 
 async def hangouts(slack_bot, msg, dummys):
     """admin-only: lists all hangouts
@@ -334,6 +341,7 @@ async def hangouts(slack_bot, msg, dummys):
         lines.append('*%s:* _%s_' % (
             bot.conversations.get_name(conv_id, conv_id), conv_id))
     return '1on1', '\n'.join(lines)
+
 
 def listsyncs(slack_bot, msg, dummys):
     """admin-only: lists all running sync connections
@@ -356,6 +364,7 @@ def listsyncs(slack_bot, msg, dummys):
             sync['channelid'], hangout_name, conv_id))
     return '1on1', '\n'.join(lines)
 
+
 def _get_hangout_name(bot, conv_id):
     """get the name of a conversation and a error message with the convs id
 
@@ -368,7 +377,8 @@ def _get_hangout_name(bot, conv_id):
     """
     name = bot.conversations.get_name(conv_id, None)
     return name, _('sorry, but I\'m not a member of a Hangout with Id %s'
-                  ) % conv_id
+                   ) % conv_id
+
 
 def syncto(slack_bot, msg, args):
     """admin-only: sync messages from current channel/group to specified hangout
@@ -405,6 +415,7 @@ def syncto(slack_bot, msg, args):
 
     return message
 
+
 def disconnect(slack_bot, msg, args):
     """admin-only: stop syncing messages from current channel to a specified ho
 
@@ -439,6 +450,7 @@ def disconnect(slack_bot, msg, args):
                      'the Hangout _%s_.') % hangout_name
     return message
 
+
 def chattitle(slack_bot, msg, args):
     """update the synced chattitle for the current or specified channel
 
@@ -453,6 +465,7 @@ def chattitle(slack_bot, msg, args):
     return slack_bot.bot.call_shared(
         'setchattitle', args=args, platform=slack_bot.identifier,
         fallback=msg.channel, source=slack_bot.conversations)
+
 
 def sync_config(slack_bot, msg, args):
     """update a config entry for the current or given channel
@@ -485,7 +498,8 @@ def sync_config(slack_bot, msg, args):
     except (KeyError, TypeError) as err:
         return str(err)
     else:
-        return _('{sync_option} updated for channel "{channel_id}" '
-                 'from "{old}" to "{new}"').format(
-                     sync_option=key, channel_id=channel, old=last_value,
-                     new=new_value)
+        return _(
+            '{sync_option} updated for channel "{channel_id}" from "{old}" to '
+            '"{new}"'
+        ).format(sync_option=key, channel_id=channel, old=last_value,
+                 new=new_value)

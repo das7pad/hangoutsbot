@@ -1,18 +1,16 @@
 # pylint: skip-file
-import aiohttp
 import asyncio
 import json
 import logging
-import os
 import re
-import requests
+
+import aiohttp
 
 from hangupsbot import plugins
 from hangupsbot.webbridge import (
     WebFramework,
-    IncomingRequestHandler,
-    FakeEvent,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +31,7 @@ class BridgeInstance(WebFramework):
 
         # XXX: strip html, telegram parser seems buggy and too simplistic
         # only keep bold for emphasis
-        #message = re.sub(r"</?b>", "", message)
+        # message = re.sub(r"</?b>", "", message)
         message = re.sub(r"</?i>", "", message)
         message = re.sub(r"</?pre>", "", message)
 
@@ -47,9 +45,12 @@ class BridgeInstance(WebFramework):
             await self.telegram_api_request(
                 config["config.json"],
                 "sendMessage",
-                    { "chat_id" : eid,
-                      "text" : self._format_message(message, user, userwrap="HTML_BOLD"),
-                      "parse_mode" : "HTML" })
+                {
+                    "chat_id": eid,
+                    "text": self._format_message(message, user,
+                                                 userwrap="HTML_BOLD"),
+                    "parse_mode": "HTML",
+                })
 
     def start_listening(self, bot):
         for configuration in self.configuration:
@@ -70,7 +71,7 @@ class BridgeInstance(WebFramework):
         session = aiohttp.ClientSession(connector=connector)
         while True:
             try:
-                data = { "timeout": 60 }
+                data = {"timeout": 60}
                 if max_offset:
                     data["offset"] = int(max_offset) + 1
                 async with asyncio.wait_for(
@@ -79,7 +80,7 @@ class BridgeInstance(WebFramework):
                                      headers=headers,
                                      connector=connector),
                         CONNECT_TIMEOUT) as res:
-                    chunk = await res.content.read(1024*1024)
+                    chunk = await res.content.read(1024 * 1024)
             except asyncio.TimeoutError:
                 raise
             except asyncio.CancelledError:
@@ -94,36 +95,52 @@ class BridgeInstance(WebFramework):
                         max_offset = Update["update_id"]
                         raw_message = Update["message"]
 
-                        if str(raw_message["chat"]["id"]) in configuration[self.configkey]:
+                        if str(raw_message["chat"]["id"]) in configuration[
+                            self.configkey]:
                             for conv_id in configuration["hangouts"]:
-                                user = raw_message["from"]["username"] + "@telegram"
+                                user = raw_message["from"][
+                                           "username"] + "@telegram"
                                 image_id = None
 
                                 if "text" in raw_message:
                                     message = raw_message["text"]
 
                                 elif "photo" in raw_message:
-                                    photo_path = await self.telegram_api_getfilepath( configuration,
-                                                                                           raw_message["photo"][2]['file_id'] )
+                                    photo_path = (
+                                        await self.telegram_api_getfilepath(
+                                            configuration,
+                                            raw_message["photo"][2]['file_id'],
+                                        )
+                                    )
 
-                                    image_id = await bot.call_shared("image_upload_single", photo_path)
+                                    image_id = await bot.call_shared(
+                                        "image_upload_single", photo_path)
                                     message = "sent a photo"
 
                                 elif "sticker" in raw_message:
-                                    photo_path = await self.telegram_api_getfilepath( configuration,
-                                                                                           raw_message["sticker"]['file_id'] )
+                                    photo_path = (
+                                        await self.telegram_api_getfilepath(
+                                            configuration,
+                                            raw_message["sticker"]['file_id'],
+                                        )
+                                    )
 
-                                    image_id = await bot.call_shared("image_upload_single", photo_path)
-                                    message = "sent {} sticker".format(raw_message["sticker"]['emoji'])
+                                    image_id = await bot.call_shared(
+                                        "image_upload_single", photo_path)
+                                    message = "sent {} sticker".format(
+                                        raw_message["sticker"]['emoji'])
 
                                 else:
-                                    message = "unrecognised telegram update: {}".format(raw_message)
+                                    message = ("unrecognised telegram update: {"
+                                               "}").format(raw_message)
 
                                 await self._send_to_internal_chat(
                                     conv_id,
                                     message,
-                                    {   "source_user": user,
-                                        "source_title": False })
+                                    {
+                                        "source_user": user,
+                                        "source_title": False,
+                                    })
 
     async def telegram_api_request(self, configuration, method, data):
         connector = aiohttp.TCPConnector(verify_ssl=True)
@@ -134,7 +151,8 @@ class BridgeInstance(WebFramework):
         url = "https://api.telegram.org/bot{}/{}".format(BOT_API_KEY, method)
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=data, headers=headers, connector=connector) as response:
+            async with session.post(url, data=data, headers=headers,
+                                    connector=connector) as response:
                 results = await response.text()
 
         return results
@@ -143,12 +161,14 @@ class BridgeInstance(WebFramework):
         results = await self.telegram_api_request(
             configuration,
             "getFile", {
-                "file_id": file_id })
+                "file_id": file_id,
+            })
 
         metadata = json.loads(results)
 
         BOT_API_KEY = configuration["bot_api_key"]
-        source_url = "https://api.telegram.org/file/bot{}/{}".format(BOT_API_KEY, metadata["result"]["file_path"])
+        source_url = "https://api.telegram.org/file/bot{}/{}".format(
+            BOT_API_KEY, metadata["result"]["file_path"])
 
         return source_url
 

@@ -2,7 +2,10 @@
 import logging
 
 from hangupsbot import plugins
-from hangupsbot.commands import command, Help
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 from hangupsbot.sinks import aiohttp_list
 
 
@@ -10,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 def _initialise():
-    pass # prevents commands from being automatically added
+    pass  # prevents commands from being automatically added
+
 
 def function_name(func):
     try:
@@ -44,29 +48,38 @@ def plugininfo(dummy0, dummy1, *args):
 
         # admin commands
         if plugin["commands"]["admin"]:
-            lines.append("<b>admin commands:</b> <pre>{}</pre>".format(", ".join(plugin["commands"]["admin"])))
+            lines.append("<b>admin commands:</b> <pre>{}</pre>".format(
+                ", ".join(plugin["commands"]["admin"])))
 
         # user-only commands
-        user_only_commands = list(set(plugin["commands"]["user"]) - set(plugin["commands"]["admin"]))
+        user_only_commands = list(
+            set(plugin["commands"]["user"]) - set(plugin["commands"]["admin"]))
         if user_only_commands:
-            lines.append("<b>user commands:</b> <pre>{}</pre>".format(", ".join(user_only_commands)))
+            lines.append("<b>user commands:</b> <pre>{}</pre>".format(
+                ", ".join(user_only_commands)))
 
         # handlers
         if plugin["handlers"]:
             lines.append("<b>handlers:</b>")
-            lines.append("\n".join(["... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(function_name(f[0]), f[1], str(f[2])) for f in plugin["handlers"]]))
+            lines.append("\n".join([
+                "... <b><pre>{}</pre></b> (<pre>{}</pre>, p={})".format(
+                    function_name(f[0]), f[1], str(f[2]))
+                for f in plugin["handlers"]]))
 
         # shared
         if plugin["shared"]:
-            lines.append("<b>shared:</b> " + ", ".join(["<pre>{}</pre>".format(function_name(f[1])) for f in plugin["shared"]]))
+            lines.append("<b>shared:</b> " + ", ".join(
+                ["<pre>{}</pre>".format(function_name(f[1])) for f in
+                 plugin["shared"]]))
 
         # aiohttp.web
         if plugin["aiohttp.web"]:
             lines.append("<b>aiohttp.web:</b>")
             filtered = aiohttp_list(plugin["aiohttp.web"])
             if filtered:
-                lines.append('\n'.join(['... {}'.format(constructors[0].sockets[0].getsockname())
-                                        for constructors in filtered]))
+                lines.append('\n'.join(
+                    ['... {}'.format(constructors[0].sockets[0].getsockname())
+                     for constructors in filtered]))
             else:
                 lines.append('<em>no running aiohttp.web listeners</em>')
 
@@ -86,7 +99,8 @@ def plugininfo(dummy0, dummy1, *args):
                     else:
                         matches.append(tags)
 
-                lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(command_name, ', '.join(matches)))
+                lines.append("... <b><pre>{}</pre></b>: <pre>{}</pre>".format(
+                    command_name, ', '.join(matches)))
 
         # command: argument preprocessors
         if plugin["commands"]["argument.preprocessors"]:
@@ -114,6 +128,7 @@ def _compose_load_message(module_path, result):
         str: the formatted message
     """
     return "<b><i>%s</i></b> : <b>%s</b>" % (module_path, result)
+
 
 @command.register(admin=True)
 async def pluginunload(bot, event, *args):
@@ -152,6 +167,8 @@ async def pluginload(bot, event, *args):
 
         except plugins.AlreadyLoaded:
             result = _("already loaded")
+        except plugins.Protected:
+            result = _("protected")
 
         message = _compose_load_message(module_path, result)
 
@@ -192,13 +209,15 @@ def getplugins(bot, *dummys):
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
-        return "this command only works with manually-configured plugins key in config.json"
+        return _("this command only works with manually-configured plugins key "
+                 "in config.json")
 
     lines = []
     all_plugins = plugins.retrieve_all_plugins(allow_underscore=True) or []
     loaded_plugins = plugins.get_configured_plugins(bot) or []
 
-    lines.append("**{} loaded plugins (config.json)**".format(len(loaded_plugins)))
+    lines.append(
+        "**{} loaded plugins (config.json)**".format(len(loaded_plugins)))
 
     for _plugin in sorted(loaded_plugins):
         lines.append("* {}".format(_plugin.replace("_", "\\_")))
@@ -219,7 +238,8 @@ def _strip_plugin_path(path):
 
 @command.register(admin=True)
 async def removeplugin(bot, dummy, *args):
-    """unloads a plugin from the bot and removes it from the config, does not require plugins. prefix"""
+    """unloads a plugin from the bot and removes it from the config, does not
+    require plugins. prefix"""
 
     if not args:
         raise Help(_('plugin name is missing!'))
@@ -227,7 +247,8 @@ async def removeplugin(bot, dummy, *args):
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
-        return "this command only works with manually-configured plugins key in config.json"
+        return _("this command only works with manually-configured plugins key "
+                 "in config.json")
 
     lines = []
     loaded_plugins = plugins.get_configured_plugins(bot) or []
@@ -250,7 +271,8 @@ async def removeplugin(bot, dummy, *args):
             await plugins.unload(bot, module_path)
             lines.append('* **unloaded: {}**'.format(escaped_module_path))
         except (RuntimeError, KeyError) as err:
-            lines.append('* error unloading {}: {}'.format(escaped_module_path, str(err)))
+            lines.append(
+                '* error unloading {}: {}'.format(escaped_module_path, str(err)))
     else:
         lines.append('* not loaded on bot start')
 
@@ -270,7 +292,8 @@ async def removeplugin(bot, dummy, *args):
 
 @command.register(admin=True)
 async def addplugin(bot, dummy, *args):
-    """loads a plugin on the bot and adds it to the config, does not require plugins. prefix"""
+    """loads a plugin on the bot and adds it to the config, does not require
+    plugins. prefix"""
 
     if not args:
         raise Help(_('plugin name is missing!'))
@@ -278,7 +301,8 @@ async def addplugin(bot, dummy, *args):
 
     config_plugins = bot.config.get_by_path(["plugins"]) or False
     if not isinstance(config_plugins, list):
-        return "this command only works with manually-configured plugins key in config.json"
+        return _("this command only works with manually-configured plugins key "
+                 "in config.json")
 
     lines = []
     loaded_plugins = plugins.get_configured_plugins(bot) or []
@@ -305,7 +329,8 @@ async def addplugin(bot, dummy, *args):
             else:
                 lines.append('* failed to load: {}'.format(escaped_module_path))
         except RuntimeError as err:
-            lines.append('* error loading {}: {}'.format(escaped_module_path, str(err)))
+            lines.append(
+                '* error loading {}: {}'.format(escaped_module_path, str(err)))
 
     if plugin in config_plugins:
         lines.append('* already in config.json')

@@ -25,7 +25,7 @@ EASTER_EGGS = {
     "happy birthday": "happy_birthday",
     "happy new year": "happy_new_year",
 
-    "xd": "x_d"
+    "xd": "x_d",
 }
 
 # cache nicks
@@ -48,6 +48,7 @@ HELP = {
                      'example: {bot_cmd} setnickname alice'),
 }
 
+
 def _initialise(bot):
     """start listening to messages and register admin and user commands
 
@@ -55,13 +56,19 @@ def _initialise(bot):
         bot (hangupsbot.core.HangupsBot): the running instance
     """
     plugins.register_sync_handler(_handle_mention, "message_once")
-    plugins.register_user_command(["pushbulletapi", "setnickname",
-                                   "bemorespecific"])
-    plugins.register_admin_command(["mention"])
+    plugins.register_user_command([
+        "pushbulletapi",
+        "setnickname",
+        "bemorespecific",
+    ])
+    plugins.register_admin_command([
+        "mention",
+    ])
     bot.memory.ensure_path(["user_data"])
     bot.memory.save()
     _populate_nicknames(bot)
     plugins.register_help(HELP)
+
 
 def _populate_nicknames(bot):
     """Pull the keywords from memory and build an index and reverse index
@@ -74,6 +81,7 @@ def _populate_nicknames(bot):
         if nickname:
             _NICKS[chat_id] = nickname
             _NICKS_INVERSE[nickname.lower()] = chat_id
+
 
 async def _handle_mention(bot, event, command):
     """forward cleaned @mention names to the main mention function
@@ -107,6 +115,7 @@ async def _handle_mention(bot, event, command):
             return
         await command.run(bot, event, *["mention", cleaned_name])
 
+
 def _log(template, event, *args, debug=False):
     """fill the template with info from the event and log it with given args
 
@@ -124,6 +133,7 @@ def _log(template, event, *args, debug=False):
         logger.debug(output, *args)
     else:
         logger.info(output, *args)
+
 
 async def mention(bot, event, *args):
     """alert a @mentioned user"""
@@ -150,9 +160,10 @@ async def mention(bot, event, *args):
                 _log("quidproquo: user {full} ({chat}) has DND active", event)
                 if noisy_mention_test or bot.get_config_suboption(
                         event.conv_id, 'mentionerrors'):
-                    text = _("<b>{}</b>, you cannot @mention anyone until your "
-                             "DND status is toggled off.").format(
-                                 event.user.full_name)
+                    text = _(
+                        "<b>{}</b>, you cannot @mention anyone until your "
+                        "DND status is toggled off."
+                    ).format(event.user.full_name)
                     await bot.coro_send_message(event.conv, text)
                 return
             _log("quidproquo: user {full} ({chat}) has 1-on-1", event,
@@ -168,12 +179,12 @@ async def mention(bot, event, *args):
 
     # track mention statistics
     user_tracking = {
-        "mentioned":[],
-        "ignored":[],
+        "mentioned": [],
+        "ignored": [],
         "failed": {
             "pushbullet": [],
             "one2one": [],
-        }
+        },
     }
 
     conv_title = event.display_title
@@ -208,7 +219,7 @@ async def mention(bot, event, *args):
                             bot.get_config_suboption(event.conv_id,
                                                      'mentionerrors')):
                         text = _("<b>{}</b> blocked from mentioning all users"
-                                ).format(event.user.full_name)
+                                 ).format(event.user.full_name)
                         await bot.coro_send_message(event.conv, text)
                     return
 
@@ -311,9 +322,10 @@ async def mention(bot, event, *args):
             event.user_id.chat_id, "mentionmultipleusermessage") or True
 
         if conv_1on1 and (send_multiple_user_message or noisy_mention_test):
-            lines = [_('{} users would be mentioned with "@{}"! Be more '
-                       'specific. List of matching users:').format(
-                           len(mention_list), username, conv_title)]
+            lines = [
+                _('{} users would be mentioned with "@{}"! Be more specific. '
+                  'List of matching users:'
+                  ).format(len(mention_list), username, conv_title)]
 
             for user in mention_list:
                 nickname = bot.user_memory_get(user.id_.chat_id, "nickname")
@@ -323,14 +335,14 @@ async def mention(bot, event, *args):
                 lines.append(name)
 
             lines.append('')
-            lines.append(_("<i>To toggle this message on/off, use <b>{} "
-                           "bemorespecific</b></i>".format(
-                               bot.command_prefix)))
+            lines.append(
+                _("<i>To toggle this message on/off, use <b>{} bemorespecific"
+                  "</b></i>".format(bot.command_prefix)))
 
             await bot.coro_send_message(conv_1on1, "\n>".join(lines))
 
         logger.info("@%s not sent due to multiple recipients", username)
-        return #SHORT-CIRCUIT
+        return  # SHORT-CIRCUIT
 
     source_name = event.user.get_displayname(event.conv_id, text_only=True)
     text = event.text
@@ -364,7 +376,7 @@ async def mention(bot, event, *args):
                         id(push)
                     )
                     success = False
-            except Exception:    # pushbullet part - pylint:disable=broad-except
+            except Exception:  # pushbullet part - pylint:disable=broad-except
                 logger.exception("pushbullet error")
                 success = False
 
@@ -372,7 +384,7 @@ async def mention(bot, event, *args):
                 user_tracking["mentioned"].append(user.full_name)
                 logger.info("%s (%s) alerted via pushbullet",
                             user.full_name, user_chat_id)
-                alert_via_1on1 = False # disable 1on1 alert
+                alert_via_1on1 = False  # disable 1on1 alert
             else:
                 user_tracking["failed"]["pushbullet"].append(user.full_name)
                 logger.info("pushbullet alert failed for %s (%s)",
@@ -399,7 +411,7 @@ async def mention(bot, event, *args):
                     await bot.coro_send_message(
                         event.conv, _("@mention didn't work for <b>{}</b>. User"
                                       " must say something to me first."
-                                     ).format(user.full_name))
+                                      ).format(user.full_name))
                 logger.info("user %s (%s) could not be alerted via 1on1",
                             user.full_name, user_chat_id)
 
@@ -409,8 +421,8 @@ async def mention(bot, event, *args):
             (_("1-to-1 fail"), user_tracking["failed"]["one2one"]),
             (_("PushBullet fail"), user_tracking["failed"]["pushbullet"]),
             (_("Ignored (DND)"), user_tracking["ignored"]),
-            (_("Alerted"), user_tracking["mentioned"])
-            ]
+            (_("Alerted"), user_tracking["mentioned"]),
+        ]
         template_tracking = "{info}: <i>{users}</i>"
         for info, values in tracking:
             if not values:
@@ -426,6 +438,7 @@ async def mention(bot, event, *args):
                            "privately first."))
 
         await bot.coro_send_message(event.conv, '<br>'.join(lines))
+
 
 def pushbulletapi(bot, event, *args):
     """allow users to configure pushbullet integration with api key"""
@@ -466,12 +479,11 @@ def bemorespecific(bot, event, *dummys):
     return text
 
 
-
 def setnickname(bot, event, *args):
     """allow users to set a nickname for mentions and sync relays"""
 
-    truncate_length = 16 # What should the maximum length of the nickname be?
-    min_length = 2 # What should the minimum length of the nickname be?
+    truncate_length = 16  # What should the maximum length of the nickname be?
+    min_length = 2  # What should the minimum length of the nickname be?
 
     chat_id = event.user_id.chat_id
 
@@ -483,10 +495,10 @@ def setnickname(bot, event, *args):
     # Truncate nickname
     nickname = nickname[0:truncate_length]
 
-    if nickname and len(nickname) < min_length: # Check minimum length
+    if nickname and len(nickname) < min_length:  # Check minimum length
         return _("Error: Minimum length of nickname is {} characters. "
                  "Only alphabetical and numeric characters allowed."
-                ).format(min_length)
+                 ).format(min_length)
 
     # perform hard-coded substitution on words that trigger easter eggs
     for original in EASTER_EGGS:

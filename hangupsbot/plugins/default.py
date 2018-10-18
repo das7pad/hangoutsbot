@@ -1,13 +1,16 @@
 """basic commands for the HangupsBot"""
-import re
 import json
 import logging
+import re
 
 import hangups
 
 from hangupsbot import plugins
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 from hangupsbot.utils import remove_accents
-from hangupsbot.commands import command, Help
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +35,6 @@ HELP = {
 
     "quit": _("stop running"),
 
-
     "config": _("displays or modifies the configuration\n"
                 "* {bot_cmd} config get [key] [subkey] [...]\n"
                 "* {bot_cmd} config set [key] [subkey] [...] [value]\n"
@@ -47,14 +49,27 @@ HELP = {
 }
 
 # non-persistent internal state independent of config.json/memory.json
-_INTERNAL = {"broadcast": {"message": "", "conversations": []}} # /bot broadcast
+_INTERNAL = {"broadcast": {"message": "", "conversations": []}}  # /bot broadcast
+
 
 def _initialise():
     """register the commands and their help entries"""
-    plugins.register_admin_command(["broadcast", "users", "user", "hangouts",
-                                    "rename", "leave", "reload", "quit",
-                                    "config", "whereami"])
-    plugins.register_user_command(["echo", "whoami"])
+    plugins.register_admin_command([
+        "broadcast",
+        "users",
+        "user",
+        "hangouts",
+        "rename",
+        "leave",
+        "reload",
+        "quit",
+        "config",
+        "whereami",
+    ])
+    plugins.register_user_command([
+        "echo",
+        "whoami",
+    ])
     plugins.register_help(HELP)
 
 
@@ -115,9 +130,12 @@ async def broadcast(bot, dummy, *args):
     if sub_cmd == "info":
         # display broadcast data such as message and target rooms
 
-        conv_info = ["<b><i>{name}</i></b> ... <i>{conv_id}</i>".format(
-            name=bot.conversations.get_name(convid, '~'), conv_id=convid)
-                     for convid in _INTERNAL["broadcast"]["conversations"]]
+        conv_info = [
+            "<b><i>{name}</i></b> ... <i>{conv_id}</i>".format(
+                name=bot.conversations.get_name(convid, '~'),
+                conv_id=convid)
+            for convid in _INTERNAL["broadcast"]["conversations"]
+        ]
 
         if not _INTERNAL["broadcast"]["message"]:
             text = [_("broadcast: no message set")]
@@ -189,7 +207,7 @@ async def broadcast(bot, dummy, *args):
 
     elif sub_cmd == "NOW":
         # send the broadcast
-        context = {"syncroom_no_repeat": True} # prevent echos across syncrooms
+        context = {"syncroom_no_repeat": True}  # prevent echos across syncrooms
         for convid in _INTERNAL["broadcast"]["conversations"]:
             await bot.coro_send_message(convid,
                                         _INTERNAL["broadcast"]["message"],
@@ -231,15 +249,21 @@ def user(bot, dummy, *args):
     search_lower = search.strip().lower()
     search_upper = search.strip().upper()
 
-    segments = [hangups.ChatMessageSegment(_('results for user named "{}":').format(search),
-                                           is_bold=True),
-                hangups.ChatMessageSegment('\n', hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK)]
+    line_break = hangups.ChatMessageSegment(
+        text='\n', segment_type=hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK)
+
+    segments = [
+        hangups.ChatMessageSegment(
+            _('results for user named "{}":').format(search),
+            is_bold=True),
+    ]
 
     all_known_users = {}
     for chat_id in bot.memory["user_data"]:
         all_known_users[chat_id] = bot.get_hangups_user(chat_id)
 
-    for usr in sorted(all_known_users.values(), key=lambda x: x.full_name.split()[-1]):
+    for usr in sorted(all_known_users.values(),
+                      key=lambda x: x.full_name.split()[-1]):
         fullname_lower = usr.full_name.lower()
         fullname_upper = usr.full_name.upper()
         non_spaced_lower = re.sub(r'\s+', '', fullname_lower)
@@ -247,20 +271,29 @@ def user(bot, dummy, *args):
 
         if (search_lower in fullname_lower
                 or search_lower in non_spaced_lower
-                # XXX: turkish alphabet special case: conversation works better when uppercase
+                # XXX: turkish alphabet special case:
+                #  conversation works better when uppercase
                 or search_upper in remove_accents(fullname_upper)
                 or search_upper in remove_accents(non_spaced_upper)):
 
+            segments.append(line_break)
+
             link = 'https://plus.google.com/u/0/{}/about'.format(usr.id_.chat_id)
-            segments.append(hangups.ChatMessageSegment(usr.full_name, hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
-                                                       link_target=link))
+            segments.append(
+                hangups.ChatMessageSegment(
+                    text=usr.full_name,
+                    segment_type=hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
+                    link_target=link))
             if usr.emails:
                 segments.append(hangups.ChatMessageSegment(' ('))
-                segments.append(hangups.ChatMessageSegment(usr.emails[0], hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
-                                                           link_target='mailto:{}'.format(usr.emails[0])))
+                segments.append(
+                    hangups.ChatMessageSegment(
+                        text=usr.emails[0],
+                        segment_type=hangups.hangouts_pb2.SEGMENT_TYPE_LINK,
+                        link_target='mailto:{}'.format(usr.emails[0])))
                 segments.append(hangups.ChatMessageSegment(')'))
-            segments.append(hangups.ChatMessageSegment(' ... {}'.format(usr.id_.chat_id)))
-            segments.append(hangups.ChatMessageSegment('\n', hangups.hangouts_pb2.SEGMENT_TYPE_LINE_BREAK))
+            segments.append(
+                hangups.ChatMessageSegment(' ... {}'.format(usr.id_.chat_id)))
 
     return segments
 
@@ -292,7 +325,7 @@ def hangouts(bot, dummy, *args):
 
     if text_search:
         lines.insert(0, _('<b>List of hangouts matching:</b> "<i>{term}</i>"'
-                         ).format(term=text_search))
+                          ).format(term=text_search))
 
     return "\n".join(lines)
 
@@ -348,7 +381,7 @@ async def reload(bot, event, *dummys):
     bot.memory.load()
 
 
-def quit(bot, event, *dummys):                # pylint:disable=redefined-builtin
+def quit(bot, event, *dummys):  # pylint:disable=redefined-builtin
     """kill the bot
 
     Args:
@@ -377,6 +410,7 @@ async def config(bot, event, *args):
         KeyError: the given path does not exist
         ValueError: the given value is not a valid json
     """
+
     async def _test():
         num_parameters = len(parameters)
         text_parameters = []
@@ -400,7 +434,7 @@ async def config(bot, event, *args):
 
         return "\n".join(text_parameters)
 
-    #TODO(das7pad): refactor into smaller parts and validate the new value/path
+    # TODO(das7pad): refactor into smaller parts and validate the new value/path
 
     # consume arguments and differentiate beginning of a json array or object
     cmd, *tokens = args or (None,)

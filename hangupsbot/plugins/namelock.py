@@ -17,14 +17,16 @@ HELP = {
                ' {bot_cmd} topic'),
 }
 
+
 def _initialise():
     plugins.register_handler(_watch_rename, "rename")
-    plugins.register_admin_command(["topic"])
+    plugins.register_admin_command([
+        "topic",
+    ])
     plugins.register_help(HELP)
 
 
 async def _watch_rename(bot, event):
-
     memory_topic_path = ["conv_data", event.conv_id, "topic"]
 
     old_name = None
@@ -58,7 +60,8 @@ async def _watch_rename(bot, event):
                 hangups_user.full_name, event.user_id.chat_id, event.conv_id,
                 event.conv_event.new_name, old_name)
 
-            await command.run(bot, event, *["convrename", "id:" + event.conv_id, old_name])
+            await command.run(bot, event,
+                              *["convrename", "id:" + event.conv_id, old_name])
 
 
 async def topic(bot, event, *args):

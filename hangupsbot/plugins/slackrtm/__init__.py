@@ -49,6 +49,7 @@ import logging
 
 from hangupsbot import plugins
 
+
 # reload the other modules
 # pylint: disable=wrong-import-position,unused-import
 for _path_ in ('exceptions', 'parsers', 'message', 'storage',

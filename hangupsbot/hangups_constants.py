@@ -3,7 +3,6 @@ from hangups import hangouts_pb2
 
 
 class TypingStatus:
-
     """Typing statuses."""
 
     TYPING = hangouts_pb2.TYPING_TYPE_STARTED
@@ -15,7 +14,6 @@ class TypingStatus:
 
 
 class FocusStatus:
-
     """Focus statuses."""
 
     FOCUSED = hangouts_pb2.FOCUS_TYPE_FOCUSED
@@ -26,7 +24,6 @@ class FocusStatus:
 
 
 class FocusDevice:
-
     """Focus devices."""
 
     DESKTOP = hangouts_pb2.FOCUS_DEVICE_DESKTOP
@@ -35,7 +32,6 @@ class FocusDevice:
 
 
 class ConversationType:
-
     """Conversation type."""
 
     STICKY_ONE_TO_ONE = hangouts_pb2.CONVERSATION_TYPE_ONE_TO_ONE
@@ -46,7 +42,6 @@ class ConversationType:
 
 
 class ClientConversationView:
-
     """Conversation view."""
 
     UNKNOWN_CONVERSATION_VIEW = hangouts_pb2.CONVERSATION_VIEW_UNKNOWN
@@ -55,7 +50,6 @@ class ClientConversationView:
 
 
 class ClientNotificationLevel:
-
     """Notification level."""
 
     UNKNOWN_NOTIFICATION = hangouts_pb2.NOTIFICATION_LEVEL_UNKNOWN
@@ -64,7 +58,6 @@ class ClientNotificationLevel:
 
 
 class ClientConversationStatus:
-
     """Conversation status."""
 
     UNKNOWN_CONVERSATION_STATUS = hangouts_pb2.CONVERSATION_STATUS_UNKNOWN
@@ -74,7 +67,6 @@ class ClientConversationStatus:
 
 
 class SegmentType:
-
     """Message content segment type."""
 
     TEXT = hangouts_pb2.SEGMENT_TYPE_TEXT
@@ -83,7 +75,6 @@ class SegmentType:
 
 
 class MembershipChangeType:
-
     """Conversation membership change type."""
 
     JOIN = hangouts_pb2.MEMBERSHIP_CHANGE_TYPE_JOIN
@@ -91,7 +82,6 @@ class MembershipChangeType:
 
 
 class ClientHangoutEventType:
-
     """Hangout event type."""
 
     START_HANGOUT = hangouts_pb2.HANGOUT_EVENT_TYPE_START
@@ -106,7 +96,6 @@ class ClientHangoutEventType:
 
 
 class OffTheRecordStatus:
-
     """Off-the-record status."""
 
     OFF_THE_RECORD = hangouts_pb2.OFF_THE_RECORD_STATUS_OFF_THE_RECORD
@@ -116,7 +105,6 @@ class OffTheRecordStatus:
 
 
 class ClientOffTheRecordToggle:
-
     """Off-the-record toggle status."""
 
     ENABLED = hangouts_pb2.OFF_THE_RECORD_TOGGLE_ENABLED
@@ -127,7 +115,6 @@ class ClientOffTheRecordToggle:
 
 
 class ActiveClientState:
-
     """Active client state."""
 
     NO_ACTIVE_CLIENT = hangouts_pb2.ACTIVE_CLIENT_STATE_NO_ACTIVE

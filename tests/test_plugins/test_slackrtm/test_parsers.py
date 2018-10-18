@@ -2,7 +2,10 @@
 __author__ = 'das7pad@outlook.com'
 
 from hangupsbot.plugins.slackrtm import parsers
-from hangupsbot.sync.parser import get_formatted, MessageSegment
+from hangupsbot.sync.parser import (
+    MessageSegment,
+    get_formatted,
+)
 
 
 SEGMENTS = [
@@ -70,9 +73,11 @@ def serialize(segments):
 def test_segments_to_mrkdwn():
     assert get_formatted(SEGMENTS, parsers.SLACK_STYLE) == SLACK_MRKDWN_OUT
 
+
 def test_mrkdwn_to_segments():
     parsed = parsers.SlackMessageSegment.from_str(SLACK_MRKDWN_IN)
     assert serialize(SEGMENTS) == serialize(parsed)
+
 
 def test_multilevel_parsing():
     parsed = parsers.SlackMessageSegment.from_str(SLACK_MRKDWN_OUT)

@@ -8,11 +8,10 @@ import emoji
 from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.parser import get_formatted
-
 from .constants import (
-    MESSAGE_TYPES_TO_SKIP,
     MESSAGE_SUBTYPES_MEMBERSHIP_JOIN,
     MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE,
+    MESSAGE_TYPES_TO_SKIP,
 )
 from .exceptions import (
     IgnoreMessage,
@@ -21,6 +20,7 @@ from .exceptions import (
 )
 from .parsers import SlackMessageSegment
 from .user import SlackUser
+
 
 # fix for simple_smile support
 emoji.EMOJI_UNICODE[':simple_smile:'] = emoji.EMOJI_UNICODE[':smiling_face:']
@@ -31,6 +31,7 @@ GUC_FMT = re.compile(r'^(.*)<(https?://[^\s/]*googleusercontent.com/[^\s]*)>$',
                      re.MULTILINE | re.DOTALL)
 
 REF_FMT = re.compile(r'<((.)([^|>]*))((\|)([^>]*)|([^>]*))>')
+
 
 def parse_text(slackrtm, text):
     """clean the text from slack tags/markdown and search for an image
@@ -43,6 +44,7 @@ def parse_text(slackrtm, text):
         tuple[list[parsers.SlackMessageSegment], str]: formatted text and an
             image url - if present otherwise None
     """
+
     def matchreference(match):
         """replace slack tags with the full descriptor
 
@@ -77,7 +79,6 @@ def parse_text(slackrtm, text):
         out = out.replace('*', '%2A')
         out = out.replace('`', '%60')
         return out
-
 
     if not text:
         # performance
@@ -255,7 +256,7 @@ class SlackMessage(BotMixin):
             hangupsbot.sync.event.SyncReply: the wrapped reply content or `None`
         """
         if (reply['type'] == 'message' and 'text' in reply
-                and reply.get('attachments')    # covers missing/empty
+                and reply.get('attachments')  # covers missing/empty
                 and reply['attachments'][0].get('is_share')
                 and 'text' in reply['attachments'][0]):
 

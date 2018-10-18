@@ -13,6 +13,7 @@ HELP = {
                   "multiple aliases separated by blanks>"),
 }
 
+
 def _initialise(bot):
     """load in bot aliases from memory, create defaults if none"""
 
@@ -46,8 +47,11 @@ def _initialise(bot):
     # pylint:enable=protected-access
     logger.info("aliases: %s", bot_command_aliases)
 
-    plugins.register_user_command(["botalias"])
+    plugins.register_user_command([
+        "botalias",
+    ])
     plugins.register_help(HELP)
+
 
 def botalias(bot, event, *args):
     """update the botaliases for bot commands
@@ -88,4 +92,4 @@ def botalias(bot, event, *args):
     bot.memory.set_by_path(["bot.command_aliases"], _aliases)
     bot.memory.save()
 
-    return botalias(bot, event) # run with no arguments
+    return botalias(bot, event)  # run with no arguments

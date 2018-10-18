@@ -3,11 +3,19 @@
 # TODO(das7pad): more tests
 
 import pytest
+
 import hangupsbot.event
+from hangupsbot import (
+    commands,
+    core,
+    plugins,
+)
+from tests import (
+    CONV_ID_1,
+    Message,
+    simple_conv_list,
+)
 
-from hangupsbot import core, plugins, commands
-
-from tests import simple_conv_list, CONV_ID_1, Message
 
 # pylint:disable=redefined-outer-name
 

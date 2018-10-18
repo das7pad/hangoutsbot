@@ -7,7 +7,6 @@ from hangups import hangouts_pb2
 
 from hangupsbot import plugins
 from hangupsbot.commands import Help
-
 from .user import SyncUser
 from .utils import get_sync_config_entry
 
@@ -56,7 +55,7 @@ DEFAULT_CONFIG = {
     'sync_format_name': '{firstname} ({nickname})',
     'sync_format_name_only': '{fullname}',
 
-    'sync_title' : False,
+    'sync_title': False,
 
     # toggle to use the live title of the conv instead of the custom chattitle
     'sync_title_long': False,
@@ -72,7 +71,7 @@ DEFAULT_CONFIG = {
     'sync_format_message_bot': '{reply}{edited}{image_tag}{text}',
 
     'sync_format_membership_add': _('<b>{name}</b> added {participants} {title}'
-                                   ),
+                                    ),
     'sync_format_membership_kick': _('<b>{name}</b> kicked {participants} '
                                      '{title}'),
     'sync_format_membership_join': _('<b>{name}</b> joined {title}'),
@@ -135,7 +134,7 @@ DEFAULT_CONFIG = {
 
 DEFAULT_MEMORY = {
     'chattitle': {},
-    'check_users': {}
+    'check_users': {},
 }
 
 # exclude those from being changed without effect by sync_config()
@@ -216,7 +215,6 @@ HELP = {
                      '{bot_cmd} sync_config list\nThis list does not include '
                      'regular Hangouts conv ids as these can be received via\n'
                      '{bot_cmd} hangouts [<search term>]'),
-
 }
 
 SYNCPROFILE_HELP = _(
@@ -239,9 +237,18 @@ def _initialise(bot):
         bot (hangupsbot.core.HangupsBot): the running instance
     """
     bot.memory.validate(DEFAULT_MEMORY)
-    plugins.register_user_command(['syncusers', 'syncprofile', 'sync1to1'])
-    plugins.register_admin_command(['chattitle', 'sync_config', 'check_users',
-                                    'autokick', 'finduser'])
+    plugins.register_user_command([
+        'syncusers',
+        'syncprofile',
+        'sync1to1',
+    ])
+    plugins.register_admin_command([
+        'chattitle',
+        'sync_config',
+        'check_users',
+        'autokick',
+        'finduser',
+    ])
     plugins.register_sync_handler(_autokick, 'membership')
     plugins.register_help(HELP)
 
@@ -252,6 +259,7 @@ def _initialise(bot):
 
     bot.register_shared('setchattitle', functools.partial(_chattitle, bot))
     bot.register_shared('sync_config', functools.partial(_sync_config, bot))
+
 
 def _convid_from_args(bot, args, conv_id=None):
     """get the conv_id and cleaned params from raw args
@@ -274,6 +282,7 @@ def _convid_from_args(bot, args, conv_id=None):
         else:
             params.append(item)
     return conv_id, params
+
 
 async def sync_config(bot, event, *args):
     """update a config entry for a conversation
@@ -313,10 +322,11 @@ async def sync_config(bot, event, *args):
     except (KeyError, TypeError) as err:
         return err.args[0]
     else:
-        return _('{sync_option} updated for conversation "{conv_id}" '
-                 'from "{old}" to "{new}"').format(
-                     sync_option=key, conv_id=conv_id, old=last_value,
-                     new=new_value)
+        return _(
+            '{sync_option} updated for conversation "{conv_id}" from "{old}" to '
+            '"{new}"'
+        ).format(sync_option=key, conv_id=conv_id, old=last_value, new=new_value)
+
 
 def _sync_config(bot, conversation, key, value):
     """update a config entry for a conversation
@@ -364,14 +374,15 @@ def _sync_config(bot, conversation, key, value):
         if not isinstance(new_value, expected_type):
             raise TypeError(
                 _('{new} is not a valid value for {sync_option}: '
-                  'expected {wanted_type} but got {new_type}').format(
-                      new=new_value, sync_option=key, wanted_type=expected_type,
-                      new_type=type(new_value)))
+                  'expected {wanted_type} but got {new_type}'
+                  ).format(new=new_value, sync_option=key,
+                           wanted_type=expected_type, new_type=type(new_value)))
 
         bot.config.set_by_path(path, new_value)
 
     bot.config.save()
     return last_value, new_value
+
 
 async def chattitle(bot, event, *args):
     """set the title that will be synced for the current conversation
@@ -388,6 +399,7 @@ async def chattitle(bot, event, *args):
         Help: invalid query specified
     """
     return _chattitle(bot, args, 'hangouts', bot.conversations, event.conv_id)
+
 
 def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
     """update or receive the chattitle for a given conversation on any platform
@@ -431,6 +443,7 @@ def _chattitle(bot, args=None, platform=None, source=None, fallback=None):
     return _('Chattitle changed for {} from "{}" to "{}".').format(
         conv_id, current_title, new_title)
 
+
 async def syncusers(bot, event, *args):
     """get users that attend current or given conversation
 
@@ -446,6 +459,7 @@ async def syncusers(bot, event, *args):
         Help: the user requested help
     """
     return await _syncusers(bot, args, event.conv_id, event.user_id)
+
 
 async def _syncusers(bot, args, conv_id=None, user_id=None):
     """get users that attend current or given conversation
@@ -508,9 +522,8 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
                     label = '<b>%s</b>' % user.get_displayname(conv_id,
                                                                text_only=True)
 
-
                 lines.append('{spacer} {is_g_plus}{label}'.format(
-                    spacer=' '*6,
+                    spacer=' ' * 6,
                     # do not show a G+ tag if the (G+)user link is shown anyways
                     is_g_plus='' if (user.id_.chat_id == 'sync' or
                                      parsed['ids'] or
@@ -521,13 +534,13 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
                     continue
 
                 # (first) user link
-                lines.append('{}{}'.format(' '*9, user.user_link))
+                lines.append('{}{}'.format(' ' * 9, user.user_link))
 
                 if (user.id_.chat_id != 'sync' and
                         user.id_.chat_id not in user.user_link):
                     # G+ user has got a platform specific link, append a G+ link
                     lines.append('{}https://plus.google.com/{}'.format(
-                        ' '*9, user.id_.chat_id))
+                        ' ' * 9, user.id_.chat_id))
 
     if user_id is not None and user_id.chat_id not in bot.config['admins']:
         return _('You are not member of the chat "%s"') % conv_id
@@ -536,6 +549,7 @@ async def _syncusers(bot, args, conv_id=None, user_id=None):
     lines.append(_('{} users in total.').format(user_count))
 
     return '\n'.join(lines)
+
 
 async def finduser(bot, event, *args):
     """search for a user in a given conversation or search in all conversations
@@ -585,6 +599,7 @@ async def finduser(bot, event, *args):
     lines.extend(sorted(entries))
     return '\n'.join(lines)
 
+
 async def syncprofile(bot, event, *args):
     """syncs ho-user with platform-user-profile and syncs pHO <-> platform 1on1
 
@@ -628,6 +643,7 @@ async def syncprofile(bot, event, *args):
         platform=platform, chat_id=chat_id, remote_user=remote_user,
         split_1on1s=split)
 
+
 async def sync1to1(bot, event, *args):
     """change the setting for 1on1 syncing to a platform
 
@@ -662,17 +678,18 @@ async def sync1to1(bot, event, *args):
                 or matching[0] if len(matching) == 1 else None)
 
     if platform is None:
-        raise Help(_('"{term}" is not a valid sync platform, choose one of:\n'
-                     '{platforms}').format(
-                         term=args[0],
-                         platforms='"%s"' % '", "'.join(platforms)))
+        raise Help(
+            _('"{term}" is not a valid sync platform, choose one of:\n'
+              '{platforms}').format(term=args[0],
+                                    platforms='"%s"' % '", "'.join(platforms)))
 
     path = ['profilesync', platform, 'ho2', event.user_id.chat_id]
     if not bot.memory.exists(path):
         label, cmd, dummy = bot.sync.profilesync_cmds[platform]
-        return _('You do not have a profilesync set for <b>{platform}</b>!\n'
-                 'Start one there with <b>{platform_cmd}</b>').format(
-                     platform=label, platform_cmd=cmd)
+        return _(
+            'You do not have a profilesync set for <b>{platform}</b>!\n'
+            'Start one there with <b>{platform_cmd}</b>'
+        ).format(platform=label, platform_cmd=cmd)
     platform_id = bot.memory.get_by_path(path)
 
     conv_1on1 = (await bot.get_1to1(event.user_id.chat_id, force=True)).id_
@@ -681,6 +698,7 @@ async def sync1to1(bot, event, *args):
     await bot.sync.run_pluggable_omnibus(
         'profilesync', bot=bot, platform=platform,
         remote_user=platform_id, conv_1on1=conv_1on1, split_1on1s=split)
+
 
 async def check_users(bot, event, *args):
     """add or kick all users that are missing or not on the list, include syncs
@@ -694,6 +712,7 @@ async def check_users(bot, event, *args):
         str: a status message
     """
     return await _config_check_users(bot, *args, conv_id=event.conv_id)
+
 
 async def _config_check_users(bot, *args, conv_id=None, targets=None):
     """add or kick all users that are missing or not on the list, include syncs
@@ -747,6 +766,7 @@ async def _config_check_users(bot, *args, conv_id=None, targets=None):
     return await _check_users(bot, conv_id, kick_only='kick_only' in args,
                               verbose='verbose' in args, targets=targets)
 
+
 async def _check_users(bot, conv_id, kick_only=False, verbose=True,
                        targets=None):
     """add or kick all users that are missing or not on the list, include syncs
@@ -796,9 +816,9 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
                       _('whitelisted') if result == 'whitelisted' else
                       str(result))
 
-        summery.append(' '*2 + status)
-        summery.append(' '*4 + user.get_displayname(conv_id, True))
-        summery.append(' '*4 + user.user_link)
+        summery.append(' ' * 2 + status)
+        summery.append(' ' * 4 + user.get_displayname(conv_id, True))
+        summery.append(' ' * 4 + user.user_link)
     if summery:
         summery.insert(0, _('Kick requests:'))
 
@@ -817,13 +837,14 @@ async def _check_users(bot, conv_id, kick_only=False, verbose=True,
         summery.append(_('Users added:'))
         for item in new_user:
             user = SyncUser(user_id=item)
-            summery.append(' '*3 + user.get_displayname(conv_id, True))
-            summery.append(' '*3 + user.user_link)
+            summery.append(' ' * 3 + user.get_displayname(conv_id, True))
+            summery.append(' ' * 3 + user.user_link)
 
     if not summery:
         summery = [_('No changes')]
 
     return '\n'.join(summery)
+
 
 async def _autokick(bot, event):
     """kick users that are not previously whitelisted for the conversation
@@ -848,6 +869,7 @@ async def _autokick(bot, event):
         return
 
     await bot.coro_send_message(event.conv_id, text)
+
 
 def autokick(bot, event, *args):
     """change the setting for autokick for a given or the current conversation

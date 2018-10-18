@@ -28,7 +28,9 @@ def _initialise(bot):
         pluggable='sending',
         priority=10000  # drop the targets in the very last moment
     )
-    plugins.register_user_command(['mute'])
+    plugins.register_user_command([
+        'mute',
+    ])
     plugins.register_help(HELP)
 
     plugins.register_shared('is_muted', functools.partial(_is_muted, bot))
@@ -126,7 +128,7 @@ async def mute(bot, event, *args):
         bot.memory.save()
 
     lines = [
-        _('Updated the <i>mute</i> setting for these Chats:')
+        _('Updated the <i>mute</i> setting for these Chats:'),
     ]
     for conv_id, code in status.items():
         if code is None:

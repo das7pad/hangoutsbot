@@ -1,17 +1,20 @@
 """hangups conversation data cache"""
 # pylint: disable=W0212
-from datetime import datetime
+
 import logging
 import random
 import re
+from datetime import datetime
 
 import hangups
 
 from hangupsbot.base_models import BotMixin
 
+
 logger = logging.getLogger(__name__)
 
 SENTINEL = object()
+
 
 def name_from_hangups_conversation(conv):
     """get the name for supplied hangups conversation
@@ -30,6 +33,7 @@ def name_from_hangups_conversation(conv):
     names = [user.first_name for user in participants
              if not user.is_self]
     return ', '.join(names)
+
 
 def load_missing_entries(bot):
     """load users and conversations that are missing on bot start into hangups
@@ -55,6 +59,7 @@ def load_missing_entries(bot):
 
     for conv_id in bot.conversations:
         bot.get_conversation(conv_id)
+
 
 async def initialise(bot):
     """load cache from memory and update it with new data from hangups
@@ -83,6 +88,7 @@ async def initialise(bot):
 
 class ConversationMemory(BotMixin):
     """cache conversation data that might be missing on bot start"""
+
     def __init__(self):
         self.catalog = {}
 
@@ -315,18 +321,20 @@ class ConversationMemory(BotMixin):
             "source": source,
             "history": not conv.is_off_the_record,
             "participants": [],
-            "type": ("GROUP" if _conversation.type
-                     == hangups.hangouts_pb2.CONVERSATION_TYPE_GROUP
+            "type": ("GROUP"
+                     if (_conversation.type
+                         == hangups.hangouts_pb2.CONVERSATION_TYPE_GROUP)
                      else "ONE_TO_ONE"),
-            "status": ("INVITED" if _conversation.self_conversation_state.status
-                       == hangups.hangouts_pb2.CONVERSATION_STATUS_INVITED
+            "status": ("INVITED"
+                       if (_conversation.self_conversation_state.status
+                           == hangups.hangouts_pb2.CONVERSATION_STATUS_INVITED)
                        else "DEFAULT"),
             "link_sharing": (_conversation.group_link_sharing_status ==
-                             hangups.hangouts_pb2.GROUP_LINK_SHARING_STATUS_ON)
+                             hangups.hangouts_pb2.GROUP_LINK_SHARING_STATUS_ON),
         }
 
-        _users_to_fetch = [] # track unknown users from hangups Conversation
-        users_changed = False # track whether memory["user_data"] was changed
+        _users_to_fetch = []  # track unknown users from hangups Conversation
+        users_changed = False  # track whether memory["user_data"] was changed
 
         for user in conv.users:
             if not user.is_self:
@@ -372,7 +380,6 @@ class ConversationMemory(BotMixin):
 
         return conv_changed or users_changed
 
-
     def remove(self, conv_id):
         """remove the permamem entry of a given conversation
 
@@ -394,7 +401,7 @@ class ConversationMemory(BotMixin):
         else:
             logger.warning("cannot remove: %s, not found", conv_id)
 
-    def get(self, search="", **kwargs):          #pylint:disable=too-many-locals
+    def get(self, search="", **kwargs):  # pylint:disable=too-many-locals
         """get conversations matching a filter of terms
 
         supports sequential boolean operations,
@@ -410,6 +417,7 @@ class ConversationMemory(BotMixin):
         Raises:
             ValueError: invalid boolean operator specified
         """
+
         def parse_request(locals_):
             """split multiple queries to their filter functions and queryvalue
 
@@ -462,10 +470,11 @@ class ConversationMemory(BotMixin):
                     parsed.append((operator, term, _id))
             return parsed
 
-        #### begin search function definitions ###
+        # begin search function definitions
         # NOTE: more filter can be added here
-        # a search for "querytype:queryvalue" requires a function with a
-        # footprint like: _querytype(convid, convdata, queryvalue)
+        #  a search for "querytype:queryvalue" requires a function with a
+        #  footprint like: _querytype(convid, convdata, queryvalue)
+        #
         def _text(dummy0, convdata, query):
             """check the conv title for the given query
 
@@ -536,7 +545,8 @@ class ConversationMemory(BotMixin):
             return (query in self.bot.tags.indices["tag-convs"] and
                     convid in self.bot.tags.indices["tag-convs"][query])
 
-        ### end search function definitions ###
+        #
+        # end of search function definitions
         sourcelist = self.catalog.copy()
         matched = {}
 

@@ -4,7 +4,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 SLACKRTMS = []
 
 LAST_MIGRATION = 20170919
@@ -43,6 +42,7 @@ def setup_storage(bot):
     bot.config.set_defaults(DEFAULT_CONFIG)
     bot.memory.set_defaults(DEFAULT_MEMORY)
     _migrate_data(bot)
+
 
 def migrate_on_domain_change(slackrtm, old_domain):
     """migrate the team data in memory
@@ -106,6 +106,7 @@ def migrate_on_domain_change(slackrtm, old_domain):
     bot.config.save()
     bot.memory.save()
 
+
 def _migrate_data(bot):
     """run all migration steps
 
@@ -118,6 +119,7 @@ def _migrate_data(bot):
 
     bot.config.save()
     bot.memory.save()
+
 
 def _migrate_20170319(bot):
     """split slackrtm memory.json usage
@@ -142,6 +144,7 @@ def _migrate_20170319(bot):
 
     bot.memory.set_by_path([memory_root_key], migrated_configurations)
 
+
 def _migrate_20170917(bot):
     """migrate the synced profiles
 
@@ -163,6 +166,7 @@ def _migrate_20170917(bot):
         if 'hangouts' in identities:
             path_ho2 = ['profilesync', identifier, 'ho2']
             bot.memory.set_by_path(path_ho2, identities['hangouts'])
+
 
 def _migrate_20170919(bot):
     """extract the config entries for sync behaviour

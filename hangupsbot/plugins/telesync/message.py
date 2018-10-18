@@ -9,9 +9,9 @@ from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.utils.cache import Cache
-
 from .exceptions import IgnoreMessage
 from .user import User
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,12 @@ class _LocationCache(Cache):
     Note: we can not resolve a msg_id to a user_id without storing the original
      message. The debug-mode logs complete messages.
     """
+
     def __missing__(self, identifier):
         return 0, (0, 0)
 
 
-_LOCATION_SHARING_MAX = 60*60*8             # 8hours
+_LOCATION_SHARING_MAX = 60 * 60 * 8  # 8hours
 _LOCATION_CACHE = _LocationCache(
     default_timeout=_LOCATION_SHARING_MAX,
     name='telesync_location_cache',
@@ -173,6 +174,7 @@ class Message(dict, BotMixin):
             IgnoreMessage: the message should not be synced,
                 invalid type or duplicate location
         """
+
         def _create_google_maps_url():
             """create Google Maps query from a location in the message
 
@@ -182,7 +184,7 @@ class Message(dict, BotMixin):
             Raises:
                 IgnoreMessage: duplicate location, discard this message
             """
-            msg_id = self.msg_id    # cache property call
+            msg_id = self.msg_id  # cache property call
             pos = (self['location']['latitude'], self['location']['longitude'])
             if self.edited:
                 # the message is part of a live location sharing
@@ -233,7 +235,7 @@ class Message(dict, BotMixin):
             self.text = self.get('caption', '')
             extension = (self['document'].get('file_name') or
                          self['document']['mime_type']
-                        ).rsplit('.', 1)[-1].rsplit('/', 1)[-1]
+                         ).rsplit('.', 1)[-1].rsplit('/', 1)[-1]
 
             type_ = ('photo' if 'image' in self['document']['mime_type']
                      else 'video')

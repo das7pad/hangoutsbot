@@ -3,11 +3,15 @@
 the following events provide the properties that are in general needed to
 identify a user of a message, the message content and the conversation
 """
-#pylint: disable=too-few-public-methods, too-many-instance-attributes
+# pylint: disable=too-few-public-methods, too-many-instance-attributes
 
 import logging
 
-from hangups import TYPING_TYPE_STARTED, TYPING_TYPE_PAUSED, ChatMessageEvent
+from hangups import (
+    ChatMessageEvent,
+    TYPING_TYPE_PAUSED,
+    TYPING_TYPE_STARTED,
+)
 
 from hangupsbot.base_models import BotMixin
 
@@ -23,6 +27,7 @@ class GenericEvent(BotMixin):
          one of hangups.parsers.{TypingStatusMessage, WatermarkNotification}
         conv_id (str): conversation identifier
     """
+
     def __init__(self, conv_event, conv_id):
         self.conv_event = conv_event
         self.conv_id = conv_id
@@ -47,13 +52,14 @@ class TypingEvent(GenericEvent):
     Args:
         state_update_event (hangups.parsers.TypingStatusMessage): data wrapper
     """
+
     def __init__(self, state_update_event):
         super().__init__(state_update_event, state_update_event.conv_id)
         self.timestamp = state_update_event.timestamp
         status = state_update_event.status
-        self.text = ('typing started' if status == TYPING_TYPE_STARTED
-                     else 'typing paused' if status == TYPING_TYPE_PAUSED
-                     else 'typing stopped')
+        self.text = ('typing started' if status == TYPING_TYPE_STARTED else
+                     'typing paused' if status == TYPING_TYPE_PAUSED else
+                     'typing stopped')
 
 
 class WatermarkEvent(GenericEvent):
@@ -62,6 +68,7 @@ class WatermarkEvent(GenericEvent):
     Args:
         state_update_event (hangups.parsers.WatermarkNotification): data wrapper
     """
+
     def __init__(self, state_update_event):
         super().__init__(state_update_event, state_update_event.conv_id)
         self.timestamp = state_update_event.read_timestamp
@@ -74,6 +81,7 @@ class ConversationEvent(GenericEvent):
     Args:
         conv_event (hangups.ConversationEvent): event data wrapper
     """
+
     def __init__(self, conv_event):
         super().__init__(conv_event, conv_event.conversation_id)
 

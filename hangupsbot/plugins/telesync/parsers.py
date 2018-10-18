@@ -1,12 +1,17 @@
 """parser to process telegram messages"""
 
-from reparser import Segment
 from hangups.message_parser import Tokens
+from reparser import Segment
 
-from hangupsbot.sync.parser import MessageSegment, MessageParser
+from hangupsbot.sync.parser import (
+    MessageParser,
+    MessageSegment,
+)
+
 
 class TelegramMessageParser(MessageParser):
     """message parser to merge entities into text"""
+
     def __init__(self):
         super().__init__(Tokens.basic)
 
@@ -39,6 +44,7 @@ class TelegramMessageParser(MessageParser):
 
     def unescape_markdown(self, text):
         return text
+
 
 class TelegramMessageSegment(MessageSegment):
     """message segment for telegram messages"""

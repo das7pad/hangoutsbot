@@ -3,6 +3,7 @@ __author__ = 'das7pad@outlook.com'
 
 from hangupsbot.sync.user import SyncUser
 
+
 class SlackUser(SyncUser):
     """get a sync user for a given user id from slack
 

@@ -15,7 +15,6 @@ from hangupsbot import plugins
 
 logger = logging.getLogger(__name__)
 
-
 _EXTERNALS = {"bot": None}
 
 
@@ -24,7 +23,8 @@ def _initialise(bot):
     plugins.register_shared('image_validate_link', image_validate_link)
     plugins.register_shared('image_upload_single', image_upload_single)
     plugins.register_shared('image_upload_raw', image_upload_raw)
-    plugins.register_shared('image_validate_and_upload_single', image_validate_and_upload_single)
+    plugins.register_shared('image_validate_and_upload_single',
+                            image_validate_and_upload_single)
 
 
 def image_validate_link(image_uri, reject_googleusercontent=True):
@@ -42,7 +42,8 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
 
     image_uri_lower = image_uri.lower()
 
-    if re.match(r"^(https?://)?([a-z0-9.]*?\.)?imgur.com/", image_uri_lower, re.IGNORECASE):
+    if re.match(r"^(https?://)?([a-z0-9.]*?\.)?imgur.com/", image_uri_lower,
+                re.IGNORECASE):
         # imgur links can be supplied with/without protocol and extension
         probable_image_link = True
 
@@ -50,11 +51,13 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
         # imgur links can be supplied with/without protocol and extension
         probable_image_link = True
 
-    elif image_uri_lower.startswith(("http://", "https://", "//")) and image_uri_lower.endswith((".png", ".gif", ".gifv", ".jpg", ".jpeg")):
+    elif (image_uri_lower.startswith(("http://", "https://", "//")) and
+          image_uri_lower.endswith((".png", ".gif", ".gifv", ".jpg", ".jpeg"))):
         # other image links must have protocol and end with valid extension
         probable_image_link = True
 
-    if probable_image_link and reject_googleusercontent and ".googleusercontent." in image_uri_lower:
+    if (probable_image_link and reject_googleusercontent
+            and ".googleusercontent." in image_uri_lower):
         # reject links posted by google to prevent endless attachment loop
         logger.debug("rejected link %s with googleusercontent", image_uri)
         return False
@@ -71,7 +74,9 @@ def image_validate_link(image_uri, reject_googleusercontent=True):
             image_uri = image_uri.replace(".gifv", ".gif")
 
         elif re.match(r'^https?://gfycat.com', image_uri):
-            image_uri = re.sub(r'^https?://gfycat.com/', 'https://thumbs.gfycat.com/', image_uri) + '-size_restricted.gif'
+            image_uri = re.sub(r'^https?://gfycat.com/',
+                               'https://thumbs.gfycat.com/',
+                               image_uri) + '-size_restricted.gif'
 
         logger.info('%s seems to be a valid image link', image_uri)
 
@@ -88,7 +93,8 @@ async def image_upload_single(image_uri):
             async with session.request('get', image_uri) as res:
                 content_type = res.headers['Content-Type']
 
-                image_handling = False # must == True if valid image, can contain additional directives
+                # must be True if valid image, can contain additional directives
+                image_handling = False
 
                 # image handling logic for specific image types
                 #  - if necessary, guess by extension
@@ -100,9 +106,11 @@ async def image_upload_single(image_uri):
                         image_handling = "standard"
 
                 elif content_type == "application/octet-stream":
-                    ext = filename.split(".")[-1].lower() # guess the type from the extension
+                    # guess the type from the extension
+                    ext = filename.split(".")[-1].lower()
 
-                    if ext in ("jpg", "jpeg", "jpe", "jif", "jfif", "gif", "png"):
+                    if (ext in
+                            ("jpg", "jpeg", "jpe", "jif", "jfif", "gif", "png")):
                         image_handling = "standard"
                     elif ext == "webp":
                         image_handling = "image_convert_to_png"
@@ -111,11 +119,12 @@ async def image_upload_single(image_uri):
                     raw = await res.read()
                     if image_handling != "standard":
                         try:
-                            results = await getattr(sys.modules[__name__], image_handling)(raw)
+                            results = await getattr(sys.modules[__name__],
+                                                    image_handling)(raw)
                             if results:
                                 # allow custom handlers to fail gracefully
                                 raw = results
-                        except Exception:         # pylint: disable=broad-except
+                        except Exception:  # pylint: disable=broad-except
                             # unhandled Exception from custom image handler
                             logger.exception("custom image handler failed: %s",
                                              image_handling)
@@ -137,7 +146,8 @@ async def image_upload_single(image_uri):
 async def image_upload_raw(image_data, filename):
     image_id = False
     try:
-        image_id = await _EXTERNALS["bot"].upload_image(image_data, filename=filename)
+        image_id = await _EXTERNALS["bot"].upload_image(image_data,
+                                                        filename=filename)
     except KeyError as exc:
         logger.warning("upload_image failed: %r", exc)
     return image_id
@@ -146,14 +156,16 @@ async def image_upload_raw(image_data, filename):
 async def image_validate_and_upload_single(text, reject_googleusercontent=True):
     # pylint:disable=invalid-name
     image_id = False
-    image_link = image_validate_link(text, reject_googleusercontent=reject_googleusercontent)
+    image_link = image_validate_link(
+        image_uri=text, reject_googleusercontent=reject_googleusercontent)
     if image_link:
         image_id = await image_upload_single(image_link)
     return image_id
 
 
 async def image_convert_to_png(image):
-    path_imagemagick = _EXTERNALS["bot"].config.get_option("image.imagemagick") or "/usr/bin/convert"
+    path_imagemagick = _EXTERNALS["bot"].config.get_option(
+        "image.imagemagick") or "/usr/bin/convert"
     cmd = (path_imagemagick, "-", "png:-")
 
     try:

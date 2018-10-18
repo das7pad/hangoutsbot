@@ -4,19 +4,22 @@ import asyncio
 import logging
 import re
 
-from hangupsbot import commands
-from hangupsbot import plugins
+from hangupsbot import (
+    commands,
+    plugins,
+)
 from hangupsbot.sync.event import SyncEvent
+
 
 logger = logging.getLogger(__name__)
 
 USER_NOTE_SELF_MENTION = _(
     "Note: You will not be able to trigger your own subscriptions. To test, "
     "please ask somebody else to test this for you."
-    )
+)
 USER_NOTE_START_1ON1 = _(
     "Note: I am unable to ping you until you start a 1on1 conversation with me!"
-    )
+)
 
 # Cache to keep track of what keywords are being watched.
 # _KEYWORDS is indexed with a users chat_id, _GLOBAL_KEYWORDS by keyword
@@ -65,6 +68,7 @@ _DEFAULT_MEMORY = {
 }
 _RE_UNESCAPE = re.compile(r'\\()')
 
+
 def _initialise(bot):
     """start listening to messages, register commands and cache user keywords
 
@@ -73,9 +77,17 @@ def _initialise(bot):
     """
     plugins.register_sync_handler(_handle_keyword, 'message')
     plugins.register_sync_handler(_handle_once, 'message_once')
-    plugins.register_user_command(["subscribe", "unsubscribe"])
-    plugins.register_admin_command(["global_subscribe", "global_unsubscribe"])
-    plugins.register_admin_command(["testsubscribe"])
+    plugins.register_user_command([
+        "subscribe",
+        "unsubscribe",
+    ])
+    plugins.register_admin_command([
+        "global_subscribe",
+        "global_unsubscribe",
+    ])
+    plugins.register_admin_command([
+        "testsubscribe",
+    ])
     plugins.register_help(HELP)
     bot.register_shared('hide_from_subscribe', _hide_from_subscribe)
 
@@ -85,6 +97,7 @@ def _initialise(bot):
     bot.memory.save()
 
     _populate_keywords(bot)
+
 
 def _hide_from_subscribe(item):
     """register a command to be hidden from subscribes on execute
@@ -99,6 +112,7 @@ def _hide_from_subscribe(item):
     else:
         logger.warning('%r is not a valid command container', item,
                        include_stack=True)
+
 
 def _migrate_data(bot):
     """escape keywords
@@ -115,6 +129,7 @@ def _migrate_data(bot):
             data['keywords'] = [re.escape(entry) for entry in data['keywords']]
         bot.memory.set_by_path(path, 20171029)
 
+
 def _populate_keywords(bot):
     """Pull the keywords from memory
 
@@ -126,6 +141,7 @@ def _populate_keywords(bot):
         if user_keywords:
             _KEYWORDS[user_chat_id] = re.compile(r'|'.join(user_keywords))
     _GLOBAL_KEYWORDS.update(bot.memory['hosubscribe'])
+
 
 def _is_ignored_command(event):
     """check whether the event runs a command that should not trigger a mention
@@ -140,8 +156,9 @@ def _is_ignored_command(event):
     args = event.text.split()
     if len(args) < 2:
         return False
-    prefixes = event.bot._handlers.bot_command # pylint:disable=protected-access
+    prefixes = event.bot._handlers.bot_command  # pylint:disable=protected-access
     return args[0] in prefixes and args[1] in IGNORED_COMMANDS
+
 
 def _handle_keyword(bot, event, dummy, include_event_user=False):
     """handle keyword"""
@@ -171,6 +188,7 @@ def _handle_keyword(bot, event, dummy, include_event_user=False):
         event.notified_users.add(user.id_.chat_id)
         asyncio.ensure_future(
             _send_notification(bot, event, matches, user))
+
 
 def _handle_once(bot, event):
     """scan the text of an event for subscribed keywords and notify the targets
@@ -218,6 +236,7 @@ def _handle_once(bot, event):
         asyncio.ensure_future(bot.sync.message(conv_id=conv_id, text=text,
                                                **kwargs))
 
+
 async def _send_notification(bot, event, matches, user):
     """Alert a user that a keyword that they subscribed to has been used
 
@@ -261,6 +280,7 @@ async def _send_notification(bot, event, matches, user):
     logger.info("%s (%s) alerted via 1on1 (%s)",
                 user.full_name, user.id_.chat_id, conv_1on1.id_)
 
+
 def _unescape_regex(regex):
     """replace escaped regex char
 
@@ -271,6 +291,7 @@ def _unescape_regex(regex):
         str: unescaped source
     """
     return _RE_UNESCAPE.sub(r'\1', regex.replace(r'\b', ' '))
+
 
 def _escape_keyword(keyword):
     """escape a keyword to use it as part of a regex
@@ -287,6 +308,7 @@ def _escape_keyword(keyword):
             and keyword[0] in '"\''):
         return r'\b%s\b' % re.escape(keyword[2:-2])
     return re.escape(keyword)
+
 
 async def subscribe(bot, event, *args):
     """allow users to subscribe to phrases, only one input at a time
@@ -341,6 +363,7 @@ async def subscribe(bot, event, *args):
 
     return '\n'.join(lines)
 
+
 def unsubscribe(bot, event, *args):
     """Allow users to unsubscribe from phrases
 
@@ -382,6 +405,7 @@ def unsubscribe(bot, event, *args):
     bot.user_memory_set(chat_id, 'keywords', user_keywords)
     return text
 
+
 async def testsubscribe(bot, event, *dummys):
     """handle the event text and allow the user to be self-mentioned
 
@@ -394,6 +418,7 @@ async def testsubscribe(bot, event, *dummys):
                            text=event.conv_event.segments)
     await sync_event.process()
     _handle_keyword(bot, sync_event, False, include_event_user=True)
+
 
 def global_subscribe(bot, event, *args):
     """subscribe keywords globally with a custom conversation as target
@@ -419,16 +444,16 @@ def global_subscribe(bot, event, *args):
     keyword = args[-1].lower()
 
     if keyword in _GLOBAL_KEYWORDS:
-        if alias in _GLOBAL_KEYWORDS[keyword]:
+        current = _GLOBAL_KEYWORDS[keyword]
+        if alias in current:
             return _('The conversation "{alias}" already receives messages '
                      'containing "{keyword}".').format(alias=alias,
                                                        keyword=keyword)
 
-        _GLOBAL_KEYWORDS[keyword].append(alias)
+        current.append(alias)
         text = _('These conversation will receive messages containing '
-                 '"{keyword}":\n{conv_ids}').format(
-                     keyword=keyword,
-                     conv_ids=', '.join(_GLOBAL_KEYWORDS[keyword]))
+                 '"{keyword}":\n{conv_ids}').format(keyword=keyword,
+                                                    conv_ids=', '.join(current))
 
     elif keyword != 'show':
         _GLOBAL_KEYWORDS[keyword] = [alias]
@@ -440,15 +465,15 @@ def global_subscribe(bot, event, *args):
         for keyword_, conversations in _GLOBAL_KEYWORDS.copy().items():
             if alias in conversations:
                 subscribes.append(keyword_)
+
+        keywords = ', '.join('"%s"' % item for item in subscribes) or _('None')
         return _('The conversation "{alias}" has subscribed to {keywords}'
-                ).format(
-                    alias=alias,
-                    keywords=(', '.join('"%s"' % item for item in subscribes)
-                              or _('None')))
+                 ).format(alias=alias, keywords=keywords)
 
     bot.memory['hosubscribe'] = _GLOBAL_KEYWORDS
     bot.memory.save()
     return text
+
 
 def global_unsubscribe(bot, event, *args):
     """unsubscribe from keywords globally
@@ -478,7 +503,7 @@ def global_unsubscribe(bot, event, *args):
 
     if alias not in _GLOBAL_KEYWORDS[keyword]:
         return _('The conversation "{alias}" has not subscribed to "{keyword}"'
-                ).format(alias=alias, keyword=keyword)
+                 ).format(alias=alias, keyword=keyword)
 
     _GLOBAL_KEYWORDS[keyword].remove(alias)
 

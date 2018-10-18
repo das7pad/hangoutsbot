@@ -9,8 +9,11 @@ import sys
 
 import appdirs
 
-from hangupsbot import config
-from hangupsbot import version
+from hangupsbot import (
+    config,
+    version,
+)
+
 
 def configure_logging(args):
     """Configure Logging
@@ -32,7 +35,7 @@ def configure_logging(args):
             },
             "default": {
                 "format": "%(asctime)s %(levelname)s %(name)s: %(message)s",
-            }
+            },
         },
         "handlers": {
             "console": {
@@ -52,31 +55,31 @@ def configure_logging(args):
                 "filename": args.log.rsplit(".", 1)[0] + "_warnings.log",
                 "level": "WARNING",
                 "formatter": "default",
-            }
+            },
         },
         "loggers": {
             # base config, applies to all logger
             "": {
                 "handlers": ["file", "console", "file_warnings"],
-                "level": log_level
+                "level": log_level,
             },
             # adjust the log-level for modules explicit:
 
-            ## security: do not expose tokens to the log file
+            # security: do not expose tokens to the log file
             "urllib3.connectionpool": {"level": "INFO"},
             "requests": {"level": "INFO"},
 
-            ## adjust noisy module logger
+            # adjust noisy module logger
             "asyncio": {"level": "WARNING"},
             "hangups": {"level": "WARNING"},
 
-            ## ignore the addition of fallback users
+            # ignore the addition of fallback users
             "hangups.user": {"level": "ERROR"},
 
-            ## do not log disconnects twice, we already attach a logger to
-            ## our `hangups.Client.on_disconnect` event
+            # do not log disconnects twice, we already attach a logger to
+            # our `hangups.Client.on_disconnect` event
             "hangups.channel": {"level": "ERROR"},
-        }
+        },
     }
 
     # Temporarily bring in the configuration file, just so we can configure
@@ -93,6 +96,7 @@ def configure_logging(args):
             logging_config = boot_config["logging.system"]
 
     logging.config.dictConfig(logging_config)
+
 
 def main():
     """Main entry point"""

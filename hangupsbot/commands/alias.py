@@ -5,8 +5,8 @@ __author__ = 'kilr00y@esthar.net, das7pad@outlook.com'
 import functools
 
 from hangupsbot import plugins
-
 from hangupsbot.commands import Help
+
 
 HELP = {
     'gethoalias': _('Get the alias for the current or given conversation\n'
@@ -15,8 +15,9 @@ HELP = {
     'sethoalias': _('Set or unset the alias for the current or given '
                     'conversation\n{bot_cmd} sethoalias <alias>\n{bot_cmd} '
                     'sethoalias none\n{bot_cmd} sethoalias <alias> <convID>\n'
-                    '{bot_cmd} sethoalias none <convID>')
+                    '{bot_cmd} sethoalias none <convID>'),
 }
+
 
 def _initialise(bot):
     """register the commands and help, shareds on the aliases
@@ -26,12 +27,17 @@ def _initialise(bot):
     """
     bot.memory.validate({'hoalias': {}})
 
-    plugins.register_user_command(['gethoalias'])
-    plugins.register_admin_command(['sethoalias'])
+    plugins.register_user_command([
+        'gethoalias',
+    ])
+    plugins.register_admin_command([
+        'sethoalias',
+    ])
     plugins.register_help(HELP)
 
     plugins.register_shared('convid2alias', functools.partial(get_alias, bot))
     plugins.register_shared('alias2convid', functools.partial(get_convid, bot))
+
 
 def get_alias(bot, conv_id):
     """get the alias for the given conversation
@@ -48,6 +54,7 @@ def get_alias(bot, conv_id):
             return alias
     return None
 
+
 def get_convid(bot, alias):
     """get the conversation of an alias
 
@@ -62,6 +69,7 @@ def get_convid(bot, alias):
     if alias in bot.memory['hoalias']:
         return bot.memory['hoalias'][alias]
     return None
+
 
 def sethoalias(bot, event, *args):
     """set the alias for the current or given conversation
@@ -105,6 +113,7 @@ def sethoalias(bot, event, *args):
 
     return _('<i>HO alias for</i>  {conv_id} <i>is set to</i>  <b>'
              '{new_alias}</b>').format(conv_id=conv_id, new_alias=new_alias)
+
 
 def gethoalias(bot, event, *args):
     """get the alias for the current or given conversation

@@ -6,8 +6,8 @@ __all__ = (
     'TrackingMixin',
 )
 
-
 _STORAGE = {}
+
 
 class BotMixin:
     """Mixin which has a `core.HangupsBot` reference during runtime
@@ -16,6 +16,7 @@ class BotMixin:
     """
     __slots__ = ()
     _STORAGE['bot'] = None
+
     @property
     def bot(self):
         """get the running HangupsBot
@@ -42,6 +43,7 @@ class TrackingMixin:
     """
     __slots__ = ()
     _STORAGE['tracking'] = None
+
     @property
     def tracking(self):
         """get the current tracking

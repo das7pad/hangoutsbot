@@ -19,14 +19,17 @@ _EXTERNALS = {"running": False}
 
 
 def _initialise():
-    plugins.register_user_command(["meme"])
+    plugins.register_user_command([
+        "meme",
+    ])
     plugins.register_help(HELP)
 
 
 async def meme(bot, event, *args):
     """Searches for a meme related to <something>"""
     if _EXTERNALS["running"]:
-        await bot.coro_send_message(event.conv_id, "<i>busy, give me a moment...</i>")
+        await bot.coro_send_message(event.conv_id,
+                                    "<i>busy, give me a moment...</i>")
         return
 
     _EXTERNALS["running"] = True
@@ -34,7 +37,8 @@ async def meme(bot, event, *args):
     parameters = args or ("robot",)
     try:
         # public api: http://version1.api.memegenerator.net
-        url_api = 'http://version1.api.memegenerator.net/Instances_Search?q=' + "+".join(parameters) + '&pageIndex=0&pageSize=25'
+        url_api = ('http://version1.api.memegenerator.net/Instances_Search?q='
+                   + "+".join(parameters) + '&pageIndex=0&pageSize=25')
 
         async with aiohttp.ClientSession() as session:
             async with session.request('get', url_api) as api_request:
@@ -55,15 +59,19 @@ async def meme(bot, event, *args):
             logger.debug("uploading %s from %s", filename, url_image)
 
             try:
-                photo_id = await bot.call_shared('image_upload_single', url_image)
+                photo_id = await bot.call_shared('image_upload_single',
+                                                 url_image)
             except KeyError:
                 logger.warning('image plugin not loaded - using legacy code')
                 photo_id = await bot.upload_image(image_data, filename=filename)
 
-            await bot.coro_send_message(event.conv_id, segments, image_id=photo_id)
+            await bot.coro_send_message(event.conv_id, segments,
+                                        image_id=photo_id)
 
         else:
-            await bot.coro_send_message(event.conv_id, "<i>couldn't find a nice picture :( try again</i>")
+            await bot.coro_send_message(event.conv_id,
+                                        "<i>couldn't find a nice picture :( "
+                                        "try again</i>")
 
     except (KeyError, IndexError, aiohttp.ClientError, hangups.NetworkError):
         logger.info('meme %s: %r', id(parameters), parameters)
