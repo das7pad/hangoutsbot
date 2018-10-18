@@ -10,6 +10,7 @@ The configuration can be a mixture of config and environment variables.
         'sentry': {
             'dsn': str, a Sentry DSN,
             'level': int, logging level that triggers the sending
+            'breadcrumbs_level', int, minimum logging level for breadcrumbs
             'options': {
                 'enable_breadcrumbs': bool, track previous log messages,
                 'capture_locals': bool, include local variables in a traceback
@@ -36,6 +37,7 @@ except ImportError:
     logging.getLogger(__name__).info('raven and raven_aiohttp are required')
     raise
 
+import raven.breadcrumbs
 from raven.conf import setup_logging
 from raven.handlers.logging import SentryHandler
 
@@ -91,6 +93,9 @@ def _initialize(bot):
     setup_logging(SentryHandler(client, level=level), exclude=())
 
     block_internal_log_messages()
+    setup_breadcrumbs_handler(
+        send_level=sentry.get('breadcrumbs_level', logging.INFO),
+    )
 
 
 def block_internal_log_messages():
@@ -102,3 +107,16 @@ def block_internal_log_messages():
     for name in internal_logger:
         instance = logging.getLogger(name)
         instance.propagate = False
+
+
+def setup_breadcrumbs_handler(send_level):
+    """cleanup old handler, add a new logging handler
+
+    Args:
+        send_level (int): the minimum level that triggers sending
+    """
+    def level_filter(_logger, level, _msg, _args, _kwargs):
+        return level < send_level
+
+    # ignore a message in case a logging handler returned True
+    raven.breadcrumbs.register_logging_handler(level_filter)
