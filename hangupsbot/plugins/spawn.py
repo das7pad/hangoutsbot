@@ -17,9 +17,12 @@ whether it is an admin command or not.
             "fortune": {
                 "command": ["/usr/games/fortune"]
             },
-            "motd": {    <---this is a deliberately unsecure example DO NOT DO THIS!!!
-                "command": ["/bin/cat", "/etc/motd", "--"], <--- "--" is not sufficient!
-                "allow_args": true                          <--- be very careful with allow_args
+            <--- this is a deliberately unsecure example DO NOT DO THIS!!!
+            "motd": {
+                <--- "--" is not sufficient!
+                "command": ["/bin/cat", "/etc/motd", "--"],
+                <--- be very careful with allow_args
+                "allow_args": true
             },
             "stock-info": {
                 "command": ["/home/portfolio/stock-info", "--"]
@@ -64,23 +67,28 @@ The environment variables from this program are passed along to
 the subprocess, along with additional helpers (see code below).
 """
 
+import asyncio
+import logging
 import os
 import re
-import logging
-import asyncio
-from asyncio.subprocess import PIPE
-from datetime import datetime, timedelta, timezone
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 
 from hangupsbot import plugins
 from hangupsbot.commands import command
 
+
 logger = logging.getLogger(__name__)
 
-_MAP_REGEX = \
-    r"\bhttps?://" + \
-    r"(goo\.gl/maps/|(www\.)?google\.com/maps|maps\.google\.com|" + \
-    r"(www\.)?ingress\.com/intel|" + \
+_MAP_REGEX = (
+    r"\bhttps?://"
+    r"(goo\.gl/maps/|(www\.)?google\.com/maps|maps\.google\.com|"
+    r"(www\.)?ingress\.com/intel|"
     r"maps\.apple\.com)\S+\b"
+)
 
 # pylint: disable=global-statement
 _MAP_PINS = {}
@@ -107,14 +115,16 @@ def _initialize(bot):
 
     if get_location:
         global _MAP_MATCH
-        _MAP_MATCH = re.compile(config.get("map_regex", _MAP_REGEX), re.IGNORECASE|re.MULTILINE)
+        _MAP_MATCH = re.compile(config.get("map_regex", _MAP_REGEX),
+                                re.IGNORECASE | re.MULTILINE)
         plugins.register_handler(_location_handler, "message")
 
 
 def _expire_old_pins():
     global _MAP_PINS
     now = datetime.now(timezone.utc)
-    _MAP_PINS = {key:_MAP_PINS[key] for key in _MAP_PINS if _MAP_PINS[key]["expires"] > now}
+    _MAP_PINS = {key: _MAP_PINS[key] for key in _MAP_PINS if
+                 _MAP_PINS[key]["expires"] > now}
 
 
 async def _location_handler(dummy_bot, event):
@@ -125,7 +135,7 @@ async def _location_handler(dummy_bot, event):
     if match:
         _MAP_PINS[(event.conv_id, event.user_id)] = {
             'url': match.group(0),
-            'expires': event.timestamp + timedelta(minutes=30)
+            'expires': event.timestamp + timedelta(minutes=30),
         }
         _expire_old_pins()
 
@@ -153,9 +163,9 @@ async def _spawn(bot, event, *args):
     environment = {
         'HANGOUT_USER_CHATID': event.user_id.chat_id,
         'HANGOUT_USER_FULLNAME': event.user.full_name,
-        'HANGOUT_CONV_ID':  event.conv_id,
+        'HANGOUT_CONV_ID': event.conv_id,
         'HANGOUT_CONV_TAGS': ','.join(bot.tags.useractive(event.user_id.chat_id,
-                                                          event.conv_id))
+                                                          event.conv_id)),
     }
     if cmd_config.get("allow_location"):
         _expire_old_pins()
@@ -166,7 +176,11 @@ async def _spawn(bot, event, *args):
     environment.update(dict(os.environ))
 
     process = await asyncio.create_subprocess_exec(
-        *executable, stdout=PIPE, stderr=PIPE, env=environment)
+        *executable,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=environment
+    )
 
     (stdout_data, stderr_data) = await process.communicate()
     stdout_str = stdout_data.decode().rstrip()

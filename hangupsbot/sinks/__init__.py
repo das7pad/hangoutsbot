@@ -1,4 +1,4 @@
-#TODO(das7pad) add documentation
+# TODO(das7pad) add documentation
 import asyncio
 import functools
 import logging
@@ -9,10 +9,11 @@ from aiohttp import web
 
 from hangupsbot.base_models import TrackingMixin
 from hangupsbot.utils import class_from_name
-
 from .base_bot_request_handler import AsyncRequestHandler
 
+
 logger = logging.getLogger(__name__)
+
 
 class ServerStorage(list, TrackingMixin):
     """storage for running aiohttp servers"""
@@ -30,7 +31,8 @@ class ServerStorage(list, TrackingMixin):
         """
         self.tracking.register_aiohttp_web(group)
 
-aiohttp_servers = ServerStorage()                  # pylint:disable=invalid-name
+
+aiohttp_servers = ServerStorage()  # pylint:disable=invalid-name
 
 
 def start(bot):
@@ -102,6 +104,7 @@ def start(bot):
     if aiohttp_count:
         logger.info("%s aiohttp web listener(s)", aiohttp_count)
 
+
 def aiohttp_start(*, bot, name, port, certfile=None, requesthandlerclass, group,
                   callback=None):
     request_handler = requesthandlerclass(bot)
@@ -126,6 +129,7 @@ def aiohttp_start(*, bot, name, port, certfile=None, requesthandlerclass, group,
 
     aiohttp_servers.register_aiohttp_web(group)
 
+
 def aiohttp_started(future, handler, app, group, callback=None):
     server = future.result()
     constructors = (server, handler, app, group)
@@ -137,6 +141,7 @@ def aiohttp_started(future, handler, app, group, callback=None):
     if callback:
         callback(constructors)
 
+
 def aiohttp_list(groups):
     if isinstance(groups, str):
         groups = [groups]
@@ -147,6 +152,7 @@ def aiohttp_list(groups):
             filtered.append(constructors)
 
     return filtered
+
 
 async def aiohttp_terminate(groups):
     removed = []

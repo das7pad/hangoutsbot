@@ -1,11 +1,13 @@
 import time
 
 import hangups
+
 from hangupsbot import plugins
 
 
 def _initialise():
     plugins.register_handler(on_hangout_call, "call")
+
 
 async def on_hangout_call(bot, event):
     if event.conv_event.event_type == hangups.HANGOUT_EVENT_TYPE_END:
@@ -13,7 +15,6 @@ async def on_hangout_call(bot, event):
         if lastcall:
             last_caller = lastcall["caller"]
             since = int(time.time() - lastcall["timestamp"])
-
 
             if since < 120:
                 human_time = "{} seconds".format(since)
@@ -45,5 +46,7 @@ async def on_hangout_call(bot, event):
                 event.conv_id, _("<b>No prizes for that call</b>"))
 
         bot.conversation_memory_set(
-            event.conv_id, "lastcall", {"caller": event.user.full_name,
-                                        "timestamp": time.time()})
+            event.conv_id, "lastcall", {
+                "caller": event.user.full_name,
+                "timestamp": time.time(),
+            })

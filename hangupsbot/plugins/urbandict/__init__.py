@@ -3,12 +3,13 @@
 Author: Roman Bogorodskiy <bogorodskiy@gmail.com>
 """
 import logging
-from urllib.parse import quote as urlquote
 from html.parser import HTMLParser
+from urllib.parse import quote as urlquote
 
 import aiohttp
 
 from hangupsbot import plugins
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ HELP = {
                    '- the bot and its creators/maintainers take no '
                    'responsibility for any hurt feelings.'),
 }
+
 
 class UrbanDictParser(HTMLParser):
 
@@ -43,7 +45,7 @@ class UrbanDictParser(HTMLParser):
 
     def handle_endtag(self, tag):
         if tag == 'div':
-            #NOTE: assume there is no nested <div> in the known sections
+            # NOTE: assume there is no nested <div> in the known sections
             self._section = None
 
     def handle_data(self, data):
@@ -59,6 +61,7 @@ class UrbanDictParser(HTMLParser):
 
     def error(self, message):
         logger.error(message)
+
 
 def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
@@ -111,5 +114,7 @@ async def urbandict(dummy0, dummy1, *args):
 
 
 def _initialise():
-    plugins.register_user_command(["urbandict"])
+    plugins.register_user_command([
+        "urbandict",
+    ])
     plugins.register_help(HELP)

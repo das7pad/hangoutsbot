@@ -25,10 +25,10 @@ config.json
 """
 
 import logging
-
 from random import randrange
 
 from hangupsbot import plugins
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +45,15 @@ HELP = {
     'chatreset': _("tells cleverbot to forget things you've said in the past"),
 }
 
+
 def _initialise():
     plugins.register_sync_handler(_handle_incoming_message, "message_once")
-    plugins.register_user_command(["chat"])
-    plugins.register_admin_command(["chatreset"])
+    plugins.register_user_command([
+        "chat",
+    ])
+    plugins.register_admin_command([
+        "chatreset",
+    ])
     plugins.register_help(HELP)
 
 
@@ -59,10 +64,12 @@ async def _handle_incoming_message(bot, event):
     if not event.text:
         return
 
-    if not bot.get_config_suboption(event.conv_id, 'cleverbot_percentage_replies'):
+    if not bot.get_config_suboption(event.conv_id,
+                                    'cleverbot_percentage_replies'):
         return
 
-    percentage = bot.get_config_suboption(event.conv_id, 'cleverbot_percentage_replies')
+    percentage = bot.get_config_suboption(event.conv_id,
+                                          'cleverbot_percentage_replies')
 
     if randrange(0, 101, 1) < float(percentage):
         await chat(bot, event)
@@ -71,9 +78,12 @@ async def _handle_incoming_message(bot, event):
 def _get_cw_for_chat(bot, event):
     """initialise/get cleverbot api wrapper"""
 
-    # setting segregate to False makes cleverbot share its memory across non-segregated conversations
-    # important: be careful of information leaking from one conversation to another!
-    # by default, conversation memory is segregated by instantiating new cleverwrap interfaces
+    # setting segregate to False makes cleverbot share its memory across
+    # non-segregated conversations
+    # important: be careful of information leaking from one conversation to
+    # another!
+    # by default, conversation memory is segregated by instantiating new
+    # cleverwrap interfaces
     segregate = bot.get_config_suboption(event.conv_id, "cleverbot_segregate")
     if segregate is None:
         segregate = True
@@ -109,7 +119,8 @@ def chat(bot, event, *args):
     else:
         input_text = event.text
 
-    # chat_cw.say takes one argument, the input string. It is a blocking call that returns cleverbot's response.
+    # chat_cw.say takes one argument, the input string. It is a blocking call
+    # that returns cleverbot's response.
     # see https://github.com/edwardslabs/cleverwrap.py for more information
     response = chat_cw.say(input_text)
 

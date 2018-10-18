@@ -11,12 +11,15 @@ import copy
 import logging
 import time
 
-import pytest
 import hangups
 import hangups.http_utils
 import hangups.user
+import pytest
 from hangups import hangouts_pb2
-from hangups.conversation_event import ChatMessageEvent, ChatMessageSegment
+from hangups.conversation_event import (
+    ChatMessageEvent,
+    ChatMessageSegment,
+)
 
 import hangupsbot.commands
 import hangupsbot.core
@@ -24,27 +27,27 @@ import hangupsbot.handlers
 import hangupsbot.permamem
 import hangupsbot.plugins
 import hangupsbot.sinks
-import hangupsbot.tagging
 import hangupsbot.sync.handler
+import hangupsbot.tagging
 from hangupsbot.event import ConversationEvent
 from hangupsbot.hangups_conversation import HangupsConversationList
-
+from tests.constants import (
+    CHAT_ID_1,
+    CHAT_ID_2,
+    CONFIG_DATA,
+    CONFIG_DATA_DUMPED,
+    CONV_ID_1,
+    CONV_ID_2,
+    DEFAULT_BOT_KWARGS,
+    DEFAULT_TIMESTAMP,
+    EVENT_LOOP,
+    PYTHON36,
+)
 from tests.utils import (
     Message,
     build_user_conversation_list_base,
 )
-from tests.constants import (
-    PYTHON36,
-    EVENT_LOOP,
-    CONV_ID_1,
-    CONV_ID_2,
-    CHAT_ID_1,
-    CHAT_ID_2,
-    DEFAULT_TIMESTAMP,
-    DEFAULT_BOT_KWARGS,
-    CONFIG_DATA,
-    CONFIG_DATA_DUMPED,
-)
+
 
 USER_LIST_KWARGS, CONV_LIST_KWARGS = build_user_conversation_list_base()
 CLEANUP_LOOP = asyncio.new_event_loop()
@@ -71,6 +74,7 @@ def module_wrapper(request):
         if PYTHON36:
             CLEANUP_LOOP.run_until_complete(EVENT_LOOP.shutdown_asyncgens())
         EVENT_LOOP.run_until_complete(asyncio.sleep(0.1))
+
     request.addfinalizer(_cleanup)
     logger.info('Loaded Module %s', request.module.__name__)
 
@@ -87,6 +91,7 @@ class TestChatMessageEvent(ChatMessageEvent):
     Raises:
         ValueError: invalid content provided
     """
+
     def __init__(self, conv_id, chat_id, text=None, segments=None):
         if isinstance(text, str):
             segments = ChatMessageSegment.from_str(text)
@@ -108,6 +113,7 @@ class TestChatMessageEvent(ChatMessageEvent):
             event_id='EVENT_ID-%s' % time.time(),
             event_type=hangouts_pb2.EVENT_TYPE_REGULAR_CHAT_MESSAGE))
 
+
 class TestConversationEvent(ConversationEvent):
     """High level `hangupsbot.event.ConversationEvent`
 
@@ -120,6 +126,7 @@ class TestConversationEvent(ConversationEvent):
     Raises:
         ValueError: invalid content provided
     """
+
     def __init__(self, conv_id, chat_id, text=None, segments=()):
         conv_event = TestChatMessageEvent(conv_id, chat_id, text, segments)
         super().__init__(conv_event)

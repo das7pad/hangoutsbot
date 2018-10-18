@@ -2,9 +2,11 @@
 
 from hangupsbot import plugins
 
+
 def _initialise():
     """register conv sync provider"""
     plugins.register_sync_handler(_get_targets, "conv_sync")
+
 
 def _get_targets(bot, source_id, caller):
     """get all conversations an event should be relayed to

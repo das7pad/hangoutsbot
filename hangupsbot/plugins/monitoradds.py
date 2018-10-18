@@ -1,7 +1,9 @@
 """
-Plugin for monitoring new adds to HOs and alerting if users were not added by an admin or mod.
+Plugin for monitoring new adds to HOs and alerting if users were not added by
+an admin or mod.
 Add mods to the config.json file either globally or on an individual HO basis.
-Add a "watch_new_adds": true  parameter to individual HOs in the config.json file.
+Add a "watch_new_adds": true  parameter to individual HOs in the config.json
+file.
 
 Author: @Riptides
 """
@@ -21,10 +23,15 @@ HELP = {
                 'hangout'),
 }
 
+
 def _initialise():
     plugins.register_sync_handler(_watch_new_adds, "membership_once")
-    plugins.register_admin_command(["addmod", "delmod"])
+    plugins.register_admin_command([
+        "addmod",
+        "delmod",
+    ])
     plugins.register_help(HELP)
+
 
 async def _watch_new_adds(bot, event):
     # Check if watching for new adds is enabled
@@ -40,7 +47,8 @@ async def _watch_new_adds(bot, event):
 
         config_mods = bot.get_config_suboption(event.conv_id, 'mods') or []
         tagged_mods = list(bot.tags.userlist(event.conv_id, "mod").keys())
-        tagged_botkeeper = list(bot.tags.userlist(event.conv_id, "botkeeper").keys())
+        tagged_botkeeper = list(
+            bot.tags.userlist(event.conv_id, "botkeeper").keys())
 
         mods_list = config_mods + tagged_mods + tagged_botkeeper
         try:
@@ -55,14 +63,18 @@ async def _watch_new_adds(bot, event):
                        in event.conv_event.participant_ids]
         names = ', '.join([user.full_name for user in event_users])
 
-        html = _("<b>!!! WARNING !!!</b>\n"
-                 "\n"
-                 "<b>{0}</b> invited <b>{1}</b> without authorization.\n"
-                 "\n"
-                 "<b>{1}</b>: Please leave this hangout and ask a moderator to add you. "
-                 "Thank you for your understanding.").format(event.user.full_name, names)
+        html = _(
+            "<b>!!! WARNING !!!</b>\n"
+            "\n"
+            "<b>{inviter}</b> invited <b>{new}</b> without authorization.\n"
+            "\n"
+            "<b>{new}</b>: Please leave this hangout and ask a moderator to add "
+            "you.\n"
+            "Thank you for your understanding."
+        ).format(inviter=event.user.full_name, new=names)
 
         await bot.coro_send_message(event.conv, html)
+
 
 def addmod(bot, event, *args):
     """add user id(s) to the whitelist of who can add to a hangout"""
@@ -79,6 +91,7 @@ def addmod(bot, event, *args):
     bot.config.save()
     html_message = _("<i>Moderators updated: {} added</i>")
     return html_message.format(args[0])
+
 
 def delmod(bot, dummy, *args):
     """remove user id(s) from the whitelist of who can add to a hangout"""

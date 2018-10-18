@@ -1,10 +1,11 @@
-import random
 import asyncio
+import random
 
 import hangups
 
 from hangupsbot import plugins
 from hangupsbot.commands import Help
+
 
 EGGS = (
     'ponies',
@@ -22,8 +23,11 @@ HELP = {
                    '  - period between eastereggs (in seconds)\n'),
 }
 
+
 def _initialise():
-    plugins.register_admin_command(["easteregg"])
+    plugins.register_admin_command([
+        "easteregg",
+    ])
     plugins.register_help(HELP)
 
 

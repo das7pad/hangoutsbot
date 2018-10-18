@@ -12,7 +12,10 @@ import re
 import sys
 
 from hangupsbot import utils
-from hangupsbot.base_models import BotMixin, TrackingMixin
+from hangupsbot.base_models import (
+    BotMixin,
+    TrackingMixin,
+)
 from hangupsbot.commands import command
 from hangupsbot.sinks import aiohttp_terminate
 
@@ -54,6 +57,7 @@ class Tracker(BotMixin):
     designed to accommodate the dual command registration model (via function or
     decorator)
     """
+
     def __init__(self):
         self.list = {}
         self._current = {}
@@ -99,7 +103,7 @@ class Tracker(BotMixin):
             await asyncio.sleep(0.1)
             waited += 1
 
-        self.end() # cleanup from recent run
+        self.end()  # cleanup from recent run
         self._running = True
 
         module_path = metadata['module.path']
@@ -145,7 +149,7 @@ class Tracker(BotMixin):
                     # priories admin-linked tags if both exist
                     break
 
-        self.reset() # remove current data from the registration
+        self.reset()  # remove current data from the registration
         self._running = False
 
     def register_command(self, type_, command_names, tags=None):
@@ -179,7 +183,7 @@ class Tracker(BotMixin):
             presets = []
 
         for command_name in command_names:
-            command_tags = list(tags) + list(presets) # use copies
+            command_tags = list(tags) + list(presets)  # use copies
 
             recursive_tag_format(command_tags,
                                  command=command_name,
@@ -240,7 +244,7 @@ class Tracker(BotMixin):
         self._current["aiohttp.session"].append(session)
 
 
-tracking = Tracker()                               # pylint:disable=invalid-name
+tracking = Tracker()  # pylint:disable=invalid-name
 
 
 # helpers, used by loaded plugins to register commands
@@ -251,11 +255,13 @@ def register_user_command(command_names, tags=None):
         command_names = [command_names]
     tracking.register_command("user", command_names, tags=tags)
 
+
 def register_admin_command(command_names, tags=None):
     """admin command registration, overrides user command registration"""
     if not isinstance(command_names, list):
         command_names = [command_names]
     tracking.register_command("admin", command_names, tags=tags)
+
 
 def register_help(source, name=None):
     """help content registration
@@ -278,6 +284,7 @@ def register_help(source, name=None):
         raise ValueError('check args')
     tracking.bot.memory.set_defaults(source, ['command_help'])
 
+
 def register_handler(function, pluggable="message", priority=50):
     """register external message handler
 
@@ -296,6 +303,7 @@ def register_handler(function, pluggable="message", priority=50):
     # pylint:enable=protected-access
     bot_handlers.register_handler(function, pluggable, priority)
 
+
 def register_sync_handler(function, name="message", priority=50):
     """register external sync handler
 
@@ -311,6 +319,7 @@ def register_sync_handler(function, name="message", priority=50):
     """
     tracking.bot.sync.register_handler(function, name, priority)
 
+
 def register_shared(identifier, objectref):
     """register a shared object to be called later
 
@@ -322,6 +331,7 @@ def register_shared(identifier, objectref):
         RuntimeError: the identifier is already in use
     """
     tracking.bot.register_shared(identifier, objectref)
+
 
 def start_asyncio_task(coro, *args, **kwargs):
     """start an async callable and track its execution
@@ -342,7 +352,7 @@ def start_asyncio_task(coro, *args, **kwargs):
         expected = inspect.signature(coro).parameters
         if (expected and tuple(expected)[0] == 'bot'
                 and tracking.bot not in args[:1]):
-            args = (tracking.bot, ) + args
+            args = (tracking.bot,) + args
         task = asyncio.ensure_future(coro(*args, **kwargs),
                                      loop=loop)
     else:
@@ -351,9 +361,11 @@ def start_asyncio_task(coro, *args, **kwargs):
     logger.debug(task)
     return task
 
+
 def register_commands_argument_preprocessor_group(name, preprocessors):
     # pylint:disable=invalid-name
     command.register_arg_preprocessor_group(name, preprocessors)
+
 
 def register_aiohttp_session(session):
     """register a session that will be closed on plugin unload
@@ -362,6 +374,7 @@ def register_aiohttp_session(session):
         session (aiohttp.ClientSession): a session to track
     """
     tracking.register_aiohttp_session(session)
+
 
 # plugin loader
 
@@ -438,7 +451,7 @@ def get_configured_plugins(bot):
     """
     config_plugins = bot.config.get_option('plugins')
 
-    if config_plugins is None: # must be unset in config or null
+    if config_plugins is None:  # must be unset in config or null
         logger.info("plugins is not defined, using ALL")
         plugin_list = retrieve_all_plugins()
 
@@ -499,6 +512,7 @@ def get_configured_plugins(bot):
     logger.debug("included %s: %s", len(plugin_list), plugin_list)
     return plugin_list
 
+
 async def load_user_plugins(bot):
     """loads all user plugins
 
@@ -518,8 +532,9 @@ async def load_user_plugins(bot):
             logger.warning('plugin load for %r got cancelled',
                            module_path)
             raise
-        except Exception:                         # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             logger.exception(module_path)
+
 
 async def unload_all(bot):
     """unload user plugins
@@ -620,7 +635,7 @@ async def load(bot, module_path, module_name=None):
             if asyncio.iscoroutinefunction(the_function):
                 await result
 
-    except Exception:                             # pylint: disable=broad-except
+    except Exception:  # pylint: disable=broad-except
         logger.exception("error on plugin init: %s", module_path)
         tracking.end()
         await unload(bot, module_path)
@@ -656,6 +671,7 @@ async def load(bot, module_path, module_name=None):
     tracking.end()
     return True
 
+
 def load_module(module_path):
     """(re) load an external module
 
@@ -677,9 +693,10 @@ def load_module(module_path):
             importlib.import_module(module_path)
 
         return True
-    except Exception:                             # pylint: disable=broad-except
+    except Exception:  # pylint: disable=broad-except
         logger.exception("load_module %s: %s", module_path, message)
         return False
+
 
 async def unload(bot, module_path):
     """unload a plugin including all external registered resources
@@ -762,7 +779,9 @@ async def unload(bot, module_path):
     logger.debug("%s unloaded", module_path)
     return True
 
+
 SENTINELS = {}
+
 
 async def reload_plugin(bot, module_path):
     """reload a plugin and keep track of multiple reloads

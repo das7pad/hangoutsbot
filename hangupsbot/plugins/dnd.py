@@ -13,11 +13,14 @@ HELP = {
              'example: <i>{bot_cmd} dnd 5</i>'),
 }
 
+
 def _initialise(bot):
     _reusable = functools.partial(_user_has_dnd, bot)
     functools.update_wrapper(_reusable, _user_has_dnd)
     plugins.register_shared('dnd.user_check', _reusable)
-    plugins.register_user_command(["dnd"])
+    plugins.register_user_command([
+        "dnd",
+    ])
     plugins.register_help(HELP)
 
 
@@ -32,10 +35,10 @@ def dnd(bot, event, *args):
         # assume hours supplied
         seconds_to_expire = int(args[0]) * 3600
     else:
-        seconds_to_expire = 6 * 3600 # default: 6-hours expiry
+        seconds_to_expire = 6 * 3600  # default: 6-hours expiry
 
     if seconds_to_expire > 259200:
-        seconds_to_expire = 259200 # max: 3 days (72 hours)
+        seconds_to_expire = 259200  # max: 3 days (72 hours)
 
     initiator_chat_id = event.user.id_.chat_id
     donotdisturb = bot.memory["donotdisturb"]
@@ -44,7 +47,7 @@ def dnd(bot, event, *args):
     else:
         donotdisturb[initiator_chat_id] = {
             "created": time.time(),
-            "expiry": seconds_to_expire
+            "expiry": seconds_to_expire,
         }
 
     bot.memory["donotdisturb"] = donotdisturb
@@ -53,7 +56,7 @@ def dnd(bot, event, *args):
     if bot.call_shared("dnd.user_check", initiator_chat_id):
         return "global DND toggled ON for {}, expires in {} hour(s)".format(
             event.user.full_name,
-            str(seconds_to_expire/3600))
+            str(seconds_to_expire / 3600))
     return "global DND toggled OFF for {}".format(event.user.full_name)
 
 
@@ -75,7 +78,7 @@ def _expire_dnds(bot):
 def _user_has_dnd(bot, user_id):
     user_has_dnd = False
     if bot.memory.exists(["donotdisturb"]):
-        _expire_dnds(bot) # expire records prior to check
+        _expire_dnds(bot)  # expire records prior to check
         donotdisturb = bot.memory.get('donotdisturb')
         if user_id in donotdisturb:
             user_has_dnd = True

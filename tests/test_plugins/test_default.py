@@ -11,11 +11,19 @@ import asyncio
 
 import pytest
 
-from hangupsbot import plugins
-from hangupsbot import commands
-
-from tests import simple_conv_list, simple_user_list, run_cmd
-from tests.constants import CHAT_ID_ADMIN, CONV_ID_3
+from hangupsbot import (
+    commands,
+    plugins,
+)
+from tests import (
+    run_cmd,
+    simple_conv_list,
+    simple_user_list,
+)
+from tests.constants import (
+    CHAT_ID_ADMIN,
+    CONV_ID_3,
+)
 
 
 @pytest.mark.asyncio
@@ -53,6 +61,7 @@ async def test_reload(bot, event):
         bot (tests.fixtures.TestHangupsBot): current test instance
         event (tests.fixtures.TestConversationEvent): message wrapper
     """
+
     def on_reload_config():
         reloaded.append('config')
 

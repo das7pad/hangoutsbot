@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 import hangups
 
@@ -47,13 +47,11 @@ class FileWriter:
         if self.paths:
             self.initialised = True
 
-
     def _append_to_file(self, conversation_id, text):
         for path in self.paths:
             conversation_log = path + "/" + conversation_id + ".txt"
             with open(conversation_log, "a") as logfile:
                 logfile.write(text)
-
 
     def on_chat_message(self, bot, event):
         event_timestamp = event.timestamp
@@ -64,10 +62,11 @@ class FileWriter:
 
         user_full_name = event.user.full_name
 
-        text = "--- {}\n{} :: {}\n{}\n".format(conversation_name, event_timestamp, user_full_name, conversation_text)
+        text = "--- {}\n{} :: {}\n{}\n".format(conversation_name,
+                                               event_timestamp, user_full_name,
+                                               conversation_text)
 
         self._append_to_file(conversation_id, text)
-
 
     def on_membership_change(self, bot, event):
         event_timestamp = event.timestamp
@@ -82,12 +81,14 @@ class FileWriter:
         names = ', '.join([user.full_name for user in event_users])
 
         if event.conv_event.type_ == hangups.MEMBERSHIP_CHANGE_TYPE_JOIN:
-            text = "--- {}\n{} :: {}\nADDED: {}\n".format(conversation_name, event_timestamp, user_full_name, names)
+            text = "--- {}\n{} :: {}\nADDED: {}\n".format(conversation_name,
+                                                          event_timestamp,
+                                                          user_full_name, names)
         else:
-            text = "--- {}\n{}\n{} left \n".format(conversation_name, event_timestamp, names)
+            text = "--- {}\n{}\n{} left \n".format(conversation_name,
+                                                   event_timestamp, names)
 
         self._append_to_file(conversation_id, text)
-
 
     def on_rename(self, bot, event):
         event_timestamp = event.timestamp
@@ -97,6 +98,8 @@ class FileWriter:
 
         user_full_name = event.user.full_name
 
-        text = "--- {}\n{} :: {}\nCONVERSATION RENAMED: {}\n".format(conversation_name, event_timestamp, user_full_name, conversation_name)
+        text = "--- {}\n{} :: {}\nCONVERSATION RENAMED: {}\n".format(
+            conversation_name, event_timestamp, user_full_name,
+            conversation_name)
 
         self._append_to_file(conversation_id, text)

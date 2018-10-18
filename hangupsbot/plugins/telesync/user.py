@@ -10,7 +10,9 @@ import telepot.exception
 
 from hangupsbot.sync.user import SyncUser
 
+
 logger = logging.getLogger(__name__)
+
 
 class User(SyncUser):
     """init a user base on a telegram user object in a message object
@@ -22,7 +24,10 @@ class User(SyncUser):
         gpluslink (bool): set to True to get G+links instead of t.me links
     """
     # Fallback for Telegram-channel with redacted publishers
-    FALLBACK = {'id': 0, 'first_name': '~'}
+    FALLBACK = {
+        'id': 0,
+        'first_name': '~',
+    }
     __slots__ = ('tg_bot', 'usr_id', 'full_name', 'username',
                  'photo_url', 'is_self')
 

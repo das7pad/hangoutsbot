@@ -9,12 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 class Tags(BotMixin):
-    regex_allowed = r"a-z0-9._\-" # +command.deny_prefix
+    regex_allowed = r"a-z0-9._\-"  # +command.deny_prefix
 
-    wildcard = {"conversation": "*",
-                "user": "*",
-                "group": "GROUP",
-                "one2one": "ONE_TO_ONE"}
+    wildcard = {
+        "conversation": "*",
+        "user": "*",
+        "group": "GROUP",
+        "one2one": "ONE_TO_ONE",
+    }
 
     indices = {}
 
@@ -29,7 +31,12 @@ class Tags(BotMixin):
                         self.add_to_index(tag_type, tag, id_)
 
     def refresh_indices(self):
-        self.indices = {"user-tags": {}, "tag-users":{}, "conv-tags": {}, "tag-convs": {}}
+        self.indices = {
+            "user-tags": {},
+            "tag-users": {},
+            "conv-tags": {},
+            "tag-convs": {},
+        }
 
         self._load_from_memory("user_data", "user")
         self._load_from_memory("conv_data", "conv")
@@ -37,10 +44,13 @@ class Tags(BotMixin):
         # XXX: custom iteration to retrieve per-conversation-user-overrides
         if self.bot.memory.exists(["conv_data"]):
             for conv_id in self.bot.memory["conv_data"]:
-                if self.bot.memory.exists(["conv_data", conv_id, "tags-users"]):
-                    for chat_id, tags in self.bot.memory["conv_data"][conv_id]["tags-users"].items():
-                        for tag in tags:
-                            self.add_to_index("user", tag, conv_id + "|" + chat_id)
+                path = ["conv_data", conv_id, "tags-users"]
+                if not self.bot.memory.exists(path):
+                    continue
+
+                for chat_id, tags in self.bot.memory.get_by_path(path).items():
+                    for tag in tags:
+                        self.add_to_index("user", tag, conv_id + "|" + chat_id)
 
         logger.info("refreshed")
 
@@ -87,7 +97,6 @@ class Tags(BotMixin):
                     id_ not in (self.wildcard["group"],
                                 self.wildcard["one2one"],
                                 self.wildcard["conversation"])):
-
                 raise ValueError("conversation {} does not exist".format(id_))
 
             tags = self.bot.conversation_memory_get(id_, "tags")
@@ -97,7 +106,6 @@ class Tags(BotMixin):
 
             if (not self.bot.memory.exists(["user_data", id_]) and
                     id_ != self.wildcard["user"]):
-
                 raise ValueError("user {} is invalid".format(id_))
 
             tags = self.bot.user_memory_get(id_, "tags")
@@ -107,13 +115,12 @@ class Tags(BotMixin):
             [conv_id, chat_id] = id_.split("|", maxsplit=1)
 
             if (conv_id not in self.bot.conversations and
-                    conv_id not in (self.wildcard["group"], self.wildcard["one2one"])):
-
+                    conv_id not in (self.wildcard["group"],
+                                    self.wildcard["one2one"])):
                 raise ValueError("conversation {} is invalid".format(conv_id))
 
             if (not self.bot.memory.exists(["user_data", chat_id]) and
                     chat_id != self.wildcard["user"]):
-
                 raise ValueError("user {} is invalid".format(chat_id))
 
             tags_users = self.bot.conversation_memory_get(conv_id, "tags-users")
@@ -132,7 +139,8 @@ class Tags(BotMixin):
 
         if action == "set":
             # XXX: placed here so users can still remove previous invalid tags
-            allowed = "^[{}{}]*$".format(self.regex_allowed, re.escape(command.deny_prefix))
+            allowed = "^[{}{}]*$".format(self.regex_allowed,
+                                         re.escape(command.deny_prefix))
             if not re.match(allowed, tag, re.IGNORECASE):
                 raise ValueError("tag contains invalid characters")
 
@@ -162,43 +170,49 @@ class Tags(BotMixin):
 
             elif tag_type == "convuser":
                 tags_users[chat_id] = tags
-                self.bot.conversation_memory_set(conv_id, "tags-users", tags_users)
+                self.bot.conversation_memory_set(conv_id, "tags-users",
+                                                 tags_users)
 
             else:
                 raise TypeError("unhandled update tag_type {}".format(tag_type))
 
             logger.info("%s/%s action=%s value=%s", tag_type, id_, action, tag)
         else:
-            logger.info("%s/%s action=%s value=%s [NO CHANGE]", tag_type, id_, action, tag)
+            logger.info("%s/%s action=%s value=%s [NO CHANGE]", tag_type, id_,
+                        action, tag)
 
         return updated
-
 
     def add(self, tag_type, id_, tag):
         """add tag to (tag_type=conv|user|convuser) id_"""
         return self.update(tag_type, id_, "set", tag)
 
-
     def remove(self, tag_type, id_, tag):
         """remove tag from (tag_type=conv|user|convuser) id_"""
         return self.update(tag_type, id_, "remove", tag)
 
-
     def purge(self, tag_type, id_):
-        """completely remove the specified tag_type (tag_type="user|convuser|conv|tag|usertag|convtag") and label"""
+        """completely remove the specified tag_type
+
+        (tag_type="user|convuser|conv|tag|usertag|convtag") and label
+        """
         remove = []
 
         if tag_type in ('user', 'convuser'):
             for key in self.indices["user-tags"]:
 
                 match_user = (tag_type == "user" and id_ in (key, 'ALL'))
-                    # runs if tag_type=="user"
-                match_convuser = (key.endswith("|" + id_) or (id_ == "ALL" and "|" in key))
-                    # runs if tag_type=="user" or tag_type=="convuser"
+                # runs if tag_type=="user"
+
+                match_convuser = (key.endswith("|" + id_)
+                                  or (id_ == "ALL" and "|" in key))
+                # runs if tag_type=="user" or tag_type=="convuser"
 
                 if match_user or match_convuser:
                     for tag in self.indices["user-tags"][key]:
-                        remove.append(("user" if match_user else "convuser", key, tag))
+                        remove.append(
+                            ("user" if match_user else "convuser", key, tag)
+                        )
 
         elif tag_type == "conv":
             for key in self.indices["conv-tags"]:
@@ -233,7 +247,6 @@ class Tags(BotMixin):
 
         return records_removed
 
-
     def convactive(self, conv_id):
         """return active tags for conv_id, or generic GROUP, ONE_TO_ONE keys"""
 
@@ -260,7 +273,6 @@ class Tags(BotMixin):
                     break
 
         return active_tags
-
 
     def useractive(self, chat_id, conv_id=None):
         """fetch active tags of user for given conversation or globally
@@ -312,9 +324,11 @@ class Tags(BotMixin):
 
         return list(active_tags)
 
-
     def userlist(self, conv_id, tags=False):
-        """return dict of participating chat_ids to tags, optionally filtered by tag/list of tags"""
+        """return dict of participating chat_ids to tags
+
+        optionally filtered by tag/list of tags
+        """
 
         if isinstance(tags, str):
             tags = [tags]

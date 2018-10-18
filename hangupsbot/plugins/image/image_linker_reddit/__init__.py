@@ -1,6 +1,7 @@
 """trigger popular reddit meme images
 based on the word/image list for the image linker bot on reddit
-sauce: http://www.reddit.com/r/image_linker_bot/comments/2znbrg/image_suggestion_thread_20/
+sauce: http://www.reddit.com/r/image_linker_bot/comments/2znbrg
+/image_suggestion_thread_20/
 """
 import io
 import logging
@@ -25,7 +26,9 @@ _LOOKUP = {}
 
 def _initialise():
     _load_all_the_things()
-    plugins.register_admin_command(["redditmemeword"])
+    plugins.register_admin_command([
+        "redditmemeword",
+    ])
     plugins.register_sync_handler(_scan_for_triggers, "message_once")
     plugins.register_help(HELP)
 
@@ -53,11 +56,14 @@ async def _scan_for_triggers(bot, event):
     if image_links:
         for image_link in image_links:
             try:
-                image_id = await bot.call_shared('image_validate_and_upload_single', image_link)
+                image_id = await bot.call_shared(
+                    'image_validate_and_upload_single', image_link)
             except KeyError:
                 logger.warning('image plugin not loaded - using legacy code')
                 if re.match(r'^https?://gfycat.com', image_link):
-                    image_link = re.sub(r'^https?://gfycat.com/', 'https://thumbs.gfycat.com/', image_link) + '-size_restricted.gif'
+                    image_link = re.sub(r'^https?://gfycat.com/',
+                                        'https://thumbs.gfycat.com/',
+                                        image_link) + '-size_restricted.gif'
                 elif "imgur.com" in image_link:
                     image_link = image_link.replace(".gifv", ".gif")
                     image_link = image_link.replace(".webm", ".gif")

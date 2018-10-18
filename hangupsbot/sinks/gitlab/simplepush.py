@@ -9,6 +9,7 @@ import dateutil.parser
 
 from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,13 +21,15 @@ class WebhookReceiver(AsyncRequestHandler):
         path = path.split("/")
         conv_or_user_id = path[1]
         if conv_or_user_id is None:
-            logger.error("conversation or user id must be provided as part of path")
+            logger.error(
+                "conversation or user id must be provided as part of path")
             return
 
         try:
             payload = json.loads(content)
         except json.JSONDecodeError as err:
-            logger.exception("invalid payload @%d:%d: %s", err.lineno, err.colno, err)
+            logger.exception("invalid payload @%d:%d: %s", err.lineno, err.colno,
+                             err)
             return
 
         logger.error("GitLab message: %s", json.dumps(payload))
@@ -39,7 +42,6 @@ class WebhookReceiver(AsyncRequestHandler):
 
         message = ["GitLab update for [{}]({}) by __{}__".format(
             payload["project"]["name"], payload["project"]["web_url"], user)]
-
 
         if payload["object_kind"] == "push":
             message.append("Pushed {} commit(s) on {} branch:".format(
@@ -67,14 +69,19 @@ class WebhookReceiver(AsyncRequestHandler):
 
         elif payload["object_kind"] == "merge_request":
             request = payload["object_attributes"]
-            message.append("Merge request {}: from [{}:{}]({}) to [{}:{}]({})".format(
-                request["id"],
-                request["source"]["name"], request["source_branch"], request["source"]["web_url"],
-                request["target"]["name"], request["target_branch"], request["target"]["web_url"]))
+            message.append(
+                "Merge request {}: from [{}:{}]({}) to [{}:{}]({})".format(
+                    request["id"],
+                    request["source"]["name"], request["source_branch"],
+                    request["source"]["web_url"],
+                    request["target"]["name"], request["target_branch"],
+                    request["target"]["web_url"]))
 
         else:
-            message.append("{}: unknown gitlab webhook object kind".format(payload["object_kind"]))
-            logger.warning("%s: unknown gitlab webhook object kind", payload["object_kind"])
+            message.append("{}: unknown gitlab webhook object kind".format(
+                payload["object_kind"]))
+            logger.warning("%s: unknown gitlab webhook object kind",
+                           payload["object_kind"])
 
         if message:
             await self.send_data(conv_or_user_id, "\n".join(message))

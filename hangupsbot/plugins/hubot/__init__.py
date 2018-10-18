@@ -6,8 +6,10 @@ import aiohttp
 
 from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
-from hangupsbot.sinks import aiohttp_start
-from hangupsbot.sinks import AsyncRequestHandler as IncomingRequestHandler
+from hangupsbot.sinks import (
+    AsyncRequestHandler as IncomingRequestHandler,
+    aiohttp_start,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -19,8 +21,10 @@ REQUIRED_ENTRIES = {
     "synced_conversations": list,
 }
 
+
 class HubotBridge(BotMixin):
     configuration = []
+
     def __init__(self, config_key, handler_class=IncomingRequestHandler):
         self.config_key = config_key
         self.handler_class = handler_class
@@ -99,7 +103,7 @@ class HubotBridge(BotMixin):
         user_id = event.user_id
 
         url = config["HUBOT_URL"] + conversation_id
-        payload = {"from" : str(user_id.chat_id), "message" : conversation_text}
+        payload = {"from": str(user_id.chat_id), "message": conversation_text}
         headers = {'content-type': 'application/json'}
 
         connector = aiohttp.TCPConnector(verify_ssl=False)

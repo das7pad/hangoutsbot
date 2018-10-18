@@ -13,6 +13,7 @@ import aiohttp
 
 from hangupsbot import plugins
 
+
 logger = logging.getLogger(__name__)
 _INTERNAL = {}
 
@@ -36,15 +37,22 @@ HELP = {
                   "location is not set talk to a hangout admin."),
 }
 
+
 def _initialize(bot):
     api_key = bot.config.get_option('forecast_api_key')
     if api_key:
         _INTERNAL['forecast_api_key'] = api_key
-        plugins.register_user_command(['weather', 'forecast'])
-        plugins.register_admin_command(['setweatherlocation'])
+        plugins.register_user_command([
+            'weather',
+            'forecast',
+        ])
+        plugins.register_admin_command([
+            'setweatherlocation',
+        ])
         plugins.register_help(HELP)
     else:
         logger.debug('WEATHER: config["forecast_api_key"] required')
+
 
 async def setweatherlocation(bot, event, *args):
     """Sets the Lat Long default coordinates for this hangout"""
@@ -59,23 +67,33 @@ async def setweatherlocation(bot, event, *args):
     if not bot.memory.exists(["conv_data", event.conv.id_]):
         bot.memory.set_by_path(['conv_data', event.conv.id_], {})
 
-    bot.memory.set_by_path(["conv_data", event.conv.id_, "default_weather_location"], {'lat': location['lat'], 'lng': location['lng']})
+    bot.memory.set_by_path(
+        ["conv_data", event.conv.id_, "default_weather_location"],
+        {'lat': location['lat'], 'lng': location['lng']})
     bot.memory.save()
-    return _('This hangouts default location has been set to {}.').format(location)
+    return _('This hangouts default location has been set to {}.').format(
+        location)
+
 
 async def weather(bot, event, *args):
     """Returns weather information from darksky.net"""
     weather_data = await _get_weather(bot, event, args)
     if weather_data:
         return _format_current_weather(weather_data)
-    return _('There was an error retrieving the weather, guess you need to look outside.')
+    return _(
+        'There was an error retrieving the weather, guess you need to look '
+        'outside.')
+
 
 async def forecast(bot, event, *args):
     """Returns a brief textual forecast from darksky.net"""
     weather_data = await _get_weather(bot, event, args)
     if weather_data:
         return _format_forecast_weather(weather_data)
-    return _('There was an error retrieving the weather, guess you need to look outside.')
+    return _(
+        'There was an error retrieving the weather, guess you need to look '
+        'outside.')
+
 
 def _format_current_weather(weather_data):
     """
@@ -83,19 +101,30 @@ def _format_current_weather(weather_data):
     """
     weather_lines = []
     if 'temperature' in weather_data:
-        weather_lines.append("It is currently: <b>{0}°{1}</b>".format(round(weather_data['temperature'], 2), weather_data['units']['temperature']))
+        weather_lines.append("It is currently: <b>{0}°{1}</b>".format(
+            round(weather_data['temperature'], 2),
+            weather_data['units']['temperature']))
     if 'summary' in weather_data:
         weather_lines.append("<i>{0}</i>".format(weather_data['summary']))
     if 'feelsLike' in weather_data:
-        weather_lines.append("Feels Like: {0}°{1}".format(round(weather_data['feelsLike'], 2), weather_data['units']['temperature']))
+        weather_lines.append(
+            "Feels Like: {0}°{1}".format(round(weather_data['feelsLike'], 2),
+                                         weather_data['units']['temperature']))
     if 'windspeed' in weather_data:
-        weather_lines.append("Wind: {0} {1} from {2}".format(round(weather_data['windspeed'], 2), weather_data['units']['windSpeed'], _get_wind_direction(weather_data['windbearing'])))
+        weather_lines.append(
+            "Wind: {0} {1} from {2}".format(round(weather_data['windspeed'], 2),
+                                            weather_data['units']['windSpeed'],
+                                            _get_wind_direction(
+                                                weather_data['windbearing'])))
     if 'humidity' in weather_data:
         weather_lines.append("Humidity: {0}%".format(weather_data['humidity']))
     if 'pressure' in weather_data:
-        weather_lines.append("Pressure: {0} {1}".format(round(weather_data['pressure'], 2), weather_data['units']['pressure']))
+        weather_lines.append(
+            "Pressure: {0} {1}".format(round(weather_data['pressure'], 2),
+                                       weather_data['units']['pressure']))
 
     return "\n".join(weather_lines)
+
 
 def _format_forecast_weather(weather_data):
     """
@@ -103,11 +132,14 @@ def _format_forecast_weather(weather_data):
     """
     weather_lines = []
     if 'hourly' in weather_data:
-        weather_lines.append("<b>Next 24 Hours</b>\n{}". format(weather_data['hourly']))
+        weather_lines.append(
+            "<b>Next 24 Hours</b>\n{}".format(weather_data['hourly']))
     if 'daily' in weather_data:
-        weather_lines.append("<b>Next 7 Days</b>\n{}". format(weather_data['daily']))
+        weather_lines.append(
+            "<b>Next 7 Days</b>\n{}".format(weather_data['daily']))
 
     return "\n".join(weather_lines)
+
 
 async def _lookup_address(location):
     """
@@ -127,7 +159,7 @@ async def _lookup_address(location):
         return {
             'lat': results['geometry']['location']['lat'],
             'lng': results['geometry']['location']['lng'],
-            'address': results['formatted_address']
+            'address': results['formatted_address'],
         }
     except (IndexError, KeyError):
         logger.error('unable to parse address return data: %d: %s',
@@ -138,13 +170,17 @@ async def _lookup_address(location):
                      google_map_url, repr(response))
         return None
 
+
 async def _lookup_weather(coordinates):
     """
     Retrieve the current forecast for the specified coordinates from darksky.net
     Limit of 1,000 requests a day
     """
 
-    forecast_io_url = 'https://api.darksky.net/forecast/{0}/{1},{2}?units=auto'.format(_INTERNAL['forecast_api_key'], coordinates['lat'], coordinates['lng'])
+    forecast_io_url = ('https://api.darksky.net/forecast/{0}/{1},'
+                       '{2}?units=auto').format(_INTERNAL['forecast_api_key'],
+                                                coordinates['lat'],
+                                                coordinates['lng'])
     response = None
     try:
         async with aiohttp.ClientSession() as session:
@@ -152,18 +188,18 @@ async def _lookup_weather(coordinates):
                 response.raise_for_status()
                 raw = await response.json()
         current = {
-            'time' : raw['currently']['time'],
+            'time': raw['currently']['time'],
             'summary': raw['currently']['summary'],
             'temperature': Decimal(raw['currently']['temperature']),
             'feelsLike': Decimal(raw['currently']['apparentTemperature']),
             'units': _get_forecast_units(raw),
-            'humidity': int(raw['currently']['humidity']*100),
-            'windspeed' : Decimal(raw['currently']['windSpeed']),
-            'windbearing' : raw['currently']['windBearing'],
-            'pressure' : raw['currently']['pressure']
+            'humidity': int(raw['currently']['humidity'] * 100),
+            'windspeed': Decimal(raw['currently']['windSpeed']),
+            'windbearing': raw['currently']['windBearing'],
+            'pressure': raw['currently']['pressure'],
         }
         if current['units']['pressure'] == 'kPa':
-            current['pressure'] = Decimal(current['pressure']/10)
+            current['pressure'] = Decimal(current['pressure'] / 10)
 
         if 'hourly' in raw:
             current['hourly'] = raw['hourly']['summary']
@@ -180,10 +216,12 @@ async def _lookup_weather(coordinates):
 
     return current
 
+
 async def _get_weather(bot, event, params):
     """
     Checks memory for a default location set for the current hangout.
-    If one is not found and parameters were specified attempts to look up a location.
+    If one is not found and parameters were specified attempts to look up a
+    location.
     If it finds a location it then attempts to load the weather data
     """
     parameters = list(params)
@@ -191,8 +229,10 @@ async def _get_weather(bot, event, params):
 
     if not parameters:
         if bot.memory.exists(["conv_data", event.conv.id_]):
-            if bot.memory.exists(["conv_data", event.conv.id_, "default_weather_location"]):
-                location = bot.memory.get_by_path(["conv_data", event.conv.id_, "default_weather_location"])
+            if bot.memory.exists(
+                    ["conv_data", event.conv.id_, "default_weather_location"]):
+                location = bot.memory.get_by_path(
+                    ["conv_data", event.conv.id_, "default_weather_location"])
     else:
         address = ''.join(parameters).strip()
         location = await _lookup_address(address)
@@ -202,9 +242,11 @@ async def _get_weather(bot, event, params):
 
     return {}
 
+
 def _get_forecast_units(result):
     """
-    Checks to see what uni the results were passed back as and sets the display units accordingly
+    Checks to see what uni the results were passed back as and sets the
+    display units accordingly
     """
     units = {
         'temperature': 'F',
@@ -212,7 +254,7 @@ def _get_forecast_units(result):
         'percipIntensity': 'in./hr.',
         'precipAccumulation': 'inches',
         'windSpeed': 'mph',
-        'pressure': 'millibars'
+        'pressure': 'millibars',
     }
     if result['flags']:
         unit = result['flags']['units']
@@ -230,9 +272,11 @@ def _get_forecast_units(result):
                 units['distance'] = 'Miles'
     return units
 
+
 def _get_wind_direction(degrees):
     """
-    Determines the direction the wind is blowing from based off the degree passed from the API
+    Determines the direction the wind is blowing from based off the degree
+    passed from the API
     0 degrees is true north
     """
     direction_text = "N"

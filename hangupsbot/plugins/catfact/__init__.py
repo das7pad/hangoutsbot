@@ -4,15 +4,20 @@ import aiohttp
 
 from hangupsbot import plugins
 
+
 logger = logging.getLogger(__name__)
 
 HELP = {
     'catfact': _('get catfacts'),
 }
 
+
 def _initialise():
-    plugins.register_user_command(["catfact"])
+    plugins.register_user_command([
+        "catfact",
+    ])
     plugins.register_help(HELP)
+
 
 async def catfact(dummy0, dummy1, *args):
     number = args[0] if args and args[0].isdigit() else 1

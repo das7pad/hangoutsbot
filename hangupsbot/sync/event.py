@@ -3,18 +3,21 @@ __author__ = 'das7pad@outlook.com'
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
 import asyncio
-from datetime import datetime
 import logging
+from datetime import datetime
 
 import hangups
 
 from hangupsbot.base_models import BotMixin
-
 from .exceptions import MissingArgument
 from .image import SyncImage
-from .parser import MessageSegment, get_formatted
+from .parser import (
+    MessageSegment,
+    get_formatted,
+)
 from .user import SyncUser
 from .utils import get_sync_config_entry
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +30,7 @@ class FakeConvEvent:
         text (mixed): the message as text or in segments in a list
         attachments (list[str]): urls to media
     """
+
     def __init__(self, fake_event, text, attachments=None):
         self.timestamp = fake_event.timestamp
         self.user_id = fake_event.user.id_
@@ -466,7 +470,7 @@ class SyncEventMembership(SyncEvent):
                                            for p_user in self.participant_user
                                            if p_user.id_.chat_id != 'sync']
 
-    #pylint:disable=arguments-differ
+    # pylint:disable=arguments-differ
     def get_formatted_text(self, *, style='hangouts', text=None, title=None,
                            name=None, template=None, names_text_only=False,
                            conv_id=None):

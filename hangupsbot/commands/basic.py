@@ -1,15 +1,20 @@
 # TODO(das7pad) further refactor needed
-import logging
 import importlib
+import logging
 import sys
 
 import psutil
 
+from hangupsbot.commands import (
+    Help,
+    command,
+    get_func_help,
+)
 from hangupsbot.version import __version__
-from hangupsbot.commands import command, get_func_help, Help
 
 
 logger = logging.getLogger(__name__)
+
 
 def _initialise(bot):
     bot.memory.ensure_path(['command_help'])
@@ -19,7 +24,8 @@ def _initialise(bot):
 
 @command.register
 async def help(bot, event, *args):
-    """list supported commands, /bot help <command> will show additional details"""
+    """list supported commands, /bot help <command> will show additional
+    details"""
     # pylint:disable=redefined-builtin
 
     cmd, *args = args or (None,)
@@ -93,9 +99,10 @@ async def help(bot, event, *args):
     await bot.coro_send_to_user_and_conversation(
         event.user.id_.chat_id,
         event.conv_id,
-        "\n".join(help_lines), # via private message
-        _("<i>{}, I've sent you some help ;)</i>") # public message
-        .format(event.user.full_name))
+        "\n".join(help_lines),  # via private message
+        _("<i>{}, I've sent you some help ;)</i>"  # public message
+          ).format(event.user.full_name))
+
 
 @command.register(admin=True)
 def locale(bot, dummy, *args):
@@ -121,11 +128,15 @@ async def ping(bot, event, *dummys):
 
 @command.register
 def optout(bot, event, *args):
-    """toggle opt-out of bot private messages globally or on a per-conversation basis:
+    """toggle opt-out of bot private messages globally or on a per-conversation
+     basis:
 
-    * /bot optout - toggles global optout on/off, or displays per-conversation optouts
-    * /bot optout [name|convid] - toggles per-conversation optout (overrides global settings)
-    * /bot optout all - clears per-conversation opt-out and forces global optout"""
+    * /bot optout - toggles global optout on/off, or displays per-conversation
+     optouts
+    * /bot optout [name|convid] - toggles per-conversation optout (overrides
+     global settings)
+    * /bot optout all - clears per-conversation opt-out and forces global optout
+    """
 
     chat_id = event.user.id_.chat_id
 
@@ -144,7 +155,8 @@ def optout(bot, event, *args):
                 target_conv = search_string
             else:
                 # search for conversation title text, must return single group
-                for conv_id, conv_data in bot.conversations.get("text:{0}".format(search_string)).items():
+                for conv_id, conv_data in bot.conversations.get(
+                        "text:{0}".format(search_string)).items():
                     if conv_data['type'] == "GROUP":
                         search_results.append(conv_id)
                 num_of_results = len(search_results)
@@ -165,7 +177,7 @@ def optout(bot, event, *args):
         elif target_conv.lower() == 'all':
             # convert list optout_state to bool optout_state
             optout_state = True
-        elif target_conv in optout_state:         # pylint: disable=E1135
+        elif target_conv in optout_state:  # pylint: disable=E1135
             # remove existing conversation optout
             optout_state.remove(target_conv)
         elif target_conv in bot.conversations:
@@ -191,15 +203,23 @@ def optout(bot, event, *args):
     bot.memory.set_by_path(["user_data", chat_id, "optout"], optout_state)
     bot.memory.save()
 
-    message = _('<i>{}, you <b>opted-in</b> for bot private messages</i>').format(event.user.full_name)
+    message = _(
+        '<i>{}, you <b>opted-in</b> for bot private messages</i>'
+    ).format(event.user.full_name)
 
     if isinstance(optout_state, bool) and optout_state:
-        message = _('<i>{}, you <b>opted-out</b> from bot private messages</i>').format(event.user.full_name)
+        message = _(
+            '<i>{}, you <b>opted-out</b> from bot private messages</i>'
+        ).format(event.user.full_name)
     elif isinstance(optout_state, list) and optout_state:
-        message = _('<i>{}, you are <b>opted-out</b> from the following conversations:\n{}</i>').format(
+        message = _(
+            '<i>{}, you are <b>opted-out</b> from the following conversations:\n'
+            '{}</i>'
+        ).format(
             event.user.full_name,
             "\n".join(["* {}".format(bot.conversations.get_name(conv_id))
-                       for conv_id in optout_state]))
+                       for conv_id in optout_state])
+        )
 
     return message
 
@@ -208,8 +228,9 @@ def optout(bot, event, *args):
 def version(bot, event, *args):
     """get the version of the bot and dependencies (admin-only)"""
 
-    version_info = []
-    version_info.append(_("Bot Version: <b>{}</b>").format(__version__))
+    version_info = [
+        _("Bot Version: <b>{}</b>").format(__version__),
+    ]
 
     # display extra version information only if the user is a global admin
     admins_list = bot.config['admins']
@@ -243,7 +264,7 @@ def version(bot, event, *args):
 def resourcememory(*dummys):
     """print basic information about memory usage"""
 
-    mem = psutil.Process().memory_info().rss / (1024*1024)
+    mem = psutil.Process().memory_info().rss / (1024 * 1024)
 
     return "<b>memory (resource): {} MB</b>".format(mem)
 
@@ -252,19 +273,20 @@ def resourcememory(*dummys):
 async def unknown_command(bot, event, *dummys):
     """handle unknown commands"""
     config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
-    tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
+    tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id,
+                                                    event.conv.id_)
     if not (config_silent or tagged_silent):
-
         await bot.coro_send_message(event.conv,
-                                    _('{}: Unknown Command').format(event.user.full_name))
+                                    _('{}: Unknown Command').format(
+                                        event.user.full_name))
 
 
 @command.register_blocked
 async def blocked_command(bot, event, *dummys):
     """handle blocked commands"""
     config_silent = bot.get_config_suboption(event.conv.id_, 'silentmode')
-    tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id, event.conv.id_)
+    tagged_silent = "silent" in bot.tags.useractive(event.user_id.chat_id,
+                                                    event.conv.id_)
     if not (config_silent or tagged_silent):
-
         await bot.coro_send_message(event.conv, _('{}: Can\'t do that.').format(
             event.user.full_name))

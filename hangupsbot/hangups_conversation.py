@@ -6,8 +6,9 @@ import hangups
 from hangups import hangouts_pb2
 
 from hangupsbot.base_models import BotMixin
-from hangupsbot.utils.cache import Cache
 from hangupsbot.sync.parser import MessageSegmentHangups
+from hangupsbot.utils.cache import Cache
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
     Args:
         see `hangups.conversation.Conversation`
     """
-    _cache = Cache(default_timeout=60*60, name='Event Id Storage')
+    _cache = Cache(default_timeout=60 * 60, name='Event Id Storage')
 
     @classmethod
     def register_cache(cls):
@@ -162,7 +163,7 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
             ValueError: no image and also no text provided
         """
         # pylint:disable=arguments-differ
-        context = context or {"__ignore__": True}        # replace empty context
+        context = context or {"__ignore__": True}  # replace empty context
 
         # parse message
         if not message or isinstance(message, str) and not message.strip():

@@ -5,45 +5,62 @@ import asyncio
 import logging
 
 import telepot.exception
-from telepot.namedtuple import (ReplyKeyboardMarkup, KeyboardButton,
-                                ReplyKeyboardRemove)
+from telepot.namedtuple import (
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
 
 from hangupsbot.commands import command
 from hangupsbot.sync import SYNC_CONFIG_KEYS
 from hangupsbot.sync.event import FakeEvent
 from hangupsbot.sync.exceptions import ProfilesyncAlreadyCompleted
-from hangupsbot.sync.utils import get_sync_config_entry
 from hangupsbot.sync.user import SyncUser
+from hangupsbot.sync.utils import get_sync_config_entry
+
 
 logger = logging.getLogger(__name__)
 
 # rights for /restrict_user
-NO_SENDING_RIGHTS = {'can_send_messages': False,
-                     'can_send_media_messages': False,
-                     'can_send_other_messages': False,
-                     'can_add_web_page_previews': False}
-NO_MEDIA_RIGHTS = {'can_send_media_messages': False,
-                   'can_send_messages': True,
-                   'can_send_other_messages': True,
-                   'can_add_web_page_previews': True}
-NO_STICKER_RIGHTS = {'can_send_other_messages': False,
-                     'can_send_messages': True,
-                     'can_send_media_messages': True,
-                     'can_add_web_page_previews': True}
-NO_WEBPREVIEW_RIGHTS = {'can_add_web_page_previews': False,
-                        'can_send_messages': True,
-                        'can_send_media_messages': True,
-                        'can_send_other_messages': True}
-NO_WEBPREVIEW_AND_STICKER_RIGHTS = {'can_send_other_messages': False,
-                                    'can_add_web_page_previews': False,
-                                    'can_send_messages': True,
-                                    'can_send_media_messages': True}
-FULL_RIGHTS = {'can_send_messages': True,
-               'can_send_media_messages': True,
-               'can_send_other_messages': True,
-               'can_add_web_page_previews': True}
+NO_SENDING_RIGHTS = {
+    'can_send_messages': False,
+    'can_send_media_messages': False,
+    'can_send_other_messages': False,
+    'can_add_web_page_previews': False,
+}
+NO_MEDIA_RIGHTS = {
+    'can_send_media_messages': False,
+    'can_send_messages': True,
+    'can_send_other_messages': True,
+    'can_add_web_page_previews': True,
+}
+NO_STICKER_RIGHTS = {
+    'can_send_other_messages': False,
+    'can_send_messages': True,
+    'can_send_media_messages': True,
+    'can_add_web_page_previews': True,
+}
+NO_WEBPREVIEW_RIGHTS = {
+    'can_add_web_page_previews': False,
+    'can_send_messages': True,
+    'can_send_media_messages': True,
+    'can_send_other_messages': True,
+}
+NO_WEBPREVIEW_AND_STICKER_RIGHTS = {
+    'can_send_other_messages': False,
+    'can_add_web_page_previews': False,
+    'can_send_messages': True,
+    'can_send_media_messages': True,
+}
+FULL_RIGHTS = {
+    'can_send_messages': True,
+    'can_send_media_messages': True,
+    'can_send_other_messages': True,
+    'can_add_web_page_previews': True,
+}
 RESTRICT_OPTIONS = ('false', 'messages', 'media', 'sticker', 'websites',
                     'sticker+websites')
+
 
 def ensure_admin(tg_bot, msg):
     """return whether the user is admin, and respond if be_quiet is off
@@ -60,6 +77,7 @@ def ensure_admin(tg_bot, msg):
             tg_bot.send_html(msg.chat_id, _('This command is admin-only!'))
         return False
     return True
+
 
 def ensure_private(tg_bot, msg):
     """return whether the chat is private, and respond if be_quiet is off
@@ -79,6 +97,7 @@ def ensure_private(tg_bot, msg):
         return False
     return True
 
+
 def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
     """check the number of arguments, and respond if be_quiet is off
 
@@ -95,12 +114,13 @@ def ensure_args(tg_bot, tg_chat_id, args, between=None, at_least=None):
     if between is None and at_least is None:
         between = (1, 1)
     if ((between is not None and
-         len(args) not in range(between[0], between[1]+1)) or
+         len(args) not in range(between[0], between[1] + 1)) or
             (at_least is not None and len(args) < at_least)):
         if not tg_bot.config('be_quiet'):
             tg_bot.send_html(tg_chat_id, _('Check arguments.'))
         return False
     return True
+
 
 async def command_start(tg_bot, msg, *args):
     """answer with the start message and check for deep linking, private only
@@ -122,6 +142,7 @@ async def command_start(tg_bot, msg, *args):
     if 'syncprofile' in args:
         await command_sync_profile(tg_bot, msg)
 
+
 async def command_cancel(tg_bot, msg, *dummys):
     """hide the custom keyboard
 
@@ -133,6 +154,7 @@ async def command_cancel(tg_bot, msg, *dummys):
     await tg_bot.sendMessage(
         msg.chat_id, _('canceled'),
         reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+
 
 async def command_whoami(tg_bot, msg, *dummys):
     """answer with user_id of request message, private only
@@ -148,6 +170,7 @@ async def command_whoami(tg_bot, msg, *dummys):
         tg_bot.send_html(msg.chat_id,
                          _("Your Telegram user id is '%s'") % msg.user.usr_id)
 
+
 async def command_whereami(tg_bot, msg, *dummys):
     """answer with current tg_chat_id, admin only
 
@@ -161,6 +184,7 @@ async def command_whereami(tg_bot, msg, *dummys):
     if ensure_admin(tg_bot, msg):
         tg_bot.send_html(msg.chat_id,
                          _("This chat has the id '{}'").format(msg.chat_id))
+
 
 async def command_whois(tg_bot, msg, *args):
     """get the Telegram user id of a given user
@@ -185,6 +209,7 @@ async def command_whois(tg_bot, msg, *args):
     else:
         text = _('Could not find a user matching "%s"') % term
     tg_bot.send_html(msg.chat_id, text)
+
 
 async def command_set_sync_ho(tg_bot, msg, *args):
     """setup s sync with a given hangout
@@ -231,6 +256,7 @@ async def command_set_sync_ho(tg_bot, msg, *args):
     bot.memory.save()
 
     tg_bot.send_html(msg.chat_id, '\n'.join(lines))
+
 
 async def command_clear_sync_ho(tg_bot, msg, *args):
     """unset sync for current chat
@@ -288,6 +314,7 @@ async def command_clear_sync_ho(tg_bot, msg, *args):
 
     tg_bot.send_html(msg.chat_id, text)
 
+
 async def command_add_admin(tg_bot, msg, *args):
     """add admin id to admin list if not present
 
@@ -313,6 +340,7 @@ async def command_add_admin(tg_bot, msg, *args):
         text = _('User is already an admin')
 
     tg_bot.send_html(msg.chat_id, text)
+
 
 async def command_remove_admin(tg_bot, msg, *args):
     """pop admin id if present in admin list
@@ -340,6 +368,7 @@ async def command_remove_admin(tg_bot, msg, *args):
 
     tg_bot.send_html(msg.chat_id, text)
 
+
 async def command_tldr(tg_bot, msg, *args):
     """get tldr for connected conv by manipulating the message text
 
@@ -363,6 +392,7 @@ async def command_tldr(tg_bot, msg, *args):
 
     # sync the message text to get the tldr
     return True
+
 
 async def command_sync_profile(tg_bot, msg, *dummys):
     """init profilesync, needs confirmation via pHO
@@ -394,6 +424,7 @@ async def command_sync_profile(tg_bot, msg, *dummys):
     bot.sync.start_profile_sync('telesync', user_id)
 
     await tg_bot.profilesync_info(user_id)
+
 
 async def command_set_sync_profile(tg_bot, msg, *args):
     """init a profilesync for a different user
@@ -444,11 +475,17 @@ async def command_set_sync_profile(tg_bot, msg, *args):
 
     g_plus_name = bot.get_hangups_user(g_id).full_name
 
-    text = _('Synced the profile of G+ User <b>{g_plus_name}</b> [{g_id}] to '
-             'Telegram User <b>{tg_name}</b> [{tg_id}].').format(
-                 tg_id=tg_id, tg_name=tg_name,
-                 g_id=g_id, g_plus_name=g_plus_name)
+    text = _(
+        'Synced the profile of G+ User <b>{g_plus_name}</b> [{g_id}] to Telegram'
+        ' User <b>{tg_name}</b> [{tg_id}].'
+    ).format(
+        tg_id=tg_id,
+        tg_name=tg_name,
+        g_id=g_id,
+        g_plus_name=g_plus_name,
+    )
     tg_bot.send_html(msg.chat_id, text)
+
 
 async def command_unsync_profile(tg_bot, msg, *dummys):
     """split tg and ho-profile
@@ -493,6 +530,7 @@ async def command_unsync_profile(tg_bot, msg, *dummys):
 
     tg_bot.send_html(msg.chat_id, text)
 
+
 async def command_get_me(tg_bot, msg, *dummys):
     """send back info to bot user: id, name, username
 
@@ -511,6 +549,7 @@ async def command_get_me(tg_bot, msg, *dummys):
         'id: {usr_id}, name: {name}, username: @{username}'.format(
             usr_id=tg_bot.user.usr_id, name=tg_bot.user.first_name,
             username=tg_bot.user.username))
+
 
 async def command_get_admins(tg_bot, msg, *dummys):
     """send back a formatted list of Admins
@@ -546,6 +585,7 @@ async def command_get_admins(tg_bot, msg, *dummys):
 
     tg_bot.send_html(msg.chat_id, '\n'.join(lines))
 
+
 async def command_echo(tg_bot, msg, *args):
     """send back params
 
@@ -561,6 +601,7 @@ async def command_echo(tg_bot, msg, *args):
     if not ensure_args(tg_bot, msg.chat_id, args, at_least=1):
         return
     tg_bot.send_html(msg.chat_id, ' '.join(args))
+
 
 async def command_leave(tg_bot, msg, *dummys):
     """leave the current chat and perform a cleanup before
@@ -615,15 +656,16 @@ async def command_leave(tg_bot, msg, *dummys):
                 asyncio.ensure_future(tg_bot.bot.sync.membership(
                     identifier='telesync:' + msg.chat_id, conv_id=conv_id,
                     user=msg.user, title=msg.get_group_name(), type_=2,
-                    participant_user=[tg_bot.user,]))
+                    participant_user=[tg_bot.user, ]))
             return
 
     # pylint:disable=protected-access
-    tg_bot._cache_sending_queue.pop(msg.chat_id)        # drop the blocked queue
+    tg_bot._cache_sending_queue.pop(msg.chat_id)  # drop the blocked queue
     # pylint:enable=protected-access
 
     error = _('Sorry, but I am not able to leave this chat on my own.')
     await tg_bot.send_html(msg.chat_id, error)
+
 
 async def command_chattitle(tg_bot, msg, *args):
     """change the synced title of the current or given chat
@@ -644,6 +686,7 @@ async def command_chattitle(tg_bot, msg, *args):
 
     tg_bot.send_html(msg.chat_id, text)
 
+
 def get_chat_name(tg_bot, chat_id):
     """get the cached name of a chat
 
@@ -659,6 +702,7 @@ def get_chat_name(tg_bot, chat_id):
             ['telesync', 'chat_data', chat_id, 'name'])
     except KeyError:
         return _('unknown')
+
 
 async def command_sync_config(tg_bot, msg, *args):
     """update a config entry for the current or given chat
@@ -695,20 +739,35 @@ async def command_sync_config(tg_bot, msg, *args):
             reply = new_msg.get('message_id', reply)
 
         elif len(args) > 1 and args[1] in available_chats:
+            raw_keyboard = [
+                [KeyboardButton(text='/cancel')],
+            ]
+            raw_keyboard += [
+                [KeyboardButton(text=('/sync_config ia %s %s'
+                                      % (args[1], key)))]
+                for key in SYNC_CONFIG_KEYS
+            ]
             keyboard = ReplyKeyboardMarkup(
-                resize_keyboard=True, selective=True, keyboard=(
-                    [[KeyboardButton(text='/cancel')]] +
-                    [[KeyboardButton(text='/sync_config ia %s %s' % (
-                        args[1], key))
-                     ] for key in SYNC_CONFIG_KEYS]))
+                resize_keyboard=True,
+                selective=True,
+                keyboard=raw_keyboard
+            )
             text = _('available config entries:')
         else:
+            raw_keyboard = [
+                [KeyboardButton(text='/cancel')],
+            ]
+            raw_keyboard += [
+                [KeyboardButton(text=('/sync_config ia %s\n(%s)'
+                                      % (chat_id,
+                                         get_chat_name(tg_bot, chat_id))))]
+                for chat_id in sorted(available_chats)
+            ]
             keyboard = ReplyKeyboardMarkup(
-                resize_keyboard=True, selective=True, keyboard=(
-                    [[KeyboardButton(text='/cancel')]] +
-                    [[KeyboardButton(text='/sync_config ia %s\n(%s)' % (
-                        chat_id, get_chat_name(tg_bot, chat_id)))]
-                     for chat_id in sorted(available_chats)]))
+                resize_keyboard=True,
+                selective=True,
+                keyboard=raw_keyboard
+            )
             text = _('available Telegram Chats:')
 
         await tg_bot.sendMessage(msg.chat_id, text, reply_markup=keyboard,
@@ -733,14 +792,14 @@ async def command_sync_config(tg_bot, msg, *args):
         text = err.args[0]
 
     else:
-        text = _('{sync_option} updated for channel "{tg_id}" '
-                 'from "{old}" to "{new}"').format(
-                     sync_option=key, tg_id=chat_id, old=last_value,
-                     new=new_value)
+        text = _(
+            '{sync_option} updated for channel "{tg_id}" from "{old}" to "{new}"'
+        ).format(sync_option=key, tg_id=chat_id, old=last_value, new=new_value)
 
     await tg_bot.sendMessage(
         msg.chat_id, text,
         reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+
 
 async def command_restrict_user(tg_bot, msg, *args):
     """limit sending of given message types
@@ -762,10 +821,12 @@ async def command_restrict_user(tg_bot, msg, *args):
         return
 
     if not args or args[-1].lower() not in RESTRICT_OPTIONS:
-        tg_bot.send_html(msg.chat_id,
-                         _('Check syntax:\n'
-                           '/restrict_user <ids | all> <"{options}">').format(
-                               options='" | "'.join(RESTRICT_OPTIONS)))
+        tg_bot.send_html(
+            tg_chat_id=msg.chat_id,
+            html=_('Check syntax:\n'
+                   '/restrict_user <ids | all> <"{options}">'
+                   ).format(options='" | "'.join(RESTRICT_OPTIONS))
+        )
         return
 
     chat_users = tg_bot.bot.memory.get_by_path(
@@ -834,13 +895,13 @@ async def restrict_users(tg_bot, tg_chat_id, mode, user_ids, silent=False):
             % len(user_ids))
 
     results = {}
-    for chunk in (user_ids[start:start+10]
+    for chunk in (user_ids[start:start + 10]
                   for start in range(0, len(user_ids), 10)):
         if not silent:
             await tg_bot.editMessageText(
                 (tg_chat_id, status_msg['message_id']),
                 _('Finished {completed}/{num_all} requests for /restrict_users'
-                 ).format(completed=len(results), num_all=len(user_ids)))
+                  ).format(completed=len(results), num_all=len(user_ids)))
 
         raw_results = await asyncio.gather(
             *(tg_bot.restrictChatMember(tg_chat_id, user_id, **rights)

@@ -1,14 +1,17 @@
-import time
-import string
-import random
 import asyncio
-import logging
 import datetime
+import logging
+import random
+import string
+import time
 
 import hangups
 
 from hangupsbot import plugins
-from hangupsbot.commands import command, Help
+from hangupsbot.commands import (
+    Help,
+    command,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -30,14 +33,20 @@ HELP = {
 
 EXPIRE_IN = 2592000
 
+
 class DummyEvent:
     """used to run the rename command"""
     pass
 
+
 def _initialise():
     """register commands and the help entries"""
-    plugins.register_admin_command(["invite"])
-    plugins.register_user_command(["rsvp"])
+    plugins.register_admin_command([
+        "invite",
+    ])
+    plugins.register_user_command([
+        "rsvp",
+    ])
     plugins.register_handler(_issue_invite_on_exit, "membership")
     plugins.register_help(HELP)
 
@@ -60,7 +69,9 @@ def _issue_invite(bot, user_id, group_id, uses=1):
 
     # find existing unexpired invitation by user and group - exact match only
     for _key, _invitation in bot.memory["invites"].items():
-        if _invitation["user_id"] == user_id and _invitation["group_id"] == group_id and _invitation["expiry"] > time.time():
+        if (_invitation["user_id"] == user_id
+                and _invitation["group_id"] == group_id
+                and _invitation["expiry"] > time.time()):
             invitation = _invitation
             logger.debug("_issue_invite: found existing invite id: %s",
                          invitation["id"])
@@ -69,13 +80,17 @@ def _issue_invite(bot, user_id, group_id, uses=1):
     # create new invitation if no match found
     if not invitation:
         while True:
-            _id = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(6))
+            _id = ''.join(
+                random.SystemRandom().choice(string.ascii_uppercase
+                                             + string.digits)
+                for _ in range(6))
+
             if _id not in bot.memory["invites"]:
                 logger.debug("_issue_invite: create new invite id: %s", _id)
                 invitation = {
                     "id": _id,
                     "user_id": user_id,
-                    "group_id": group_id
+                    "group_id": group_id,
                 }
                 break
 
@@ -101,7 +116,8 @@ async def _claim_invite(bot, invite_code, user_id):
         return
 
     invitation = bot.memory.get_by_path(memory_path)
-    if invitation["user_id"] in ("*", user_id) and invitation["expiry"] > time.time():
+    if (invitation["user_id"] in ("*", user_id)
+            and invitation["expiry"] > time.time()):
         conv_id = invitation["group_id"]
         logger.debug("_claim_invite: adding %s to %s",
                      user_id, conv_id)
@@ -154,7 +170,7 @@ async def _new_group_conversation(bot, initiator_id):
     new_conversation_id = _response.conversation.conversation_id.id
 
     await bot.coro_send_message(new_conversation_id, _("<i>group created</i>"))
-    await asyncio.sleep(1) # allow convmem to update
+    await asyncio.sleep(1)  # allow convmem to update
     name = _("GROUP: %s") % datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     await command.run(
         bot, DummyEvent(), *["convrename", "id:" + new_conversation_id, name])
@@ -221,8 +237,8 @@ async def invite(bot, event, *args):
 
     if parameters[0].isdigit():
         # wildcard invites can be used by any user with access to the bot
-        # note: wildcard invite command can still be superseded by specifying a "users" list
-        #   as a parameter
+        # NOTE: wildcard invite command can still be superseded by specifying a
+        #  "users" list as a parameter
         wildcards = int(parameters[0])
         if wildcards and wildcards < 150:
             del parameters[0]
@@ -252,7 +268,8 @@ async def invite(bot, event, *args):
         if active_invites:
             for _id, data in active_invites.items():
                 try:
-                    conversation_name = bot.conversations.get_name(data["group_id"])
+                    conversation_name = bot.conversations.get_name(
+                        data["group_id"])
                 except ValueError:
                     conversation_name = "? ({})".format(data["group_id"])
 
@@ -264,8 +281,10 @@ async def invite(bot, event, *args):
                     _remove_invite(bot, data["id"])
 
                 expiry_in_days = round((data["expiry"] - time.time()) / 86400, 1)
-                lines.append("<i><pre>{}</pre></i> to <b><pre>{}</pre></b> ... {} ({} days left)".format(
-                    user_id, conversation_name, data["id"], expiry_in_days))
+                lines.append(
+                    "<i><pre>{}</pre></i> to <b><pre>{}</pre></b> ... {} "
+                    "({} days left)".format(
+                        user_id, conversation_name, data["id"], expiry_in_days))
 
         else:
             lines.append(_("<em>no invites found</em>"))
@@ -287,8 +306,8 @@ async def invite(bot, event, *args):
                 state.pop()
             elif state[-1] == "users":
                 list_users.append(parameter)
-                everyone = False # filter invitees by list_users
-                wildcards = 0 # turn off wildcard invites
+                everyone = False  # filter invitees by list_users
+                wildcards = 0  # turn off wildcard invites
             else:
                 raise Help("UNKNOWN STATE: {}".format(state[-1]))
 
@@ -328,7 +347,8 @@ async def invite(bot, event, *args):
         #     target_conv = *
         if not list_users:
             if target_conv == event.conv_id:
-                return _('<em>invite: specify "from" or explicit list of "users"</em>')
+                return _('<em>invite: specify "from" or explicit list of "users"'
+                         '</em>')
             source_conv = event.conv_id
 
     # sanity checking
@@ -338,10 +358,10 @@ async def invite(bot, event, *args):
 
     # invitation generation
 
-    invitation_log = [] # dev note: no more returns after this line!
-
-    invitation_log.append("source conv: {}, target conv: {}".format(source_conv, target_conv))
-    invitation_log.append("user list = [{}]".format(len(list_users)))
+    invitation_log = [
+        "source conv: {}, target conv: {}".format(source_conv, target_conv),
+        "user list = [{}]".format(len(list_users)),
+    ]
 
     invitations = []
 
@@ -349,7 +369,8 @@ async def invite(bot, event, *args):
         # wildcards can be used by any user to enter a target_conv
         invitations.append({
             "user_id": "*",
-            "uses": wildcards})
+            "uses": wildcards,
+        })
 
         invitation_log.append("wildcard invites: {}".format(wildcards))
         logger.info("convtools_invitations: %s wildcard invite for %s",
@@ -364,7 +385,10 @@ async def invite(bot, event, *args):
                 if everyone or chat_id in list_users:
                     shortlisted.append(chat_id)
 
-            invitation_log.append("shortlisted: {}/{}".format(len(shortlisted), len(source_conv_users)))
+            invitation_log.append(
+                "shortlisted: {}/{}".format(len(shortlisted),
+                                            len(source_conv_users))
+            )
             logger.info("convtools_invitations: shortlisted %s/%s from %s, "
                         "everyone=%s, list_users=[%s]",
                         len(shortlisted), len(source_conv_users),
@@ -379,8 +403,10 @@ async def invite(bot, event, *args):
 
         # exclude users who are already in the target conversation
         if target_conv == "NEW_GROUP":
-            # fake user list - _new_group_conversation() always creates group with bot and initiator
-            target_conv_users = [event.user.id_.chat_id, bot.user_self()["chat_id"]]
+            # fake user list
+            # new_group_conversation always creates group with bot and initiator
+            target_conv_users = [event.user.id_.chat_id,
+                                 bot.user_self()["chat_id"]]
         else:
             target_conv_users = _get_user_list(bot, target_conv)
         invited_users = []
@@ -400,7 +426,8 @@ async def invite(bot, event, *args):
         for uid in invited_users:
             invitations.append({
                 "user_id": uid,
-                "uses": 1})
+                "uses": 1,
+            })
 
     # beyond this point, start doing irreversible things (like create groups)
 
@@ -415,7 +442,8 @@ async def invite(bot, event, *args):
     if target_conv == "NEW_GROUP":
         invitation_log.append("create new group")
         if not test:
-            target_conv = await _new_group_conversation(bot, event.user.id_.chat_id)
+            target_conv = await _new_group_conversation(bot,
+                                                        event.user.id_.chat_id)
 
     # issue the invites
 
@@ -426,12 +454,14 @@ async def invite(bot, event, *args):
         if not test:
             # invites are not created in test mode
             invitation_ids.append(
-                _issue_invite(bot, new_invite["user_id"], target_conv, new_invite["uses"]))
+                _issue_invite(bot, new_invite["user_id"], target_conv,
+                              new_invite["uses"]))
 
     if invitation_ids:
         await bot.coro_send_message(
             event.conv_id,
-            _("<em>invite: {} invitations created</em>").format(len(invitation_ids)))
+            _("<em>invite: {} invitations created</em>").format(
+                len(invitation_ids)))
 
     if test:
         invitation_log.insert(0, "<b>Invite Test Mode</b>")

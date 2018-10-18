@@ -7,6 +7,7 @@ import sys
 
 from setuptools import setup
 
+
 if sys.version_info < (3, 5, 3):
     # This is the minimum version to support async-def and aiohttp>=3
     raise RuntimeError("hangupsbot requires Python 3.5.3+")
@@ -43,7 +44,6 @@ for line in DEPENDENCY_LINKS:
     dependency_locked = raw.replace('-', '==', 1)
     INSTALL_REQUIRES.append(dependency_locked)
 
-
 PACKAGES = [path[:-12].replace('/', '.')
             for path in glob.glob('hangupsbot/**/__init__.py', recursive=True)]
 
@@ -51,7 +51,6 @@ PACKAGE_DATA = {}
 for path in glob.glob('hangupsbot/**/package_data.json', recursive=True):
     with open(path, 'r') as file:
         PACKAGE_DATA.update(json.load(file))
-
 
 setup(
     name='hangupsbot',

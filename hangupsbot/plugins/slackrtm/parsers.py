@@ -1,17 +1,20 @@
 """parser to process slack markdown"""
 # -*- coding: utf-8 -*-
 
+from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
+from hangups.message_parser import (
+    Tokens,
+    markdown,
+    url_complete,
+)
 from reparser import (
-    Token,
     MatchGroup,
+    Token,
 )
 
-from hangups.message_parser import markdown, Tokens, url_complete
-from hangups.hangouts_pb2 import SEGMENT_TYPE_LINE_BREAK
-
 from hangupsbot.sync.parser import (
-    MessageSegment,
     MessageParser,
+    MessageSegment,
 )
 
 
@@ -34,7 +37,6 @@ SLACK_STYLE = {
 SEGMENT_LINE_BREAK = MessageSegment(text='\n',
                                     segment_type=SEGMENT_TYPE_LINE_BREAK)
 
-
 MRKDWN_LINK = r'<(?P<url>.*?)\|(?P<text>.*?)>'
 
 TOKENS_SLACK = [
@@ -50,6 +52,7 @@ TOKENS_SLACK = [
 
 class SlackMessageParser(MessageParser):
     """message parser for slack markdown"""
+
     def __init__(self):
         super().__init__(TOKENS_SLACK + Tokens.basic)
 

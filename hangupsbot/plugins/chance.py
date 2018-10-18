@@ -1,8 +1,8 @@
 """bring some random actions to the conversations"""
 from random import randint
 
-from hangupsbot.commands import Help
 from hangupsbot import plugins
+from hangupsbot.commands import Help
 
 
 HELP = {
@@ -15,11 +15,16 @@ HELP = {
     "coinflip": _("flip a coin"),
 }
 
+
 def _initialise():
     """register the message handler, commands and the help entries"""
     plugins.register_sync_handler(_handle_me_action, "message_once")
-    plugins.register_user_command(["diceroll", "coinflip"])
+    plugins.register_user_command([
+        "diceroll",
+        "coinflip",
+    ])
     plugins.register_help(HELP)
+
 
 async def _handle_me_action(bot, event):
     """run the diceroll or coinflip command from context
@@ -41,6 +46,7 @@ async def _handle_me_action(bot, event):
     else:
         return
     await bot.coro_send_message(event.conv_id, message)
+
 
 def diceroll(dummy, event, dice="1d6"):
     """get random numbers from a fake diceroll
@@ -80,6 +86,7 @@ def diceroll(dummy, event, dice="1d6"):
     else:
         msg += "</i>"
     return msg
+
 
 def coinflip(dummy, event, *dummys):
     """get the result of a fake coinflip

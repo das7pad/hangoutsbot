@@ -3,7 +3,9 @@ example plugin which watches rename events
 """
 
 import logging
+
 from hangupsbot import plugins
+
 
 logger = logging.getLogger(__name__)
 

@@ -52,10 +52,11 @@ def _get_slackrtm(bot, slack_name):
         raise Help(_('these slack teams match "%s", be more specific!') %
                    (slack_name, ', '.join([slackrtm.name
                                            for slackrtm in matches])))
-    raise Help(_('there is no slack team with name "{slack_name}", use '
-                 '<i>{bot_cmd} slacks</i> to list all teams').format(
-                     bot_cmd=bot.command_prefix,
-                     slack_name=slack_name))
+    raise Help(
+        _('there is no slack team with name "{slack_name}", use <i>{bot_cmd} '
+          'slacks</i> to list all teams').format(bot_cmd=bot.command_prefix,
+                                                 slack_name=slack_name))
+
 
 def _get_slackrtm_and_channel(bot, slack_name, channel):
     """scan all running slackrtms and their channel for a match
@@ -98,6 +99,7 @@ def slacks(*dummys):
 
     return '\n'.join(lines)
 
+
 async def slack_channels(bot, dummy, *args):
     """list all slack channels available in specified slack team
 
@@ -132,6 +134,7 @@ async def slack_channels(bot, dummy, *args):
 
     return '\n'.join(lines)
 
+
 def slack_users(bot, dummy, *args):
     """list all slack channels available in specified slack team
 
@@ -161,6 +164,7 @@ def slack_users(bot, dummy, *args):
 
     return '\n'.join(lines)
 
+
 def slack_listsyncs(bot, *dummys):
     """list current conversations we are syncing
 
@@ -185,6 +189,7 @@ def slack_listsyncs(bot, *dummys):
                 sync['hangoutid']))
 
     return '\n'.join(lines)
+
 
 def slack_syncto(bot, event, *args):
     """start syncing the current hangout to a given slack team/channel
@@ -214,6 +219,7 @@ def slack_syncto(bot, event, *args):
             teamname=slackname, channel=channel_name)
 
     return 'this hangout synced with {}:{}'.format(slackname, channel_name)
+
 
 def slack_disconnect(bot, event, *args):
     """stop syncing the current hangout with given slack team and channel
