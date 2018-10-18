@@ -30,16 +30,23 @@ with open('requirements.txt', 'r') as file:
         else:
             INSTALL_REQUIRES.append(line)
 
-# parse packages and their version from urls:
-# e.g. `pkg==0.2.1` from
-#      `git+https://github.com/username/reponame@v0.2.1#egg=pkg`
+# pip and setuptools are not compatible here, their url schemes:
+#  - pip       : `...#egg=pkg`
+#  - setuptools: `...#egg=pkg-version`
+# The requirements.txt file stores the pip compatible ones. Pip caches src repos.
+# Parse the urls for the setuptools here:
+# Support urls like this one, which includes the version as a tag/branch:
+#  `git+https://github.com/user/repo@v0.2.1#egg=pkg`
 REGEX_TAG_NAME = re.compile(r'.*@v(?P<version>.+)#egg=(?P<name>.+)')
-for line in DEPENDENCY_LINKS:
+for line in DEPENDENCY_LINKS.copy():
     match = REGEX_TAG_NAME.match(line)
     if not match:
         continue
 
     dependency_locked = match.group('name') + '==' + match.group('version')
+
+    DEPENDENCY_LINKS.remove(line)
+    DEPENDENCY_LINKS.append(line + '-' + match.group('version'))
     INSTALL_REQUIRES.append(dependency_locked)
 
 
