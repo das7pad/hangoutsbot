@@ -1,5 +1,5 @@
 # core
-telepot>=12.6
+-e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
 
 # parsers
 ReParser
