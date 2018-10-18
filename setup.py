@@ -41,7 +41,10 @@ REGEX_TAG_NAME = re.compile(r'.*@v(?P<version>.+)#egg=(?P<name>.+)')
 for line in DEPENDENCY_LINKS.copy():
     match = REGEX_TAG_NAME.match(line)
     if not match:
-        continue
+        raise RuntimeError(
+            '%r has an incompatible scheme, use a "v" prefixed tag or branch'
+            % line
+        )
 
     dependency_locked = match.group('name') + '==' + match.group('version')
 
