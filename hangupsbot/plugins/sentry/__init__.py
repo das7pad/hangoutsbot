@@ -12,6 +12,8 @@ The configuration can be a mixture of config and environment variables.
             'level': int, logging level that triggers the sending
             'options': {
                 'enable_breadcrumbs': bool, track previous log messages,
+                'capture_locals': bool, include local variables in a traceback
+                NOTE: this may send user data to your sentry provider.
 
             see Raven Client documentation for more
             }
@@ -65,6 +67,7 @@ def _initialize(bot):
     options = {
         'release': __version__,
         'enable_breadcrumbs': False,
+        'capture_locals': False,
     }
     options.update(sentry.get('options', {}))
 
