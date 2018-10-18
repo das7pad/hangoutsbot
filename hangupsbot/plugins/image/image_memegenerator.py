@@ -47,15 +47,10 @@ async def meme(bot, event, *args):
         if results['result']:
             url_image = random.choice(results['result'])['instanceImageUrl']
 
-            response = None
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url_image) as response:
-                        response.raise_for_status()
-                        image_data = await response.read()
-            except aiohttp.ClientError:
-                logger.error('url: %s, response: %s', url_image, repr(response))
-                raise
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url_image) as response:
+                    response.raise_for_status()
+                    image_data = await response.read()
 
             filename = os.path.basename(url_image)
             segments = [hangups.ChatMessageSegment(
@@ -78,11 +73,13 @@ async def meme(bot, event, *args):
                                         "<i>couldn't find a nice picture :( "
                                         "try again</i>")
 
-    except (aiohttp.ClientError, KeyError, IndexError, hangups.NetworkError):
-        await bot.coro_send_message(event.conv_id,
-                                    "<i>couldn't find a suitable meme! try "
-                                    "again</i>")
-        logger.exception("FAILED TO RETRIEVE MEME: %s", repr(parameters))
+    except (KeyError, IndexError, aiohttp.ClientError, hangups.NetworkError):
+        logger.info('meme %s: %r', id(parameters), parameters)
+        logger.exception('meme %s: failed', id(parameters))
+        await bot.coro_send_message(
+            event.conv_id,
+            "<i>couldn't find a suitable meme! try again</i>"
+        )
 
     finally:
         _EXTERNALS["running"] = False

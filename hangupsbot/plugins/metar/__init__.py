@@ -46,19 +46,37 @@ async def _api_lookup(target, station):
     api_url = ("http://aviationweather.gov/adds/dataserver_current/httpparam"
                "?dataSource={0}s&requestType=retrieve&format=xml&hoursBeforeNow"
                "=3&mostRecent=true&stationString={1}").format(target, station)
-    response = None
+    logger.debug('api call %s: url %r', id(api_url), api_url)
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(api_url) as response:
                 response.raise_for_status()
                 raw_text = await response.text()
+    except aiohttp.ClientError as err:
+        if not logger.isEnabledFor(logging.DEBUG):
+            # add context
+            logger.info('api call %s: url %r', id(api_url), api_url)
+        logger.error(
+            "api call %s: failed with %r",
+            id(api_url), err
+        )
+        return None
+
+    logger.debug('api call %s: raw %r', id(api_url), raw_text)
+
+    try:
         root = ElementTree.fromstring(raw_text)
         raw = root.findall('data/{}/raw_text'.format(target))
     except ElementTree.ParseError as err:
-        logger.info("METAR Error: %s, raw_data: %s", err, repr(raw_text))
-        return None
-    except aiohttp.ClientError:
-        logger.info("METAR Error: %s", repr(response))
+        if not logger.isEnabledFor(logging.DEBUG):
+            # add context
+            logger.info('api call %s: url %r', id(api_url), api_url)
+            logger.info('api call %s: raw %r', id(api_url), raw_text)
+
+        logger.error(
+            "api call %s: parse error %r",
+            id(api_url), err
+        )
         return None
     return raw
 

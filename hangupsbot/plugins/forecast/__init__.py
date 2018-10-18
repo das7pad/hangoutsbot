@@ -148,26 +148,27 @@ async def _lookup_address(location):
     """
     google_map_url = 'https://maps.googleapis.com/maps/api/geocode/json'
     payload = {'address': location}
-    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(google_map_url,
                                    params=payload) as response:
                 response.raise_for_status()
                 raw = await response.json()
+    except aiohttp.ClientError as err:
+        logger.info('lookup_address %s: %r', id(payload), location)
+        logger.error('lookup_address %s: request failed: %r', id(payload), err)
+        return None
+
+    try:
         results = raw['results'][0]
         return {
             'lat': results['geometry']['location']['lat'],
             'lng': results['geometry']['location']['lng'],
             'address': results['formatted_address'],
         }
-    except (IndexError, KeyError):
-        logger.error('unable to parse address return data: %d: %s',
-                     repr(response), repr(raw))
-        return None
-    except aiohttp.ClientError:
-        logger.error('unable to connect with maps.googleapis.com: %d - %s',
-                     google_map_url, repr(response))
+    except (IndexError, KeyError) as err:
+        logger.info('lookup_address %s: %r', id(payload), raw)
+        logger.error('lookup_address %s: parse error %r', id(payload), err)
         return None
 
 
@@ -181,12 +182,17 @@ async def _lookup_weather(coordinates):
                        '{2}?units=auto').format(_INTERNAL['forecast_api_key'],
                                                 coordinates['lat'],
                                                 coordinates['lng'])
-    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(forecast_io_url) as response:
                 response.raise_for_status()
                 raw = await response.json()
+    except aiohttp.ClientError as err:
+        logger.info('lookup_weather %s: %r', id(err), coordinates)
+        logger.error('lookup_weather %s: request failed: %r', id(err), err)
+        return None
+
+    try:
         current = {
             'time': raw['currently']['time'],
             'summary': raw['currently']['summary'],
@@ -207,12 +213,9 @@ async def _lookup_weather(coordinates):
             current['daily'] = raw['daily']['summary']
 
     except (ValueError, KeyError) as err:
-        logger.error("Forecast Error: %s", err)
+        logger.info('lookup_weather %s: %r', id(err), coordinates)
+        logger.error('lookup_weather %s: parse error: %r', id(err), err)
         current = dict()
-    except aiohttp.ClientError:
-        logger.error('unable to connect with api.darksky.net: %d - %s',
-                     forecast_io_url, repr(response))
-        return None
 
     return current
 

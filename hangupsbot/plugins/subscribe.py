@@ -110,7 +110,7 @@ def _hide_from_subscribe(item):
     elif isinstance(item, (list, tuple)):
         IGNORED_COMMANDS.update(item)
     else:
-        logger.warning('%s is not a valid command container', repr(item),
+        logger.warning('%r is not a valid command container', item,
                        include_stack=True)
 
 

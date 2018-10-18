@@ -290,7 +290,11 @@ class SlackMessage(BotMixin):
                     channel=self.channel,
                     latest=float(timestamp) / 1000000,
                     inclusive=True, count=1)
-            except SlackAPIError:
+            except SlackAPIError as err:
+                slackrtm.logger.error(
+                    'failed to get a history item via %r, age: %s: %r',
+                    method, timestamp, err
+                )
                 return None
 
             if not resp.get('messages'):
@@ -302,8 +306,11 @@ class SlackMessage(BotMixin):
                 old_msg = SlackMessage(slackrtm, resp['messages'][0])
             except (KeyError, IndexError, IgnoreMessage, ParseError):
                 # covers invalid api-responses and intended Exceptions
-                slackrtm.logger.debug('discard reply: %s',
-                                      repr(resp['messages'][0]), exc_info=True)
+                slackrtm.logger.debug(
+                    'discard reply: %r',
+                    resp['messages'][0],
+                    exc_info=True
+                )
                 return None
             image = old_msg.image
             r_text = old_msg.text

@@ -44,8 +44,9 @@ class SyncUser(hangups.user.User, BotMixin):
                 user_is_self = user.is_self
             except AttributeError:
                 logger.exception(
-                    '`user` is a hangups.user.User-like object, got %s, dir=%s',
-                    type(user), dir(user))
+                    '%r does not implement the hangups.user.User api',
+                    type(user)
+                )
 
         # get the synced G+ ID, if a platform is registered for the identifier
         platform = (identifier.rsplit(':', 1)[0] if isinstance(identifier, str)

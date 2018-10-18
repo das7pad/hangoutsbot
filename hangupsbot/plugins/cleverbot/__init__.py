@@ -111,7 +111,7 @@ def chat(bot, event, *args):
     chat_cw = _get_cw_for_chat(bot, event)
     if not chat_cw:
         response = "API key not defined: config.cleverbot_api_key"
-        logger.error(response)
+        logger.warning(response)
         return response
 
     if args:

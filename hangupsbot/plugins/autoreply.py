@@ -173,8 +173,10 @@ async def send_reply(bot, event, message):
         message = message.split(':', 1)[-1]
         target_conv = await bot.get_1to1(event.user.id_.chat_id)
         if not target_conv:
-            logger.error("1-to-1 unavailable for %s (%s)",
-                         event.user.full_name, event.user.id_.chat_id)
+            logger.warning(
+                "1-to-1 unavailable for %s (%s)",
+                event.user.full_name, event.user.id_.chat_id
+            )
             return False
         envelopes.append((target_conv, message.format(**values)))
 
@@ -183,8 +185,10 @@ async def send_reply(bot, event, message):
         for guest in values["participants"]:
             target_conv = await bot.get_1to1(guest.id_.chat_id)
             if not target_conv:
-                logger.error("1-to-1 unavailable for %s (%s)",
-                             guest.full_name, guest.id_.chat_id)
+                logger.warning(
+                    "1-to-1 unavailable for %s (%s)",
+                    guest.full_name, guest.id_.chat_id
+                )
                 return False
             values["guest"] = guest  # add the guest as extra info
             envelopes.append((target_conv, message.format(**values)))

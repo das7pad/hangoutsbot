@@ -142,8 +142,6 @@ class BridgeInstance(WebFramework):
                                         "source_title": False,
                                     })
 
-        logger.critical("long-polling terminated")
-
     async def telegram_api_request(self, configuration, method, data):
         connector = aiohttp.TCPConnector(verify_ssl=True)
         headers = {'content-type': 'application/x-www-form-urlencoded'}

@@ -65,9 +65,10 @@ class SlackRTM(BotMixin):
     _tracker = 0
 
     def __init__(self, sink_config):
-        if not isinstance(sink_config, dict) or 'key' not in sink_config:
-            raise SlackConfigError('API-`key` is missing in config %s'
-                                   % repr(sink_config))
+        if not isinstance(sink_config, dict):
+            raise SlackConfigError('Invalid config type')
+        if 'key' not in sink_config:
+            raise SlackConfigError('API-`key` is missing in config')
         self.api_key = sink_config['key']
         self.slack_domain = sink_config.get('domain')
         self.conversations = {}
@@ -145,10 +146,10 @@ class SlackRTM(BotMixin):
             try:
                 login_data = await self.api_call('rtm.connect')
             except SlackAPIError:
-                raise IncompleteLoginError() from None
+                raise IncompleteLoginError()
 
             if any(key not in login_data for key in ('self', 'team', 'url')):
-                raise IncompleteLoginError()
+                raise IncompleteLoginError(login_data.keys())
             self.logger = logging.getLogger('%s.%s'
                                             % (__package__,
                                                login_data['team']['domain']))
@@ -191,17 +192,20 @@ class SlackRTM(BotMixin):
                     self.my_bid = response['message']['bot_id']
                 except (SlackAPIError, KeyError) as err:
                     self.logger.error(
-                        'Failed fetch the own `bot_id` [retry %s/5]: %s',
-                        retry, repr(err))
+                        'Failed fetch the own `bot_id` [retry %s/5]: %r',
+                        retry, err
+                    )
                 else:
                     return
 
             # NOTE: bot_messages are not handled further the `SlackMessage` in
             # general - the user may add custom message parsing to enable
             # forwarding. A bad parsing could result in duplicates.
-            self.logger.critical('Could not fetch the own `bot_id` used to '
-                                 'filter messages. The instance can not work '
-                                 'efficient now or may send duplicates.')
+            self.logger.warning(
+                'Could not fetch the own `bot_id` used to '
+                'filter messages. The instance can not work '
+                'efficient now or may send duplicates.'
+            )
 
         hard_reset = 0
         last_drop = time.time()
@@ -221,8 +225,11 @@ class SlackRTM(BotMixin):
                 await self._process_websocket(login_data['url'])
             except asyncio.CancelledError:
                 return
-            except IncompleteLoginError:
-                self.logger.error('Incomplete Login, restarting')
+            except IncompleteLoginError as err:
+                self.logger.error(
+                    'Incomplete Login: %r, restarting',
+                    err
+                )
             except WebsocketFailed:
                 if time.time() - last_drop > hard_reset * 30:
                     hard_reset = 1
@@ -232,7 +239,10 @@ class SlackRTM(BotMixin):
                                     hard_reset * 10)
             except SlackAuthError as err:
                 await self._session.close()  # do not allow further api-calls
-                self.logger.critical('closing SlackRTM: %s', repr(err))
+                self.logger.error(
+                    'closing SlackRTM: %r',
+                    err
+                )
                 return
             except Exception:  # pylint: disable=broad-except
                 self.logger.exception('core error')
@@ -274,8 +284,11 @@ class SlackRTM(BotMixin):
                               kwargs['channel'], kwargs['text'])
             try:
                 reply = await self.api_call('chat.postMessage', **kwargs)
-            except SlackAPIError:
-                # already logged
+            except SlackAPIError as err:
+                self.logger.error(
+                    'failed to send a message %r',
+                    err
+                )
                 return False
             channel_tag = self.identifier + ':' + kwargs['channel']
             SlackMessage.track_message(self.bot, channel_tag, reply)
@@ -379,8 +392,7 @@ class SlackRTM(BotMixin):
         """
         tracker = self._tracker
         self._tracker += 1
-        self.logger.debug('api_call %s: (%s, %s)',
-                          tracker, repr(method), repr(kwargs))
+        self.logger.debug('api_call %s: (%r, %r)', tracker, method, kwargs)
         if 'delay' in kwargs:
             delay = kwargs.pop('delay')
             self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
@@ -394,14 +406,14 @@ class SlackRTM(BotMixin):
                     data={'token': self.api_key, **kwargs})) as resp:
 
                 parsed = await resp.json()
-                self.logger.debug('api_call %s: %s', tracker, repr(parsed))
+                self.logger.debug('api_call %s: %r', tracker, parsed)
                 if parsed.get('ok'):
                     return parsed
                 error = parsed.get('error', '')
                 if 'rate_limited' in error:
                     raise SlackRateLimited()
                 if 'auth' in error:
-                    raise SlackAuthError(parsed)
+                    raise SlackAuthError(tracker, parsed)
 
                 raise RuntimeError('invalid request')
         except SlackRateLimited:
@@ -409,10 +421,10 @@ class SlackRTM(BotMixin):
             delay += parsed.get('Retry-After', 30)
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
-            self.logger.error(
-                'api_call %s: failed with %s, method=%s, kwargs=%s, parsed=%s',
-                tracker, repr(err), method, kwargs, parsed)
-        raise SlackAPIError(parsed)
+            self.logger.info(
+                'api_call %s: failed with %r, method=%s, kwargs=%s, parsed=%s',
+                tracker, err, method, kwargs, parsed)
+        raise SlackAPIError(tracker, parsed)
 
     def send_message(self, *, channel, text, as_user=True, attachments=None,
                      link_names=True, username=None, icon_url=None):
@@ -464,10 +476,20 @@ class SlackRTM(BotMixin):
         """
         if userid not in self.users:
             self.users[userid] = {}
-        if '1on1' not in self.users[userid]:
-            channel = (await self.api_call('im.open', user=userid))['channel']
-            self.users[userid]['1on1'] = channel['id']
-        return self.users[userid]['1on1']
+        if '1on1' in self.users[userid]:
+            return self.users[userid]['1on1']
+
+        try:
+            id_ = (await self.api_call('im.open', user=userid))['channel']['id']
+        except (SlackAPIError, KeyError) as err:
+            self.logger.error(
+                'failed to get 1on1: %r',
+                err
+            )
+            raise SlackAPIError
+
+        self.users[userid]['1on1'] = id_
+        return id_
 
     async def update_cache(self, type_):
         """update the cached data from api-source
@@ -479,9 +501,11 @@ class SlackRTM(BotMixin):
                   'im.list' if type_ == 'ims' else type_ + '.list')
         try:
             response = await self.api_call(method)
-        except SlackAPIError:
-            # the raw exception with more details is already logged
-            self.logger.info('cache update for %s failed', type_)
+        except SlackAPIError as err:
+            self.logger.error(
+                'cache update for %r failed: %r',
+                type_, err
+            )
             return
 
         data_key = 'members' if type_ == 'users' else type_
@@ -698,10 +722,10 @@ class SlackRTM(BotMixin):
                                              % repr(reply))
                     except (ValueError, TypeError) as err:
                         if websocket.closed:
-                            self.logger.warning('websocket connection closed')
+                            self.logger.info('websocket connection closed')
                             break
                         # covers invalid json-replies, replies without a `type`
-                        self.logger.warning('bad websocket read: %s', repr(err))
+                        self.logger.error('bad websocket read: %r', err)
                         soft_reset += 1
                         await asyncio.sleep(2 ** soft_reset)
                         continue
@@ -712,7 +736,7 @@ class SlackRTM(BotMixin):
                     soft_reset = 0
 
         except aiohttp.ClientError as err:
-            self.logger.error('websocket connection failed: %s', repr(err))
+            self.logger.error('websocket connection failed: %r', err)
 
         # can not connect or permanent websocket read error
         raise WebsocketFailed()
@@ -750,7 +774,10 @@ class SlackRTM(BotMixin):
                 return False
             return True
 
-        self.logger.debug('received reply %s', repr(reply))
+        self.logger.debug(
+            'msg %s: incoming message: %r',
+            id(reply), reply
+        )
 
         if (await _update_cache_on_event(reply['type'])
                 # no message content
@@ -758,16 +785,22 @@ class SlackRTM(BotMixin):
                 # we do not sync this type
                 or reply.get('is_ephemeral') or reply.get('hidden')):
             #   hidden message from slack
-            self.logger.debug('reply is system event')
+            self.logger.debug(
+                'msg %s: reply is system event',
+                id(reply)
+            )
             return
 
         if (('user' in reply and reply['user'] == self.my_uid) or
                 ('bot_id' in reply and reply['bot_id'] == self.my_bid)):
             # message from the bot user, skip it as we already handled it
-            self.logger.debug('reply content already seen')
+            self.logger.debug(
+                'msg %s: reply content already seen',
+                id(reply)
+            )
             return
 
-        error_message = 'error while parsing a Slack reply\nreply=%s'
+        error_message = 'msg %s: error while parsing a Slack reply'
         error_is_critical = True
         sync_reply = None
         try:
@@ -775,23 +808,36 @@ class SlackRTM(BotMixin):
             channel_tag = '%s:%s' % (self.identifier, msg.channel)
             SlackMessage.track_message(self.bot, channel_tag, reply)
 
-            error_message = 'error in command handling\nreply=%s'
+            error_message = 'msg %s: error in command handling'
             error_is_critical = False
             await slack_command_handler(self, msg)
 
-            error_message = 'error while parsing the SyncReply\nreply=%s'
+            error_message = 'msg %s: error while parsing the SyncReply'
             sync_reply = await msg.get_sync_reply(self, reply)
         except ParseError as err:
-            self.logger.error('%s\nreply=%s', repr(err), reply)
+            self._log_message_context(reply)
+            self.logger.error(
+                'msg %s: parse error for message: %r',
+                id(reply), err,
+            )
             return
         except IgnoreMessage as err:
-            self.logger.debug(repr(err))
+            self.logger.debug('msg %s: ignore: %r',
+                              id(reply), err)
             return
         except SlackAuthError as err:
-            self.logger.critical(repr(err))
+            self._log_message_context(reply)
+            self.logger.warning(
+                'msg %s: auth error during message handling: %r',
+                id(reply), err
+            )
             # continue with message handling
         except Exception:  # pylint: disable=broad-except
-            self.logger.exception(error_message, repr(reply))
+            self._log_message_context(reply)
+            self.logger.exception(
+                error_message,
+                id(reply)
+            )
             if error_is_critical:
                 return
 
@@ -811,6 +857,20 @@ class SlackRTM(BotMixin):
                 identifier=channel_tag, conv_id=sync['hangoutid'],
                 user=msg.user, text=msg.segments, image=msg.image,
                 edited=msg.edited, title=channel_name, reply=sync_reply))
+
+    def _log_message_context(self, reply):
+        """add context to the error message
+
+        Args:
+            reply (dict): slack rtm message
+        """
+        if self.logger.isEnabledFor(logging.DEBUG):
+            # NOTE: messages are logged by default in DEBUG mode
+            return
+        self.logger.info(
+            'msg %s: incoming message: %r',
+            id(reply), reply
+        )
 
     async def _handle_sync_message(self, bot, event):
         """forward message/media from any platform to slack
@@ -946,8 +1006,10 @@ class SlackRTM(BotMixin):
                 await self.api_call(method, channel=channel, user=user.usr_id)
             except SlackAPIError as err:
                 kicked = False
-                self.logger.warning('failed to kick user "%s" from "%s": %s',
-                                    user.usr_id, channel, repr(err))
+                self.logger.error(
+                    'failed to kick user via %r: %r',
+                    method, err
+                )
             else:
                 # do not overwrite an error state
                 kicked = True if kicked is not False else False

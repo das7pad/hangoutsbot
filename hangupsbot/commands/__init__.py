@@ -207,6 +207,10 @@ class CommandDispatcher(BotMixin, TrackingMixin):
 
         conv_id = event.conv_id
         context = None
+        logger.info(
+            'command run %s: %r %r %r',
+            id(args), args, kwargs, event
+        )
         try:
             result = await asyncio.wait_for(
                 coro(bot, event, *args[1:], **kwargs),
@@ -214,14 +218,20 @@ class CommandDispatcher(BotMixin, TrackingMixin):
 
         except asyncio.CancelledError:
             # shutdown in progress
-            logger.warning('stopped command execution of %r, triggered by %r',
-                           command_name, event)
+            logger.warning(
+                'command run %s: stopped command execution',
+                id(args)
+            )
             raise
 
         except asyncio.TimeoutError:
             if raise_exceptions:
                 raise
             text = _('command execution of "{}" timed out').format(command_name)
+            logger.error(
+                'command run %s: hit timeout of %s sec',
+                id(args), bot.config['command_timeout']
+            )
 
         except Help as err:
             if raise_exceptions:
@@ -235,7 +245,10 @@ class CommandDispatcher(BotMixin, TrackingMixin):
             if raise_exceptions:
                 raise
 
-            logger.exception("RUN: %s", command_name)
+            logger.exception(
+                'command run %s: low level error',
+                id(args)
+            )
             text = "<i><b>%s</b> %s</i>" % (command_name, type(err).__name__)
 
         else:

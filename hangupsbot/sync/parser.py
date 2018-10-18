@@ -165,7 +165,7 @@ class MessageParser(ChatMessageParser):
             segment.params['link_target'] = link_target
             return segment
 
-        logger.debug('%s.parse: %s', self.__class__.__name__, repr(text))
+        logger.debug('%s.parse: %r', self.__class__.__name__, text)
 
         return (_unescape_segment(segment) for segment in super().parse(text))
 

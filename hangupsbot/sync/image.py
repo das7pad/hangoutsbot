@@ -127,8 +127,11 @@ class MovieConverter(VideoFileClip):
         try:
             if os.path.exists(path):
                 os.remove(path)
-        except (OSError, IOError):
-            logger.warning('failed to remove %s', self._path)
+        except (OSError, IOError) as err:
+            logger.warning(
+                'failed to remove %r: %r',
+                self._path, err,
+            )
 
     def close(self):
         super().close()
@@ -317,7 +320,8 @@ class SyncImage(BotMixin):
                     if ('image' not in headers['content-type'] and
                             'video' not in headers['content-type']):
                         raise TypeError(
-                            '%s has no image\nheaders=%s' % (url, headers))
+                            'has no image: headers=%r' % headers
+                        )
 
                     if 'content-disposition' in headers:
                         # example for a content-disposition:
@@ -336,7 +340,8 @@ class SyncImage(BotMixin):
 
             return True
         except (aiohttp.ClientError, AttributeError, TypeError) as err:
-            logger.error('can not fetch image data from %s: %s', url, repr(err))
+            logger.info('download %s: %r', id(url), url)
+            logger.error('download %s: failed: %r', id(url), err)
             return False
 
     def _get_resized(self, *, limit, data, filename, video_as_gif, caller=None):

@@ -38,8 +38,9 @@ class FileWriter:
             if directory and not os.path.isdir(directory):
                 try:
                     os.makedirs(directory)
-                except OSError:
-                    logger.exception('cannot create path: %s', path)
+                except OSError as err:
+                    logger.info('create path %s: %r', id(path), path)
+                    logger.error('create path %s: failed: %r', id(path), err)
                     continue
 
             logger.info("stored in: %s", path)

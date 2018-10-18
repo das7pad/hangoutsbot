@@ -84,17 +84,14 @@ async def get_places(location, client_id, secret, section=None):
     else:
         return None
 
-    response = None
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 data = await response.json()
-    except aiohttp.ClientError:
-        logger.error('url: %s, response: %s', url, repr(response))
-        url = url.replace(client_id, 'CLIENT_ID').replace(secret,
-                                                          'CLIENT_SECRET')
-        logger.error("URL: %s, %s", url, repr(response))
+    except aiohttp.ClientError as err:
+        logger.info('get_places %s: %r', id(err), location)
+        logger.error('get_places %s: failed: %r', id(err), err)
         return "<i><b>Foursquare Error</b></i>"
 
     if section in types:

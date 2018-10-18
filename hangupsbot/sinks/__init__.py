@@ -50,34 +50,44 @@ def start(bot):
         try:
             module = sink_config["module"].split(".")
             if len(module) < 3:
-                logger.error("config.jsonrpc[%s].module should have at least 3"
-                             " packages %s", item_no, module)
+                logger.warning(
+                    "config.jsonrpc[%s].module"
+                    " should have at least 3 packages %s",
+                    item_no, module
+                )
                 continue
 
             module_name = ".".join(module[0:-1])
             class_name = ".".join(module[-1:])
             if not module_name or not class_name:
-                logger.error("config.jsonrpc[%s].module must be a valid package"
-                             " name", item_no)
+                logger.warning(
+                    "config.jsonrpc[%s].module must be a valid package name",
+                    item_no
+                )
                 continue
 
             certfile = sink_config.get("certfile")
             if certfile and not os.path.isfile(certfile):
-                logger.error("config.jsonrpc[%s].certfile not available at %s",
-                             item_no, certfile)
+                logger.warning(
+                    "config.jsonrpc[%s].certfile not available at %s",
+                    item_no, certfile
+                )
                 continue
 
             name = sink_config["name"]
             port = sink_config["port"]
         except KeyError as err:
-            logger.error("config.jsonrpc[%s] missing keyword %s", item_no, err)
+            logger.warning("config.jsonrpc[%s] missing keyword %s", item_no, err)
             continue
 
         try:
             handler_class = class_from_name(module_name, class_name)
 
         except (AttributeError, ImportError):
-            logger.error("not found: %s %s", module_name, class_name)
+            logger.warning(
+                "handler class not found: module=%r class=%r",
+                module_name, class_name
+            )
             continue
 
         # start up rpc listener in a separate thread
@@ -96,9 +106,10 @@ def start(bot):
             aiohttp_count += 1
 
         else:
-            logger.critical(
-                '%s is not an instance of `sinks.AsyncRequestHandler`, skipped',
-                repr(handler_class))
+            logger.warning(
+                '%r is not an instance of `sinks.AsyncRequestHandler`, skipped',
+                handler_class
+            )
             continue
 
     if aiohttp_count:

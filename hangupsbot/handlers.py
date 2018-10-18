@@ -331,8 +331,12 @@ class EventHandler(BotMixin):
         event.text = event.text.replace(u'\xa0', u' ')
         try:
             line_args = shlex.split(event.text, posix=False)
-        except ValueError:
-            logger.exception('shlex.split failed parsing "%s"', event.text)
+        except ValueError as err:
+            logger.info('shlex.split %s: text=%r', id(event.text), event.text)
+            logger.error(
+                'shlex.split %s: parsing failed: %r',
+                id(event.text), err
+            )
             line_args = event.text.split()
 
         commands = command.get_available_commands(bot, event.user_id.chat_id,
@@ -385,8 +389,9 @@ class EventHandler(BotMixin):
                 SuppressEventHandling:
                     skip all handler and do not handle this event further
             """
-            message = ["%s: %s.%s" % (name, meta['module.path'],
-                                      function.__name__)]
+            message = "%s: %s.%s %s" % (
+                name, meta['module.path'], function.__name__, id(args)
+            )
             try:
                 # a function may use not all args or kwargs, filter here
                 positional = (
@@ -398,19 +403,19 @@ class EventHandler(BotMixin):
                 keyword = {key: value for key, value in kwargs.items()
                            if key in names}
 
-                logger.debug(message[0])
+                logger.debug('%s: positional=%r keyword=%r',
+                             message, positional, keyword)
+
                 result = function(*positional, **keyword)
                 if asyncio.iscoroutinefunction(function):
                     await result
 
             except HangupsBotExceptions.SuppressHandler:
                 # skip this handler, continue with next
-                message.append("SuppressHandler")
-                logger.debug(" : ".join(message))
+                logger.debug("%s: SuppressHandler", message)
             except HangupsBotExceptions.SuppressAllHandlers:
                 # skip all other pluggables, but let the event continue
-                message.append("SuppressAllHandlers")
-                logger.debug(" : ".join(message))
+                logger.debug("%s: SuppressAllHandlers", message)
                 raise
             except HangupsBotExceptions.SuppressEventHandling:
                 # handle requested to skip all pluggables
@@ -418,9 +423,11 @@ class EventHandler(BotMixin):
             except Exception:  # pylint: disable=broad-except
                 # exception is not related to the handling of this
                 # pluggable, log and continue with the next handler
-                message.append("args=" + str([str(arg) for arg in args]))
-                message.append("kwargs=" + str(kwargs))
-                logger.exception(" : ".join(message))
+                logger.info(
+                    '%s: args=%r kwargs=%r',
+                    message, args, kwargs
+                )
+                logger.exception('%s: handler error', message)
 
         try:
             if kwargs.pop('_run_concurrent_', False):

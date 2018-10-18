@@ -550,12 +550,12 @@ async def unload_all(bot):
     for module in all_plugins:
         result = done.pop(0)
         if isinstance(result, NotLoaded):
-            logger.info(repr(result))
+            logger.info('unload %r: not loaded', module)
             continue
         if not isinstance(result, Exception):
             continue
-        logger.error('`unload("%s")` failed with Exception %s',
-                     module, repr(result))
+        logger.error('unload %r: failed with Exception %r',
+                     module, result)
 
 
 def _is_protected_module(module_name):
@@ -603,7 +603,10 @@ async def load(bot, module_path, module_name=None):
     real_module_path = 'hangupsbot.' + module_path
     setattr(sys.modules[real_module_path], 'print', utils.print_to_logger)
     if hasattr(sys.modules[real_module_path], "hangups_shim"):
-        logger.info("%s has legacy hangups reference", module_name)
+        logger.error(
+            "%s has legacy hangups reference",
+            module_name
+        )
 
     public_functions = list(
         inspect.getmembers(sys.modules[real_module_path], inspect.isfunction))
@@ -626,9 +629,10 @@ async def load(bot, module_path, module_name=None):
             expected = list(inspect.signature(the_function).parameters)
             if len(expected) > 1 or (expected and expected[0] != "bot"):
                 # plugin not updated since v2.4
-                logger.warning("%s of %s does not comply with the current "
-                               "initialize standard!",
-                               function_name, module_path)
+                logger.error(
+                    "%s of %s has incompatible initialize function",
+                    function_name, module_path
+                )
                 continue
 
             result = the_function(bot) if expected else the_function()
@@ -752,16 +756,15 @@ async def unload(bot, module_path):
     try:
         done = await asyncio.wait_for(asyncio.gather(*plugin["asyncio.task"],
                                                      return_exceptions=True), 5)
-        failed = []
         for task in plugin["asyncio.task"]:
             result = done.pop(0)
             if not isinstance(result, Exception):
                 continue
-            failed.append("%s\nexited with Exception %s" % (task, repr(result)))
+            logger.error(
+                "unload: %s: task %r exited with %r",
+                module_path, task, result
+            )
 
-        if failed:
-            logger.info("not all tasks of %s were shutdown gracefully:\n%s",
-                        module_path, "\n".join(failed))
     except TimeoutError:
         logger.info("not all tasks of %s were shutdown gracefully after 5sec",
                     module_path)
@@ -800,7 +803,7 @@ async def reload_plugin(bot, module_path):
 
     repeat = SENTINELS.setdefault(module_path, 0)
     if repeat >= 3:
-        logger.critical('too many reloads of %s, enter fail state', module_path)
+        logger.error('too many reloads of %s, enter fail state', module_path)
         return False
     SENTINELS[module_path] += 1
     await load(bot, module_path)

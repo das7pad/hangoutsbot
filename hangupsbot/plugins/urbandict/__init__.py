@@ -60,7 +60,7 @@ class UrbanDictParser(HTMLParser):
         self.translations[-1][self._section] += normalize_newlines(data)
 
     def error(self, message):
-        logger.error(message)
+        logger.error('parse error: %r', message)
 
 
 def normalize_newlines(text):
@@ -76,15 +76,21 @@ async def urbandict(dummy0, dummy1, *args):
     else:
         url = "http://www.urbandictionary.com/define.php?term=" + urlquote(term)
 
-    response = None
+    logger.debug('api call %s: url %r', id(url), url)
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 data = await response.text()
-    except aiohttp.ClientError:
-        logger.error('url: %s, response: %s', url, repr(response))
+    except aiohttp.ClientError as err:
+        if not logger.isEnabledFor(logging.DEBUG):
+            # add context
+            logger.info('api call %s: url %r', id(url), url)
+
+        logger.error('api call %s: failed %r', id(url), err)
         return _('urbandict: request failed :(')
+
+    logger.debug('api call %s: data %r', id(url), data)
 
     urbandict_parser = UrbanDictParser()
     try:

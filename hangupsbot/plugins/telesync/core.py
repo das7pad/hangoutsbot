@@ -146,6 +146,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         retry = 0
         limit = 1  # ensure at least one try
         last_err = None
+        tracker = object()  # tracker for log entries
+        logger.debug(
+            'api request %s: method %r, params %s, file %r, kwargs %r',
+            id(tracker), method, params, files, kwargs,
+        )
 
         while retry <= limit:
             delay = 0
@@ -156,33 +161,37 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     files=files,
                     **kwargs
                 )
-            except telepot.exception.TooManyRequestsError as err:
-                last_err = err
+            except telepot.exception.TooManyRequestsError:
                 msg = 'too many requests!'
                 delay = 30
 
             except telepot.exception.BadHTTPResponse as err:
-                last_err = err
                 msg = self._get_error_message(err, err.status, err.text)
 
             except telepot.exception.TelegramError as err:
-                last_err = err
                 if err.error_code < 500:
                     raise
 
                 msg = self._get_error_message(err, err.error_code,
                                               err.description)
 
+            last_err = msg
             retry += 1
             limit = self.config('request_retry_limit')
+            if retry == 1 and not logger.isEnabledFor(logging.DEBUG):
+                logger.info(
+                    'api request %s: method %r, params %s, file %r, kwargs %r',
+                    id(tracker), method, params, files, kwargs,
+                )
             logger.info(
-                'Request %s/%s failed: %s\n %r | %r | %r| %r\n%r',
-                retry, limit, msg, method, params, files, kwargs, last_err)
+                'api request %s: %s/%s failed: %r',
+                id(tracker), retry, limit, msg
+            )
             await asyncio.sleep(delay or max(2 ** retry, 30))
 
-        logger.warning(
-            'Request failed permanent: %r | %r | %r | %r\nLast Error:\n%s',
-            method, params, files, kwargs, last_err
+        logger.error(
+            'api request %s: failed %s times. Last error: %r',
+            id(tracker), limit, last_err
         )
         raise PERMANENT_SERVER_ERROR
 
@@ -223,7 +232,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         except asyncio.CancelledError:
             return
         except telepot.exception.UnauthorizedError:
-            logger.critical('API-Key revoked!')
+            logger.warning('API-Key revoked!')
         finally:
             await self._cache_sending_queue.stop(timeout=5)
 
@@ -241,7 +250,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                     logger.info('discard the updates %s', old_messages)
                     await self.getUpdates(offset=max(old_messages) + 1)
             except telepot.exception.TelegramError as err:
-                logger.warning('discard of last messages failed: %s', str(err))
+                logger.error('discard of last messages failed: %r', err)
 
     async def can_log_in(self, retry=True):
         """check whether Telegram api requests can be made
@@ -255,11 +264,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         try:
             await self.getMe()
         except telepot.exception.UnauthorizedError:
-            logger.critical('API-KEY is not valid, unloading the plugin')
+            logger.warning('API-KEY is not valid, unloading the plugin')
             asyncio.ensure_future(plugins.unload(self.bot, 'plugins.telesync'))
             retry = False
         except (telepot.exception.TelegramError, aiohttp.ClientError) as err:
-            logger.info('API check: %s', repr(err))
+            logger.error('API check: %r', err)
         else:
             return True
 
@@ -322,10 +331,16 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                             self.bot.memory.pop_by_path(
                                 ['telesync', 'chat_data', str(chat_id),
                                  'user', str(user_id)])
-                        except KeyError:
-                            logger.warning(
-                                'failed to remove user %s from chat %s',
-                                user_id, chat_id)
+                        except KeyError as err:
+                            logger.info(
+                                'memory cleanup error %s: '
+                                'remove user %s from chat %s',
+                                id(err), user_id, chat_id
+                            )
+                            logger.error(
+                                'memory cleanup error %s: %r',
+                                id(err), err
+                            )
                             tg_user['last_seen'] = None
                             chat_id = None
 
@@ -349,10 +364,18 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 could be created
         """
         image_data = io.BytesIO()
+        logger.info(
+            'download media %s: request %r, media type %r',
+            id(image_data), image, type_
+        )
         try:
             await self.download_file(image['file_id'], image_data)
-        except telepot.exception.TelegramError:
-            logger.exception('image download of %s failed', image)
+        except telepot.exception.TelegramError as err:
+            logger.error(
+                'download media %s: failed with %r',
+                id(image_data), err
+            )
+            image_data.close()
             return None
 
         if extension is not None:
@@ -372,11 +395,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         image = self.bot.sync.get_sync_image(data=image_data, filename=filename,
                                              type_=type_, size=size)
-        logger.info('filename %s | extension %s | type_ %s',
-                    filename, extension, type_)
 
         if extension != 'mp4' or type_ == 'video':
             return image
+
+        logger.info('download media %s: post process gif', id(image_data))
 
         # telegram converts gifs to videos, we have to do that in reverse
         await image.process()
@@ -462,18 +485,30 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         except telepot.exception.TelegramError as err:
             status = False
+            logger.info(
+                'sending html %s: chat %r, content %r',
+                id(text), tg_chat_id, text
+            )
             if ('chat not found' in err.description
                     or 'bot was blocked by the user' in err.description):
-                logger.error('%s: "%s"', err.description, tg_chat_id)
+                logger.warning(
+                    'sending html %s: %r',
+                    id(text), err.description
+                )
                 next_part = None
             elif 'can\'t parse entities in message text' in err.description:
-                logger.info('html failed in %s, content: %s', tg_chat_id, text)
+                logger.error(
+                    'sending html %s: content has bad html',
+                    id(text)
+                )
                 status = await self._send_html(tg_chat_id,
                                                get_formatted(text, 'text'),
                                                as_html=False, silent=silent)
             else:
-                logger.error('sending of "%s" to "%s" failed:\n%s',
-                             text, tg_chat_id, repr(err))
+                logger.error(
+                    'sending html %s: failed with %r',
+                    id(text), err
+                )
 
         else:
             Message.add_message(self.bot, int(tg_chat_id), msg.get('message_id'))
@@ -515,7 +550,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         Args:
             response (dict): api-response from telepot
         """
-        logger.debug(response)
+        logger.debug('message %s: %r', id(response), response)
         if 'migrate_to_chat_id' in response:
             self._on_supergroup_upgrade(response)
             return
@@ -527,7 +562,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         try:
             msg = Message(response)
         except IgnoreMessage:
-            logger.debug('ignore message')
+            logger.debug('message %s: ignore message', id(response))
             return
 
         if msg.content_type == 'text':
@@ -658,6 +693,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         mode = self.bot.get_config_suboption('telesync:' + msg.chat_id,
                                              'restrict_users')
 
+        logger.info(
+            'restricting new users %s: chat %r, restrict mode %r, users %r',
+            id(changed_members), msg.chat_id, mode, changed_members
+        )
+
         if mode in RESTRICT_OPTIONS:
             failed = await restrict_users(
                 self, msg.chat_id, mode,
@@ -673,16 +713,26 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                         _RESTRICT_USERS_FAILED.format(names=failed_names,
                                                       chat_name=chat_name))
 
-                logger.warning('restricting rights for users %s in %s failed',
-                               failed_names, msg.chat_id)
+                logger.info(
+                    'restricting new users %s: failed for users %r',
+                    id(changed_members), failed
+                )
+                logger.error(
+                    'restricting new users %s: failed with %r',
+                    id(changed_members), failed.values()
+                )
         elif mode:
-            message = _(
-                'Check the config value `restrict_users` for the chat '
-                '{name} ({chat_id}), expected one of {valid_values}'
-            ).format(name=chat_name, chat_id=msg.chat_id,
-                     valid_values=', '.join(RESTRICT_OPTIONS))
-            logger.warning(message)
+            logger.warning(
+                'restricting new users %s: %r is an invalid restrict mode, '
+                'check conversation or global config for "restrict_users"',
+                id(changed_members), mode
+            )
             if mod_chat:
+                message = _(
+                    'Check the config value `restrict_users` for the chat '
+                    '{name} ({chat_id}), expected one of {valid_values}'
+                ).format(name=chat_name, chat_id=msg.chat_id,
+                         valid_values=', '.join(RESTRICT_OPTIONS))
                 self.send_html(mod_chat, '<b>ERROR</b>: %s' % message)
 
     def _on_supergroup_upgrade(self, msg):
@@ -833,12 +883,25 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 message = _extract_message(update)[1]
                 await asyncio.shield(self._handle(message))
             except asyncio.CancelledError:
-                logger.info('message loop stopped, finishing the handling of the'
-                            ' current update in the background')
+                logger.info(
+                    'handle update %s: update %r, message [%s] %r',
+                    id(update), update, id(message), message
+                )
+                logger.warning(
+                    'handle update %s: message loop stopped, finishing the '
+                    'handling of the current update in the background',
+                    id(update)
+                )
                 raise
             except Exception:  # pylint:disable=broad-except
-                logger.exception('error in handling message %s of update %s',
-                                 repr(message), repr(update))
+                logger.info(
+                    'handle update %s: update %r, message [%s] %r',
+                    id(update), update, id(message), message
+                )
+                logger.exception(
+                    'handle update %s: error in handling message',
+                    id(update)
+                )
             else:
                 # valid message received and handled, exit fail-state
                 _reset_error_count()
@@ -853,7 +916,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             try:
                 while True:
                     updates = await self.getUpdates(offset=offset, timeout=120)
-                    logger.debug(updates)
+                    logger.debug('incoming updates: %r', updates)
                     delay = .2
                     for update_ in updates:
                         offset = update_['update_id'] + 1
@@ -863,7 +926,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
             except telepot.exception.TelegramError as err:
                 if err.error_code == 409:
-                    logger.critical(
+                    logger.warning(
                         'The API-KEY is in use of another service! '
                         'Telegram allows only one longpolling instance.')
                     delay += 120

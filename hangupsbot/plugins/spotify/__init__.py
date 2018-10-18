@@ -135,7 +135,7 @@ async def _watch_for_music_link(bot, event):
         return
 
     for link in set(links):
-        logger.info("Music link: %s", link)
+        logger.info("Music link %s: %s", id(link), link)
 
         if "spotify" in link:
             try:
@@ -261,7 +261,6 @@ def add_to_spotify(bot, event, query):
     if track:
         return add_to_playlist(bot, event, track)
     result = _("<em>No tracks found for '{}'.</em>".format(query))
-    logger.info(result)
     return result
 
 
@@ -346,11 +345,17 @@ def _search(bot, groups):
     """
     spotify_client = get_spotify_client(bot)
     query = " ".join(filter(None, groups))
-    logger.info("Searching Spotify for '%s'", query)
+    logger.info(
+        "Spotify %s: Searching Spotify for %r",
+        id(query), query
+    )
     try:
         results = spotify_client.search(query)
     except SpotifyException as err:
-        logger.error("Error when searching Spotify: %s", repr(err))
+        logger.error(
+            "Spotify %s: Error during search: %r",
+            id(query), err
+        )
         return None
 
     try:
@@ -361,7 +366,10 @@ def _search(bot, groups):
         return SpotifyTrack(
             raw_track["id"], raw_track["name"], raw_track["artists"][0]["name"])
     except KeyError as err:
-        logger.critical("Spotify API-Change: %s", repr(err))
+        logger.error(
+            "Spotify %s: API-Change: %r",
+            id(query), err
+        )
         return None
 
 
@@ -392,6 +400,10 @@ def add_to_playlist(bot, event, track):
         spotify_client.user_playlist_add_tracks(
             playlist.owner, playlist.id_, [track.id_])
     except SpotifyException as err:
+        logger.warning(
+            "add_to_playlist: Spotify API-Change likely: %r",
+            err
+        )
         return _("<em><b>Unable to add track:</b> {}</em>").format(err)
     else:
         return _("<em>Added <b>{} by {}</b></em>").format(
@@ -418,19 +430,27 @@ def remove_from_playlist(bot, event, track_url):
         return _("<i>Unable to create a new playlist for the current "
                  "conversation</i>")
 
+    spotify_client = get_spotify_client(bot)
+
     try:
-        spotify_client = get_spotify_client(bot)
         spotify_client.user_playlist_remove_all_occurrences_of_tracks(
             playlist.owner, playlist.id_, [track_url])
         raw_track = spotify_client.track(track_url)
     except SpotifyException as err:
+        logger.warning(
+            "remove_from_playlist: Spotify API-Change likely: %r",
+            err
+        )
         return _("<em><b>Unable to remove track:</b> {}</em>").format(err)
 
     try:
         return _("<em>Removed track <b>{} by {}</b>.</em>").format(
             raw_track["name"], raw_track["artists"][0]["name"])
     except KeyError as err:
-        logger.critical("Spotify API-Change: %s", repr(err))
+        logger.error(
+            "remove_from_playlist: Spotify API-Change: %r",
+            err
+        )
         return _("<i>Removed track {}, but could not fetch additional "
                  "information about the track</i>").format(track_url)
 
@@ -452,7 +472,7 @@ def get_chat_playlist(bot, event):
     try:
         spotify_user = bot.config.get_by_path(["spotify", "spotify", "user"])
     except (KeyError, TypeError) as err:
-        logger.error("Spotify user isn't configured: %s", err)
+        logger.warning("Spotify user isn't configured: %r", err)
         spotify_user = None
 
     playlist_id = bot.conversation_memory_get(event.conv_id,
@@ -468,17 +488,22 @@ def get_chat_playlist(bot, event):
         try:
             playlist = spotify_client.user_playlist_create(
                 spotify_user, playlist_name)
-        except SpotifyException:
-            logger.exception("core error while creating the playlist %s",
-                             playlist_name)
-            raise _PlaylistCreationFailed() from None
+        except SpotifyException as err:
+            logger.error(
+                "user_playlist_create: API Change likely: %r",
+                err
+            )
+            raise _PlaylistCreationFailed()
 
         try:
             playlist_id = playlist["id"]
             playlist_url = playlist["external_urls"]["spotify"]
         except KeyError as err:
-            logger.critical("Spotify API-Change: %s", repr(err))
-            raise _PlaylistCreationFailed() from None
+            logger.error(
+                "Spotify API-Change in user_playlist_create result: %r",
+                err
+            )
+            raise _PlaylistCreationFailed()
 
         logger.info("New Spotify playlist created: (%s, %s)",
                     playlist_id, playlist_url)
@@ -505,8 +530,10 @@ def get_title_from_youtube(bot, url):
         youtube_api_key = bot.config.get_by_path(["spotify", "youtube"])
         youtube_client = build("youtube", "v3", developerKey=youtube_api_key)
     except (KeyError, TypeError) as err:
-        logger.error("YouTube API key isn't configured: %s", err)
+        logger.warning("YouTube API key isn't configured: %s", err)
         return None
+
+    logger.debug('YouTube %s: %s', id(url), url)
 
     # Regex by mantish from http://stackoverflow.com/a/9102270 to get the
     # video id from a YouTube URL.
@@ -514,7 +541,12 @@ def get_title_from_youtube(bot, url):
     if match and len(match.group(2)) == 11:
         video_id = match.group(2)
     else:
-        logger.error("Unable to extract video id: %s", url)
+        if not logger.isEnabledFor(logging.DEBUG):
+            logger.info('YouTube %s: %s', id(url), url)
+        logger.error(
+            "YouTube %s: Unable to extract video id",
+            id(url)
+        )
         return None
 
     # YouTube response is JSON.
@@ -524,10 +556,21 @@ def get_title_from_youtube(bot, url):
         items = response.get("items", [])
         if items:
             return items[0]["snippet"]["title"]
-        logger.error("YouTube response was empty: %s", response)
-        return None
     except (YouTubeHTTPError, KeyError) as err:
-        logger.error("Unable to get video entry from %s, %s", url, repr(err))
+        if not logger.isEnabledFor(logging.DEBUG):
+            logger.info('YouTube %s: %s', id(url), url)
+        logger.error(
+            "YouTube %s: Unable to get video entry: %r",
+            id(url), err,
+        )
+        return None
+    else:
+        if not logger.isEnabledFor(logging.DEBUG):
+            logger.info('YouTube %s: %s', id(url), url)
+        logger.error(
+            "YouTube %s: response was empty: %s",
+            id(url), response
+        )
         return None
 
 
@@ -548,11 +591,24 @@ def get_title_from_soundcloud(bot, url):
         logger.error("Soundcloud client ID isn't configured: %s", err)
         return None
 
+    logger.debug(
+        "soundcloud %s: %r",
+        id(url), url
+    )
+
     try:
         track = soundcloud_client.get("/resolve", url=url)
         return track.title
     except SoundcloudHTTPError as err:
-        logger.error("Unable to resolve url %s, %s", url, repr(err))
+        if not logger.isEnabledFor(logging.DEBUG):
+            logger.info(
+                "soundcloud %s: %r",
+                id(url), url
+            )
+        logger.error(
+            "soundcloud %s: Unable to resolve url: %r",
+            id(url), err,
+        )
         return None
 
 
@@ -583,8 +639,8 @@ def get_spotify_client(bot):
         spotify_user = bot.config.get_by_path(["spotify", "spotify", "user"])
         storage_path = bot.config.get_by_path(["spotify", "spotify", "storage"])
     except (KeyError, TypeError) as err:
-        logger.error("Spotify authorization isn't configured: %s", err)
-        raise _MissingAuth() from None
+        logger.warning("Spotify authorization isn't configured: %r", err)
+        raise _MissingAuth()
 
     if bot.memory.exists(["spotify", "token"]):
         old_spotify_token = bot.memory.get_by_path(["spotify", "token"])

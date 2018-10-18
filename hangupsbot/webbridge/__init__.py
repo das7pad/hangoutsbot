@@ -49,7 +49,7 @@ class WebFramework:
         self.setup_plugin()
 
         if not self.plugin_name:
-            logger.warning("plugin_name not defined in code, not running")
+            logger.error("plugin_name not defined in code, not running")
             return
 
         if self.uid is None:
@@ -79,7 +79,7 @@ class WebFramework:
         return self.configuration
 
     def setup_plugin(self):
-        logger.warning("setup_plugin should be overridden by derived class")
+        logger.error("setup_plugin should be overridden by derived class")
 
     def applicable_configuration(self, conv_id):
         """standardised configuration structure:
@@ -254,7 +254,7 @@ class WebFramework:
                         # Possible mismatch between permamem and Hangouts?
                         logger.warning("/me message: couldn't match name '%s' "
                                        "(%s) with message text",
-                                       name, user_id)
+                                       name, event.user.id_.chat_id)
 
             attach = None
             if hasattr(event, "conv_event") and getattr(event.conv_event,

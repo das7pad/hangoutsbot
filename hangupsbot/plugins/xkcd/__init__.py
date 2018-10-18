@@ -130,9 +130,16 @@ async def _print_comic(bot, event, num=None):
 
 
 async def _search_comic(bot, event, terms):
-    url = ("https://relevantxkcd.appspot.com/process?"
-           "{0}").format(urllib.parse.urlencode({"action": "xkcd",
-                                                 "query": " ".join(terms)}))
+    url = (
+        "https://relevantxkcd.appspot.com/process?{0}"
+    ).format(
+        urllib.parse.urlencode(
+            {
+                "action": "xkcd",
+                "query": " ".join(terms),
+            }
+        )
+    )
     async with aiohttp.ClientSession() as session:
         async with session.request('get', url) as request:
             raw = await request.read()

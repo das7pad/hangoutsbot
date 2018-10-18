@@ -95,6 +95,9 @@ class Queue(list):
         status = Status()
         self.append((status, self._blocked, args, kwargs))
         asyncio.ensure_future(self._process(), loop=self._loop)
+
+        self._logger.debug('%s: scheduled args=%r kwargs=%r',
+                           id(status), args, kwargs)
         return status
 
     async def single_stop(self, timeout):
@@ -198,32 +201,46 @@ class Queue(list):
                         delay += .1
                     else:
                         status.set(Status.FAILED)
-                        self._logger.error(
-                            'block timeout reached\ndiscard args=%s, kwargs=%s',
-                            repr(args), repr(kwargs))
+                        self._log_context(status, args, kwargs)
+                        self._logger.warning('%s: block timeout reached',
+                                             id(status))
                         return
 
-                self._logger.debug('sending %s %s', repr(args), repr(kwargs))
+                self._logger.debug('%s: sending', id(status))
                 try:
                     result = await asyncio.shield(self._send(args, kwargs))
 
                 except asyncio.CancelledError:
-                    pass
+                    self._logger.debug('%s: cancelled', id(status))
                 except Exception:  # pylint: disable=broad-except
                     status.set(Status.FAILED)
-                    self._logger.exception(
-                        'sending args="%s", kwargs="%s" failed',
-                        repr(args), repr(kwargs))
+                    self._log_context(status, args, kwargs)
+                    self._logger.exception('%s: sending failed',
+                                           id(status))
 
                 else:
                     # ignore the return value in case it was not set
                     success = True if result is None else result
                     status.set(Status.SUCCESS if success else Status.FAILED)
 
-                self._logger.debug('sent %s %s', repr(args), repr(kwargs))
+                self._logger.debug('%s: sent', id(status))
             finally:
                 self._pending_tasks[self._group] -= 1
                 asyncio.ensure_future(self._process(), loop=self._loop)
+
+    def _log_context(self, status, args, kwargs):
+        """Add context to another logging message
+
+        Args:
+            status (Status): the status of a queue item
+            args (list): queue function args
+            kwargs (dict): queue function kwargs
+        """
+        if self._logger.isEnabledFor(logging.DEBUG):
+            # already logged
+            return
+        self._logger.info('%s: args=%r kwargs=%r',
+                          id(status), args, kwargs)
 
     async def _send(self, args, kwargs):
         """perform the sending of the scheduled content

@@ -150,15 +150,24 @@ class WatermarkUpdater(BotMixin):
                 self.bot.conversations.remove(conv_id)
                 return
 
+            logger.info(
+                'watermark failed %s: conversation %s',
+                id(err), conv_id
+            )
+            logger.error(
+                'watermark failed %s: %r',
+                id(err), err
+            )
+
             self.failed[conv_id] = self.failed.get(conv_id, 0) + 1
 
             limit = self.bot.config.get_by_path(['botalive', 'permafail'])
             if self.failed[conv_id] > limit:
                 self.failed.pop(conv_id)
                 self.failed_permanent.add(conv_id)
-                logger.error('critical error threshold reached for %s', conv_id)
-            else:
-                logger.warning('watermark failed for %s: %s',
-                               conv_id, repr(err))
+                logger.warning(
+                    'critical error threshold reached for %s',
+                    conv_id
+                )
         else:
             self.failed.pop(conv_id, None)

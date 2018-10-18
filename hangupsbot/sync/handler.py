@@ -341,7 +341,12 @@ class SyncHandler(handlers.EventHandler):
         except hangups.NetworkError as err:
             logger.info('image upload: label: %s | size: %s',
                         image_filename, len(image_raw))
-            logger.warning('image upload failed: %s', repr(err))
+
+            # cleanup the stack
+            # noinspection PyUnusedLocal
+            # pylint: disable=unused-variable
+            image_raw = ('%r <size=%d>' % (image_raw[:10], len(image_raw)))
+            logger.error('image upload failed: %r', err)
             return None
 
         else:
@@ -410,9 +415,10 @@ class SyncHandler(handlers.EventHandler):
             return SyncImage(data=data, cache=cache, filename=filename,
                              type_=type_, size=size, url=url, cookies=cookies,
                              headers=headers)
-        except (MissingArgument, ValueError):
+        except MissingArgument as err:
             data = 'bytes: %s' % len(data) if isinstance(data, bytes) else data
-            logger.exception('unable to init a SyncImage, locals %s', locals())
+            logger.info('SyncImage init failed %s: %r', id(err), locals())
+            logger.error('SyncImage init failed %s: %r', id(err), err)
             return None
 
     def get_synced_conversations(self, *, conv_id, return_flat=True,
@@ -736,7 +742,10 @@ class SyncHandler(handlers.EventHandler):
         try:
             await call
         except SuppressEventHandling:
-            logger.exception('event suppressing blocked by SyncHandler')
+            logger.warning(
+                'event suppressing blocked by SyncHandler',
+                exc_info=True
+            )
 
     async def _handle_sending(self, bot, broadcast_targets, context):
         """forward an outgoing (non-sync) message to the message handler
@@ -887,8 +896,12 @@ class SyncHandler(handlers.EventHandler):
             participant_id=hangouts_pb2.ParticipantId(gaia_id=chat_id))
         try:
             await self.bot.remove_user(request)
-        except hangups.NetworkError:
-            logger.exception('kick %s from %s', chat_id, conv_id)
+        except hangups.NetworkError as err:
+            logger.info(
+                'kick %s: chat_id=%r conv_id=%r',
+                id(request), chat_id, conv_id
+            )
+            logger.error('kick %s: failed %r', id(request), err)
             return False
         return True
 
@@ -991,9 +1004,12 @@ class SyncHandler(handlers.EventHandler):
                     return await result
                 return result
             except Exception:  # pylint: disable=broad-except
-                logger.exception('%s: %s with args=%s',
-                                 pluggable, handler.__name__,
-                                 str([str(arg) for arg in args]))
+                tracker = object()
+                logger.info('run handler %s: args=%r', id(tracker), args)
+                logger.exception(
+                    'run handler %s: category=%r handler=%r',
+                    id(tracker), pluggable, handler
+                )
                 raise HandlerFailed()
 
         handlers_ = self.pluggables[pluggable].copy()
@@ -1042,9 +1058,12 @@ class SyncHandler(handlers.EventHandler):
             try:
                 return handler(self.bot, *args)
             except Exception:  # pylint: disable=broad-except
-                logger.exception('%s: %s with args=%s',
-                                 pluggable, handler.__name__,
-                                 str([str(arg) for arg in args]))
+                tracker = object()
+                logger.info('run handler %s: args=%r', id(tracker), args)
+                logger.exception(
+                    'run handler %s: category=%r handler=%r',
+                    id(tracker), pluggable, handler
+                )
                 raise HandlerFailed()
 
         results = {}

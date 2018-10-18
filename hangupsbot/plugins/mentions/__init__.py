@@ -370,8 +370,11 @@ async def mention(bot, event, *args):
                 elif isinstance(push, dict):
                     success = True
                 else:
+                    logger.info('PushBullet %s: %r', id(push), push)
                     logger.error(
-                        "unknown return from pushbullet library: %s", push)
+                        'PushBullet %s: invalid data structure',
+                        id(push)
+                    )
                     success = False
             except Exception:  # pushbullet part - pylint:disable=broad-except
                 logger.exception("pushbullet error")

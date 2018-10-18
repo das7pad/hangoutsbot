@@ -137,8 +137,13 @@ class SlackAsyncListener(AsyncRequestHandler):
                                                                         label))
 
             except Exception as e:
+                import builtins
+                token = builtins.id(id)
+                logger.info('resolve slack label %s: %r', token, id)
                 logger.exception(
-                    "FAILED to resolve slack label for {}".format(id))
+                    "resolve slack label %s: failed for type %r",
+                    token, type_str
+                )
 
         return prefix + label
 
