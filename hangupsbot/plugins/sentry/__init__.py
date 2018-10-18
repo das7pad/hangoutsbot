@@ -9,15 +9,16 @@ The configuration can be a mixture of config and environment variables.
     - config:
         'sentry': {
             'dsn': str, a Sentry DSN,
-            'enable_breadcrumbs': bool, track previous log messages,
             'level': int, logging level that triggers the sending
             'options': {
-                see Raven Client documentation
+                'enable_breadcrumbs': bool, track previous log messages,
+
+            see Raven Client documentation for more
             }
         }
     - environment:
         'SENTRY_DSN': str, a Sentry DSN
-        for more environment variables see Raven Client documentation
+    for more environment variables see Raven Client documentation
 """
 __author__ = 'Jakob Ackermann <das7pad@outlook.com>'
 
@@ -63,6 +64,7 @@ def _initialize(bot):
 
     options = {
         'release': __version__,
+        'enable_breadcrumbs': False,
     }
     options.update(sentry.get('options', {}))
 
@@ -72,7 +74,6 @@ def _initialize(bot):
             AioHttpTransport,
             timeout=30,
         ),
-        enable_breadcrumbs=sentry.get('enable_breadcrumbs', False),
         **options
     )
 
