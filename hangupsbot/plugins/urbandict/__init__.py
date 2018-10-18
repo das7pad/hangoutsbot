@@ -63,7 +63,6 @@ class UrbanDictParser(HTMLParser):
         logger.error('parse error: %r', message)
 
 
-
 def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
 

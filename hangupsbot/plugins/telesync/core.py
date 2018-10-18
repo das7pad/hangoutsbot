@@ -731,9 +731,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 message = _(
                     'Check the config value `restrict_users` for the chat '
                     '{name} ({chat_id}), expected one of {valid_values}'
-
-            ).format(name=chat_name, chat_id=msg.chat_id,
-                    valid_values=', '.join(RESTRICT_OPTIONS))
+                ).format(name=chat_name, chat_id=msg.chat_id,
+                         valid_values=', '.join(RESTRICT_OPTIONS))
                 self.send_html(mod_chat, '<b>ERROR</b>: %s' % message)
 
     def _on_supergroup_upgrade(self, msg):
