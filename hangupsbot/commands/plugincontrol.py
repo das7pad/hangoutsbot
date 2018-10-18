@@ -167,6 +167,8 @@ async def pluginload(bot, event, *args):
 
         except plugins.AlreadyLoaded:
             result = _("already loaded")
+        except plugins.Protected:
+            result = _("protected")
 
         message = _compose_load_message(module_path, result)
 
