@@ -3,6 +3,7 @@
 import glob
 import json
 import os
+import re
 import sys
 
 from setuptools import setup
@@ -23,24 +24,22 @@ with open('requirements.txt', 'r') as file:
         if not line or line[0] == '#':
             continue
         if '//' in line:
+            if line.startswith('-e '):
+                line = line[3:]
             DEPENDENCY_LINKS.append(line)
         else:
             INSTALL_REQUIRES.append(line)
 
-# parse packages from urls:
+# parse packages and their version from urls:
 # e.g. `pkg==0.2.1` from
-#      `git+https://github.com/username/reponame@identifier#egg=pkg-0.2.1`
+#      `git+https://github.com/username/reponame@v0.2.1#egg=pkg`
+REGEX_TAG_NAME = re.compile(r'.*@v(?P<version>.+)#egg=(?P<name>.+)')
 for line in DEPENDENCY_LINKS:
-    raw = None
-    for item in line.split('#'):
-        if item[:4] == 'egg=':
-            raw = item[4:]
-            break
-    else:
+    match = REGEX_TAG_NAME.match(line)
+    if not match:
         continue
 
-    # parse `pkg-0.2.1` to `pkg==0.2.1` and add it into the requirements
-    dependency_locked = raw.replace('-', '==', 1)
+    dependency_locked = match.group('name') + '==' + match.group('version')
     INSTALL_REQUIRES.append(dependency_locked)
 
 

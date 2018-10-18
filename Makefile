@@ -86,8 +86,8 @@ gen-requirements: .gen-requirements
 	run:\n#\n#   make gen-requirements\n#" \
 		> requirements.txt
 	@cat .cache/.requirements.tmp \
-		| sed -r 's/^-e (.+)/\1/g' \
 		| sed -e '/^--/d' -e '/^\s*#/d' -e 's/\s#.*//g;s/[ \t]*//g' \
+		| sed -r 's/^-e(.+)/-e \1/g' \
 		>> requirements.txt
 	@echo "Done"
 
@@ -107,8 +107,8 @@ gen-dev-requirements: .gen-requirements
 	run:\n#\n#   make gen-dev-requirements\n#" \
 		> requirements-dev.txt
 	@cat .cache/.requirements-dev.tmp \
-		| sed -r 's/^-e (.+)/\1/g' \
 		| sed -e '/^--/d' -e '/^\s*#/d' -e 's/\s#.*//g;s/[ \t]*//g' \
+		| sed -r 's/^-e(.+)/-e \1/g' \
 		>> requirements-dev.txt
 	@echo "Done"
 
