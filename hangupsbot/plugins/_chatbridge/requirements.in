@@ -2,5 +2,5 @@ aiohttp>2,<4
 requests
 
 # chatbridge_slack
-emoji==0.4.5
+emoji>=0.4.5,<1
 pyslack
