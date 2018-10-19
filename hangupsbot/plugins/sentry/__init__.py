@@ -32,15 +32,15 @@ import os
 
 try:
     from raven import Client
+    import raven.base
+    import raven.breadcrumbs
+    import raven.conf
+    from raven.handlers.logging import SentryHandler
+
     from raven_aiohttp import AioHttpTransport
 except ImportError:
     logging.getLogger(__name__).info('raven and raven_aiohttp are required')
     raise
-
-import raven.base
-import raven.breadcrumbs
-import raven.conf
-from raven.handlers.logging import SentryHandler
 
 from hangupsbot import plugins
 from hangupsbot.version import __version__
