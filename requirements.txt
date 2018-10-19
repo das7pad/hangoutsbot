@@ -4,7 +4,7 @@
 #
 #    make gen-requirements
 #
--e git+https://github.com/das7pad/hangups@v0.4.6.1#egg=hangups
+-e git+https://github.com/das7pad/hangups@v0.4.6.2#egg=hangups
 -e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
 aiohttp==3.4.4
 appdirs==1.4.3
