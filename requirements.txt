@@ -28,13 +28,13 @@ idna-ssl==1.1.0
 idna==2.7
 imageio==2.4.1
 inflect==1.0.1
-jaraco.itertools==2.5.2
+jaraco.itertools==3.0.0
 lxml==4.2.5
 mechanicalsoup==0.11.0
 more-itertools==4.3.0
 moviepy==0.2.3.5
 multidict==4.4.2
-numpy==1.15.2
+numpy==1.15.3
 oauthlib==2.1.0
 pillow==5.3.0
 protobuf==3.6.1
@@ -43,7 +43,7 @@ pushbullet.py==0.11.0
 pyasn1-modules==0.2.2
 pyasn1==0.4.4
 pyslack==0.4.0
-python-dateutil==2.7.3
+python-dateutil==2.7.5
 python-magic==0.4.15
 raven-aiohttp==0.7.0
 raven==6.9.0
