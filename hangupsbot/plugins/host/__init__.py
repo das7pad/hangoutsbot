@@ -144,7 +144,7 @@ def _seconds_to_str(seconds):
     return str(timedelta(seconds=seconds)).split('.')[0]
 
 
-def _uptime_in_seconds(now):
+def _system_uptime(now):
     """get the system uptime in seconds
 
     Args:
@@ -216,7 +216,7 @@ async def uptime(bot, event, *dummys):
     now = datetime.today()
     today = now.strftime('%Y-%m-%d %H:%M:%S')
     load_avg = os.getloadavg()
-    online_time = _seconds_to_str(_uptime_in_seconds(now))
+    online_time = _seconds_to_str(_system_uptime(now))
     process = psutil.Process()
     bot_uptime = _seconds_to_str(now.timestamp() - process.create_time())
     lines = [today,
@@ -347,7 +347,7 @@ async def _check_load(bot):
                 now = datetime.today()
                 today = datetime.strftime(now, '%Y-%m-%d %H:%M:%S')
 
-                online_time = _seconds_to_str(_uptime_in_seconds(now))
+                online_time = _seconds_to_str(_system_uptime(now))
                 output = ('<b>LOAD-WARNING</b>\n{}\n'
                           'server uptime:  {}\nserver load:       {}  {}  {}'
                           ).format(today, online_time,
