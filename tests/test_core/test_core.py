@@ -9,12 +9,14 @@ import hangups
 import hangups.channel
 import pytest
 from aioresponses import aioresponses
-from aioresponses.compat import merge_url_params
 
 import hangupsbot.core
 import hangupsbot.hangups_conversation
 from tests.constants import DEFAULT_BOT_KWARGS
-from tests.utils import build_user_conversation_list_base
+from tests.utils import (
+    build_user_conversation_list_base,
+    merge_url_params,
+)
 
 
 NOOP = b'17\n[[1,["noop"]\n]\n]\n'
