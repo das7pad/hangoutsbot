@@ -144,16 +144,16 @@ def _seconds_to_str(seconds):
     return str(timedelta(seconds=seconds)).split('.')[0]
 
 
-def _bot_uptime(now):
+def _bot_uptime(now, process):
     """get the bot uptime in seconds
 
     Args:
         now (datetime.datetime): an instance for the current date
+        process (psutil.Process): the main process
 
     Returns:
         float: time in seconds since the last restart
     """
-    process = psutil.Process()
     return now.timestamp() - process.create_time()
 
 
@@ -230,7 +230,8 @@ async def uptime(bot, event, *dummys):
     today = now.strftime('%Y-%m-%d %H:%M:%S')
     load_avg = os.getloadavg()
     online_time = _seconds_to_str(_system_uptime(now))
-    bot_uptime = _seconds_to_str(_bot_uptime(now))
+    process = psutil.Process()
+    bot_uptime = _seconds_to_str(_bot_uptime(now, process))
     lines = [today,
              'server uptime:  ' + online_time,
              'server load:       {}  {}  {}'.format(
@@ -335,7 +336,7 @@ async def _report_online(bot):
     try:
         while bot.config.get_option('report_online'):
             statsd.set('hangupsbot.online.{}'.format(bot_name),
-                       _bot_uptime(datetime.now()))
+                       _bot_uptime(datetime.now(), process))
             await asyncio.sleep(30)
     except asyncio.CancelledError:
         statsd.event(_('{name} is going down').format(name=bot_name), body,
