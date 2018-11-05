@@ -6,6 +6,7 @@ __all__ = (
     'simple_conv_list',
     'simple_user_list',
     'build_user_conversation_list_base',
+    'merge_url_params',
     'run_cmd',
 )
 import time
@@ -13,6 +14,7 @@ from collections import namedtuple
 
 import hangups
 import hangups.parsers
+import yarl
 from hangups import hangouts_pb2
 from hangups.user import (
     User,
@@ -178,6 +180,11 @@ def build_user_conversation_list_base():
             dict(conv_states=conv_states,
                  sync_timestamp=hangups.parsers.from_timestamp(
                      DEFAULT_TIMESTAMP)))
+
+
+def merge_url_params(url: str, params: dict) -> str:
+    """drop in replacement for `aioresponses.compat.merge_url_params`"""
+    return str(yarl.URL(url).with_query(params))
 
 
 async def run_cmd(bot, event):
