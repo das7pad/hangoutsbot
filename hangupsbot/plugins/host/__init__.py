@@ -144,6 +144,19 @@ def _seconds_to_str(seconds):
     return str(timedelta(seconds=seconds)).split('.')[0]
 
 
+def _bot_uptime(now):
+    """get the bot uptime in seconds
+
+    Args:
+        now (datetime.datetime): an instance for the current date
+
+    Returns:
+        float: time in seconds since the last restart
+    """
+    process = psutil.Process()
+    return now.timestamp() - process.create_time()
+
+
 def _system_uptime(now):
     """get the system uptime in seconds
 
@@ -217,8 +230,7 @@ async def uptime(bot, event, *dummys):
     today = now.strftime('%Y-%m-%d %H:%M:%S')
     load_avg = os.getloadavg()
     online_time = _seconds_to_str(_system_uptime(now))
-    process = psutil.Process()
-    bot_uptime = _seconds_to_str(now.timestamp() - process.create_time())
+    bot_uptime = _seconds_to_str(_bot_uptime(now))
     lines = [today,
              'server uptime:  ' + online_time,
              'server load:       {}  {}  {}'.format(
