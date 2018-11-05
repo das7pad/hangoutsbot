@@ -60,7 +60,7 @@ spotipy==2.4.4
 tqdm==4.28.1
 twitterapi==2.5.4
 uritemplate==3.0.0
-urllib3==1.24
+urllib3==1.24.1
 urwid==2.0.1
 websocket-client==0.53.0
 wikipedia==1.4.0
