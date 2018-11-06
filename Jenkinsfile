@@ -9,12 +9,10 @@ def the_steps = python_versions.collectEntries {
 
 def run_ci(python_version) {
     return {
-        timestamps {
-            docker.image("python:${python_version}").inside {
-                checkout scm
-                sh 'make install'
-                sh 'make test'
-            }
+        docker.image("python:${python_version}").inside {
+            checkout scm
+            sh 'make install'
+            sh 'make test'
         }
     }
 }
@@ -25,6 +23,9 @@ pipeline {
         GIT_COMMITTER_NAME  = 'Joe Doe'
         GIT_COMMITTER_EMAIL = 'joe.doe@example.com'
         HOME                = '/tmp/'
+    }
+    options {
+        timestamps()
     }
     stages {
         stage('Parallel Stage') {
