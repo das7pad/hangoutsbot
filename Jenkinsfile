@@ -3,11 +3,9 @@ def python_versions = [
     "3.6.0", "3.6.1", "3.6.2", "3.6.3", "3.6.4", "3.6.5",
 ]
 
-def steps = python_versions.collectEntries {
+def the_steps = python_versions.collectEntries {
     ["Python $it": run_ci(it)]
 }
-
-parallel steps
 
 def custom_env() {
     return [
@@ -25,6 +23,19 @@ def run_ci(python_version) {
                     checkout scm
                     sh 'make install'
                     sh 'make test'
+                }
+            }
+        }
+    }
+}
+
+pipeline {
+    agent none
+    stages {
+        stage('Parallel Stage') {
+            steps {
+                script {
+                    parallel(the_steps)
                 }
             }
         }
