@@ -45,10 +45,22 @@ STAGE = """
                             image 'python:%(version)s'
                         }
                     }
-                    steps {
-                        checkout scm
-                        sh 'make install'
-                        sh 'make test'
+                    stages {
+                        stage('Checkout') {
+                            steps {
+                                checkout scm
+                            }
+                        }
+                        stage('Install') {
+                            steps {
+                                sh 'make install'
+                            }
+                        }
+                        stage('Test') {
+                            steps {
+                                sh 'make test'
+                            }
+                        }
                     }
                 }
 """
