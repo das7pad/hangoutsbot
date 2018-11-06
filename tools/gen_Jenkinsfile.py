@@ -46,17 +46,17 @@ STAGE = """
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:%(version)s Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:%(version)s Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:%(version)s Test') {
                             steps {
                                 sh 'make test'
                             }

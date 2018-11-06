@@ -25,17 +25,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.5.3 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.5.3 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.5.3 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -49,17 +49,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.5.4 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.5.4 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.5.4 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -73,17 +73,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.5.5 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.5.5 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.5.5 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -97,17 +97,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.6.0 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.6.0 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.6.0 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -121,17 +121,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.6.1 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.6.1 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.6.1 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -145,17 +145,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.6.2 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.6.2 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.6.2 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -169,17 +169,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.6.3 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.6.3 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.6.3 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -193,17 +193,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.6.4 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.6.4 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.6.4 Test') {
                             steps {
                                 sh 'make test'
                             }
@@ -217,17 +217,17 @@ pipeline {
                         }
                     }
                     stages {
-                        stage('Checkout') {
+                        stage('Python:3.6.5 Checkout') {
                             steps {
                                 checkout scm
                             }
                         }
-                        stage('Install') {
+                        stage('Python:3.6.5 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Test') {
+                        stage('Python:3.6.5 Test') {
                             steps {
                                 sh 'make test'
                             }
