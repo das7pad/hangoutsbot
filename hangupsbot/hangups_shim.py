@@ -2,7 +2,6 @@
 # pylint: disable=unused-import, invalid-name
 
 from collections import (
-    Mapping,
     namedtuple,
 )
 
@@ -25,7 +24,7 @@ def namedtuplify(mapping, name='NT'):
     """Convert mappings to namedtuples recursively.
     thank you https://gist.github.com/hangtwenty/5960435
     """
-    if isinstance(mapping, Mapping):
+    if isinstance(mapping, dict):
         for key, value in list(mapping.items()):
             mapping[key] = namedtuplify(value)
         return namedtuple_wrapper(name, **mapping)
