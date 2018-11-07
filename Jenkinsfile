@@ -258,6 +258,30 @@ pipeline {
                         }
                     }
                 }
+                stage('Python:3.6.6') {
+                    agent {
+                        docker {
+                            image 'python:3.6.6'
+                        }
+                    }
+                    stages {
+                        stage('Python:3.6.6 Checkout') {
+                            steps {
+                                checkout scm
+                            }
+                        }
+                        stage('Python:3.6.6 Install') {
+                            steps {
+                                sh 'make install'
+                            }
+                        }
+                        stage('Python:3.6.6 Test') {
+                            steps {
+                                sh 'make test'
+                            }
+                        }
+                    }
+                }
             }
         }
     }
