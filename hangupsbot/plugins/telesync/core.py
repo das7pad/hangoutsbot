@@ -791,6 +791,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             if (memory.exists(last_update_path)
                     and memory.get_by_path(last_update_path) == timestamp):
                 return False
+
+            member_path = ['telesync', 'chat_data', chat_id, 'user', user_id]
+            if not memory.exists(member_path):
+                return False
+
             memory.set_by_path(last_update_path, timestamp)
             logger.info('profile update %s: user %s | chat %s',
                         timestamp, user_id, chat_id)
