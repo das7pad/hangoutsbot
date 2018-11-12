@@ -315,7 +315,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         if self.bot.memory.exists(path_user):
             tg_user = self.bot.memory.get_by_path(path_user)
-            chat_id = chat_id or tg_user['last_seen']
         else:
             tg_user = None
 
@@ -342,7 +341,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                                 'memory cleanup error %s: %r',
                                 id(err), err
                             )
-                            tg_user['last_seen'] = None
                             chat_id = None
 
             if tg_user is None:
@@ -650,11 +648,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 type_ = 2
                 if bot.memory.exists(path_chat):
                     bot.memory.pop_by_path(path_chat)
-
-                path_last_seen = ['telesync', 'user_data',
-                                  changed_member.usr_id, 'last_seen']
-                if str(bot.memory.get_by_path(path_last_seen)) == msg.chat_id:
-                    bot.memory.set_by_path(path_last_seen, None)
             else:
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
