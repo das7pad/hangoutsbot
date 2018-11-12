@@ -844,6 +844,11 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                         continue
 
                     for user_id in tuple(data.get('user', ())):
+                        local_path = chat_path + [chat_id, 'user', user_id]
+                        if not self.bot.memory.exists(local_path):
+                            # the user left the chat
+                            continue
+
                         await self.get_tg_user(user_id=user_id,
                                                chat_id=chat_id,
                                                use_cache=False)
