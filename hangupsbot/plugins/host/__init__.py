@@ -335,8 +335,8 @@ async def _report_online(bot):
 
     try:
         while bot.config.get_option('report_online'):
-            statsd.set('hangupsbot.online.{}'.format(bot_name),
-                       _bot_uptime(datetime.now(), process))
+            statsd.gauge('hangupsbot.online.{}'.format(bot_name),
+                         int(_bot_uptime(datetime.now(), process)))
             await asyncio.sleep(30)
     except asyncio.CancelledError:
         statsd.event(_('{name} is going down').format(name=bot_name), body,
