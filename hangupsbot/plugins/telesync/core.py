@@ -797,8 +797,10 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 return False
 
             memory.set_by_path(last_update_path, timestamp)
-            logger.info('profile update %s: user %s | chat %s',
-                        timestamp, user_id, chat_id)
+            logger.debug(
+                'profile update %s: user %s | chat %s',
+                timestamp, user_id, chat_id
+            )
             await self.get_tg_user(user_id=user_id, chat_id=chat_id,
                                    use_cache=False)
             return True
@@ -808,12 +810,18 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 timestamp = int(time.time())
                 chat_data = memory.get_by_path(['telesync', 'chat_data']).copy()
 
-                logger.info('profile update %s: started', timestamp)
+                logger.debug(
+                    'profile update %s: started',
+                    timestamp
+                )
                 for chat_id, data in chat_data.items():
                     for user_id in tuple(data.get('user', ())):
                         if await update_user(chat_id, user_id):
                             await asyncio.sleep(random.randint(10, 20))
-                logger.info('profile update %s: finished', timestamp)
+                logger.debug(
+                    'profile update %s: finished',
+                    timestamp
+                )
 
                 memory.save()
                 await asyncio.sleep(
