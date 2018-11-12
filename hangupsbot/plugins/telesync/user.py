@@ -62,12 +62,6 @@ class User(SyncUser):
         self.bot.memory.ensure_path(path)
         self.bot.memory.get_by_path(path).update(msg[chat_action])
 
-        path += ['last_seen']
-        if not (self.bot.memory.exists(path)
-                and self.bot.memory.get_by_path(path)):
-            # first seen this user or the user has left a chat
-            self.bot.memory.set_by_path(path, msg['chat']['id'])
-
     def get_user_link(self):
         """create a short link with the users username
 

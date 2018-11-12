@@ -242,8 +242,22 @@ def setup_memory(bot):
 
         telesync_data['version'] = 20180919
 
+    def _cleanup20181112():
+        """drop the last_seen value"""
+        telesync_data = bot.memory['telesync']
+        if telesync_data['version'] >= 20181112:
+            return
+
+        for user in telesync_data['user_data'].values():
+            if 'last_seen' not in user:
+                continue
+            del user['last_seen']
+
+        telesync_data['version'] = 20181112
+
     _migrate_20170609()
     _cleanup20180919()
+    _cleanup20181112()
     bot.memory.save()
 
 

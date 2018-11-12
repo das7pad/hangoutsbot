@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import random
+import time
 
 import aiohttp
 import telepot
@@ -314,7 +315,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         if self.bot.memory.exists(path_user):
             tg_user = self.bot.memory.get_by_path(path_user)
-            chat_id = chat_id or tg_user['last_seen']
         else:
             tg_user = None
 
@@ -341,7 +341,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                                 'memory cleanup error %s: %r',
                                 id(err), err
                             )
-                            tg_user['last_seen'] = None
                             chat_id = None
 
             if tg_user is None:
@@ -649,11 +648,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 type_ = 2
                 if bot.memory.exists(path_chat):
                     bot.memory.pop_by_path(path_chat)
-
-                path_last_seen = ['telesync', 'user_data',
-                                  changed_member.usr_id, 'last_seen']
-                if str(bot.memory.get_by_path(path_last_seen)) == msg.chat_id:
-                    bot.memory.set_by_path(path_last_seen, None)
             else:
                 bot.memory.set_by_path(path_chat, 1)
                 type_ = 1
@@ -790,22 +784,46 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         this could likely end in a rate limit, delay each query by 10-20 seconds
         """
-        data_path = ['telesync', 'user_data']
-        chat_path = ['telesync', 'chat_data']
         memory = self.bot.memory
+
+        async def update_user(chat_id, user_id):
+            last_update_path = ['telesync', 'user_data', user_id, 'last_update']
+            if (memory.exists(last_update_path)
+                    and memory.get_by_path(last_update_path) == timestamp):
+                return False
+
+            member_path = ['telesync', 'chat_data', chat_id, 'user', user_id]
+            if not memory.exists(member_path):
+                return False
+
+            memory.set_by_path(last_update_path, timestamp)
+            logger.debug(
+                'profile update %s: user %s | chat %s',
+                timestamp, user_id, chat_id
+            )
+            await self.get_tg_user(user_id=user_id, chat_id=chat_id,
+                                   use_cache=False)
+            return True
+
         try:
             while True:
+                timestamp = int(time.time())
+                chat_data = memory.get_by_path(['telesync', 'chat_data']).copy()
 
-                # update last_seen values
-                for chat_id, data in memory.get_by_path(chat_path).items():
-                    for user_id in data.get('user', ()):
-                        memory.set_by_path(data_path + [user_id, 'last_seen'],
-                                           chat_id)
+                logger.debug(
+                    'profile update %s: started',
+                    timestamp
+                )
+                for chat_id, data in chat_data.items():
+                    for user_id in tuple(data.get('user', ())):
+                        if await update_user(chat_id, user_id):
+                            await asyncio.sleep(random.randint(10, 20))
+                logger.debug(
+                    'profile update %s: finished',
+                    timestamp
+                )
 
-                for user_id in memory.get_by_path(data_path).copy():
-                    await self.get_tg_user(user_id=user_id, use_cache=False)
-                    await asyncio.sleep(random.randint(10, 20))
-
+                memory.save()
                 await asyncio.sleep(
                     3600 * self.config('profile_update_interval'))
         except asyncio.CancelledError:
@@ -854,6 +872,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                                                use_cache=False)
                         await asyncio.sleep(random.randint(10, 20))
 
+                self.bot.memory.save()
                 await asyncio.sleep(
                     3600 * self.config('membership_check_interval'))
         except asyncio.CancelledError:

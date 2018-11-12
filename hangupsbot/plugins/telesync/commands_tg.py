@@ -854,7 +854,8 @@ async def command_restrict_user(tg_bot, msg, *args):
         lines = [_('/restrict_users failed for:')]
         for user_id, result in failed.items():
             lines.append('- %s:\n  %s' % (
-                (await tg_bot.get_tg_user(user_id)).full_name, repr(result)))
+                (await tg_bot.get_tg_user(user_id, msg.chat_id)).full_name,
+                repr(result)))
 
         tg_bot.send_html(msg.chat_id, '\n'.join(lines))
     else:
