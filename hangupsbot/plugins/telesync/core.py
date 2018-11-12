@@ -809,6 +809,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                         await asyncio.sleep(random.randint(10, 20))
                 logger.info('profile update %s: finished', timestamp)
 
+                memory.save()
                 await asyncio.sleep(
                     3600 * self.config('profile_update_interval'))
         except asyncio.CancelledError:
@@ -852,6 +853,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                                                use_cache=False)
                         await asyncio.sleep(random.randint(10, 20))
 
+                self.bot.memory.save()
                 await asyncio.sleep(
                     3600 * self.config('membership_check_interval'))
         except asyncio.CancelledError:
