@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import random
+import time
 
 import aiohttp
 import telepot
@@ -790,21 +791,26 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         this could likely end in a rate limit, delay each query by 10-20 seconds
         """
-        data_path = ['telesync', 'user_data']
-        chat_path = ['telesync', 'chat_data']
         memory = self.bot.memory
+
+        async def update_user(chat_id, user_id):
+            last_update_path = ['telesync', 'user_data', user_id, 'last_update']
+            if (memory.exists(last_update_path)
+                    and memory.get_by_path(last_update_path) == timestamp):
+                return
+            memory.set_by_path(last_update_path, timestamp)
+            await self.get_tg_user(user_id=user_id, chat_id=chat_id,
+                                   use_cache=False)
+
         try:
             while True:
+                timestamp = time.time()
+                chat_data = memory.get_by_path(['telesync', 'chat_data']).copy()
 
-                # update last_seen values
-                for chat_id, data in memory.get_by_path(chat_path).items():
-                    for user_id in data.get('user', ()):
-                        memory.set_by_path(data_path + [user_id, 'last_seen'],
-                                           chat_id)
-
-                for user_id in memory.get_by_path(data_path).copy():
-                    await self.get_tg_user(user_id=user_id, use_cache=False)
-                    await asyncio.sleep(random.randint(10, 20))
+                for chat_id, data in chat_data.items():
+                    for user_id in tuple(data.get('user', ())):
+                        await update_user(chat_id, user_id)
+                        await asyncio.sleep(random.randint(10, 20))
 
                 await asyncio.sleep(
                     3600 * self.config('profile_update_interval'))
