@@ -75,7 +75,9 @@ class AsyncRequestHandler(BotMixin):
                 image_type = imghdr.what('ignore', image_raw)
                 image_filename = str(int(time.time())) + "." + image_type
                 logger.info(
-                    "automatic image filename: {}".format(image_filename))
+                    "automatic image filename: %s",
+                    image_filename
+                )
 
         if not text and not image_data:
             raise ValueError("nothing to send")
@@ -98,7 +100,9 @@ class AsyncRequestHandler(BotMixin):
             if not image_filename:
                 image_filename = str(int(time.time())) + ".jpg"
                 logger.info(
-                    "fallback image filename: {}".format(image_filename))
+                    "fallback image filename: %s",
+                    image_filename
+                )
 
             image_id = await self.bot.upload_image(image_data,
                                                    filename=image_filename)
