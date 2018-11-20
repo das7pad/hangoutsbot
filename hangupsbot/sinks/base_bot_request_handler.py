@@ -1,4 +1,10 @@
 # pylint: skip-file
+__all__ = (
+    'AsyncRequestHandler',
+    'SimpleAsyncRequestHandler',
+)
+
+
 import base64
 import imghdr
 import io
@@ -103,3 +109,29 @@ class AsyncRequestHandler(BotMixin):
         await self.bot.coro_send_message(conversation_id, text, context=context,
                                          image_id=image_id)
         return "OK"
+
+
+class SimpleAsyncRequestHandler(AsyncRequestHandler):
+    logger = logger
+
+    async def process_request(self, path, query_string, content):
+        conversation_id = path.split("/")[1]
+        if not conversation_id:
+            self.logger.warning("invalid path %r", path)
+            return
+
+        try:
+            payload = json.loads(content)
+        except json.JSONDecodeError as err:
+            self.logger.warning("invalid payload %r", err)
+            return
+
+        await self.process_payload(conversation_id, payload)
+
+    async def process_payload(self, conv_or_user_id, payload):
+        """Process a message
+
+        Args:
+            conv_or_user_id (str): a conversation id or a user id
+            payload (dict): the json payload
+        """
