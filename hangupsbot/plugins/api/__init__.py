@@ -137,7 +137,7 @@ class APIRequestHandler(AsyncRequestHandler):
 
         return web.Response(body=results, content_type=content_type)
 
-    async def process_request(self, path, query_string, content):
+    async def process_request(self, path, _query_string, content):
         # XXX: bit hacky due to different routes...
         payload = content
         if isinstance(payload, str):
