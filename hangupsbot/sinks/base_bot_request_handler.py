@@ -87,8 +87,8 @@ class AsyncRequestHandler(BotMixin):
 
         return results
 
-    async def send_data(self, conversation_id, text, image_data=None,
-                        image_filename=None, context=None):
+    async def send_data(self, conversation_id, text,
+                        *, image_data=None, image_filename=None, context=None):
         """sends text and/or image to a conversation
         image_filename is recommended but optional, fallbacks to
         <timestamp>.jpg if undefined
