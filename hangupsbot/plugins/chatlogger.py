@@ -1,5 +1,5 @@
 import logging
-import os
+import pathlib
 
 import hangups
 
@@ -33,14 +33,15 @@ class FileWriter:
         self.paths = list(set(self.paths))
 
         for path in self.paths:
-            # create the directory if it does not exist
-            directory = os.path.dirname(path)
-            if directory and not os.path.isdir(directory):
+            directory = pathlib.Path(path).parent  # type: pathlib.Path
+            if not directory.exists():
                 try:
-                    os.makedirs(directory)
+                    directory.mkdir(exist_ok=True)
                 except OSError as err:
-                    logger.info('create path %s: %r', id(path), path)
-                    logger.error('create path %s: failed: %r', id(path), err)
+                    logger.warning(
+                        'create path %r failed: %r',
+                        path, err
+                    )
                     continue
 
             logger.info("stored in: %s", path)
