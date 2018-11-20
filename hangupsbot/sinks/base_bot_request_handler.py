@@ -1,4 +1,3 @@
-# pylint: skip-file
 __all__ = (
     'AsyncRequestHandler',
     'SimpleAsyncRequestHandler',
@@ -49,7 +48,7 @@ class AsyncRequestHandler(BotMixin):
 
         return web.Response(body=results, content_type=content_type)
 
-    async def process_request(self, path, query_string, content):
+    async def process_request(self, path, _query_string, content):
         payload = json.loads(content)
 
         path = path.split("/")
@@ -118,7 +117,7 @@ class AsyncRequestHandler(BotMixin):
 class SimpleAsyncRequestHandler(AsyncRequestHandler):
     logger = logger
 
-    async def process_request(self, path, query_string, content):
+    async def process_request(self, path, _query_string, content):
         conversation_id = path.split("/")[1]
         if not conversation_id:
             self.logger.warning("invalid path %r", path)
