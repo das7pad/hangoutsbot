@@ -63,6 +63,10 @@ if 'default' not in POOLS or POOLS['default'].closed:
 IGNORED_MESSAGE_TYPES = (
     'migrate_from_chat_id',  # duplicate of 'migrate_to_chat_id'
 )
+LEFT_CHAT_MEMBER_STATUS = (
+    'left',
+    'kicked',
+)
 
 telepot.aio.api._timeout = 15  # pylint: disable=protected-access
 PERMANENT_SERVER_ERROR = telepot.exception.TelegramError(
@@ -333,8 +337,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 else:
                     tg_user = response.get('user')
 
-                    if response.get('status') == 'left':
-                        remove_user = 'status: left'
+                    if response.get('status') in LEFT_CHAT_MEMBER_STATUS:
+                        remove_user = 'status: %s' % response.get('status')
 
                 if remove_user:
                     logger.info(
