@@ -352,7 +352,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                              'user', str(user_id)])
                     except KeyError as err:
                         logger.error(
-                            'memory cleanup %s: '
+                            'memory cleanup %s: failed to'
                             'remove user from chat with reason %r: %r',
                             id(tg_user), remove_user, err
                         )
