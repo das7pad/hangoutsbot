@@ -67,11 +67,11 @@ async def _scan_for_triggers(bot, event):
                 elif "imgur.com" in image_link:
                     image_link = image_link.replace(".gifv", ".gif")
                     image_link = image_link.replace(".webm", ".gif")
-                filename = os.path.basename(image_link)
-                async with aiohttp.ClientSession() as session:
-                    async with session.request('get', image_link) as res:
-                        raw = await res.read()
-                image_data = io.BytesIO(raw)
+                image = bot.sync.get_sync_image(
+                    url=image_link,
+                )
+                await image.download()
+                image_data, filename = image.get_data()
                 logger.debug("uploading: %s", filename)
                 image_id = await bot.upload_image(image_data, filename=filename)
             await bot.coro_send_message(event.conv.id_, "", image_id=image_id)
