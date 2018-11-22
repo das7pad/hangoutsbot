@@ -321,33 +321,36 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         if not (use_cache and tg_user is not None):
             if chat_id is not None:
                 logger.debug('fetch user %s in %s', user_id, chat_id)
-                remove_user = False
+                remove_user = ''
                 try:
                     response = await self.getChatMember(chat_id, user_id)
-                except telepot.exception.TelegramError:
+                except telepot.exception.TelegramError as err:
                     if user_id != chat_id:
                         # the user is likely a former member, remove him
-                        remove_user = True
+                        remove_user = 'exception: %s' % (
+                            err.description
+                        )
                 else:
                     tg_user = response.get('user')
 
                     if response.get('status') == 'left':
-                        remove_user = True
+                        remove_user = 'status: left'
 
                 if remove_user:
+                    logger.info(
+                        'memory cleanup %s: '
+                        'remove user %s from chat %s with reason %r',
+                        id(tg_user), user_id, chat_id, remove_user
+                    )
                     try:
                         self.bot.memory.pop_by_path(
                             ['telesync', 'chat_data', str(chat_id),
                              'user', str(user_id)])
                     except KeyError as err:
-                        logger.info(
-                            'memory cleanup error %s: '
-                            'remove user %s from chat %s',
-                            id(err), user_id, chat_id
-                        )
                         logger.error(
-                            'memory cleanup error %s: %r',
-                            id(err), err
+                            'memory cleanup %s: '
+                            'remove user from chat with reason %r: %r',
+                            id(tg_user), remove_user, err
                         )
                         chat_id = None
 
