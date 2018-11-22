@@ -38,15 +38,14 @@ class AsyncRequestHandler(BotMixin):
         results = await self.process_request(request.path,
                                              parse_qs(request.query_string),
                                              raw_content.decode("utf-8"))
+        self.respond(results)
 
-        if results:
-            content_type = "text/html"
-            results = results.encode("ascii", "xmlcharrefreplace")
-        else:
-            content_type = "text/plain"
-            results = "OK".encode('utf-8')
-
-        return web.Response(body=results, content_type=content_type)
+    @staticmethod
+    def respond(raw):
+        if not raw:
+            raw = "OK"
+        body = str(raw).encode('utf-8')
+        return web.Response(body=body, content_type="text/plain")
 
     async def process_request(self, path, _query_string, content):
         payload = json.loads(content)
