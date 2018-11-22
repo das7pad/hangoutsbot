@@ -584,6 +584,8 @@ class HangupsBot:
         logger.debug("connected")
 
         self.shared = {}
+        self.register_shared('arguments_parser', command.arguments_parser)
+
         self.tags = tagging.Tags()
         self._handlers = handlers.EventHandler()
 
@@ -608,7 +610,6 @@ class HangupsBot:
         await self._handlers.setup(self._conv_list)
 
         await plugins.load(self, "sync")
-        await plugins.load(self, "commands.arguments_parser")
         await plugins.load(self, "commands.plugincontrol")
         await plugins.load(self, "commands.alias")
         await plugins.load(self, "commands.basic")
