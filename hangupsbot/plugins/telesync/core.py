@@ -321,27 +321,35 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         if not (use_cache and tg_user is not None):
             if chat_id is not None:
                 logger.debug('fetch user %s in %s', user_id, chat_id)
+                remove_user = False
                 try:
                     response = await self.getChatMember(chat_id, user_id)
-                    tg_user = response.get('user')
                 except telepot.exception.TelegramError:
                     if user_id != chat_id:
                         # the user is likely a former member, remove him
-                        try:
-                            self.bot.memory.pop_by_path(
-                                ['telesync', 'chat_data', str(chat_id),
-                                 'user', str(user_id)])
-                        except KeyError as err:
-                            logger.info(
-                                'memory cleanup error %s: '
-                                'remove user %s from chat %s',
-                                id(err), user_id, chat_id
-                            )
-                            logger.error(
-                                'memory cleanup error %s: %r',
-                                id(err), err
-                            )
-                            chat_id = None
+                        remove_user = True
+                else:
+                    tg_user = response.get('user')
+
+                    if response.get('status') == 'left':
+                        remove_user = True
+
+                if remove_user:
+                    try:
+                        self.bot.memory.pop_by_path(
+                            ['telesync', 'chat_data', str(chat_id),
+                             'user', str(user_id)])
+                    except KeyError as err:
+                        logger.info(
+                            'memory cleanup error %s: '
+                            'remove user %s from chat %s',
+                            id(err), user_id, chat_id
+                        )
+                        logger.error(
+                            'memory cleanup error %s: %r',
+                            id(err), err
+                        )
+                        chat_id = None
 
             if tg_user is None:
                 tg_user = {'id': user_id, 'first_name': 'unknown'}
