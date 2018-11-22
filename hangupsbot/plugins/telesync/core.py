@@ -805,7 +805,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         try:
             while True:
-                timestamp = int(time.time())
+                timestamp = str(int(time.time()))
                 updated_users = set()
                 chat_data = memory.get_by_path(['telesync', 'chat_data']).copy()
 
