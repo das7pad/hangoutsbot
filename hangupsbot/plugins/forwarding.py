@@ -41,8 +41,12 @@ def _get_targets(bot, source_id, caller):
     raw_targets = bot.get_config_suboption(source_id, 'forward_to') or []
     targets = set(raw_targets)
     for target in raw_targets:
-        targets.update(bot.sync.get_synced_conversations(conv_id=target,
-                                                         caller=identifier))
+        targets.update(
+            bot.sync.get_synced_conversations(
+                conv_id=target,
+                caller=identifier,
+            )
+        )
     targets.discard(source_id)
     return list(targets)
 

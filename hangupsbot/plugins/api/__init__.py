@@ -83,7 +83,7 @@ def _start_api(bot):
             aiohttp_start(
                 bot=bot,
                 name=name,
-                port=port,
+                port=int(port),
                 certfile=certfile,
                 requesthandlerclass=APIRequestHandler,
                 group=__name__)
