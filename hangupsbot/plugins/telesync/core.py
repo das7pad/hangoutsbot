@@ -578,6 +578,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         except IgnoreMessage:
             logger.debug('message %s: ignore message', id(response))
             return
+        else:
+            msg.update_cache()
 
         if msg.content_type == 'text':
             valid, cmd, params = self._parse_command(msg)

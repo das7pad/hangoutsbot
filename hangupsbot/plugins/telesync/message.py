@@ -64,6 +64,7 @@ class Message(dict, BotMixin):
         self._set_content()
         self.add_message(self.bot, chat_id, self['message_id'])
 
+    def update_cache(self):
         base_path = ['telesync', 'chat_data', self.chat_id]
 
         if self.user.usr_id != '0':
@@ -73,7 +74,7 @@ class Message(dict, BotMixin):
         else:
             self.bot.memory.ensure_path(base_path)
 
-        self.bot.memory.get_by_path(base_path).update(msg['chat'])
+        self.bot.memory.get_by_path(base_path).update(self['chat'])
 
     @property
     def edited(self):
