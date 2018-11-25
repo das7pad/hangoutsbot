@@ -1,26 +1,15 @@
-import json
 import logging
 
-from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
+from hangupsbot.sinks.base_bot_request_handler import SimpleAsyncRequestHandler
 
 
 logger = logging.getLogger(__name__)
 
 
-class WebhookReceiver(AsyncRequestHandler):
+class GoogleWebHookReceiver(SimpleAsyncRequestHandler):
+    logger = logger
 
-    async def process_request(self, path, query_string, content):
-        path = path.split("/")
-        conv_or_user_id = path[1]
-        if conv_or_user_id is None:
-            logger.error(
-                "conversation or user id must be provided as part of path")
-            return
-
-        payload = content
-        if isinstance(payload, str):
-            payload = json.loads(payload)
-
+    async def process_payload(self, conv_or_user_id, payload):
         if not payload:
             logger.error("payload has nothing")
             return

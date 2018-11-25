@@ -83,7 +83,7 @@ def _start_api(bot):
             aiohttp_start(
                 bot=bot,
                 name=name,
-                port=port,
+                port=int(port),
                 certfile=certfile,
                 requesthandlerclass=APIRequestHandler,
                 group=__name__)
@@ -128,16 +128,9 @@ class APIRequestHandler(AsyncRequestHandler):
         results = await self.process_request('',  # IGNORED
                                              '',  # IGNORED
                                              payload)
-        if results:
-            content_type = "text/html"
-            results = results.encode("ascii", "xmlcharrefreplace")
-        else:
-            content_type = "text/plain"
-            results = "OK".encode('utf-8')
+        self.respond(results)
 
-        return web.Response(body=results, content_type=content_type)
-
-    async def process_request(self, path, query_string, content):
+    async def process_request(self, path, _query_string, content):
         # XXX: bit hacky due to different routes...
         payload = content
         if isinstance(payload, str):

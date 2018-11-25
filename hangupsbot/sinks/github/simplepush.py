@@ -1,27 +1,15 @@
-import json
 import logging
 
-from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
+from hangupsbot.sinks.base_bot_request_handler import SimpleAsyncRequestHandler
 
 
 logger = logging.getLogger(__name__)
 
 
-class WebhookReceiver(AsyncRequestHandler):
+class GitlabWebHookReceiver(SimpleAsyncRequestHandler):
+    logger = logger
 
-    async def process_request(self, path, query_string, content):
-        path = path.split("/")
-        conv_or_user_id = path[1]
-        if conv_or_user_id is None:
-            logger.error("conv id or user id must be provided as part of path")
-            return
-
-        try:
-            payload = json.loads(content)
-        except ValueError as err:
-            logger.error("invalid payload: %r", err)
-            return
-
+    async def process_payload(self, conv_or_user_id, payload):
         if all(key in payload for key in ('repository', 'commits', 'pusher')):
             html = '<b>{}</b> has <a href="{}">pushed</a> {} commit{}\n'.format(
                 payload["pusher"]["name"], payload["repository"]["url"],

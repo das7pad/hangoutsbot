@@ -7,30 +7,18 @@ import logging
 
 import dateutil.parser
 
-from hangupsbot.sinks.base_bot_request_handler import AsyncRequestHandler
+from hangupsbot.sinks.base_bot_request_handler import SimpleAsyncRequestHandler
 
 
 logger = logging.getLogger(__name__)
 
 
-class WebhookReceiver(AsyncRequestHandler):
+class GitlabWebHookReceiver(SimpleAsyncRequestHandler):
     """Receive REST API posts from GitLab"""
+    logger = logger
 
-    async def process_request(self, path, dummy_query_string, content):
+    async def process_payload(self, conv_or_user_id, payload):
         """Process a received POST to a given conversation"""
-        path = path.split("/")
-        conv_or_user_id = path[1]
-        if conv_or_user_id is None:
-            logger.error(
-                "conversation or user id must be provided as part of path")
-            return
-
-        try:
-            payload = json.loads(content)
-        except json.JSONDecodeError as err:
-            logger.error("invalid payload %r", err)
-            return
-
         logger.info("GitLab message: %s", json.dumps(payload))
 
         refs = payload.get("ref", '').split("/")

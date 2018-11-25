@@ -133,12 +133,11 @@ async def _watch_twitter_link(bot, event):
             images = tweet['extended_entities']['media']
             for image in images:
                 if image['type'] == 'photo':
-                    image_link = image['media_url']
-                    filename = os.path.basename(image_link)
-                    async with aiohttp.ClientSession() as session:
-                        async with session.request('get', image_link) as res:
-                            raw = await res.read()
-                    image_data = io.BytesIO(raw)
+                    image = bot.sync.get_sync_image(
+                        url=image['media_url'],
+                    )
+                    await image.download()
+                    image_data, filename = image.get_data()
                     image_id = await bot.upload_image(image_data,
                                                       filename=filename)
                     await bot.coro_send_message(event.conv.id_, None,

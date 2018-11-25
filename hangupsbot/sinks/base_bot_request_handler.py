@@ -1,4 +1,9 @@
-# pylint: skip-file
+__all__ = (
+    'AsyncRequestHandler',
+    'SimpleAsyncRequestHandler',
+)
+
+
 import base64
 import imghdr
 import io
@@ -33,17 +38,16 @@ class AsyncRequestHandler(BotMixin):
         results = await self.process_request(request.path,
                                              parse_qs(request.query_string),
                                              raw_content.decode("utf-8"))
+        self.respond(results)
 
-        if results:
-            content_type = "text/html"
-            results = results.encode("ascii", "xmlcharrefreplace")
-        else:
-            content_type = "text/plain"
-            results = "OK".encode('utf-8')
+    @staticmethod
+    def respond(raw):
+        if not raw:
+            raw = "OK"
+        body = str(raw).encode('utf-8')
+        return web.Response(body=body, content_type="text/plain")
 
-        return web.Response(body=results, content_type=content_type)
-
-    async def process_request(self, path, query_string, content):
+    async def process_request(self, path, _query_string, content):
         payload = json.loads(content)
 
         path = path.split("/")
@@ -69,7 +73,9 @@ class AsyncRequestHandler(BotMixin):
                 image_type = imghdr.what('ignore', image_raw)
                 image_filename = str(int(time.time())) + "." + image_type
                 logger.info(
-                    "automatic image filename: {}".format(image_filename))
+                    "automatic image filename: %s",
+                    image_filename
+                )
 
         if not text and not image_data:
             raise ValueError("nothing to send")
@@ -80,8 +86,8 @@ class AsyncRequestHandler(BotMixin):
 
         return results
 
-    async def send_data(self, conversation_id, text, image_data=None,
-                        image_filename=None, context=None):
+    async def send_data(self, conversation_id, text,
+                        *, image_data=None, image_filename=None, context=None):
         """sends text and/or image to a conversation
         image_filename is recommended but optional, fallbacks to
         <timestamp>.jpg if undefined
@@ -92,7 +98,9 @@ class AsyncRequestHandler(BotMixin):
             if not image_filename:
                 image_filename = str(int(time.time())) + ".jpg"
                 logger.info(
-                    "fallback image filename: {}".format(image_filename))
+                    "fallback image filename: %s",
+                    image_filename
+                )
 
             image_id = await self.bot.upload_image(image_data,
                                                    filename=image_filename)
@@ -103,3 +111,29 @@ class AsyncRequestHandler(BotMixin):
         await self.bot.coro_send_message(conversation_id, text, context=context,
                                          image_id=image_id)
         return "OK"
+
+
+class SimpleAsyncRequestHandler(AsyncRequestHandler):
+    logger = logger
+
+    async def process_request(self, path, _query_string, content):
+        conversation_id = path.split("/")[1]
+        if not conversation_id:
+            self.logger.warning("invalid path %r", path)
+            return
+
+        try:
+            payload = json.loads(content)
+        except json.JSONDecodeError as err:
+            self.logger.warning("invalid payload %r", err)
+            return
+
+        await self.process_payload(conversation_id, payload)
+
+    async def process_payload(self, conv_or_user_id, payload):
+        """Process a message
+
+        Args:
+            conv_or_user_id (str): a conversation id or a user id
+            payload (dict): the json payload
+        """
