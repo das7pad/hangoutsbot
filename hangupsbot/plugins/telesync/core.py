@@ -787,16 +787,14 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
         memory = self.bot.memory
 
         async def update_user(chat_id, user_id):
-            last_update_path = ['telesync', 'user_data', user_id, 'last_update']
-            if (memory.exists(last_update_path)
-                    and memory.get_by_path(last_update_path) == timestamp):
+            if chat_id in updated_users:
                 return False
 
             member_path = ['telesync', 'chat_data', chat_id, 'user', user_id]
             if not memory.exists(member_path):
                 return False
 
-            memory.set_by_path(last_update_path, timestamp)
+            updated_users.add(chat_id)
             logger.debug(
                 'profile update %s: user %s | chat %s',
                 timestamp, user_id, chat_id
@@ -807,7 +805,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
 
         try:
             while True:
-                timestamp = int(time.time())
+                timestamp = str(int(time.time()))
+                updated_users = set()
                 chat_data = memory.get_by_path(['telesync', 'chat_data']).copy()
 
                 logger.debug(
