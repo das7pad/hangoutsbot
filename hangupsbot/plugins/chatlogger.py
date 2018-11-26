@@ -100,8 +100,14 @@ class FileWriter:
 
         user_full_name = event.user.full_name
 
-        text = "--- {}\n{} :: {}\nCONVERSATION RENAMED: {}\n".format(
-            conversation_name, event_timestamp, user_full_name,
-            conversation_name)
+        text = (
+            "--- {conv}\n"
+            "{time} :: {user}\n"
+            "CONVERSATION RENAMED: {conv}\n"
+        ).format(
+            conv=conversation_name,
+            time=event_timestamp,
+            user=user_full_name,
+        )
 
         self._append_to_file(conversation_id, text)

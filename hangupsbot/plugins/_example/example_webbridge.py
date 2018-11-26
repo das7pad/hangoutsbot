@@ -9,7 +9,6 @@ class BridgeInstance(WebFramework):
     to send messages to external chats, override
     WebFramework._send_to_external_chat()
     """
-    pass
 
 
 class IncomingMessages(IncomingRequestHandler):
@@ -22,7 +21,6 @@ class IncomingMessages(IncomingRequestHandler):
     more info:
      https://github.com/hangoutsbot/hangoutsbot/wiki/Sinks-(2.4-and-above)
     """
-    pass
 
 
 def _initialise(bot):
