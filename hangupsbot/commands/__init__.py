@@ -36,7 +36,6 @@ class Help(Exception):
 
     opt: supplied text as string in the arguments will be prepended to the help
     """
-    pass
 
 
 class CommandDispatcher(BotMixin, TrackingMixin):
