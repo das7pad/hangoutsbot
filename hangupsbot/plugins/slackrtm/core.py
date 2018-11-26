@@ -1012,7 +1012,8 @@ class SlackRTM(BotMixin):
                 )
             else:
                 # do not overwrite an error state
-                kicked = True if kicked is not False else False
+                if kicked is not False:
+                    kicked = True
 
         await self.update_cache('groups')
         await self.update_cache('channels')

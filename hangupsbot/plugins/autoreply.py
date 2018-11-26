@@ -220,7 +220,7 @@ def _words_in_text(word, text):
 
     regex = r"(?<!\w)" + word + r"(?!\w)"
 
-    return True if re.search(regex, text, re.IGNORECASE) else False
+    return bool(re.search(regex, text, re.IGNORECASE))
 
 
 def autoreply(bot, event, *args):

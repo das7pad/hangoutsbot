@@ -86,7 +86,7 @@ class FakeEvent(BotMixin):
         else:
             self.user = user
         self.user_id = self.user.id_
-        self.from_bot = True if self.user.is_self else False
+        self.from_bot = bool(self.user.is_self)
 
         self.conv_event = FakeConvEvent(self, text, attachments)
         self.text = self.conv_event.text
