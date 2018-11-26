@@ -221,7 +221,10 @@ class HangupsBot:
                 SystemExit: login failed
             """
             try:
-                return hangups.get_auth_stdin(self._cookies_path)
+                return hangups.get_auth_stdin(
+                    refresh_token_filename=self._cookies_path,
+                    manual_login=True,
+                )
 
             except hangups.GoogleAuthError as err:
                 logger.warning(
