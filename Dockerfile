@@ -12,13 +12,32 @@ ARG TZ="Europe/Berlin"
 ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
 
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+&&  mkdir /app \
+&&  true
+
+COPY requirements.txt /app
+RUN sed \
+        --expression='s#-e ##' \
+        --in-place=.org \
+        /app/requirements.txt \
+&&  pip3 install \
+        --process-dependency-links \
+        --no-cache-dir \
+        --requirement /app/requirements.txt \
+&&  mv /app/requirements.txt.org /app/requirements.txt \
+&&  python3 -c "import imageio; imageio.plugins.ffmpeg.download()" \
+        && cd /usr/local/lib/python3*/site-packages/imageio/resources/ \
+        && mv /root/.imageio/ffmpeg ./ \
+        && chown -R hangupsbot ffmpeg/ \
+&&  true
+
 COPY . /app
-RUN \
-    pip3 install /app --process-dependency-links --no-cache-dir && rm -rf /app; \
-    python3 -c "import imageio; imageio.plugins.ffmpeg.download()" && \
-        cd /usr/local/lib/python3*/site-packages/imageio/resources/ && \
-        mv /root/.imageio/ffmpeg ./ && chown -R hangupsbot ffmpeg/; \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone; \
-    true
+RUN pip3 install \
+        --process-dependency-links \
+        --no-cache-dir \
+        /app \
+&&  rm -rf /app \
+&&  true
 
 USER hangupsbot
