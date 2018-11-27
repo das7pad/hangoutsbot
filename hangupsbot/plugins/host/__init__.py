@@ -4,8 +4,10 @@ requirements for advanced report_online functionality:
     a running datadog service on your host and the datadog module:
         $ /path/to/venv/pip3 install datadog
 
-    The command "report_online" can start periodic incrementation of the metric
-    "hangupsbot.online.<bot name>", the interval is set to 30 seconds
+    The command "report_online" can start a periodic task to report activity.
+        Every 30sec the bot submits his online time to the metric
+          "hangupsbot.online" along with his own name as tag: `user:joe`
+
     In addition datadog events are fired on bot start and on bot shutdown.
 
 
@@ -333,10 +335,17 @@ async def _report_online(bot):
     statsd.event(title_template.format(name=bot_name), body,
                  alert_type='success')
 
+    tags = [
+        'user:' + bot_name,
+    ]
+
     try:
         while bot.config.get_option('report_online'):
-            statsd.gauge('hangupsbot.online.{}'.format(bot_name),
-                         int(_bot_uptime(datetime.now(), process)))
+            statsd.gauge(
+                metric='hangupsbot.online',
+                value=int(_bot_uptime(datetime.now(), process)),
+                tags=tags,
+            )
             await asyncio.sleep(30)
     except asyncio.CancelledError:
         statsd.event(_('{name} is going down').format(name=bot_name), body,
