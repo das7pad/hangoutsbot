@@ -29,7 +29,7 @@ RUN sed \
 &&  python3 -c "import imageio; imageio.plugins.ffmpeg.download()" \
         && cd /usr/local/lib/python3*/site-packages/imageio/resources/ \
         && mv /root/.imageio/ffmpeg ./ \
-        && chmod -R 555 ffmpeg/ \
+        && chown -R hangupsbot ffmpeg/ \
 &&  true
 
 COPY . /app
