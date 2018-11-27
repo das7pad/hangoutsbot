@@ -17,10 +17,15 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 &&  true
 
 COPY requirements.txt /app
-RUN pip3 install \
+RUN sed \
+        --expression='s#-e ##' \
+        --in-place=.org \
+        /app/requirements.txt \
+&&  pip3 install \
         --process-dependency-links \
         --no-cache-dir \
-        -r /app/requirements.txt \
+        --requirement /app/requirements.txt \
+&&  mv /app/requirements.txt.org /app/requirements.txt \
 &&  python3 -c "import imageio; imageio.plugins.ffmpeg.download()" \
         && cd /usr/local/lib/python3*/site-packages/imageio/resources/ \
         && mv /root/.imageio/ffmpeg ./ \
