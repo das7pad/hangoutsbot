@@ -28,8 +28,11 @@ RUN pip3 install \
 &&  true
 
 COPY . /app
-RUN \
-    pip3 install /app --process-dependency-links --no-cache-dir && rm -rf /app; \
-    true
+RUN pip3 install \
+        --process-dependency-links \
+        --no-cache-dir \
+        /app \
+&&  rm -rf /app \
+&&  true
 
 USER hangupsbot
