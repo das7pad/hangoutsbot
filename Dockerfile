@@ -21,14 +21,15 @@ RUN pip3 install \
         --process-dependency-links \
         --no-cache-dir \
         -r /app/requirements.txt \
+&&  python3 -c "import imageio; imageio.plugins.ffmpeg.download()" \
+        && cd /usr/local/lib/python3*/site-packages/imageio/resources/ \
+        && mv /root/.imageio/ffmpeg ./ \
+        && chmod -R 555 ffmpeg/ \
 &&  true
 
 COPY . /app
 RUN \
     pip3 install /app --process-dependency-links --no-cache-dir && rm -rf /app; \
-    python3 -c "import imageio; imageio.plugins.ffmpeg.download()" && \
-        cd /usr/local/lib/python3*/site-packages/imageio/resources/ && \
-        mv /root/.imageio/ffmpeg ./ && chown -R hangupsbot ffmpeg/; \
     true
 
 USER hangupsbot
