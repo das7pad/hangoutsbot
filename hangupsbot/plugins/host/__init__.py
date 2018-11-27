@@ -111,13 +111,13 @@ def log_event(bot, event):
 
     tags = []
 
-    if level == 2 or level == 4 or level == 5:
+    if level in (2, 4, 5):
         bot_name = bot.user_self()['full_name'].split()[0]
         bot_name = (''.join(char for char in bot_name if char.isalnum())
                     or 'default')
         tags.append('user:' + bot_name)
 
-    if level == 3 or level == 4 or level == 5:
+    if level in (3, 4, 5):
         platform = event.identifier.rsplit(':', 1)[0]
         tags.append('platform:' + platform)
 
