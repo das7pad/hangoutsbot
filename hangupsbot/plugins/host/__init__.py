@@ -4,8 +4,10 @@ requirements for advanced report_online functionality:
     a running datadog service on your host and the datadog module:
         $ /path/to/venv/pip3 install datadog
 
-    The command "report_online" can start periodic incrementation of the metric
-    "hangupsbot.online.<bot name>", the interval is set to 30 seconds
+    The command "report_online" can start a periodic task to report activity.
+        Every 30sec the bot submits his online time to the metric
+          "hangupsbot.online" along with his own name as tag: `user:joe`
+
     In addition datadog events are fired on bot start and on bot shutdown.
 
 
@@ -15,18 +17,15 @@ Additional config entries that can be set manually:
       defaults to the cpu count
 
     - "datadog_log_level": <int>
-      you can track incoming messages in the detail of your choice
-        0   disable
-        1 'hangupsbot.messages.summery'
-            globally
-        2 'hangupsbot.messages.<bot-name>.summery'
-            per bot-user
-        3 'hangupsbot.messages.<platform>.summery'
-            per source platform
-        4 'hangupsbot.messages.<bot-name>.<platform>.summery'
-            per user and source platform
-        5 'hangupsbot.messages.<bot-name>.<platform>.<chat_id>'
-            per user, source platform and chat
+        you can track incoming messages in the detail of your choice
+        The metric 'hangupsbot.messages' is incremented with tags by level:
+            0 disable messages metric
+            1 no tags
+            2 bot name
+            3 platform
+            4 bot name and platform
+            5 bot name, platform and chat ID
+        The tags are prefixed: `user:joe`, `platform:hangouts`, `hangouts:XYZ`
 
     - "datadog_notify_in_events": <string>
       add a custom text to each event, e.g. "@slack" to get the message into a
@@ -43,10 +42,18 @@ from datetime import (
 )
 
 
+# pylint:disable=invalid-name
 try:
-    from datadog import statsd
+    from datadog import DogStatsd
 except ImportError:
-    statsd = None
+    statsd = DogStatsd = None
+else:
+    statsd = DogStatsd(
+        constant_tags=[
+            'hangupsbot',
+        ]
+    )
+# pylint:enable=invalid-name
 import psutil
 
 from hangupsbot import plugins
@@ -110,26 +117,26 @@ def log_event(bot, event):
     if not level:
         return
 
-    bot_name = bot.user_self()['full_name'].split()[0]
-    bot_name = (''.join(char for char in bot_name if char.isalnum())
-                or _('bot_name'))
+    tags = []
 
-    if level == 1:
-        metric = ('summery',)
-    elif level == 2:
-        metric = (bot_name, 'summery')
-    else:
-        platform = ''.join(char if char.isalnum() else '.'
-                           for char in event.identifier.rsplit(':', 1)[0])
-        if level == 3:
-            metric = (platform, 'summery')
-        elif level == 4:
-            metric = (bot_name, platform, 'summery')
-        else:
-            chat_id = event.identifier.rsplit(':', 1)[1]
-            metric = (bot_name, platform, chat_id)
+    if level in (2, 4, 5):
+        bot_name = bot.user_self()['full_name'].split()[0]
+        bot_name = (''.join(char for char in bot_name if char.isalnum())
+                    or 'default')
+        tags.append('user:' + bot_name)
 
-    statsd.increment('hangupsbot.messages.' + '.'.join(metric), 1)
+    if level in (3, 4, 5):
+        platform = event.identifier.rsplit(':', 1)[0]
+        tags.append('platform:' + platform)
+
+    if level == 5:
+        tags.append(event.identifier)
+
+    statsd.increment(
+        metric='hangupsbot.messages',
+        value=1,
+        tags=tags,
+    )
 
 
 def _seconds_to_str(seconds):
@@ -330,17 +337,33 @@ async def _report_online(bot):
     additional_mentions = bot.config['datadog_notify_in_events']
     if additional_mentions:
         body += '\nNotify: %s' % additional_mentions
-    statsd.event(title_template.format(name=bot_name), body,
-                 alert_type='success')
+
+    tags = [
+        'user:' + bot_name,
+    ]
+
+    statsd.event(
+        title=title_template.format(name=bot_name),
+        text=body,
+        alert_type='success',
+        tags=tags,
+    )
 
     try:
         while bot.config.get_option('report_online'):
-            statsd.gauge('hangupsbot.online.{}'.format(bot_name),
-                         int(_bot_uptime(datetime.now(), process)))
+            statsd.gauge(
+                metric='hangupsbot.online',
+                value=int(_bot_uptime(datetime.now(), process)),
+                tags=tags,
+            )
             await asyncio.sleep(30)
     except asyncio.CancelledError:
-        statsd.event(_('{name} is going down').format(name=bot_name), body,
-                     alert_type='warning')
+        statsd.event(
+            title=_('{name} is going down').format(name=bot_name),
+            text=body,
+            alert_type='warning',
+            tags=tags,
+        )
 
 
 async def _check_load(bot):
