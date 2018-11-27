@@ -13,6 +13,14 @@ ARG PORTS="9001 9002 9003"
 EXPOSE $PORTS
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+&&  mkdir /app \
+&&  true
+
+COPY requirements.txt /app
+RUN pip3 install \
+        --process-dependency-links \
+        --no-cache-dir \
+        -r /app/requirements.txt \
 &&  true
 
 COPY . /app
