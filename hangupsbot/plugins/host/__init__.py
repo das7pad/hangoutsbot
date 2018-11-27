@@ -42,10 +42,18 @@ from datetime import (
 )
 
 
+# pylint:disable=invalid-name
 try:
-    from datadog import statsd
+    from datadog import DogStatsd
 except ImportError:
-    statsd = None
+    statsd = DogStatsd = None
+else:
+    statsd = DogStatsd(
+        constant_tags=[
+            'hangupsbot',
+        ]
+    )
+# pylint:enable=invalid-name
 import psutil
 
 from hangupsbot import plugins
