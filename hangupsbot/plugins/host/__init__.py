@@ -329,12 +329,17 @@ async def _report_online(bot):
     additional_mentions = bot.config['datadog_notify_in_events']
     if additional_mentions:
         body += '\nNotify: %s' % additional_mentions
-    statsd.event(title_template.format(name=bot_name), body,
-                 alert_type='success')
 
     tags = [
         'user:' + bot_name,
     ]
+
+    statsd.event(
+        title=title_template.format(name=bot_name),
+        text=body,
+        alert_type='success',
+        tags=tags,
+    )
 
     try:
         while bot.config.get_option('report_online'):
@@ -345,8 +350,12 @@ async def _report_online(bot):
             )
             await asyncio.sleep(30)
     except asyncio.CancelledError:
-        statsd.event(_('{name} is going down').format(name=bot_name), body,
-                     alert_type='warning')
+        statsd.event(
+            title=_('{name} is going down').format(name=bot_name),
+            text=body,
+            alert_type='warning',
+            tags=tags,
+        )
 
 
 async def _check_load(bot):
