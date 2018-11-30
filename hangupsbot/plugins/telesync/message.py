@@ -221,7 +221,7 @@ class Message(dict, BotMixin):
             self.image_info = sorted_photos[- 1], 'photo'
 
         elif self.content_type == 'sticker':
-            self.text = self["sticker"].get('emoji')
+            self.text = self['sticker'].get('emoji', '')
             self.image_info = self['sticker'], 'sticker'
 
         elif (self.content_type == 'document' and
