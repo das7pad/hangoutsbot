@@ -14,6 +14,7 @@ pipeline {
     }
     options {
         timestamps()
+        skipDefaultCheckout(true)
     }
     stages {
         stage('Parallel Stage') {
