@@ -70,6 +70,7 @@ STAGE = """
                         stage('Python:%(version)s Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:%(version)s Install') {

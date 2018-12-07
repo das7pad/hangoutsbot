@@ -35,6 +35,7 @@ pipeline {
                         stage('Python:3.5.3 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.3 Install') {
@@ -65,6 +66,7 @@ pipeline {
                         stage('Python:3.5.4 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.4 Install') {
@@ -95,6 +97,7 @@ pipeline {
                         stage('Python:3.5.5 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.5 Install') {
@@ -125,6 +128,7 @@ pipeline {
                         stage('Python:3.5.6 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.6 Install') {
@@ -155,6 +159,7 @@ pipeline {
                         stage('Python:3.6.0 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.0 Install') {
@@ -185,6 +190,7 @@ pipeline {
                         stage('Python:3.6.1 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.1 Install') {
@@ -215,6 +221,7 @@ pipeline {
                         stage('Python:3.6.2 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.2 Install') {
@@ -245,6 +252,7 @@ pipeline {
                         stage('Python:3.6.3 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.3 Install') {
@@ -275,6 +283,7 @@ pipeline {
                         stage('Python:3.6.4 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.4 Install') {
@@ -305,6 +314,7 @@ pipeline {
                         stage('Python:3.6.5 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.5 Install') {
@@ -335,6 +345,7 @@ pipeline {
                         stage('Python:3.6.6 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.6 Install') {
@@ -365,6 +376,7 @@ pipeline {
                         stage('Python:3.6.7 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.7 Install') {
@@ -395,6 +407,7 @@ pipeline {
                         stage('Python:3.7.0 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.7.0 Install') {
@@ -425,6 +438,7 @@ pipeline {
                         stage('Python:3.7.1 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.7.1 Install') {
