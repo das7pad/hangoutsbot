@@ -63,7 +63,7 @@ STAGE = """
                     stages {
                         stage('Python:%(version)s Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }

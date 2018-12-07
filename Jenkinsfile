@@ -28,7 +28,7 @@ pipeline {
                     stages {
                         stage('Python:3.5.3 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -64,7 +64,7 @@ pipeline {
                     stages {
                         stage('Python:3.5.4 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -100,7 +100,7 @@ pipeline {
                     stages {
                         stage('Python:3.5.5 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -136,7 +136,7 @@ pipeline {
                     stages {
                         stage('Python:3.5.6 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -172,7 +172,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.0 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -208,7 +208,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.1 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -244,7 +244,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.2 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -280,7 +280,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.3 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -316,7 +316,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.4 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -352,7 +352,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.5 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -388,7 +388,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.6 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -424,7 +424,7 @@ pipeline {
                     stages {
                         stage('Python:3.6.7 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -460,7 +460,7 @@ pipeline {
                     stages {
                         stage('Python:3.7.0 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
@@ -496,7 +496,7 @@ pipeline {
                     stages {
                         stage('Python:3.7.1 Info') {
                             steps {
-                                sh 'curl httpbin.org/ip'
+                                sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
