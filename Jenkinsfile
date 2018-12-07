@@ -48,6 +48,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.5.3 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.5.4') {
@@ -77,6 +82,11 @@ pipeline {
                         stage('Python:3.5.4 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.5.4 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
@@ -110,6 +120,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.5.5 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.5.6') {
@@ -139,6 +154,11 @@ pipeline {
                         stage('Python:3.5.6 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.5.6 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
@@ -172,6 +192,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.0 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.1') {
@@ -201,6 +226,11 @@ pipeline {
                         stage('Python:3.6.1 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.6.1 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
@@ -234,6 +264,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.2 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.3') {
@@ -263,6 +298,11 @@ pipeline {
                         stage('Python:3.6.3 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.6.3 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
@@ -296,6 +336,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.4 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.5') {
@@ -325,6 +370,11 @@ pipeline {
                         stage('Python:3.6.5 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.6.5 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
@@ -358,6 +408,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.6 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.7') {
@@ -387,6 +442,11 @@ pipeline {
                         stage('Python:3.6.7 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.6.7 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
@@ -420,6 +480,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.7.0 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.7.1') {
@@ -449,6 +514,11 @@ pipeline {
                         stage('Python:3.7.1 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.7.1 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }

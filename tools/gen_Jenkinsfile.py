@@ -83,6 +83,11 @@ STAGE = """
                                 sh 'make test'
                             }
                         }
+                        stage('Python:%(version)s Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
 """
