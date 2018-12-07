@@ -60,6 +60,12 @@ STAGE = """
                         }
                     }
                     stages {
+                        stage('Python:%(version)s Info') {
+                            steps {
+                                sh 'curl httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:%(version)s Checkout') {
                             steps {
                                 checkout scm
