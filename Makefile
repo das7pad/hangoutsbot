@@ -45,8 +45,11 @@ test: venv-dev .test
 # remove the local cache and compiled python files from local directories
 .PHONY: clean
 clean:
-	@echo "Remove the local cache and compiled Python files"
-	@rm -rf .cache `find hangupsbot tests examples -name __pycache__`
+	@echo "Remove the local cache, venv and compiled Python files"
+	@rm -rf \
+		.cache \
+		venv \
+		`find hangupsbot tests examples -name __pycache__`
 
 
 ### internal, house keeping and debugging targets ###
