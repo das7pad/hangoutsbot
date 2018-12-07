@@ -41,6 +41,7 @@ pipeline {
     }
     options {
         timestamps()
+        skipDefaultCheckout(true)
     }
     stages {
         stage('Parallel Stage') {
@@ -60,9 +61,16 @@ STAGE = """
                         }
                     }
                     stages {
+                        stage('Python:%(version)s Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:%(version)s Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:%(version)s Install') {
@@ -73,6 +81,11 @@ STAGE = """
                         stage('Python:%(version)s Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:%(version)s Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }

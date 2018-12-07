@@ -14,6 +14,7 @@ pipeline {
     }
     options {
         timestamps()
+        skipDefaultCheckout(true)
     }
     stages {
         stage('Parallel Stage') {
@@ -25,9 +26,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.5.3 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.5.3 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.3 Install') {
@@ -40,6 +48,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.5.3 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.5.4') {
@@ -49,9 +62,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.5.4 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.5.4 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.4 Install') {
@@ -64,6 +84,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.5.4 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.5.5') {
@@ -73,9 +98,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.5.5 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.5.5 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.5 Install') {
@@ -88,6 +120,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.5.5 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.5.6') {
@@ -97,9 +134,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.5.6 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.5.6 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.5.6 Install') {
@@ -112,6 +156,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.5.6 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.0') {
@@ -121,9 +170,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.0 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.0 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.0 Install') {
@@ -136,6 +192,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.0 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.1') {
@@ -145,9 +206,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.1 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.1 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.1 Install') {
@@ -160,6 +228,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.1 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.2') {
@@ -169,9 +242,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.2 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.2 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.2 Install') {
@@ -184,6 +264,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.2 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.3') {
@@ -193,9 +278,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.3 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.3 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.3 Install') {
@@ -208,6 +300,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.3 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.4') {
@@ -217,9 +314,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.4 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.4 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.4 Install') {
@@ -232,6 +336,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.4 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.5') {
@@ -241,9 +350,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.5 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.5 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.5 Install') {
@@ -256,6 +372,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.5 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.6') {
@@ -265,9 +386,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.6 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.6 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.6 Install') {
@@ -280,6 +408,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.6 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.6.7') {
@@ -289,9 +422,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.6.7 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.6.7 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.6.7 Install') {
@@ -304,6 +444,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.6.7 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.7.0') {
@@ -313,9 +458,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.7.0 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.7.0 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.7.0 Install') {
@@ -328,6 +480,11 @@ pipeline {
                                 sh 'make test'
                             }
                         }
+                        stage('Python:3.7.0 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
                     }
                 }
                 stage('Python:3.7.1') {
@@ -337,9 +494,16 @@ pipeline {
                         }
                     }
                     stages {
+                        stage('Python:3.7.1 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
                         stage('Python:3.7.1 Checkout') {
                             steps {
                                 checkout scm
+                                sh 'make clean'
                             }
                         }
                         stage('Python:3.7.1 Install') {
@@ -350,6 +514,11 @@ pipeline {
                         stage('Python:3.7.1 Test') {
                             steps {
                                 sh 'make test'
+                            }
+                        }
+                        stage('Python:3.7.1 Cleanup') {
+                            steps {
+                                sh 'make clean'
                             }
                         }
                     }
