@@ -869,8 +869,8 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 for chat_id, data in chat_data.copy().items():
                     config_path = ['conversations', 'telesync:%s' % chat_id,
                                    'enable_membership_check']
-                    if self.bot.memory.exists(config_path):
-                        enabled = self.bot.memory.get_by_path(config_path)
+                    if self.bot.config.exists(config_path):
+                        enabled = self.bot.config.get_by_path(config_path)
                     else:
                         enabled = self.config('enable_membership_check')
 
