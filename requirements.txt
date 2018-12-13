@@ -5,7 +5,7 @@
 #    make gen-requirements
 #
 -e git+https://github.com/das7pad/hangups@v0.4.6.3#egg=hangups
--e git+https://github.com/das7pad/raven-python.git@6.9.1#egg=raven
+-e git+https://github.com/das7pad/raven-python.git@v6.9.1#egg=raven
 -e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
 aiohttp==3.4.4
 appdirs==1.4.3
