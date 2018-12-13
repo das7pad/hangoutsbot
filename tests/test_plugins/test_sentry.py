@@ -179,6 +179,24 @@ async def test_template():
     )
 
 
+async def test_stack_from_error():
+    try:
+        raise_key_error('key of test_stack_from_error')
+    except KeyError:
+        logger.error('desc of test_stack_from_error')
+
+    check_message(
+        exceptions=[
+            {
+                'type': 'KeyError',
+                'value': "'key of test_stack_from_error'",
+            }
+        ],
+        logger_name=__name__,
+        message='desc of test_stack_from_error',
+    )
+
+
 async def test_cleanup():
     """restore the logging.Logger methods"""
     assert CAPTURE_STACK == []

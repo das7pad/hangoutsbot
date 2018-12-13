@@ -12,6 +12,7 @@ The configuration can be a mixture of config and environment variables.
             'level': int, logging level that triggers the sending
             'breadcrumbs_level', int, minimum logging level for breadcrumbs
             'options': {
+                'auto_log_exc_info': bool, replace generic tb with exception tb
                 'enable_breadcrumbs': bool, track previous log messages,
                 'capture_locals': bool, include local variables in a traceback
                 NOTE: this may send user data to your sentry provider.
@@ -69,6 +70,7 @@ def _initialize(bot):
 
     options = {
         'release': __version__,
+        'auto_log_exc_info': True,
         'enable_breadcrumbs': False,
         'capture_locals': False,
     }
