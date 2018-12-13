@@ -181,6 +181,8 @@ async def test_template():
 
 async def test_cleanup():
     """restore the logging.Logger methods"""
+    assert CAPTURE_STACK == []
+
     for name, func in LOGGER_METHODS.items():
         setattr(logging.Logger, name, func)
 
