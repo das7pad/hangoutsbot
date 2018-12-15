@@ -1,2 +1,2 @@
--e git+https://github.com/das7pad/hangups@v0.4.6.3#egg=hangups
+-e git+https://github.com/das7pad/hangups@v0.4.6.4#egg=hangups
 appdirs

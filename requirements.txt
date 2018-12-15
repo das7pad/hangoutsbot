@@ -4,7 +4,7 @@
 #
 #    make gen-requirements
 #
--e git+https://github.com/das7pad/hangups@v0.4.6.3#egg=hangups
+-e git+https://github.com/das7pad/hangups@v0.4.6.4#egg=hangups
 -e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
 aiohttp==3.4.4
 appdirs==1.4.3
@@ -16,7 +16,6 @@ cachetools==3.0.0
 certifi==2018.11.29
 chardet==3.0.4
 cleverwrap==0.2.3.6
-configargparse==0.13.0
 decorator==4.3.0
 emoji==0.5.1
 fudge==1.1.1
@@ -30,7 +29,6 @@ imageio==2.4.1
 inflect==2.1.0
 jaraco.itertools==3.0.0
 lxml==4.2.5
-mechanicalsoup==0.11.0
 more-itertools==4.3.0
 moviepy==0.2.3.5
 multidict==4.5.2
@@ -47,7 +45,6 @@ python-dateutil==2.7.5
 python-magic==0.4.15
 raven-aiohttp==0.7.0
 raven==6.9.0
-readlike==0.1.3
 reparser==1.4.3
 requests-oauthlib==1.0.0
 requests==2.21.0
@@ -61,7 +58,6 @@ tqdm==4.28.1
 twitterapi==2.5.4
 uritemplate==3.0.0
 urllib3==1.24.1
-urwid==2.0.1
 websocket-client==0.54.0
 wikipedia==1.4.0
 wolframalpha==3.0.1
