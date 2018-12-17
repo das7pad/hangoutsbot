@@ -90,7 +90,7 @@ class MovieConverter(VideoFileClip):
         """
         logger.debug('to_video')
         path = self._path + '.mp4'
-        self.write_videofile(path, verbose=False, progress_bar=False)
+        self.write_videofile(path, verbose=False, logger=None)
         data = io.BytesIO(open(path, 'rb').read())
         self.cleanup(path)
         return data
