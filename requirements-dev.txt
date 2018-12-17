@@ -38,7 +38,7 @@ lxml==4.2.5
 mccabe==0.6.1
 mechanicalsoup==0.11.0
 more-itertools==4.3.0
-moviepy==0.2.3.5
+moviepy==0.2.3.6
 multidict==4.5.2
 numpy==1.15.4
 oauthlib==2.1.0
