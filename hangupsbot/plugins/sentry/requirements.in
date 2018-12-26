@@ -1,2 +1,2 @@
--e git+https://github.com/das7pad/raven-python.git@v6.9.1#egg=raven
+-e git+https://github.com/das7pad/raven-python.git@v6.10.1#egg=raven
 raven_aiohttp
