@@ -43,7 +43,10 @@ from .commands_tg import (
     command_whois,
     restrict_users,
 )
-from .exceptions import IgnoreMessage
+from .exceptions import (
+    IgnoreMessage,
+    NotSupportedMessageType,
+)
 from .message import Message
 from .parsers import TelegramMessageSegment
 from .user import User
@@ -577,6 +580,12 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             msg = Message(response)
         except IgnoreMessage:
             logger.debug('message %s: ignore message', id(response))
+            return
+        except NotSupportedMessageType:
+            logger.debug(
+                'message %s: message type is not supported',
+                id(response),
+            )
             return
         else:
             msg.update_cache()

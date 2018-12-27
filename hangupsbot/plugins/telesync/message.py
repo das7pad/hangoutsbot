@@ -9,7 +9,10 @@ from hangupsbot.base_models import BotMixin
 from hangupsbot.sync.event import SyncReply
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.utils.cache import Cache
-from .exceptions import IgnoreMessage
+from .exceptions import (
+    IgnoreMessage,
+    NotSupportedMessageType,
+)
 from .user import User
 
 
@@ -49,13 +52,19 @@ class Message(dict, BotMixin):
 
     Raises:
         IgnoreMessage: the message should not be synced
+        NotSupportedMessageType: the message type is not supported
     """
     tg_bot = None
     _last_messages = {}
 
     def __init__(self, msg):
         super().__init__(msg)
-        self.content_type, self.chat_type, chat_id = telepot.glance(msg)
+
+        try:
+            self.content_type, self.chat_type, chat_id = telepot.glance(msg)
+        except KeyError:
+            raise NotSupportedMessageType
+
         self.chat_id = str(chat_id)
         self.reply = (Message(msg['reply_to_message'])
                       if 'reply_to_message' in msg else None)
