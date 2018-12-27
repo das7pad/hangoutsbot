@@ -66,8 +66,18 @@ class Message(dict, BotMixin):
             raise NotSupportedMessageType
 
         self.chat_id = str(chat_id)
-        self.reply = (Message(msg['reply_to_message'])
-                      if 'reply_to_message' in msg else None)
+
+        reply = None
+        if 'reply_to_message' in msg:
+            try:
+                reply = Message(msg['reply_to_message'])
+            except NotSupportedMessageType:
+                logger.debug(
+                    'message %s: reply message type is not supported',
+                    id(msg),
+                )
+        self.reply = reply
+
         self.user = User(self.tg_bot, msg)
         self.image_info = None
         self._set_content()
