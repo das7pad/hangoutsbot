@@ -572,7 +572,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             self._on_supergroup_upgrade(response)
             return
 
-        if (telepot.flavor(response) != 'chat'
+        if ('message_id' not in response
                 or any(key in response for key in IGNORED_MESSAGE_TYPES)):
             return
 
