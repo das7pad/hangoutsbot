@@ -48,7 +48,7 @@ protobuf==3.6.1
 psutil==5.4.8
 pushbullet.py==0.11.0
 py==1.7.0
-pyasn1-modules==0.2.2
+pyasn1-modules==0.2.3
 pyasn1==0.4.4
 pylint==2.2.2
 pyslack==0.4.0
