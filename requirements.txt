@@ -29,7 +29,7 @@ idna==2.8
 imageio==2.4.1
 inflect==2.1.0
 jaraco.itertools==4.3
-lxml==4.2.5
+lxml==4.3.0
 mechanicalsoup==0.11.0
 more-itertools==4.3.0
 moviepy==0.2.3.5
