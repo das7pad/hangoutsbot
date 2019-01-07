@@ -6,7 +6,7 @@
 #
 -e git+https://github.com/das7pad/hangups@v0.4.6.3#egg=hangups
 -e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
-aiohttp==3.4.4
+aiohttp==3.5.1
 appdirs==1.4.3
 async-timeout==3.0.1
 attrs==18.2.0
