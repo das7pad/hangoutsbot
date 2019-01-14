@@ -57,7 +57,7 @@ soupsieve==1.7.1
 spotipy==2.4.4
 tqdm==4.29.1
 twitterapi==2.5.8
-typing-extensions==3.6.6
+typing-extensions==3.7.2
 uritemplate==3.0.0
 urllib3==1.24.1
 websocket-client==0.54.0
