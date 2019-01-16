@@ -110,6 +110,10 @@ async def _watch_twitter_link(bot, event):
     try:
         key = bot.memory.get_by_path(['twitter', 'key'])
         secret = bot.memory.get_by_path(['twitter', 'secret'])
+    except KeyError:
+        return
+
+    try:
         tweet_id = re.match(r".+/(\d+)", event.text).group(1)
         api = TwitterAPI(key, secret, auth_type="oAuth2")
         tweet = json.loads(
