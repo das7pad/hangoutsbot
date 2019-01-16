@@ -418,40 +418,31 @@ async def config(bot, event, *args):
             return 'INVALID JSON'
 
     def _get():
-        return (bot.config.get_by_path(config_args)
-                if config_args else dict(bot.config))
+        return (bot.config.get_by_path(config_path)
+                if config_path else dict(bot.config))
 
     def _set():
-        if len(parameters) < 2:
-            return _('MISSING PATH AND/OR VALUE')
-
-        bot.config.set_by_path(config_args, json.loads(parameters[-1]))
+        bot.config.set_by_path(config_path, json.loads(value))
         bot.config.save()
-        return bot.config.get_by_path(config_args)
+        return bot.config.get_by_path(config_path)
 
     def _append():
-        if len(parameters) < 2:
-            return _('MISSING PATH AND/OR VALUE')
-
-        current = bot.config.get_by_path(config_args)
+        current = bot.config.get_by_path(config_path)
         if not isinstance(current, list):
             return _('APPEND FAILED ON NON-LIST')
 
-        current.append(json.loads(parameters[-1]))
-        bot.config.set_by_path(config_args, current)
+        current.append(json.loads(value))
+        bot.config.set_by_path(config_path, current)
         bot.config.save()
         return current
 
     def _remove():
-        if len(parameters) < 2:
-            return _('MISSING PATH AND/OR VALUE')
-
-        current = bot.config.get_by_path(config_args)
+        current = bot.config.get_by_path(config_path)
         if not isinstance(current, list):
             return _('REMOVE FAILED ON NON-LIST')
 
-        current.remove(json.loads(parameters[-1]))
-        bot.config.set_by_path(config_args, current)
+        current.remove(json.loads(value))
+        bot.config.set_by_path(config_path, current)
         bot.config.save()
         return current
 
@@ -459,8 +450,8 @@ async def config(bot, event, *args):
 
     # consume arguments and differentiate beginning of a json array or object
     cmd, *tokens = args or (None,)
-    parameters = []
-    value = []
+    config_path = []
+    value_items = []
     state = "key"
 
     # allow admin to override default output to 1-on-1
@@ -477,33 +468,36 @@ async def config(bot, event, *args):
             # apparent start of json object, consume into a single list item
             state = "json"
         if state == "key":
-            parameters.append(token)
+            config_path.append(token)
         elif state == "json":
-            value.append(token)
+            value_items.append(token)
         else:
             raise Help("unknown state")
-    if value:
-        parameters.append(" ".join(value))
 
     if cmd == 'get' or cmd is None:
-        config_args = list(parameters)
         value = _get()
 
     elif cmd == 'test':
         value = _test()
         return json.dumps(value, indent=2, sort_keys=True)
 
-    elif cmd == 'set':
-        config_args = list(parameters[:-1])
-        value = _set()
+    elif cmd in ('set', 'append', 'remove'):
+        if not config_path:
+            raise Help('MISSING PATH')
 
-    elif cmd == 'append':
-        config_args = list(parameters[:-1])
-        value = _append()
+        if not value_items:
+            raise Help('MISSING VALUE')
 
-    elif cmd == 'remove':
-        config_args = list(parameters[:-1])
-        value = _remove()
+        value = " ".join(value_items)
+
+        if cmd == 'set':
+            value = _set()
+
+        elif cmd == 'append':
+            value = _append()
+
+        elif cmd == 'remove':
+            value = _remove()
 
     else:
         await command.unknown_command(bot, event)
@@ -512,7 +506,7 @@ async def config(bot, event, *args):
     if value is None:
         value = _('Parameter does not exist!')
 
-    config_path = ' '.join(k for k in ['config'] + config_args)
+    config_path = ' '.join(k for k in ['config'] + config_path)
     output = '\n'.join(['<b>{}:</b>'.format(config_path),
                         json.dumps(value, indent=2, sort_keys=True)])
 
