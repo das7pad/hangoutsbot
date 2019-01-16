@@ -422,7 +422,7 @@ async def config(bot, event, *args):
                 if config_path else dict(bot.config))
 
     def _set():
-        bot.config.set_by_path(config_path, json.loads(value))
+        bot.config.set_by_path(config_path, value)
         bot.config.save()
         return bot.config.get_by_path(config_path)
 
@@ -431,7 +431,7 @@ async def config(bot, event, *args):
         if not isinstance(current, list):
             return _('APPEND FAILED ON NON-LIST')
 
-        current.append(json.loads(value))
+        current.append(value)
         bot.config.set_by_path(config_path, current)
         bot.config.save()
         return current
@@ -441,12 +441,12 @@ async def config(bot, event, *args):
         if not isinstance(current, list):
             return _('REMOVE FAILED ON NON-LIST')
 
-        current.remove(json.loads(value))
+        current.remove(value)
         bot.config.set_by_path(config_path, current)
         bot.config.save()
         return current
 
-    # TODO(das7pad): validate the new value/path
+    # TODO(das7pad): validate the path
 
     # consume arguments and differentiate beginning of a json array or object
     cmd, *tokens = args or (None,)
@@ -488,16 +488,19 @@ async def config(bot, event, *args):
         if not value_items:
             raise Help('MISSING VALUE')
 
-        value = " ".join(value_items)
+        try:
+            value = json.loads(" ".join(value_items))
+        except ValueError:
+            value = 'INVALID JSON'
+        else:
+            if cmd == 'set':
+                value = _set()
 
-        if cmd == 'set':
-            value = _set()
+            elif cmd == 'append':
+                value = _append()
 
-        elif cmd == 'append':
-            value = _append()
-
-        elif cmd == 'remove':
-            value = _remove()
+            elif cmd == 'remove':
+                value = _remove()
 
     else:
         await command.unknown_command(bot, event)
