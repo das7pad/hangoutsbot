@@ -506,9 +506,8 @@ async def config(bot, event, *args):
     if value is None:
         value = _('Parameter does not exist!')
 
-    config_path = ' '.join(k for k in ['config'] + config_path)
-    output = '\n'.join(['<b>{}:</b>'.format(config_path),
-                        json.dumps(value, indent=2, sort_keys=True)])
+    output = '<b>config {}:</b>\n'.format(' '.join(config_path))
+    output += json.dumps(value, indent=2, sort_keys=True)
 
     if chat_response_private:
         await bot.coro_send_to_user(event.user_id.chat_id, output)
