@@ -481,8 +481,6 @@ async def config(bot, event, *args):
             config_path.append(token)
         elif state == "json":
             value_items.append(token)
-        else:
-            raise Help("unknown state")
 
     if cmd == 'get' or cmd is None:
         value = _get()
@@ -515,9 +513,6 @@ async def config(bot, event, *args):
     else:
         await command.unknown_command(bot, event)
         return
-
-    if value is None:
-        value = _('Parameter does not exist!')
 
     output = '<b>config {}:</b>\n'.format(' '.join(config_path))
     output += json.dumps(value, indent=2, sort_keys=True)
