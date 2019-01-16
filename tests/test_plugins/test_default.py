@@ -1,6 +1,6 @@
 """test the `hangupsbot.plugins.default` module"""
 
-# TODO(das7pad): `broadcast`, `config` and `user` require refactored methods
+# TODO(das7pad): `broadcast` and `user` require refactored methods
 # TODO(das7pad): `quit` may use `tests.test_core.test_core.test_hangupsbot_run`
 # TODO(das7pad): `rename` and `leave` require a mocked hangups client
 # TODO(das7pad): `hangouts` requires `permamem` tested
@@ -135,6 +135,10 @@ async def test_config(bot, event):
     result = await run_cmd(bot, event)
     actual = json.loads(result.split('\n', 1)[-1])
     assert actual == test_data['outer']
+
+    event = event.for_command('config', 'here', 'get', 'test', 'NEW_KEY')
+    result = await run_cmd(bot, event)
+    assert 'invalid path' in result.lower()
     # /get
 
     # set
