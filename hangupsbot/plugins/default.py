@@ -434,7 +434,45 @@ async def config(bot, event, *args):
 
         return "\n".join(text_parameters)
 
-    # TODO(das7pad): refactor into smaller parts and validate the new value/path
+    def _get():
+        return (bot.config.get_by_path(config_args)
+                if config_args else dict(bot.config))
+
+    def _set():
+        if len(parameters) < 2:
+            return _('MISSING PATH AND/OR VALUE')
+
+        bot.config.set_by_path(config_args, json.loads(parameters[-1]))
+        bot.config.save()
+        return bot.config.get_by_path(config_args)
+
+    def _append():
+        if len(parameters) < 2:
+            return _('MISSING PATH AND/OR VALUE')
+
+        current = bot.config.get_by_path(config_args)
+        if not isinstance(current, list):
+            return _('APPEND FAILED ON NON-LIST')
+
+        current.append(json.loads(parameters[-1]))
+        bot.config.set_by_path(config_args, current)
+        bot.config.save()
+        return current
+
+    def _remove():
+        if len(parameters) < 2:
+            return _('MISSING PATH AND/OR VALUE')
+
+        current = bot.config.get_by_path(config_args)
+        if not isinstance(current, list):
+            return _('REMOVE FAILED ON NON-LIST')
+
+        current.remove(json.loads(parameters[-1]))
+        bot.config.set_by_path(config_args, current)
+        bot.config.save()
+        return current
+
+    # TODO(das7pad): validate the new value/path
 
     # consume arguments and differentiate beginning of a json array or object
     cmd, *tokens = args or (None,)
@@ -466,49 +504,22 @@ async def config(bot, event, *args):
 
     if cmd == 'get' or cmd is None:
         config_args = list(parameters)
-        value = (bot.config.get_by_path(config_args)
-                 if config_args else dict(bot.config))
+        value = _get()
 
     elif cmd == 'test':
         return await _test()
 
     elif cmd == 'set':
         config_args = list(parameters[:-1])
-        if len(parameters) >= 2:
-            bot.config.set_by_path(config_args, json.loads(parameters[-1]))
-            bot.config.save()
-            value = bot.config.get_by_path(config_args)
-        else:
-            await command.unknown_command(bot, event)
-            return
+        value = _set()
 
     elif cmd == 'append':
         config_args = list(parameters[:-1])
-        if len(parameters) < 2:
-            await command.unknown_command(bot, event)
-            return
-
-        value = bot.config.get_by_path(config_args)
-        if isinstance(value, list):
-            value.append(json.loads(parameters[-1]))
-            bot.config.set_by_path(config_args, value)
-            bot.config.save()
-        else:
-            value = _('append failed on non-list')
+        value = _append()
 
     elif cmd == 'remove':
         config_args = list(parameters[:-1])
-        if len(parameters) >= 2:
-            value = bot.config.get_by_path(config_args)
-            if isinstance(value, list):
-                value.remove(json.loads(parameters[-1]))
-                bot.config.set_by_path(config_args, value)
-                bot.config.save()
-            else:
-                value = _('remove failed on non-list')
-        else:
-            await command.unknown_command(bot, event)
-            return
+        value = _remove()
 
     else:
         await command.unknown_command(bot, event)
