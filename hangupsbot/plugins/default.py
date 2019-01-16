@@ -418,15 +418,24 @@ async def config(bot, event, *args):
             return 'INVALID JSON'
 
     def _get():
-        return (bot.config.get_by_path(config_path)
-                if config_path else dict(bot.config))
+        if not bot.config.exists(config_path):
+            return _('INVALID PATH')
+        return bot.config.get_by_path(config_path)
 
     def _set():
+        try:
+            bot.config.ensure_path(config_path)
+        except AttributeError:
+            return _('PATH CONTAINS STEP WITH NON-DICT')
+
         bot.config.set_by_path(config_path, value)
         bot.config.save()
         return bot.config.get_by_path(config_path)
 
     def _append():
+        if not bot.config.exists(config_path):
+            return _('PATH DOES NOT EXIST')
+
         current = bot.config.get_by_path(config_path)
         if not isinstance(current, list):
             return _('APPEND FAILED ON NON-LIST')
@@ -437,6 +446,9 @@ async def config(bot, event, *args):
         return current
 
     def _remove():
+        if not bot.config.exists(config_path):
+            return _('PATH DOES NOT EXIST')
+
         current = bot.config.get_by_path(config_path)
         if not isinstance(current, list):
             return _('REMOVE FAILED ON NON-LIST')
@@ -445,8 +457,6 @@ async def config(bot, event, *args):
         bot.config.set_by_path(config_path, current)
         bot.config.save()
         return current
-
-    # TODO(das7pad): validate the path
 
     # consume arguments and differentiate beginning of a json array or object
     cmd, *tokens = args or (None,)
