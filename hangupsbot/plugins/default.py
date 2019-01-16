@@ -411,28 +411,11 @@ async def config(bot, event, *args):
         ValueError: the given value is not a valid json
     """
 
-    async def _test():
-        num_parameters = len(parameters)
-        text_parameters = []
-        last = num_parameters - 1
-        for num, token in enumerate(parameters):
-            if num == last:
-                try:
-                    json.loads(token)
-                    token += " <b>(valid json)</b>"
-                except ValueError:
-                    token += " <em>(INVALID)</em>"
-            text_parameters.append(str(num + 1) + ": " + token)
-        text_parameters.insert(0, "<b>config test</b>")
-
-        if num_parameters == 1:
-            text_parameters.append(
-                _("<i>note: testing single parameter as json</i>"))
-        elif num_parameters < 1:
-            await command.unknown_command(bot, event)
-            return None
-
-        return "\n".join(text_parameters)
+    def _test():
+        try:
+            return json.loads(' '.join(tokens))
+        except ValueError:
+            return 'INVALID JSON'
 
     def _get():
         return (bot.config.get_by_path(config_args)
@@ -507,7 +490,8 @@ async def config(bot, event, *args):
         value = _get()
 
     elif cmd == 'test':
-        return await _test()
+        value = _test()
+        return json.dumps(value, indent=2, sort_keys=True)
 
     elif cmd == 'set':
         config_args = list(parameters[:-1])
