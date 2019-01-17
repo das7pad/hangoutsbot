@@ -43,9 +43,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.5.3 Test') {
+                        stage('Python:3.5.3 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.5.3 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.5.3 Cleanup') {
@@ -79,9 +84,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.5.4 Test') {
+                        stage('Python:3.5.4 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.5.4 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.5.4 Cleanup') {
@@ -115,9 +125,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.5.5 Test') {
+                        stage('Python:3.5.5 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.5.5 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.5.5 Cleanup') {
@@ -151,9 +166,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.5.6 Test') {
+                        stage('Python:3.5.6 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.5.6 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.5.6 Cleanup') {
@@ -187,9 +207,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.0 Test') {
+                        stage('Python:3.6.0 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.0 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.0 Cleanup') {
@@ -223,9 +248,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.1 Test') {
+                        stage('Python:3.6.1 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.1 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.1 Cleanup') {
@@ -259,9 +289,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.2 Test') {
+                        stage('Python:3.6.2 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.2 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.2 Cleanup') {
@@ -295,9 +330,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.3 Test') {
+                        stage('Python:3.6.3 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.3 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.3 Cleanup') {
@@ -331,9 +371,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.4 Test') {
+                        stage('Python:3.6.4 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.4 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.4 Cleanup') {
@@ -367,9 +412,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.5 Test') {
+                        stage('Python:3.6.5 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.5 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.5 Cleanup') {
@@ -403,9 +453,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.6 Test') {
+                        stage('Python:3.6.6 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.6 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.6 Cleanup') {
@@ -439,9 +494,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.7 Test') {
+                        stage('Python:3.6.7 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.6.7 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.6.7 Cleanup') {
@@ -475,9 +535,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.7.0 Test') {
+                        stage('Python:3.7.0 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.7.0 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.7.0 Cleanup') {
@@ -511,9 +576,14 @@ pipeline {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.7.1 Test') {
+                        stage('Python:3.7.1 Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.7.1 Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:3.7.1 Cleanup') {

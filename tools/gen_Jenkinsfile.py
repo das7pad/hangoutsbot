@@ -78,9 +78,14 @@ STAGE = """
                                 sh 'make install'
                             }
                         }
-                        stage('Python:%(version)s Test') {
+                        stage('Python:%(version)s Lint') {
                             steps {
-                                sh 'make test'
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:%(version)s Tests') {
+                            steps {
+                                sh 'make test-only'
                             }
                         }
                         stage('Python:%(version)s Cleanup') {
