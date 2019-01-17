@@ -65,9 +65,10 @@ localization:
 
 # internal: ensure an existing venv
 .PHONY: venv-create
-venv-create:
-	@if [ ! -d $(venv) ]; then \
-		echo "Creating venv" && ${python} -m venv $(venv); fi
+venv-create: $(pip)
+$(pip):
+	@echo "Creating venv"
+	@${python} -m venv $(venv)
 
 # internal: check for `pip-compile` and ensure an existing cache directory
 .PHONY: .gen-requirements
