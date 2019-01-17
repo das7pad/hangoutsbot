@@ -11,24 +11,18 @@ venv: install-requirements
 # create a venv for running the hangupsbot
 .PHONY: install-requirements
 install-requirements: venv-create
-	@echo "Installing requirements"
-	@$(pip) install --requirement requirements.txt
-	@echo "Done"
+	$(pip) install --requirement requirements.txt
 
 # install the hangupsbot package into a venv
 .PHONY: install
 install: venv-create
-	@echo "Install: started"
-	@rm -rf `find hangupsbot -name __pycache__`
-	@$(pip) install . --process-dependency-links --upgrade
-	@echo "Install: finished"
+	rm -rf `find hangupsbot -name __pycache__`
+	$(pip) install . --process-dependency-links --upgrade
 
 # update or reinstall all packages
 .PHONY: update-requirements
 update-requirements: venv-create
-	@echo "Updating requirements"
-	@$(pip) install --requirement requirements.txt --upgrade
-	@echo "Done"
+	$(pip) install --requirement requirements.txt --upgrade
 
 # check the venv and run pylint
 .PHONY: lint
@@ -45,8 +39,7 @@ test: venv-dev .test
 # remove the local cache and compiled python files from local directories
 .PHONY: clean
 clean:
-	@echo "Remove the local cache, venv and compiled Python files"
-	@rm -rf \
+	rm -rf \
 		.cache \
 		venv \
 		`find hangupsbot tests examples -name __pycache__`
@@ -55,35 +48,32 @@ clean:
 ### internal, house keeping and debugging targets ###
 
 # house keeping: update the Jenkinsfile
-.PHONY: Jenkinsfile
-Jenkinsfile:
-	@$(python) tools/gen_Jenkinsfile.py
+Jenkinsfile: tools/gen_Jenkinsfile.py
+	$(python) tools/gen_Jenkinsfile.py
 
 # house keeping: update the localization
 .PHONY: localization
 localization:
-	@make -s --directory hangupsbot/locale
+	make --directory hangupsbot/locale
 
 # internal: ensure an existing venv
 .PHONY: venv-create
-venv-create:
-	@if [ ! -d $(venv) ]; then \
-		echo "Creating venv" && ${python} -m venv $(venv); fi
+venv-create: $(pip)
+$(pip):
+	${python} -m venv $(venv)
 
 # internal: check for `pip-compile` and ensure an existing cache directory
 .PHONY: .gen-requirements
-.gen-requirements: venv-create
-	@if [ ! -d $(venv)/lib/*/site-packages/piptools ]; then \
-		echo "Installing pip-tools" && $(pip) install -q pip-tools \
-		echo "Done"; fi
-	@if [ ! -d .cache ]; then mkdir .cache; fi
+.gen-requirements: $(venv)/pip-tools
+$(venv)/pip-tools: $(pip)
+	$(pip) install pip-tools
+	touch $(venv)/pip-tools
 
 # house keeping: update `requirements.txt`:
 # pip-compile prints everything to stdout as well, direct it to /dev/null
 .PHONY: gen-requirements
 gen-requirements: .gen-requirements
-	@echo "Gathering requirements"
-	@CUSTOM_COMPILE_COMMAND="make gen-requirements" \
+	CUSTOM_COMPILE_COMMAND="make gen-requirements" \
 	    $(venv)/bin/pip-compile \
 	        --upgrade \
 	        --no-annotate \
@@ -92,14 +82,12 @@ gen-requirements: .gen-requirements
 	        --output-file requirements.txt \
 	        `find hangupsbot -name requirements.in` \
         > /dev/null
-	@echo "Done"
 
 # house keeping: update `requirements-dev.txt`:
 # gather requirements from ./hangupsbot and ./tests
 .PHONY: gen-dev-requirements
 gen-dev-requirements: .gen-requirements
-	@echo "Gathering development requirements"
-	@CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
+	CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
 	    $(venv)/bin/pip-compile \
 	        --upgrade \
 	        --no-annotate \
@@ -108,28 +96,23 @@ gen-dev-requirements: .gen-requirements
 	        --output-file requirements-dev.txt \
 	        `find hangupsbot tests -name requirements.in` \
         > /dev/null
-	@echo "Done"
 
 # internal: ensure a venv with dev requirements
 .PHONY: venv-dev
-venv-dev: venv-create
-	@echo "Installing Dev requirements"
-	@$(pip) install --requirement requirements-dev.txt
-	@echo "Done"
+venv-dev: $(venv)/dev
+$(venv)/dev: $(pip) requirements-dev.txt
+	$(pip) install --requirement requirements-dev.txt
+	touch $(venv)/dev
 
 # internal: run pylint, prepend extra blank lines for each module
 .PHONY: .lint
 .lint:
-	@echo "Lint: started"
-	@$(venv)/bin/pylint -s no -j 1 hangupsbot | sed -r 's/(\*{13})/\n\1/g'
-	@echo "Lint: no errors found"
+	$(venv)/bin/pylint -s no -j 1 hangupsbot
 
 # internal: run the test-suite
 .PHONY: .test-only
 .test-only:
-	@echo "Tests: started"
-	@$(venv)/bin/py.test -v tests
-	@echo "Tests: all completed"
+	$(venv)/bin/py.test -v tests
 
 # internal: run pylint and the test-suite
 .PHONY: .test
@@ -138,6 +121,4 @@ venv-dev: venv-create
 # debugging: run the test suite verbose
 .PHONY: test-only-verbose
 test-only-verbose:
-	@echo "Tests: started in verbose mode"
-	@$(venv)/bin/py.test -vvv tests
-	@echo "Tests: all completed"
+	$(venv)/bin/py.test -vvv tests
