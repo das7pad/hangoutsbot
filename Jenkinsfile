@@ -43,6 +43,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.5.3 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.5.3 Lint') {
                             steps {
                                 sh 'make lint'
@@ -82,6 +87,11 @@ pipeline {
                         stage('Python:3.5.4 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.5.4 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.5.4 Lint') {
@@ -125,6 +135,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.5.5 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.5.5 Lint') {
                             steps {
                                 sh 'make lint'
@@ -164,6 +179,11 @@ pipeline {
                         stage('Python:3.5.6 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.5.6 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.5.6 Lint') {
@@ -207,6 +227,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.6.0 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.6.0 Lint') {
                             steps {
                                 sh 'make lint'
@@ -246,6 +271,11 @@ pipeline {
                         stage('Python:3.6.1 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.6.1 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.6.1 Lint') {
@@ -289,6 +319,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.6.2 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.6.2 Lint') {
                             steps {
                                 sh 'make lint'
@@ -328,6 +363,11 @@ pipeline {
                         stage('Python:3.6.3 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.6.3 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.6.3 Lint') {
@@ -371,6 +411,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.6.4 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.6.4 Lint') {
                             steps {
                                 sh 'make lint'
@@ -410,6 +455,11 @@ pipeline {
                         stage('Python:3.6.5 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.6.5 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.6.5 Lint') {
@@ -453,6 +503,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.6.6 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.6.6 Lint') {
                             steps {
                                 sh 'make lint'
@@ -492,6 +547,11 @@ pipeline {
                         stage('Python:3.6.7 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.6.7 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.6.7 Lint') {
@@ -535,6 +595,11 @@ pipeline {
                                 sh 'make install'
                             }
                         }
+                        stage('Python:3.7.0 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:3.7.0 Lint') {
                             steps {
                                 sh 'make lint'
@@ -574,6 +639,11 @@ pipeline {
                         stage('Python:3.7.1 Install') {
                             steps {
                                 sh 'make install'
+                            }
+                        }
+                        stage('Python:3.7.1 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
                             }
                         }
                         stage('Python:3.7.1 Lint') {

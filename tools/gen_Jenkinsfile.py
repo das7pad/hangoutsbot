@@ -78,6 +78,11 @@ STAGE = """
                                 sh 'make install'
                             }
                         }
+                        stage('Python:%(version)s Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
                         stage('Python:%(version)s Lint') {
                             steps {
                                 sh 'make lint'
