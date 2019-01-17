@@ -124,7 +124,7 @@ $(venv)/dev: $(pip) requirements-dev.txt
 .PHONY: .lint
 .lint:
 	@echo "Lint: started"
-	@$(venv)/bin/pylint -s no -j 1 hangupsbot | sed -r 's/(\*{13})/\n\1/g'
+	@$(venv)/bin/pylint -s no -j 1 hangupsbot
 	@echo "Lint: no errors found"
 
 # internal: run the test-suite
