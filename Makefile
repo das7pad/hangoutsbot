@@ -112,9 +112,11 @@ gen-dev-requirements: .gen-requirements
 
 # internal: ensure a venv with dev requirements
 .PHONY: venv-dev
-venv-dev: venv-create
+venv-dev: $(venv)/dev
+$(venv)/dev: $(pip) requirements-dev.txt
 	@echo "Installing Dev requirements"
 	@$(pip) install --requirement requirements-dev.txt
+	@touch $(venv)/dev
 	@echo "Done"
 
 # internal: run pylint, prepend extra blank lines for each module
