@@ -55,8 +55,7 @@ clean:
 ### internal, house keeping and debugging targets ###
 
 # house keeping: update the Jenkinsfile
-.PHONY: Jenkinsfile
-Jenkinsfile:
+Jenkinsfile: tools/gen_Jenkinsfile.py
 	@$(python) tools/gen_Jenkinsfile.py
 
 # house keeping: update the localization
