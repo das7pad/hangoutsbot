@@ -72,11 +72,12 @@ $(pip):
 
 # internal: check for `pip-compile` and ensure an existing cache directory
 .PHONY: .gen-requirements
-.gen-requirements: venv-create
-	@if [ ! -d $(venv)/lib/*/site-packages/piptools ]; then \
-		echo "Installing pip-tools" && $(pip) install -q pip-tools \
-		echo "Done"; fi
-	@if [ ! -d .cache ]; then mkdir .cache; fi
+.gen-requirements: $(venv)/pip-tools
+$(venv)/pip-tools: $(pip)
+	@echo "Installing pip-tools"
+	@$(pip) install pip-tools
+	@touch $(venv)/pip-tools
+	@echo "Done"
 
 # house keeping: update `requirements.txt`:
 # pip-compile prints everything to stdout as well, direct it to /dev/null
