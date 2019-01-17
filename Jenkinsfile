@@ -38,11 +38,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.5.3 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.5.3 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -56,6 +51,11 @@ pipeline {
                         stage('Python:3.5.3 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.5.3 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.5.3 Cleanup') {
@@ -84,11 +84,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.5.4 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.5.4 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -102,6 +97,11 @@ pipeline {
                         stage('Python:3.5.4 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.5.4 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.5.4 Cleanup') {
@@ -130,11 +130,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.5.5 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.5.5 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -148,6 +143,11 @@ pipeline {
                         stage('Python:3.5.5 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.5.5 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.5.5 Cleanup') {
@@ -176,11 +176,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.5.6 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.5.6 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -194,6 +189,11 @@ pipeline {
                         stage('Python:3.5.6 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.5.6 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.5.6 Cleanup') {
@@ -222,11 +222,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.0 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.0 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -240,6 +235,11 @@ pipeline {
                         stage('Python:3.6.0 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.0 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.0 Cleanup') {
@@ -268,11 +268,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.1 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.1 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -286,6 +281,11 @@ pipeline {
                         stage('Python:3.6.1 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.1 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.1 Cleanup') {
@@ -314,11 +314,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.2 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.2 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -332,6 +327,11 @@ pipeline {
                         stage('Python:3.6.2 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.2 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.2 Cleanup') {
@@ -360,11 +360,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.3 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.3 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -378,6 +373,11 @@ pipeline {
                         stage('Python:3.6.3 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.3 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.3 Cleanup') {
@@ -406,11 +406,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.4 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.4 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -424,6 +419,11 @@ pipeline {
                         stage('Python:3.6.4 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.4 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.4 Cleanup') {
@@ -452,11 +452,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.5 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.5 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -470,6 +465,11 @@ pipeline {
                         stage('Python:3.6.5 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.5 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.5 Cleanup') {
@@ -498,11 +498,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.6 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.6 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -516,6 +511,11 @@ pipeline {
                         stage('Python:3.6.6 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.6 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.6 Cleanup') {
@@ -544,11 +544,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.7 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.6.7 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -562,6 +557,11 @@ pipeline {
                         stage('Python:3.6.7 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.6.7 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.6.7 Cleanup') {
@@ -590,11 +590,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.7.0 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.7.0 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -608,6 +603,11 @@ pipeline {
                         stage('Python:3.7.0 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.7.0 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.7.0 Cleanup') {
@@ -636,11 +636,6 @@ pipeline {
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.7.1 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
                         stage('Python:3.7.1 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
@@ -654,6 +649,11 @@ pipeline {
                         stage('Python:3.7.1 Tests') {
                             steps {
                                 sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.7.1 Install') {
+                            steps {
+                                sh 'make install'
                             }
                         }
                         stage('Python:3.7.1 Cleanup') {
