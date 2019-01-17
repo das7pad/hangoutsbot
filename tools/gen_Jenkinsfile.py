@@ -73,14 +73,24 @@ STAGE = """
                                 sh 'make clean'
                             }
                         }
+                        stage('Python:%(version)s Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
+                        stage('Python:%(version)s Lint') {
+                            steps {
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:%(version)s Tests') {
+                            steps {
+                                sh 'make test-only'
+                            }
+                        }
                         stage('Python:%(version)s Install') {
                             steps {
                                 sh 'make install'
-                            }
-                        }
-                        stage('Python:%(version)s Test') {
-                            steps {
-                                sh 'make test'
                             }
                         }
                         stage('Python:%(version)s Cleanup') {
