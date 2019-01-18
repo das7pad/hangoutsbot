@@ -68,6 +68,7 @@ requirements/requirements.in: tools/gen_requirements.in.sh
 	tools/gen_requirements.in.sh
 
 # house keeping: update the requirements-dev.in file
+requirements/requirements-dev.in: requirements/requirements.in
 requirements/requirements-dev.in: $(shell find tests -type d)
 requirements/requirements-dev.in: tools/gen_requirements-dev.in.sh
 	tools/gen_requirements-dev.in.sh
