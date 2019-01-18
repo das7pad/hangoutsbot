@@ -82,7 +82,7 @@ $(venv)/pip-tools: $(pip)
 # house keeping: update `requirements.txt`:
 # pip-compile prints everything to stdout as well, direct it to /dev/null
 .PHONY: gen-requirements
-gen-requirements: .gen-requirements
+gen-requirements: .gen-requirements requirements.in
 	CUSTOM_COMPILE_COMMAND="make gen-requirements" \
 	    $(venv)/bin/pip-compile \
 	        --upgrade \
@@ -90,13 +90,13 @@ gen-requirements: .gen-requirements
             --no-index \
             --no-emit-trusted-host \
 	        --output-file requirements.txt \
-	        `find hangupsbot -name requirements.in` \
+	        requirements.in \
         > /dev/null
 
 # house keeping: update `requirements-dev.txt`:
 # gather requirements from ./hangupsbot and ./tests
 .PHONY: gen-dev-requirements
-gen-dev-requirements: .gen-requirements
+gen-dev-requirements: .gen-requirements requirements-dev.in
 	CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
 	    $(venv)/bin/pip-compile \
 	        --upgrade \
@@ -104,7 +104,7 @@ gen-dev-requirements: .gen-requirements
             --no-index \
             --no-emit-trusted-host \
 	        --output-file requirements-dev.txt \
-	        `find hangupsbot tests -name requirements.in` \
+	        requirements-dev.in \
         > /dev/null
 
 # internal: ensure a venv with dev requirements
