@@ -62,6 +62,16 @@ venv-create: $(pip)
 $(pip):
 	${python} -m venv $(venv)
 
+# house keeping: update the requirements.in file
+requirements.in: $(shell find hangupsbot -type d)
+requirements.in: tools/gen_requirements.in.sh
+	tools/gen_requirements.in.sh
+
+# house keeping: update the requirements-dev.in file
+requirements-dev.in: $(shell find tests -type d)
+requirements-dev.in: tools/gen_requirements-dev.in.sh
+	tools/gen_requirements-dev.in.sh
+
 # internal: check for `pip-compile` and ensure an existing cache directory
 .PHONY: .gen-requirements
 .gen-requirements: $(venv)/pip-tools
