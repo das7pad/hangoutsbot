@@ -2,7 +2,7 @@
 
 import glob
 import json
-import os
+import pathlib
 import re
 import sys
 
@@ -13,9 +13,10 @@ if sys.version_info < (3, 5, 3):
     # This is the minimum version to support async-def and aiohttp>=3
     raise RuntimeError("hangupsbot requires Python 3.5.3+")
 
-VERSION_PATH = os.path.join(os.path.dirname(__file__), 'hangupsbot/version.py')
-with open(VERSION_PATH, 'r') as file:
-    VERSION = file.read().strip().split(' ')[-1].strip('"')
+REPO = pathlib.Path(__file__).parent  # type: pathlib.Path
+
+VERSION_PATH = REPO / 'hangupsbot' / 'version.py'
+VERSION = VERSION_PATH.read_text().strip().split(' ')[-1].strip('"')
 
 INSTALL_REQUIRES = []
 DEPENDENCY_LINKS = []
