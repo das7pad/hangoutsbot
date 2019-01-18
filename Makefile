@@ -85,28 +85,28 @@ $(venv)/pip-tools: $(pip)
 .PHONY: gen-requirements
 gen-requirements: .gen-requirements requirements/requirements.in
 	CUSTOM_COMPILE_COMMAND="make gen-requirements" \
-	    $(venv)/bin/pip-compile \
-	        --upgrade \
-	        --no-annotate \
-            --no-index \
-            --no-emit-trusted-host \
-	        --output-file requirements/requirements.txt \
-	        requirements/requirements.in \
-        > /dev/null
+		$(venv)/bin/pip-compile \
+			--upgrade \
+			--no-annotate \
+			--no-index \
+			--no-emit-trusted-host \
+			--output-file requirements/requirements.txt \
+			requirements/requirements.in \
+		> /dev/null
 
 # house keeping: update `requirements-dev.txt`:
 # gather requirements from ./hangupsbot and ./tests
 .PHONY: gen-dev-requirements
 gen-dev-requirements: .gen-requirements requirements/requirements-dev.in
 	CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
-	    $(venv)/bin/pip-compile \
-	        --upgrade \
-	        --no-annotate \
-            --no-index \
-            --no-emit-trusted-host \
-	        --output-file requirements/requirements-dev.txt \
-	        requirements/requirements-dev.in \
-        > /dev/null
+		$(venv)/bin/pip-compile \
+			--upgrade \
+			--no-annotate \
+			--no-index \
+			--no-emit-trusted-host \
+			--output-file requirements/requirements-dev.txt \
+			requirements/requirements-dev.in \
+		> /dev/null
 
 # internal: ensure a venv with dev requirements
 .PHONY: venv-dev
