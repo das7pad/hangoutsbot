@@ -16,7 +16,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 &&  mkdir /app \
 &&  true
 
-COPY requirements.txt /app
+COPY requirements/requirements.txt /app
 RUN sed \
         --expression='s#-e ##' \
         --in-place=.org \

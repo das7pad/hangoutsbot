@@ -20,7 +20,7 @@ VERSION = VERSION_PATH.read_text().strip().split(' ')[-1].strip('"')
 
 INSTALL_REQUIRES = []
 DEPENDENCY_LINKS = []
-REQUIREMENTS_PATH = REPO / 'requirements.txt'
+REQUIREMENTS_PATH = REPO / 'requirements' / 'requirements.txt'
 for line in REQUIREMENTS_PATH.read_text().split('\n'):
     line = line.strip()
     if not line or line[0] == '#':

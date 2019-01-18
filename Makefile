@@ -11,7 +11,7 @@ venv: install-requirements
 # create a venv for running the hangupsbot
 .PHONY: install-requirements
 install-requirements: venv-create
-	$(pip) install --requirement requirements.txt
+	$(pip) install --requirement requirements/requirements.txt
 
 # install the hangupsbot package into a venv
 .PHONY: install
@@ -22,7 +22,7 @@ install: venv-create
 # update or reinstall all packages
 .PHONY: update-requirements
 update-requirements: venv-create
-	$(pip) install --requirement requirements.txt --upgrade
+	$(pip) install --requirement requirements/requirements.txt --upgrade
 
 # check the venv and run pylint
 .PHONY: lint
@@ -63,13 +63,13 @@ $(pip):
 	${python} -m venv $(venv)
 
 # house keeping: update the requirements.in file
-requirements.in: $(shell find hangupsbot -type d)
-requirements.in: tools/gen_requirements.in.sh
+requirements/requirements.in: $(shell find hangupsbot -type d)
+requirements/requirements.in: tools/gen_requirements.in.sh
 	tools/gen_requirements.in.sh
 
 # house keeping: update the requirements-dev.in file
-requirements-dev.in: $(shell find tests -type d)
-requirements-dev.in: tools/gen_requirements-dev.in.sh
+requirements/requirements-dev.in: $(shell find tests -type d)
+requirements/requirements-dev.in: tools/gen_requirements-dev.in.sh
 	tools/gen_requirements-dev.in.sh
 
 # internal: check for `pip-compile` and ensure an existing cache directory
@@ -82,36 +82,36 @@ $(venv)/pip-tools: $(pip)
 # house keeping: update `requirements.txt`:
 # pip-compile prints everything to stdout as well, direct it to /dev/null
 .PHONY: gen-requirements
-gen-requirements: .gen-requirements requirements.in
+gen-requirements: .gen-requirements requirements/requirements.in
 	CUSTOM_COMPILE_COMMAND="make gen-requirements" \
 	    $(venv)/bin/pip-compile \
 	        --upgrade \
 	        --no-annotate \
             --no-index \
             --no-emit-trusted-host \
-	        --output-file requirements.txt \
-	        requirements.in \
+	        --output-file requirements/requirements.txt \
+	        requirements/requirements.in \
         > /dev/null
 
 # house keeping: update `requirements-dev.txt`:
 # gather requirements from ./hangupsbot and ./tests
 .PHONY: gen-dev-requirements
-gen-dev-requirements: .gen-requirements requirements-dev.in
+gen-dev-requirements: .gen-requirements requirements/requirements-dev.in
 	CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
 	    $(venv)/bin/pip-compile \
 	        --upgrade \
 	        --no-annotate \
             --no-index \
             --no-emit-trusted-host \
-	        --output-file requirements-dev.txt \
-	        requirements-dev.in \
+	        --output-file requirements/requirements-dev.txt \
+	        requirements/requirements-dev.in \
         > /dev/null
 
 # internal: ensure a venv with dev requirements
 .PHONY: venv-dev
 venv-dev: $(venv)/dev
-$(venv)/dev: $(pip) requirements-dev.txt
-	$(pip) install --requirement requirements-dev.txt
+$(venv)/dev: $(pip) requirements/requirements-dev.txt
+	$(pip) install --requirement requirements/requirements-dev.txt
 	touch $(venv)/dev
 
 # internal: run pylint, prepend extra blank lines for each module
