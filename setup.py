@@ -20,17 +20,17 @@ VERSION = VERSION_PATH.read_text().strip().split(' ')[-1].strip('"')
 
 INSTALL_REQUIRES = []
 DEPENDENCY_LINKS = []
-with open('requirements.txt', 'r') as file:
-    for line in file:
-        line = line.strip()
-        if not line or line[0] == '#':
-            continue
-        if '//' in line:
-            if line.startswith('-e '):
-                line = line[3:]
-            DEPENDENCY_LINKS.append(line)
-        else:
-            INSTALL_REQUIRES.append(line)
+REQUIREMENTS_PATH = REPO / 'requirements.txt'
+for line in REQUIREMENTS_PATH.read_text().split('\n'):
+    line = line.strip()
+    if not line or line[0] == '#':
+        continue
+    if '//' in line:
+        if line.startswith('-e '):
+            line = line[3:]
+        DEPENDENCY_LINKS.append(line)
+    else:
+        INSTALL_REQUIRES.append(line)
 
 # pip and setuptools are not compatible here, their url schemes:
 #  - pip       : `...#egg=pkg`
