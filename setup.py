@@ -35,7 +35,7 @@ for line in REQUIREMENTS_PATH.read_text().split('\n'):
 # pip and setuptools are not compatible here, their url schemes:
 #  - pip       : `...#egg=pkg`
 #  - setuptools: `...#egg=pkg-version`
-# The requirements.txt file stores the pip compatible ones. Pip caches src repos.
+# The requirements.txt file stores the pip compatible ones.
 # Parse the urls for the setuptools here:
 # Support urls like this one, which includes the version as a tag/branch:
 #  `git+https://github.com/user/repo@v0.2.1#egg=pkg`
