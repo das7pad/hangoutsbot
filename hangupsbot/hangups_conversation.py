@@ -223,18 +223,21 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
 
         request = hangouts_pb2.SendChatMessageRequest(**kwargs)
 
-        try:
-            # send the message
-            await self._client.send_chat_message(request)
-        except hangups.NetworkError as err:
-            logger.info(
-                'send_message failed %s: id=%r segments=%r image=%r context=%r',
-                id(err), self.id_, serialised_segments, image_id, context
-            )
-            logger.error(
-                'send_message failed %s: %r',
-                id(err), err
-            )
+        for retry in range(5):
+            try:
+                await self._client.send_chat_message(request)
+            except hangups.NetworkError as err:
+                logger.info(
+                    'send_message failed %s: '
+                    'id=%r segments=%r image=%r context=%r',
+                    id(err), self.id_, serialised_segments, image_id, context
+                )
+                logger.error(
+                    'send_message failed %s: %r',
+                    id(err), err
+                )
+            else:
+                break
 
 
 class HangupsConversationList(hangups.conversation.ConversationList, BotMixin):
