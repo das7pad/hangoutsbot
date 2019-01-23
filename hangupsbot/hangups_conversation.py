@@ -242,10 +242,17 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
                         id(err), err
                     )
                     break
-                logger.error(
-                    'send_message failed %s: %r',
-                    id(err), err
-                )
+
+                if retry == 4:
+                    logger.error(
+                        'send_message failed %s: %r',
+                        id(err), err
+                    )
+                else:
+                    logger.info(
+                        'send_message failed %s: %r',
+                        id(err), err
+                    )
             else:
                 break
 
