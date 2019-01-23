@@ -229,8 +229,9 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
             except hangups.NetworkError as err:
                 logger.info(
                     'send_message failed %s: '
-                    'id=%r segments=%r image=%r context=%r',
-                    id(err), self.id_, serialised_segments, image_id, context
+                    'retry=%d id=%r segments=%r image=%r context=%r',
+                    id(err), retry, self.id_, serialised_segments, image_id,
+                    context
                 )
                 logger.error(
                     'send_message failed %s: %r',
