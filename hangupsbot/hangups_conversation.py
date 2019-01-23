@@ -1,5 +1,7 @@
 """enhanced hangups conversation that supports a fallback to cached data"""
+import asyncio
 import logging
+import random
 import time
 
 import hangups
@@ -239,6 +241,8 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
                 )
             else:
                 break
+
+            await asyncio.sleep(random.randint(1, 5))
 
 
 class HangupsConversationList(hangups.conversation.ConversationList, BotMixin):
