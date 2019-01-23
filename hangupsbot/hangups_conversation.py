@@ -235,6 +235,13 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
                     id(err), retry, self.id_, serialised_segments, image_id,
                     context
                 )
+
+                if 'Former member' in str(err):
+                    logger.warning(
+                        'send_message failed %s: %r',
+                        id(err), err
+                    )
+                    break
                 logger.error(
                     'send_message failed %s: %r',
                     id(err), err
