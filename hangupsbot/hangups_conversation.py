@@ -1,5 +1,7 @@
 """enhanced hangups conversation that supports a fallback to cached data"""
+import asyncio
 import logging
+import random
 import time
 
 import hangups
@@ -223,18 +225,38 @@ class HangupsConversation(hangups.conversation.Conversation, BotMixin):
 
         request = hangouts_pb2.SendChatMessageRequest(**kwargs)
 
-        try:
-            # send the message
-            await self._client.send_chat_message(request)
-        except hangups.NetworkError as err:
-            logger.info(
-                'send_message failed %s: id=%r segments=%r image=%r context=%r',
-                id(err), self.id_, serialised_segments, image_id, context
-            )
-            logger.error(
-                'send_message failed %s: %r',
-                id(err), err
-            )
+        for retry in range(5):
+            try:
+                await self._client.send_chat_message(request)
+            except hangups.NetworkError as err:
+                logger.info(
+                    'send_message failed %s: '
+                    'retry=%d id=%r segments=%r image=%r context=%r',
+                    id(err), retry, self.id_, serialised_segments, image_id,
+                    context
+                )
+
+                if 'Former member' in str(err):
+                    logger.warning(
+                        'send_message failed %s: %r',
+                        id(err), err
+                    )
+                    break
+
+                if retry == 4:
+                    logger.error(
+                        'send_message failed %s: %r',
+                        id(err), err
+                    )
+                else:
+                    logger.info(
+                        'send_message failed %s: %r',
+                        id(err), err
+                    )
+            else:
+                break
+
+            await asyncio.sleep(random.randint(1, 5))
 
 
 class HangupsConversationList(hangups.conversation.ConversationList, BotMixin):
