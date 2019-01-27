@@ -37,7 +37,7 @@ numpy==1.16.0
 oauthlib==3.0.0
 pillow==5.4.1
 protobuf==3.6.1
-psutil==5.4.8
+psutil==5.5.0
 pushbullet.py==0.11.0
 pyasn1-modules==0.2.3
 pyasn1==0.4.5
