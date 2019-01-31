@@ -17,7 +17,7 @@ install-requirements: venv-create
 .PHONY: install
 install: venv-create
 	rm -rf `find hangupsbot -name __pycache__`
-	$(pip) install . --process-dependency-links --upgrade
+	$(pip) install . --upgrade
 
 # update or reinstall all packages
 .PHONY: update-requirements

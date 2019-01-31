@@ -22,7 +22,6 @@ RUN sed \
         --in-place=.org \
         /app/requirements.txt \
 &&  pip3 install \
-        --process-dependency-links \
         --no-cache-dir \
         --requirement /app/requirements.txt \
 &&  mv /app/requirements.txt.org /app/requirements.txt \
@@ -34,7 +33,6 @@ RUN sed \
 
 COPY . /app
 RUN pip3 install \
-        --process-dependency-links \
         --no-cache-dir \
         /app \
 &&  rm -rf /app \
