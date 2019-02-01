@@ -22,7 +22,8 @@ install:
     - make venv-dev
 
 before_script:
-    - make test
+    - make lint
+    - make test-only
 
 script:
     - make install
