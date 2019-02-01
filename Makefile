@@ -61,6 +61,7 @@ localization:
 venv-create: $(pip)
 $(pip):
 	${python} -m venv $(venv)
+	$(pip) install --upgrade pip
 
 # house keeping: update the requirements.in file
 requirements/requirements.in: $(shell find hangupsbot -type d)
