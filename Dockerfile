@@ -14,6 +14,7 @@ EXPOSE $PORTS
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 &&  mkdir /app \
+&&  pip install --no-cache-dir --upgrade 'pip>=18.1' \
 &&  true
 
 COPY requirements/requirements.txt /app
