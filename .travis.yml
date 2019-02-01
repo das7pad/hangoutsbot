@@ -19,6 +19,9 @@ before_install:
     - make venv
 
 install:
+    - make venv-dev
+
+before_script:
     - make test
 
 script:
