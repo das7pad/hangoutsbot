@@ -16,14 +16,14 @@ matrix:
 # workaround py3.7 end
 
 before_install:
-    - make venv
+    - $VIRTUAL_ENV/bin/pip install --upgrade pip
 
 install:
-    - make venv-dev
+    - make venv-dev venv=$VIRTUAL_ENV
 
 before_script:
-    - make lint
-    - make test-only
+    - make lint venv=$VIRTUAL_ENV
+    - make test-only venv=$VIRTUAL_ENV
 
 script:
-    - make install
+    - make install venv=$VIRTUAL_ENV
