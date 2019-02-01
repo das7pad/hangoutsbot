@@ -16,7 +16,7 @@ matrix:
 # workaround py3.7 end
 
 before_install:
-    - $VIRTUAL_ENV/bin/pip install --upgrade 'pip<19'
+    - $VIRTUAL_ENV/bin/pip install --upgrade pip
 
 install:
     - make venv-dev venv=$VIRTUAL_ENV

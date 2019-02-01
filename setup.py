@@ -19,40 +19,40 @@ VERSION_PATH = REPO / 'hangupsbot' / 'version.py'
 VERSION = VERSION_PATH.read_text().strip().split(' ')[-1].strip('"')
 
 INSTALL_REQUIRES = []
-DEPENDENCY_LINKS = []
+EDITABLE_LINKS = []
 REQUIREMENTS_PATH = REPO / 'requirements' / 'requirements.txt'
 for line in REQUIREMENTS_PATH.read_text().split('\n'):
     line = line.strip()
     if not line or line[0] == '#':
         continue
-    if '//' in line:
-        if line.startswith('-e '):
-            line = line[3:]
-        DEPENDENCY_LINKS.append(line)
+    if line.startswith('-e '):
+        EDITABLE_LINKS.append(line)
     else:
         INSTALL_REQUIRES.append(line)
 
-# pip and setuptools are not compatible here, their url schemes:
-#  - pip       : `...#egg=pkg`
-#  - setuptools: `...#egg=pkg-version`
-# The requirements.txt file stores the pip compatible ones.
-# Parse the urls for the setuptools here:
-# Support urls like this one, which includes the version as a tag/branch:
-#  `git+https://github.com/user/repo@v0.2.1#egg=pkg`
-REGEX_TAG_NAME = re.compile(r'.*@v(?P<version>.+)#egg=(?P<name>.+)')
-for line in DEPENDENCY_LINKS.copy():
-    match = REGEX_TAG_NAME.match(line)
+# pip requirements vs setuptools is a mess with editable url-dependencies:
+#  - pip requirement editable   : `-e URL@TAG#egg=pkg`
+#    NOTE: the TAG must to be v prefixed
+#  - setuptools install_requires: `pkg @ URL`
+#
+# The requirements.txt file stores the pip compatible scheme.
+# Parse the lines for the setuptools here:
+REGEX_REQUIREMENT = re.compile(r'-e (?P<url>\S+)#egg=(?P<name>.+)')
+for line in EDITABLE_LINKS:
+    match = REGEX_REQUIREMENT.match(line)
     if not match:
         raise RuntimeError(
-            '%r has an incompatible scheme, use a "v" prefixed tag or branch'
-            % line
+            'Requirement %r has an incompatible scheme, required: %r'
+            % (
+                line,
+                REGEX_REQUIREMENT.pattern,
+            )
         )
 
-    dependency_locked = match.group('name') + '==' + match.group('version')
-
-    DEPENDENCY_LINKS.remove(line)
-    DEPENDENCY_LINKS.append(line + '-' + match.group('version'))
-    INSTALL_REQUIRES.append(dependency_locked)
+    compat_line = '{name} @ {url}'.format(
+        **match.groupdict()
+    )
+    INSTALL_REQUIRES.append(compat_line)
 
 PACKAGES = [path[:-12].replace('/', '.')
             for path in glob.glob('hangupsbot/**/__init__.py', recursive=True)]
@@ -66,7 +66,6 @@ setup(
     name='hangupsbot',
     version=VERSION,
     install_requires=INSTALL_REQUIRES,
-    dependency_links=DEPENDENCY_LINKS,
     packages=PACKAGES,
     entry_points={
         'console_scripts': [

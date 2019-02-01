@@ -14,6 +14,7 @@ EXPOSE $PORTS
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 &&  mkdir /app \
+&&  pip install --no-cache-dir --upgrade 'pip>=18.1' \
 &&  true
 
 COPY requirements/requirements.txt /app
@@ -22,7 +23,6 @@ RUN sed \
         --in-place=.org \
         /app/requirements.txt \
 &&  pip3 install \
-        --process-dependency-links \
         --no-cache-dir \
         --requirement /app/requirements.txt \
 &&  mv /app/requirements.txt.org /app/requirements.txt \
@@ -34,7 +34,6 @@ RUN sed \
 
 COPY . /app
 RUN pip3 install \
-        --process-dependency-links \
         --no-cache-dir \
         /app \
 &&  rm -rf /app \
