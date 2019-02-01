@@ -15,6 +15,9 @@ matrix:
     sudo: true
 # workaround py3.7 end
 
+before_install:
+    - make venv
+
 install:
     - make test
 
