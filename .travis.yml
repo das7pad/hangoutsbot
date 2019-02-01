@@ -15,6 +15,6 @@ matrix:
     sudo: true
 # workaround py3.7 end
 
-install: make install venv=$VIRTUAL_ENV
+install: make install
 
-script: make test venv=$VIRTUAL_ENV
+script: make test
