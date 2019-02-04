@@ -6,4 +6,4 @@ update_configs:
     update_schedule: "weekly"
     allowed_updates:
       - match:
-        update_type: "all"
+          update_type: "all"
