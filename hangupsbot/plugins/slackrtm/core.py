@@ -434,6 +434,13 @@ class SlackRTM(BotMixin):
                 delay += int(resp.headers['Retry-After'])
             except ValueError:
                 delay += 30
+
+            if method in RATE_LIMITS:
+                # propagate the rate limit immediately
+                last_call = self._api_call_history[method]
+                now = time.time()
+                self._api_call_history[method] = max(last_call, now) + delay
+
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
             self.logger.info(
