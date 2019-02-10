@@ -717,8 +717,14 @@ class SlackRTM(BotMixin):
                     try:
                         reply = json.loads(msg.data)
                         if 'type' not in reply:
-                            raise ValueError('reply has no `type` entry: %s'
-                                             % repr(reply))
+                            self.logger.info(
+                                'bad reply %s: %r',
+                                id(reply), reply
+                            )
+                            raise ValueError(
+                                'reply has no `type` entry: %s'
+                                % id(reply)
+                            )
                     except (ValueError, TypeError) as err:
                         # covers invalid json-replies, replies without a `type`
                         self.logger.error('bad websocket read: %r', err)
