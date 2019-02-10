@@ -223,7 +223,11 @@ class SlackRTM(BotMixin):
                 await _set_self_user_and_ids(login_data)
                 await self.rebuild_base()
 
-                await self._process_websocket(login_data['url'])
+                while True:
+                    await self._process_websocket(login_data['url'])
+                    self.logger.info('websocket closed gracefully, restarting')
+                    login_data = await _login()
+
             except asyncio.CancelledError:
                 return
             except IncompleteLoginError as err:
@@ -247,9 +251,6 @@ class SlackRTM(BotMixin):
                 return
             except Exception:  # pylint: disable=broad-except
                 self.logger.exception('core error')
-            else:
-                self.logger.info('websocket closed gracefully, restarting')
-                hard_reset = 0
             finally:
                 self.logger.debug('unloading')
                 self.bot.config.on_reload.remove_observer(self.rebuild_base)
