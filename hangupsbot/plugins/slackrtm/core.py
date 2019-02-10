@@ -226,6 +226,7 @@ class SlackRTM(BotMixin):
                 while True:
                     await self._process_websocket(login_data['url'])
                     self.logger.info('websocket closed gracefully, restarting')
+                    hard_reset = 1
                     login_data = await _login()
 
             except asyncio.CancelledError:
