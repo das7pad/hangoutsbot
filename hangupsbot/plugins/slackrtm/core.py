@@ -1,6 +1,7 @@
 """core to handle message syncing and handle base requests from commands"""
 
 import asyncio
+import json
 import logging
 import time
 
@@ -711,29 +712,27 @@ class SlackRTM(BotMixin):
                 self.logger.info('started new SlackRTM connection')
 
                 soft_reset = 0
-                while soft_reset < 5:
+                async for msg in websocket:
                     try:
-                        reply = await websocket.receive_json()
-                        if not reply:
-                            # gracefully stopped
-                            return
+                        reply = json.loads(msg.data)
                         if 'type' not in reply:
                             raise ValueError('reply has no `type` entry: %s'
                                              % repr(reply))
                     except (ValueError, TypeError) as err:
-                        if websocket.closed:
-                            self.logger.info('websocket connection closed')
-                            break
                         # covers invalid json-replies, replies without a `type`
                         self.logger.error('bad websocket read: %r', err)
+                        if soft_reset >= 5:
+                            break
                         soft_reset += 1
                         await asyncio.sleep(2 ** soft_reset)
-                        continue
 
                     await self._handle_slack_message(reply)
 
                     # valid response handled, leave fail-state
                     soft_reset = 0
+                else:
+                    # gracefully stopped
+                    return
 
         except aiohttp.ClientError as err:
             self.logger.error('websocket connection failed: %r', err)
