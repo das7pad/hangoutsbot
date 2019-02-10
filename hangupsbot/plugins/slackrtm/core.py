@@ -405,20 +405,23 @@ class SlackRTM(BotMixin):
                     'https://slack.com/api/' + method,
                     data={'token': self.api_key, **kwargs})) as resp:
 
+                if 'Retry-After' in resp.headers:
+                    raise SlackRateLimited
                 parsed = await resp.json()
                 self.logger.debug('api_call %s: %r', tracker, parsed)
                 if parsed.get('ok'):
                     return parsed
                 error = parsed.get('error', '')
-                if 'rate_limited' in error:
-                    raise SlackRateLimited()
                 if 'auth' in error:
                     raise SlackAuthError(tracker, parsed)
 
                 raise RuntimeError('invalid request')
         except SlackRateLimited:
             self.logger.warning('api_call %s: rate limit hit', tracker)
-            delay += parsed.get('Retry-After', 30)
+            try:
+                delay += int(resp.headers['Retry-After'])
+            except ValueError:
+                delay += 30
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
             self.logger.info(
