@@ -20,6 +20,7 @@ from .constants import (
     CACHE_UPDATE_TEAM,
     CACHE_UPDATE_USERS,
     SYSTEM_MESSAGES,
+    RATE_LIMITS,
 )
 from .exceptions import (
     AlreadySyncingError,
@@ -80,6 +81,7 @@ class SlackRTM(BotMixin):
         self.team = {}
         self.command_prefixes = tuple()
         self._cache_sending_queue = None
+        self._api_call_history = {method: 0 for method in RATE_LIMITS}
 
     @property
     def config(self):
@@ -393,12 +395,22 @@ class SlackRTM(BotMixin):
         tracker = self._tracker
         self._tracker += 1
         self.logger.debug('api_call %s: (%r, %r)', tracker, method, kwargs)
+
         if 'delay' in kwargs:
             delay = kwargs.pop('delay')
-            self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
-            await asyncio.sleep(delay)
         else:
             delay = 0
+        if method in RATE_LIMITS:
+            last_call = self._api_call_history[method]
+            now = time.time()
+            back_off = RATE_LIMITS[method] - (now - last_call)
+            delay = max(back_off, delay)
+            self._api_call_history[method] = now + delay
+
+        if delay > 0:
+            self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
+            await asyncio.sleep(delay)
+
         parsed = None
         try:
             async with await asyncio.shield(self._session.post(
