@@ -431,9 +431,9 @@ class SlackRTM(BotMixin):
         except SlackRateLimited:
             self.logger.warning('api_call %s: rate limit hit', tracker)
             try:
-                delay += int(resp.headers['Retry-After'])
+                delay = int(resp.headers['Retry-After'])
             except ValueError:
-                delay += 30
+                delay = 30
 
             if method in RATE_LIMITS:
                 # propagate the rate limit immediately
