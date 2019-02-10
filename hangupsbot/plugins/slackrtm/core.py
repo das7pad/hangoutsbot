@@ -8,7 +8,6 @@ import aiohttp
 
 from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
-from hangupsbot.sync.sending_queue import AsyncQueueCache
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.sync.utils import get_sync_config_entry
 from .commands_slack import slack_command_handler
@@ -38,6 +37,7 @@ from .message import SlackMessage
 from .parsers import (
     SLACK_STYLE,
 )
+from .sending_queue import SlackMessageQueueCache
 from .storage import (
     migrate_on_domain_change,
 )
@@ -361,7 +361,7 @@ class SlackRTM(BotMixin):
 
         migrate_on_domain_change(self, old_domain)
 
-        self._cache_sending_queue = AsyncQueueCache(
+        self._cache_sending_queue = SlackMessageQueueCache(
             self.identifier, _send_message, bot=self.bot)
 
         await _register_handler()
