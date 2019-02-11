@@ -89,3 +89,21 @@ MESSAGE_TYPES_TO_SKIP = (
 )
 MESSAGE_SUBTYPES_MEMBERSHIP_JOIN = ('channel_join', 'group_join')
 MESSAGE_SUBTYPES_MEMBERSHIP_LEAVE = ('channel_leave', 'group_leave')
+
+RATE_LIMITS = {
+    method: (60, 3, 1.25, 0.6)[tier-1]
+    for method, tier in {
+        'channels.history': 3,
+        'channels.kick': 3,
+        'channels.list': 2,
+        'groups.history': 3,
+        'groups.kick': 2,
+        'groups.list': 3,
+        'im.history': 4,
+        'im.list': 2,
+        'im.open': 4,
+        'rtm.connect': 1,
+        'team.info': 3,
+        'users.list': 2,
+    }.items()
+}

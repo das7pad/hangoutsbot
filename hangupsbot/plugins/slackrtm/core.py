@@ -8,7 +8,6 @@ import aiohttp
 
 from hangupsbot import plugins
 from hangupsbot.base_models import BotMixin
-from hangupsbot.sync.sending_queue import AsyncQueueCache
 from hangupsbot.sync.user import SyncUser
 from hangupsbot.sync.utils import get_sync_config_entry
 from .commands_slack import slack_command_handler
@@ -20,6 +19,7 @@ from .constants import (
     CACHE_UPDATE_TEAM,
     CACHE_UPDATE_USERS,
     SYSTEM_MESSAGES,
+    RATE_LIMITS,
 )
 from .exceptions import (
     AlreadySyncingError,
@@ -37,6 +37,7 @@ from .message import SlackMessage
 from .parsers import (
     SLACK_STYLE,
 )
+from .sending_queue import SlackMessageQueueCache
 from .storage import (
     migrate_on_domain_change,
 )
@@ -80,6 +81,7 @@ class SlackRTM(BotMixin):
         self.team = {}
         self.command_prefixes = tuple()
         self._cache_sending_queue = None
+        self._api_call_history = {method: 0 for method in RATE_LIMITS}
 
     @property
     def config(self):
@@ -359,7 +361,7 @@ class SlackRTM(BotMixin):
 
         migrate_on_domain_change(self, old_domain)
 
-        self._cache_sending_queue = AsyncQueueCache(
+        self._cache_sending_queue = SlackMessageQueueCache(
             self.identifier, _send_message, bot=self.bot)
 
         await _register_handler()
@@ -393,32 +395,52 @@ class SlackRTM(BotMixin):
         tracker = self._tracker
         self._tracker += 1
         self.logger.debug('api_call %s: (%r, %r)', tracker, method, kwargs)
+
         if 'delay' in kwargs:
             delay = kwargs.pop('delay')
-            self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
-            await asyncio.sleep(delay)
         else:
             delay = 0
+        if method in RATE_LIMITS:
+            last_call = self._api_call_history[method]
+            now = time.time()
+            back_off = RATE_LIMITS[method] - (now - last_call)
+            delay = max(back_off, delay)
+            self._api_call_history[method] = now + delay
+
+        if delay > 0:
+            self.logger.debug('api_call %s: delayed by %ss', tracker, delay)
+            await asyncio.sleep(delay)
+
         parsed = None
         try:
             async with await asyncio.shield(self._session.post(
                     'https://slack.com/api/' + method,
                     data={'token': self.api_key, **kwargs})) as resp:
 
+                if 'Retry-After' in resp.headers:
+                    raise SlackRateLimited
                 parsed = await resp.json()
                 self.logger.debug('api_call %s: %r', tracker, parsed)
                 if parsed.get('ok'):
                     return parsed
                 error = parsed.get('error', '')
-                if 'rate_limited' in error:
-                    raise SlackRateLimited()
                 if 'auth' in error:
                     raise SlackAuthError(tracker, parsed)
 
                 raise RuntimeError('invalid request')
         except SlackRateLimited:
             self.logger.warning('api_call %s: rate limit hit', tracker)
-            delay += parsed.get('Retry-After', 30)
+            try:
+                delay = int(resp.headers['Retry-After'])
+            except ValueError:
+                delay = 30
+
+            if method in RATE_LIMITS:
+                # propagate the rate limit immediately
+                last_call = self._api_call_history[method]
+                now = time.time()
+                self._api_call_history[method] = max(last_call, now) + delay
+
             return await self.api_call(method, delay=delay, **kwargs)
         except (aiohttp.ClientError, ValueError, RuntimeError) as err:
             self.logger.info(
