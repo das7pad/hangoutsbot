@@ -59,9 +59,13 @@ localization:
 # internal: ensure an existing venv
 .PHONY: venv-create
 venv-create: $(pip)
+venv-create: $(venv)/bin/wheel
 $(pip):
 	${python} -m venv $(venv)
 	$(pip) install --upgrade pip
+
+$(venv)/bin/wheel:
+	$(pip) install --upgrade wheel
 
 # house keeping: update the requirements.in file
 requirements/requirements.in: $(shell find hangupsbot -type d)
@@ -112,7 +116,9 @@ gen-dev-requirements: .gen-requirements requirements/requirements-dev.in
 # internal: ensure a venv with dev requirements
 .PHONY: venv-dev
 venv-dev: $(venv)/dev
-$(venv)/dev: $(pip) requirements/requirements-dev.txt
+$(venv)/dev: $(pip)
+$(venv)/dev: $(venv)/bin/wheel
+$(venv)/dev: requirements/requirements-dev.txt
 	$(pip) install --requirement requirements/requirements-dev.txt
 	touch $(venv)/dev
 
