@@ -11,22 +11,6 @@ import warnings
 import aiohttp
 import imageio
 from PIL import Image
-
-
-# Note: the moviepy import depends an available ffmpeg binary
-# A download will happen only once, as it will be cached into a path similar to
-#  ~/.imageio/ffmpeg/ffmpeg.linux64
-#  To change the download path one can set the environment variable FFMPEG_BINARY
-#   to a custom path, download the executable and move it into the custom path:
-#    $ python3 -c "import imageio; imageio.plugins.ffmpeg.download('/tmp')"
-#    $ mv /tmp/ffmpeg/ffmpeg-* $FFMPEG_BINARY
-# To avoid a download, one can install ffmpeg natively.
-# pylint: disable=wrong-import-position
-try:
-    imageio.plugins.ffmpeg.get_exe()
-except imageio.core.NeedDownloadError:
-    imageio.plugins.ffmpeg.download()
-
 from moviepy.editor import VideoFileClip
 
 from hangupsbot.base_models import BotMixin
