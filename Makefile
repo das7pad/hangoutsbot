@@ -2,7 +2,7 @@ venv = venv
 python=python3
 
 pip = $(venv)/bin/pip
-pip_min_version = 18.1
+pip_min_version = 19
 
 pip_min_version_guard_base = $(venv)/pip-version
 pip_min_version_guard = $(pip_min_version_guard_base)-$(pip_min_version)
