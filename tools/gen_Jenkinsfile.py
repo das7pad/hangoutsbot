@@ -38,8 +38,6 @@ pipeline {
         GIT_COMMITTER_NAME  = 'Joe Doe'
         GIT_COMMITTER_EMAIL = 'joe.doe@example.com'
         HOME                = '/tmp/'
-        IMAGEIO_FFMPEG_EXE  = '/bin/true'
-        FFMPEG_BINARY       = '/bin/true'
     }
     options {
         timestamps()
