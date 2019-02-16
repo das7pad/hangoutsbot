@@ -1,6 +1,12 @@
 venv = venv
 python=python3
+
 pip = $(venv)/bin/pip
+pip_min_version = 18.1
+
+pip_min_version_guard_base = $(venv)/pip-version
+pip_min_version_guard = $(pip_min_version_guard_base)-$(pip_min_version)
+
 # raise non-zero exit codes in pipes
 SHELL=/bin/bash -o pipefail
 
@@ -60,11 +66,17 @@ localization:
 .PHONY: venv-create
 venv-create: $(pip)
 venv-create: $(venv)/bin/wheel
-$(pip):
-	${python} -m venv $(venv)
-	$(pip) install --upgrade pip
 
-$(venv)/bin/wheel:
+$(venv)/bin/python:
+	$(python) -m venv $(venv)
+
+$(pip): $(pip_min_version_guard)
+
+$(pip_min_version_guard): $(venv)/bin/python
+	$(pip) install --upgrade 'pip>=$(pip_min_version)'
+	touch $(pip_min_version_guard)
+
+$(venv)/bin/wheel: $(pip)
 	$(pip) install --upgrade wheel
 
 # house keeping: update the requirements.in file
