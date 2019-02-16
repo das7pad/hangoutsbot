@@ -71,13 +71,16 @@ $(venv)/bin/python:
 	$(python) -m venv $(venv)
 
 $(pip): $(pip_min_version_guard)
+	touch $(pip)
 
 $(pip_min_version_guard): $(venv)/bin/python
 	$(pip) install --upgrade 'pip>=$(pip_min_version)'
+	rm -f $(pip_min_version_guard_base)*
 	touch $(pip_min_version_guard)
 
 $(venv)/bin/wheel: $(pip)
 	$(pip) install --upgrade wheel
+	touch $(venv)/bin/wheel
 
 # house keeping: update the requirements.in file
 requirements/requirements.in: $(shell find hangupsbot -type d)
