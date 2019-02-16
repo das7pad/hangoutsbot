@@ -26,10 +26,6 @@ RUN sed \
         --no-cache-dir \
         --requirement /app/requirements.txt \
 &&  mv /app/requirements.txt.org /app/requirements.txt \
-&&  python3 -c "import imageio; imageio.plugins.ffmpeg.download()" \
-        && cd /usr/local/lib/python3*/site-packages/imageio/resources/ \
-        && mv /root/.imageio/ffmpeg ./ \
-        && chown -R hangupsbot ffmpeg/ \
 &&  true
 
 COPY . /app
