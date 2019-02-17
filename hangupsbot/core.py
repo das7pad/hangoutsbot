@@ -65,6 +65,7 @@ class HangupsBot:
     def __init__(self, cookies_path, config_path, memory_path, max_retries):
         self._client = None
         self._cookies_path = cookies_path
+        self.__cookies = {}
         self._max_retries = max_retries
         self.__retry = 0
         self.__retry_resetter = None
@@ -255,7 +256,7 @@ class HangupsBot:
                 # restore the functionality to stop the bot on KeyboardInterrupt
                 self.stop = self._schedule_stop
 
-        cookies = _login()
+        self.__cookies = _login()
 
         # Start asyncio event loop
         loop = asyncio.get_event_loop()
@@ -280,7 +281,10 @@ class HangupsBot:
         while self.__retry < self._max_retries:
             self.__retry += 1
             # (re)create the Hangups client
-            self._client = hangups.Client(cookies, max_retries_longpolling)
+            self._client = hangups.Client(
+                cookies=self.__cookies,
+                max_retries=max_retries_longpolling
+            )
             self._client.on_connect.add_observer(self._on_connect)
             self._client.on_disconnect.add_observer(
                 lambda: logger.info("Event polling stopped"))
