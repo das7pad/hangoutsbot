@@ -14,7 +14,7 @@ EXPOSE $PORTS
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 &&  mkdir /app \
-&&  pip install --no-cache-dir --upgrade 'pip>=18.1' \
+&&  pip install --no-cache-dir --upgrade 'pip>=19' \
 &&  true
 
 COPY requirements/requirements.txt /app
@@ -26,10 +26,6 @@ RUN sed \
         --no-cache-dir \
         --requirement /app/requirements.txt \
 &&  mv /app/requirements.txt.org /app/requirements.txt \
-&&  python3 -c "import imageio; imageio.plugins.ffmpeg.download()" \
-        && cd /usr/local/lib/python3*/site-packages/imageio/resources/ \
-        && mv /root/.imageio/ffmpeg ./ \
-        && chown -R hangupsbot ffmpeg/ \
 &&  true
 
 COPY . /app

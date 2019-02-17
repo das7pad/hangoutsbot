@@ -1,6 +1,12 @@
 venv = venv
 python=python3
+
 pip = $(venv)/bin/pip
+pip_min_version = 19
+
+pip_min_version_guard_base = $(venv)/pip-version
+pip_min_version_guard = $(pip_min_version_guard_base)-$(pip_min_version)
+
 # raise non-zero exit codes in pipes
 SHELL=/bin/bash -o pipefail
 
@@ -59,9 +65,22 @@ localization:
 # internal: ensure an existing venv
 .PHONY: venv-create
 venv-create: $(pip)
-$(pip):
-	${python} -m venv $(venv)
-	$(pip) install --upgrade pip
+venv-create: $(venv)/bin/wheel
+
+$(venv)/bin/python:
+	$(python) -m venv $(venv)
+
+$(pip): $(pip_min_version_guard)
+	touch $(pip)
+
+$(pip_min_version_guard): $(venv)/bin/python
+	$(pip) install --upgrade 'pip>=$(pip_min_version)'
+	rm -f $(pip_min_version_guard_base)*
+	touch $(pip_min_version_guard)
+
+$(venv)/bin/wheel: $(pip)
+	$(pip) install --upgrade wheel
+	touch $(venv)/bin/wheel
 
 # house keeping: update the requirements.in file
 requirements/requirements.in: $(shell find hangupsbot -type d)
@@ -112,7 +131,9 @@ gen-dev-requirements: .gen-requirements requirements/requirements-dev.in
 # internal: ensure a venv with dev requirements
 .PHONY: venv-dev
 venv-dev: $(venv)/dev
-$(venv)/dev: $(pip) requirements/requirements-dev.txt
+$(venv)/dev: $(pip)
+$(venv)/dev: $(venv)/bin/wheel
+$(venv)/dev: requirements/requirements-dev.txt
 	$(pip) install --requirement requirements/requirements-dev.txt
 	touch $(venv)/dev
 
