@@ -46,7 +46,7 @@ pillow==5.4.1
 pluggy==0.8.1
 proglog==0.1.9
 protobuf==3.6.1
-psutil==5.5.0
+psutil==5.5.1
 pushbullet.py==0.11.0
 py==1.7.0
 pyasn1-modules==0.2.4
