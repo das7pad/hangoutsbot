@@ -17,7 +17,6 @@ from hangupsbot.commands import (
 logger = logging.getLogger(__name__)
 
 # TODO(das7pad) rewrite needed - can be merged with other plugins
-# TODO(das7pad) add a command to remove expired invites (from memory)
 
 HELP = {
     "invite": _('manage invite for users:\n"list", "purge" allows listing and '
@@ -48,6 +47,61 @@ def _initialise():
     ])
     plugins.register_handler(_issue_invite_on_exit, "membership")
     plugins.register_help(HELP)
+    plugins.start_asyncio_task(cleanup_periodically)
+
+
+def _perform_cleanup(bot):
+    """cleanup invitations
+
+    Args:
+        bot (hangupsbot.core.HangupsBot): the running instance
+
+    Returns:
+        int: number of purged invitations
+    """
+    if not bot.memory.exists(['invites']):
+        return 0
+    invitations = bot.memory.get_by_path(['invites'])
+    if not isinstance(invitations, dict):
+        return 0
+
+    # python would stop iterating as keys get dropped from the dict
+    invitations = invitations.copy()
+    now = time.time()
+    counter = 0
+    for code, invitation in invitations.items():
+        if (isinstance(invitation, dict)
+                and 'expiry' in invitation
+                and isinstance(invitation['expiry'], (int, float))
+                and invitation['expiry'] > now):
+            continue
+
+        # invalid or expired
+        bot.memory.pop_by_path(['invites', code])
+        counter += 1
+
+    return counter
+
+
+async def cleanup_periodically(bot):
+    """periodically cleanup invitations
+
+    Args:
+        bot (hangupsbot.core.HangupsBot): the running instance
+    """
+    try:
+        while True:
+            purged_invitations = _perform_cleanup(bot)
+            if purged_invitations:
+                logger.info(
+                    'cleanup purged %s invitations',
+                    purged_invitations
+                )
+
+            await asyncio.sleep(EXPIRE_IN)
+
+    except asyncio.CancelledError:
+        return
 
 
 def _remove_invite(bot, invite_code):
