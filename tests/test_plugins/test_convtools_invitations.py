@@ -33,6 +33,14 @@ def test_cleanup_common(bot):
     assert 'CDE' in invites
 
 
+def test_cleanup_missing_invites(bot):
+    bot.memory.set_by_path(['invites'], {})
+    bot.memory.pop_by_path(['invites'])
+
+    count = convtools_invitations._perform_cleanup(bot)
+    assert count == 0
+
+
 def test_cleanup_broken_invites(bot):
     invites = []
     bot.memory.set_by_path(['invites'], invites)
