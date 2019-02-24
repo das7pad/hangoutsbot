@@ -80,6 +80,9 @@ def _perform_cleanup(bot):
         bot.memory.pop_by_path(['invites', code])
         counter += 1
 
+    if counter:
+        bot.memory.save()
+
     return counter
 
 
