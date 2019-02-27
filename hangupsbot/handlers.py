@@ -210,7 +210,6 @@ class EventHandler(BotMixin):
             return
 
         event.syncroom_no_repeat = False
-        event.passthru = {}
         event.context = {}
 
         # EventAnnotation - allows metadata to survive a trip to Google
@@ -221,8 +220,6 @@ class EventHandler(BotMixin):
                 await self.run_reprocessor(annotation.value, event)
             elif annotation.type == 1027 and annotation.value in self._contexts:
                 event.context = self._contexts[annotation.value]
-                if "passthru" in event.context:
-                    event.passthru = event.context["passthru"]
 
         await self.run_pluggable_omnibus("allmessages", self.bot, event,
                                          command)

@@ -24,10 +24,6 @@ def testcontext(dummy, event, *dummys):
         "this message has context - please see your console/log",
         {
             "tags": tags,
-            "passthru": {
-                "random_variable": "hello world!",
-                "some_dictionary": {"var1": "a", "var2": "b"},
-            }
         })
 
 
@@ -38,15 +34,10 @@ async def _handle_incoming_message(dummy, event):
     it will also have context, triggering this handler again"""
 
     # output to log
-    if event.passthru:
-        logger.info("passthru received: %s", event.passthru)
     if event.context:
         logger.info("context received: %s", event.context)
 
     # output to stdout
-    if event.passthru:
-        print("--- event.passthru")
-        _PP.pprint(event.passthru)
     if event.context:
         print("--- event.context")
         _PP.pprint(event.context)
