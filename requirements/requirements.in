@@ -8,7 +8,6 @@
 -r ../hangupsbot/commands/requirements.in
 -r ../hangupsbot/plugins/api/requirements.in
 -r ../hangupsbot/plugins/catfact/requirements.in
--r ../hangupsbot/plugins/_chatbridge/requirements.in
 -r ../hangupsbot/plugins/cleverbot/requirements.in
 -r ../hangupsbot/plugins/forecast/requirements.in
 -r ../hangupsbot/plugins/foursquare/requirements.in
