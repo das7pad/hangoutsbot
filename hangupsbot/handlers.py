@@ -4,7 +4,6 @@ import asyncio
 import inspect
 import logging
 import shlex
-import time
 import uuid
 
 import hangups
@@ -52,9 +51,6 @@ class EventHandler(BotMixin):
         self._contexts = Cache(receive_timeout,
                                increase_on_access=False)
 
-        self._executables = Cache(receive_timeout,
-                                  increase_on_access=False)
-
     async def setup(self, _conv_list):
         """async init part of the handler
 
@@ -73,7 +69,6 @@ class EventHandler(BotMixin):
 
         self._reprocessors.start()
         self._contexts.start()
-        self._executables.start()
 
         plugins.tracking.end()
 
@@ -228,18 +223,6 @@ class EventHandler(BotMixin):
                 event.context = self._contexts[annotation.value]
                 if "passthru" in event.context:
                     event.passthru = event.context["passthru"]
-
-        # first occurrence of an executable id needs to be handled as an event
-        if (event.passthru and event.passthru.get("executable") and
-                event.passthru["executable"] not in self._executables):
-            original_message = event.passthru["original_request"]["message"]
-            linked_hangups_user = event.passthru["original_request"]["user"]
-            logger.info("current event is executable: %s", original_message)
-            self._executables[event.passthru["executable"]] = time.time()
-            event.from_bot = False
-            event.text = original_message
-            event.user = linked_hangups_user
-            event.user_id = linked_hangups_user.id_
 
         await self.run_pluggable_omnibus("allmessages", self.bot, event,
                                          command)
@@ -464,7 +447,6 @@ class EventHandler(BotMixin):
         """explicit cleanup"""
         self._reprocessors.clear()
         self._contexts.clear()
-        self._executables.clear()
 
         self.pluggables.clear()
 
