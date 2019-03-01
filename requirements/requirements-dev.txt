@@ -43,7 +43,7 @@ multidict==4.5.2
 numpy==1.16.1
 oauthlib==3.0.1
 pillow==5.4.1
-pluggy==0.8.1
+pluggy==0.9.0
 proglog==0.1.9
 protobuf==3.6.1
 psutil==5.5.1
