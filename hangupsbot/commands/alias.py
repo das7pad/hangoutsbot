@@ -132,7 +132,7 @@ def gethoalias(bot, event, *args):
     if len(args) > 1:
         raise Help(_('Too many arguments!'))
 
-    elif args and event.user_id.chat_id not in bot.config['admins']:
+    if args and event.user_id.chat_id not in bot.config['admins']:
         raise Help(_('You are not authorized to do that!'))
 
     alias_list = bot.memory['hoalias']
