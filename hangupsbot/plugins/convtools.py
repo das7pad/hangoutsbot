@@ -361,6 +361,9 @@ async def kick(bot, event, *args):
         bot (hangupsbot.core.HangupsBot): the running instance
         event (hangupsbot.event.ConversationEvent): a message container
         args (str):additional words passed to the command
+
+    Raises:
+        commands.Help: the user to kick is missing
     """
     parameters = list(args)
 
