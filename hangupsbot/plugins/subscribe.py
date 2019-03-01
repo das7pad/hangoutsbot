@@ -430,6 +430,9 @@ def global_subscribe(bot, event, *args):
 
     Returns:
         str: a status message
+
+    Raises:
+        commands.Help: the keyword to subscribe is missing
     """
     if not args:
         raise commands.Help('Missing keyword and/or conversation!')
@@ -485,6 +488,9 @@ def global_unsubscribe(bot, event, *args):
 
     Returns:
         str: a status message
+
+    Raises:
+        commands.Help: the keyword to unsubscribe is missing
     """
     if not args:
         raise commands.Help('Missing keyword and/or conversation!')
