@@ -37,22 +37,22 @@ async def convfilter(bot, event, *args):
     if len(posix_args) > 1:
         raise Help(_("<em>1 parameter required, {} supplied - enclose parameter"
                      " in double-quotes</em>").format(len(posix_args)))
-    elif not posix_args:
+    if not posix_args:
         raise Help(_("<em>supply 1 parameter</em>"))
-    else:
-        lines = []
-        for convid, convdata in bot.conversations.get(
-                filter=posix_args[0]).items():
-            lines.append(
-                "`{}` <b>{}</b> ({})".format(
-                    convid, convdata["title"], len(convdata["participants"]))
-            )
-        lines.append(_('<b>Total: {}</b>').format(len(lines)))
-        message = '\n'.join(lines)
 
-        await bot.coro_send_message(event.conv_id, message)
+    lines = []
+    for convid, convdata in bot.conversations.get(
+            filter=posix_args[0]).items():
+        lines.append(
+            "`{}` <b>{}</b> ({})".format(
+                convid, convdata["title"], len(convdata["participants"]))
+        )
+    lines.append(_('<b>Total: {}</b>').format(len(lines)))
+    message = '\n'.join(lines)
 
-        return {"api.response": message}
+    await bot.coro_send_message(event.conv_id, message)
+
+    return {"api.response": message}
 
 
 async def convecho(bot, dummy, *args):

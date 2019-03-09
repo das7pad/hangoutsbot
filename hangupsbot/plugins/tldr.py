@@ -286,7 +286,7 @@ def tldr_base(bot, conv_id, parameters):
 
         return message, display
 
-    elif parameters[0] == "edit":
+    if parameters[0] == "edit":
         if len(parameters) > 2 and parameters[1].isdigit():
             sorted_keys = sorted(list(conv_tldr.keys()), key=float)
             key_index = int(parameters[1]) - 1
@@ -306,7 +306,7 @@ def tldr_base(bot, conv_id, parameters):
 
         return message, display
 
-    elif parameters[0]:  # need a better looking solution here
+    if parameters[0]:  # need a better looking solution here
         text = ' '.join(parameters)
         if text:
             # Add message to list
