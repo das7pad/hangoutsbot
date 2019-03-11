@@ -7,6 +7,8 @@ pip_min_version = 19
 pip_min_version_guard_base = $(venv)/pip-version
 pip_min_version_guard = $(pip_min_version_guard_base)-$(pip_min_version)
 
+pip_compile=$(venv)/bin/pip-compile
+
 # raise non-zero exit codes in pipes
 SHELL=/bin/bash -o pipefail
 
@@ -93,19 +95,18 @@ requirements/requirements-dev.in: $(shell find tests -type d)
 requirements/requirements-dev.in: tools/gen_requirements-dev.in.sh
 	tools/gen_requirements-dev.in.sh
 
-# internal: check for `pip-compile` and ensure an existing cache directory
-.PHONY: .gen-requirements
-.gen-requirements: $(venv)/pip-tools
-$(venv)/pip-tools: $(pip)
+# internal: check for `pip-compile`
+$(pip_compile): $(pip)
 	$(pip) install pip-tools
-	touch $(venv)/pip-tools
+	touch $(pip_compile)
 
 # house keeping: update `requirements.txt`:
 # pip-compile prints everything to stdout as well, direct it to /dev/null
 .PHONY: gen-requirements
-gen-requirements: .gen-requirements requirements/requirements.in
+gen-requirements: $(pip_compile)
+gen-requirements: requirements/requirements.in
 	CUSTOM_COMPILE_COMMAND="make gen-requirements" \
-		$(venv)/bin/pip-compile \
+		$(pip_compile) \
 			--upgrade \
 			--no-annotate \
 			--no-index \
@@ -117,9 +118,10 @@ gen-requirements: .gen-requirements requirements/requirements.in
 # house keeping: update `requirements-dev.txt`:
 # gather requirements from ./hangupsbot and ./tests
 .PHONY: gen-dev-requirements
-gen-dev-requirements: .gen-requirements requirements/requirements-dev.in
+gen-dev-requirements: $(pip_compile)
+gen-dev-requirements: requirements/requirements-dev.in
 	CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
-		$(venv)/bin/pip-compile \
+		$(pip_compile) \
 			--upgrade \
 			--no-annotate \
 			--no-index \
