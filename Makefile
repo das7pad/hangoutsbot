@@ -34,15 +34,18 @@ update-requirements: venv-create
 
 # check the venv and run pylint
 .PHONY: lint
-lint: venv-dev .lint
+lint: venv-dev
+	$(venv)/bin/pylint -s no -j 1 hangupsbot
 
 # check the venv and run the test-suite
 .PHONY: test-only
-test-only: venv-dev .test-only
+test-only: venv-dev
+	$(venv)/bin/py.test -v tests
 
-# check the venv, run pylint and run the test-suite
+# run pylint and the test-suite
 .PHONY: test
-test: venv-dev .test
+test: lint
+test: test-only
 
 # remove the local cache and compiled python files from local directories
 .PHONY: clean
@@ -138,20 +141,6 @@ $(venv)/dev: $(venv)/bin/wheel
 $(venv)/dev: requirements/requirements-dev.txt
 	$(pip) install --requirement requirements/requirements-dev.txt
 	touch $(venv)/dev
-
-# internal: run pylint, prepend extra blank lines for each module
-.PHONY: .lint
-.lint:
-	$(venv)/bin/pylint -s no -j 1 hangupsbot
-
-# internal: run the test-suite
-.PHONY: .test-only
-.test-only:
-	$(venv)/bin/py.test -v tests
-
-# internal: run pylint and the test-suite
-.PHONY: .test
-.test: .lint .test-only
 
 # debugging: run the test suite verbose
 .PHONY: test-only-verbose
