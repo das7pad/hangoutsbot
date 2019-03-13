@@ -757,6 +757,17 @@ class SlackRTM(BotMixin):
                             break
                         soft_reset += 1
                         await asyncio.sleep(2 ** soft_reset)
+                        continue
+
+                    if 'error' in reply:
+                        error = reply['error']
+                        if isinstance(error, dict) and 'msg' in error:
+                            msg = error['msg']
+                        else:
+                            msg = repr(error)
+
+                        self.logger.error('websocket error: %s', msg)
+                        break
 
                     await self._handle_slack_message(reply)
 
