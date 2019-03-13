@@ -32,7 +32,6 @@ from .exceptions import (
     SlackAuthError,
     SlackConfigError,
     SlackRateLimited,
-    WebsocketFailed,
 )
 from .message import SlackMessage
 from .parsers import (
@@ -211,7 +210,6 @@ class SlackRTM(BotMixin):
             )
 
         hard_reset = 0
-        last_drop = time.time()
         while hard_reset < self.bot.config.get_option('slackrtm.retries'):
             self._session = aiohttp.ClientSession()
             self.bot.config.on_reload.add_observer(self.rebuild_base)
@@ -226,11 +224,16 @@ class SlackRTM(BotMixin):
                 await self.rebuild_base()
 
                 while True:
-                    await self._process_websocket(login_data['url'])
-                    self.logger.info(
-                        'websocket closed gracefully, reconnecting'
-                    )
-                    hard_reset = 1
+                    failed = await self._process_websocket(login_data['url'])
+                    if failed:
+                        self.logger.info(
+                            'websocket closed forcefully, reconnecting'
+                        )
+                    else:
+                        self.logger.info(
+                            'websocket closed gracefully, reconnecting'
+                        )
+                        hard_reset = 1
                     login_data = await _login()
 
             except asyncio.CancelledError:
@@ -240,13 +243,6 @@ class SlackRTM(BotMixin):
                     'Incomplete Login: %r, restarting',
                     err
                 )
-            except WebsocketFailed:
-                if time.time() - last_drop > hard_reset * 30:
-                    hard_reset = 1
-                last_drop = time.time()
-
-                self.logger.warning('Connection failed, waiting %s sec',
-                                    hard_reset * 10)
             except SlackAuthError as err:
                 await self._session.close()  # do not allow further api-calls
                 self.logger.error(
@@ -728,10 +724,8 @@ class SlackRTM(BotMixin):
         Args:
             url (str): websocket target URI
 
-        Raises:
-            WebsocketFailed: websocket connection failed or too many
-                invalid events received from slack
-            any exception that is not covered in `.handle_reply`
+        Returns:
+            int: 0 on graceful exit, 1 on error
         """
         try:
             async with self._session.ws_connect(url, heartbeat=30) as websocket:
@@ -775,13 +769,13 @@ class SlackRTM(BotMixin):
                     soft_reset = 0
                 else:
                     # gracefully stopped
-                    return
+                    return 0
 
         except aiohttp.ClientError as err:
             self.logger.error('websocket connection failed: %r', err)
 
         # can not connect or permanent websocket read error
-        raise WebsocketFailed()
+        return 1
 
     async def _handle_slack_message(self, reply):
         """parse and forward a response from slack
