@@ -207,6 +207,9 @@ class Handler(BotMixin):
 
         Args:
             message (dict): json body
+
+        Raises:
+            asyncio.CancelledError: message sending got cancelled
         """
         self._logger.info(
             'sending message %s: %r',
