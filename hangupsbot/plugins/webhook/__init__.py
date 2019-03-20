@@ -81,9 +81,9 @@ def _get_logger(name):
 def _check_config(config):
     if not isinstance(config, dict):
         return 'expected config type of dict, got %s' % type(config)
-    elif 'url' not in config:
+    if 'url' not in config:
         return "required config item 'url' is missing"
-    elif 'params' in config and not isinstance(config['params'], dict):
+    if 'params' in config and not isinstance(config['params'], dict):
         return (
             "expected config item 'params' type of dict, got %s"
             % type(config['params'])
@@ -146,7 +146,7 @@ class Handler(BotMixin):
         """process an event
 
         Args:
-            event (hangupsbot.sync.event.SyncEvent):
+            event (hangupsbot.sync.event.SyncEvent): an event
         """
         sources = self.bot.memory.get_by_path(['webhook', self._name])
         if event.identifier not in sources:
@@ -159,7 +159,7 @@ class Handler(BotMixin):
         """serialize a reply
 
         Args:
-            reply (hangupsbot.sync.event.SyncReply):
+            reply (hangupsbot.sync.event.SyncReply): a reply
 
         Returns:
             dict: json data
@@ -176,7 +176,7 @@ class Handler(BotMixin):
         """serialize an event
 
         Args:
-            event (hangupsbot.sync.event.SyncEvent):
+            event (hangupsbot.sync.event.SyncEvent): an event
 
         Returns:
             dict: json data
@@ -197,7 +197,7 @@ class Handler(BotMixin):
         """send an event
 
         Args:
-            event (hangupsbot.sync.event.SyncEvent):
+            event (hangupsbot.sync.event.SyncEvent): an event
         """
         message = await self.serialize_event(event)
         await self.send(message)
