@@ -221,7 +221,7 @@ async def test_source_filter(bot):
 
         await handler._handle_message(event)
 
-        send.assert_not_called()
+        assert send.call_count == 0
 
 
 async def test_source_match(bot):
@@ -251,7 +251,7 @@ async def test_source_match(bot):
 
         await handler._handle_message(event)
 
-        send.assert_called_once()
+        assert send.call_count == 1
 
 
 async def test_send(bot):
