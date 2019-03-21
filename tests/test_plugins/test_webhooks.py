@@ -195,6 +195,7 @@ async def test_event_serialize(bot):
         'edited': edited,
         'image_type': image_type,
         'image_url': image_url,
+        'platform_identifier': chat_identifier,
         'reply': {
             'offset': offset,
             'user_identifier': user_identifier,
@@ -255,6 +256,7 @@ async def test_event_serialize_no_reply(bot):
         'edited': edited,
         'image_type': image_type,
         'image_url': image_url,
+        'platform_identifier': chat_identifier,
         'reply': {},
         'segments': segments,
         'text': text,

@@ -209,6 +209,7 @@ class Handler(BotMixin):
             'edited': event.edited,
             'image_type': event.image.type_ if event.image else None,
             'image_url': await event.get_image_url(),
+            'platform_identifier': event.identifier,
             'reply': cls.serialize_reply(event.reply),
             'segments': cls.serialize_segments(event.conv_event.segments),
             'text': event.text,
