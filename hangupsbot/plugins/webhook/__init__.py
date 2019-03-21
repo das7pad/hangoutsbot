@@ -52,7 +52,7 @@ DEFAULT_HEADER = {
 }
 
 
-async def initialize(bot):
+async def _initialize(bot):
     """setup the hooks
 
     Args:
