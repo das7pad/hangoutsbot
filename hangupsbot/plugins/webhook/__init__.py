@@ -6,12 +6,12 @@ config:
     'webhook': {
         'key_for_logs_and_memory': {
             'url': 'URL',
-        }
+        },
         'other_key_for_logs_and_memory': {
             'url': 'URL',
             'params': {
-                'aiohttp.request_param': value,
-            }
+                'aiohttp.request_param': 'VALUE',
+            },
         },
         'yet_another_key_for_logs_and_memory': {
             'url': 'http://example.com/secret/endpoint',
@@ -19,7 +19,7 @@ config:
                 'headers': {
                     'X-Secret': 'MAGIC',
                 },
-            }
+            },
         },
     }
 
