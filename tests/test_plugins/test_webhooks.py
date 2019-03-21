@@ -219,7 +219,7 @@ async def test_source_filter(bot):
         send.return_value = asyncio.Future()
         send.return_value.set_result(None)
 
-        await handler._handle_message(event)
+        await handler._handle_message(bot, event)
 
         assert send.call_count == 0
 
@@ -249,7 +249,7 @@ async def test_source_match(bot):
         send.return_value = asyncio.Future()
         send.return_value.set_result(None)
 
-        await handler._handle_message(event)
+        await handler._handle_message(bot, event)
 
         assert send.call_count == 1
 

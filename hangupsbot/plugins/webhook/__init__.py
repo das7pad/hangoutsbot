@@ -142,13 +142,14 @@ class Handler(BotMixin):
             name='allmessages_once'
         )
 
-    async def _handle_message(self, event):
+    async def _handle_message(self, bot, event):
         """process an event
 
         Args:
+            bot (hangupsbot.core.HangupsBot): the running instance
             event (hangupsbot.sync.event.SyncEvent): an event
         """
-        sources = self.bot.memory.get_by_path(['webhook', self._name])
+        sources = bot.memory.get_by_path(['webhook', self._name])
         if event.identifier not in sources:
             return
 
