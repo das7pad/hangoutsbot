@@ -28,6 +28,7 @@
 -r ../hangupsbot/plugins/telesync/requirements.in
 -r ../hangupsbot/plugins/twitter/requirements.in
 -r ../hangupsbot/plugins/urbandict/requirements.in
+-r ../hangupsbot/plugins/webhook/requirements.in
 -r ../hangupsbot/plugins/wolframalpha/requirements.in
 -r ../hangupsbot/plugins/xkcd/requirements.in
 -r ../hangupsbot/sinks/requirements.in
