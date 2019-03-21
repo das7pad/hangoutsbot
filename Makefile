@@ -7,6 +7,8 @@ pip_min_version = 19
 pip_min_version_guard_base = $(venv)/pip-version
 pip_min_version_guard = $(pip_min_version_guard_base)-$(pip_min_version)
 
+pip_compile=$(venv)/bin/pip-compile
+
 # raise non-zero exit codes in pipes
 SHELL=/bin/bash -o pipefail
 
@@ -32,15 +34,18 @@ update-requirements: venv-create
 
 # check the venv and run pylint
 .PHONY: lint
-lint: venv-dev .lint
+lint: venv-dev
+	$(venv)/bin/pylint -s no -j 1 hangupsbot
 
 # check the venv and run the test-suite
 .PHONY: test-only
-test-only: venv-dev .test-only
+test-only: venv-dev
+	$(venv)/bin/py.test -v tests
 
-# check the venv, run pylint and run the test-suite
+# run pylint and the test-suite
 .PHONY: test
-test: venv-dev .test
+test: lint
+test: test-only
 
 # remove the local cache and compiled python files from local directories
 .PHONY: clean
@@ -93,19 +98,18 @@ requirements/requirements-dev.in: $(shell find tests -type d)
 requirements/requirements-dev.in: tools/gen_requirements-dev.in.sh
 	tools/gen_requirements-dev.in.sh
 
-# internal: check for `pip-compile` and ensure an existing cache directory
-.PHONY: .gen-requirements
-.gen-requirements: $(venv)/pip-tools
-$(venv)/pip-tools: $(pip)
+# internal: check for `pip-compile`
+$(pip_compile): $(pip)
 	$(pip) install pip-tools
-	touch $(venv)/pip-tools
+	touch $(pip_compile)
 
 # house keeping: update `requirements.txt`:
 # pip-compile prints everything to stdout as well, direct it to /dev/null
 .PHONY: gen-requirements
-gen-requirements: .gen-requirements requirements/requirements.in
+gen-requirements: $(pip_compile)
+gen-requirements: requirements/requirements.in
 	CUSTOM_COMPILE_COMMAND="make gen-requirements" \
-		$(venv)/bin/pip-compile \
+		$(pip_compile) \
 			--upgrade \
 			--no-annotate \
 			--no-index \
@@ -117,9 +121,10 @@ gen-requirements: .gen-requirements requirements/requirements.in
 # house keeping: update `requirements-dev.txt`:
 # gather requirements from ./hangupsbot and ./tests
 .PHONY: gen-dev-requirements
-gen-dev-requirements: .gen-requirements requirements/requirements-dev.in
+gen-dev-requirements: $(pip_compile)
+gen-dev-requirements: requirements/requirements-dev.in
 	CUSTOM_COMPILE_COMMAND="make gen-dev-requirements" \
-		$(venv)/bin/pip-compile \
+		$(pip_compile) \
 			--upgrade \
 			--no-annotate \
 			--no-index \
@@ -136,20 +141,6 @@ $(venv)/dev: $(venv)/bin/wheel
 $(venv)/dev: requirements/requirements-dev.txt
 	$(pip) install --requirement requirements/requirements-dev.txt
 	touch $(venv)/dev
-
-# internal: run pylint, prepend extra blank lines for each module
-.PHONY: .lint
-.lint:
-	$(venv)/bin/pylint -s no -j 1 hangupsbot
-
-# internal: run the test-suite
-.PHONY: .test-only
-.test-only:
-	$(venv)/bin/py.test -v tests
-
-# internal: run pylint and the test-suite
-.PHONY: .test
-.test: .lint .test-only
 
 # debugging: run the test suite verbose
 .PHONY: test-only-verbose
