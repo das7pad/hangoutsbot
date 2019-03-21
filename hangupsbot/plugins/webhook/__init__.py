@@ -156,15 +156,18 @@ class Handler(BotMixin):
         await self.send_message(event)
 
     @staticmethod
-    def serialize_reply(reply):
+    def serialize_reply(reply=None):
         """serialize a reply
 
         Args:
-            reply (hangupsbot.sync.event.SyncReply): a reply
+            reply (hangupsbot.sync.event.SyncReply): a reply, optional
 
         Returns:
             dict: json data
         """
+        if not reply:
+            return {}
+
         return {
             'offset': reply.offset,
             'user_identifier': reply.user.identifier,

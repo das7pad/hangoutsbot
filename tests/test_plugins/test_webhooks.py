@@ -168,6 +168,61 @@ async def test_event_serialize(bot):
     assert actual == expected
 
 
+async def test_event_serialize_no_reply(bot):
+    chat_identifier = 'platform:CHAT'
+    conv_id = 'CONV_ID'
+
+    user_identifier = 'platform:USER'
+    full_name = 'FULL NAME'
+
+    edited = True
+    text = 'MULTILINE\nTEXT'
+    segments = [seg.serialize() for seg in MessageSegment.from_str(text)]
+
+    image_type = 'photo'
+    image_url = 'http://example.com/image.jpg'
+
+    image = SyncImage(
+        type_=image_type,
+        url=image_url,
+        cache=90,
+    )
+
+    user = SyncUser(
+        identifier=user_identifier,
+        user_name=full_name,
+    )
+
+    event = SyncEvent(
+        identifier=chat_identifier,
+        user=user,
+        edited=edited,
+        text=text,
+        conv_id=conv_id,
+        image=image,
+    )
+
+    with mock.patch('hangupsbot.sync.event.SyncEvent.get_image_url') as patched:
+        patched.return_value = asyncio.Future()
+        patched.return_value.set_result(image_url)
+
+        actual = await webhook.Handler.serialize_event(event)
+
+    expected = {
+        'conv_id': conv_id,
+        'edited': edited,
+        'image_type': image_type,
+        'image_url': image_url,
+        'reply': {},
+        'segments': segments,
+        'text': text,
+        'user_identifier': user_identifier,
+        'user_name': full_name,
+    }
+
+    assert actual == expected
+
+
 async def test_session_setup(bot):
     handler = webhook.Handler(
         name='NAME',
