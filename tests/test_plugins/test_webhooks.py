@@ -69,6 +69,48 @@ async def test_global_config_check():
     )
 
 
+async def test_segments_serialize_bold():
+    segments = MessageSegment.from_str('<b>BOLD</b>')
+    expected = [
+        {
+            'text': 'BOLD',
+            'is_bold': True,
+            'is_italic': False,
+            'link_target': None,
+        },
+    ]
+
+    actual = webhook.Handler.serialize_segments(segments)
+    assert actual == expected
+
+
+async def test_segments_serialize_multiline():
+    segments = MessageSegment.from_str('MULTILINE\nTEXT')
+    expected = [
+        {
+            'text': 'MULTILINE',
+            'is_bold': False,
+            'is_italic': False,
+            'link_target': None,
+        },
+        {
+            'text': '\n',
+            'is_bold': False,
+            'is_italic': False,
+            'link_target': None,
+        },
+        {
+            'text': 'TEXT',
+            'is_bold': False,
+            'is_italic': False,
+            'link_target': None,
+        }
+    ]
+
+    actual = webhook.Handler.serialize_segments(segments)
+    assert actual == expected
+
+
 async def test_reply_serialize(bot):
     user_identifier = 'platform:USER'
     full_name = 'FULL NAME'
@@ -106,7 +148,7 @@ async def test_event_serialize(bot):
 
     edited = True
     text = 'MULTILINE\nTEXT'
-    segments = [seg.serialize() for seg in MessageSegment.from_str(text)]
+    segments = webhook.Handler.serialize_segments(MessageSegment.from_str(text))
 
     reply_text = 'REPLY\nMULTILINE\nTEXT'
     offset = 30
@@ -177,7 +219,7 @@ async def test_event_serialize_no_reply(bot):
 
     edited = True
     text = 'MULTILINE\nTEXT'
-    segments = [seg.serialize() for seg in MessageSegment.from_str(text)]
+    segments = webhook.Handler.serialize_segments(MessageSegment.from_str(text))
 
     image_type = 'photo'
     image_url = 'http://example.com/image.jpg'

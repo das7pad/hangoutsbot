@@ -175,6 +175,25 @@ class Handler(BotMixin):
             'text': reply.text,
         }
 
+    @staticmethod
+    def serialize_segments(segments):
+        """
+
+        Args:
+            segments (list[hangups.ChatMessageSegment]): message segments
+
+        Returns:
+            list[dict]: serialized content
+        """
+        return list(
+            {
+                'text': segment.text,
+                'is_bold': segment.is_bold,
+                'is_italic': segment.is_italic,
+                'link_target': segment.link_target,
+            } for segment in segments
+        )
+
     @classmethod
     async def serialize_event(cls, event):
         """serialize an event
@@ -191,7 +210,7 @@ class Handler(BotMixin):
             'image_type': event.image.type_ if event.image else None,
             'image_url': await event.get_image_url(),
             'reply': cls.serialize_reply(event.reply),
-            'segments': [seg.serialize() for seg in event.conv_event.segments],
+            'segments': cls.serialize_segments(event.conv_event.segments),
             'text': event.text,
             'user_identifier': event.user.identifier,
             'user_name': event.user.full_name,
