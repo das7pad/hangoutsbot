@@ -189,11 +189,10 @@ class ConversationMemory(BotMixin):
         convs = self.bot.memory.get_by_path(['convmem'])
         logger.debug("loading %s conversations from memory", len(convs))
 
-        _users_incomplete = {}
+        _users_incomplete = []
         _users_unknown = []
 
         _users_found = set()
-        _users_to_fetch = []
 
         for convid, conv in convs.items():
             self.catalog[convid] = conv
@@ -204,10 +203,9 @@ class ConversationMemory(BotMixin):
             if cached is not None:
                 if cached["is_definitive"]:
                     continue
-                _users_incomplete[chat_id] = cached["full_name"]
+                _users_incomplete.append(chat_id)
             else:
                 _users_unknown.append(chat_id)
-            _users_to_fetch.append(chat_id)
 
         if _users_incomplete:
             logger.info("incomplete users: %s", _users_incomplete)
@@ -215,6 +213,7 @@ class ConversationMemory(BotMixin):
         if _users_unknown:
             logger.warning("unknown users: %s", _users_unknown)
 
+        _users_to_fetch = _users_incomplete + _users_unknown
         if _users_to_fetch:
             await self.get_users_from_query(_users_to_fetch)
 
