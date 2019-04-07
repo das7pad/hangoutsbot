@@ -316,6 +316,14 @@ class ConversationMemory(BotMixin):
         cached = (self.bot.memory.get_by_path(["convmem", conv.id_])
                   if self.bot.memory.exists(["convmem", conv.id_]) else {})
 
+        if conv_title.lower() == "unknown" and "title" in cached:
+            conv_title = cached['title']
+            logger.info(
+                "conv title recovered for %s (%s)",
+                conv.id_,
+                conv_title,
+            )
+
         memory = {
             "title": conv_title,
             "source": source,
