@@ -163,29 +163,32 @@ class ConversationMemory(BotMixin):
         _users_incomplete = {}
         _users_unknown = []
 
+        _users_found = set()
         _users_to_fetch = []
 
         for convid, conv in convs.items():
             self.catalog[convid] = conv
-            for chat_id in conv["participants"]:
-                try:
-                    userid = hangups.user.UserID(chat_id=chat_id,
-                                                 gaia_id=chat_id)
-                    user = self.bot._user_list._user_dict[userid]
-                    results = self.store_user_memory(user)
-                    if results:
-                        _users_added[chat_id] = user.full_name
+            _users_found.update(conv["participants"])
 
-                except KeyError:
-                    cached = self.bot.user_memory_get(chat_id, "_hangups")
-                    if cached is not None:
-                        if cached["is_definitive"]:
-                            continue
-                        _users_incomplete[chat_id] = cached["full_name"]
-                    else:
-                        _users_unknown.append(chat_id)
+        for chat_id in _users_found:
+            userid = hangups.user.UserID(chat_id=chat_id,
+                                         gaia_id=chat_id)
+            try:
+                user = self.bot._user_list._user_dict[userid]
+            except KeyError:
+                cached = self.bot.user_memory_get(chat_id, "_hangups")
+                if cached is not None:
+                    if cached["is_definitive"]:
+                        continue
+                    _users_incomplete[chat_id] = cached["full_name"]
+                else:
+                    _users_unknown.append(chat_id)
 
-                    _users_to_fetch.append(chat_id)
+                _users_to_fetch.append(chat_id)
+            else:
+                results = self.store_user_memory(user)
+                if results:
+                    _users_added[chat_id] = user.full_name
 
         if _users_added:
             logger.info("added users: %s", _users_added)
