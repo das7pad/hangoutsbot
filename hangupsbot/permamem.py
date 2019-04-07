@@ -200,20 +200,14 @@ class ConversationMemory(BotMixin):
             _users_found.update(conv["participants"])
 
         for chat_id in _users_found:
-            userid = hangups.user.UserID(chat_id=chat_id,
-                                         gaia_id=chat_id)
-            try:
-                self.bot._user_list._user_dict[userid]
-            except KeyError:
-                cached = self.bot.user_memory_get(chat_id, "_hangups")
-                if cached is not None:
-                    if cached["is_definitive"]:
-                        continue
-                    _users_incomplete[chat_id] = cached["full_name"]
-                else:
-                    _users_unknown.append(chat_id)
-
-                _users_to_fetch.append(chat_id)
+            cached = self.bot.user_memory_get(chat_id, "_hangups")
+            if cached is not None:
+                if cached["is_definitive"]:
+                    continue
+                _users_incomplete[chat_id] = cached["full_name"]
+            else:
+                _users_unknown.append(chat_id)
+            _users_to_fetch.append(chat_id)
 
         if _users_incomplete:
             logger.info("incomplete users: %s", _users_incomplete)
