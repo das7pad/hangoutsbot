@@ -279,25 +279,23 @@ class ConversationMemory(BotMixin):
             "is_definitive": is_definitive,
         }
 
-        key = None
-        changed = True
         if cached:
-            try:
-                for key in user_dict:
-                    assert user_dict[key] == cached[key]
-            except AssertionError:
-                message = "user %s changed for %s (%s)"
-            except KeyError:
-                message = "user %s missing for %s (%s)"
-            else:
-                message = None
-                changed = False
+            changed = False
+            for key in user_dict:
+                if key not in cached:
+                    message = "user %s added for %s (%s)"
+                elif user_dict[key] != cached[key]:
+                    message = "user %s changed for %s (%s)"
+                else:
+                    continue
+
+                changed = True
+                logger.info(message, key, user.full_name, user.id_.chat_id)
         else:
-            message = "%snew user %s (%s)"
-            key = ''
+            changed = True
+            logger.info("new user %s (%s)", user.full_name, user.id_.chat_id)
 
         if changed:
-            logger.info(message, key, user.full_name, user.id_.chat_id)
             user_dict["updated"] = datetime.now().strftime("%Y%m%d%H%M%S")
             self.bot.user_memory_set(user.id_.chat_id, "_hangups", user_dict)
         return changed
@@ -361,26 +359,28 @@ class ConversationMemory(BotMixin):
                         conv_title, conv.id_, _users_to_fetch)
             await self.get_users_from_query(_users_to_fetch)
 
-        key = ''
-        conv_changed = True
         if cached:
             memory["participants"].sort()
             cached["participants"].sort()
-            try:
-                for key in memory:
-                    assert key == 'source' or memory[key] == cached[key]
-            except AssertionError:
-                message = "conv %s changed for %s (%s)"
-            except KeyError:
-                message = "conv %s missing for %s (%s)"
-            else:
-                message = None
-                conv_changed = False
+
+            conv_changed = False
+            for key in memory:
+                if key not in cached:
+                    message = "conv %s added for %s (%s)"
+                elif key == 'source':
+                    continue
+                elif memory[key] != cached[key]:
+                    message = "conv %s changed for %s (%s)"
+                else:
+                    continue
+
+                conv_changed = True
+                logger.info(message, key, conv_title, conv.id_)
         else:
-            message = "%snew conv %s (%s)"
+            conv_changed = True
+            logger.info("new conv %s (%s)", conv_title, conv.id_)
 
         if conv_changed:
-            logger.info(message, key, conv_title, conv.id_)
             memory["updated"] = datetime.now().strftime("%Y%m%d%H%M%S")
             self.bot.memory.set_by_path(["convmem", conv.id_], memory)
 
