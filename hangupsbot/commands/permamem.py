@@ -44,9 +44,6 @@ def dumpunknownusers(bot, *dummys):
 
     if bot.memory.exists(["user_data"]):
         for chat_id in bot.memory["user_data"]:
-            if "_hangups" not in bot.memory["user_data"][chat_id]:
-                continue
-
             _hangups = bot.memory["user_data"][chat_id]["_hangups"]
             if not _hangups["is_definitive"]:
                 continue
@@ -66,9 +63,6 @@ def resetunknownusers(bot, *dummys):
 
     if bot.memory.exists(["user_data"]):
         for chat_id in bot.memory["user_data"]:
-            if "_hangups" not in bot.memory["user_data"][chat_id]:
-                continue
-
             _hangups = bot.memory["user_data"][chat_id]["_hangups"]
             if not _hangups["is_definitive"]:
                 continue
@@ -113,9 +107,6 @@ def makeallusersindefinite(bot, *dummys):
 
     if bot.memory.exists(["user_data"]):
         for chat_id in bot.memory["user_data"]:
-            if "_hangups" not in bot.memory["user_data"][chat_id]:
-                continue
-
             bot.memory.set_by_path(
                 ["user_data", chat_id, "_hangups", "is_definitive"], False)
 

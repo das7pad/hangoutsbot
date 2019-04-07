@@ -43,11 +43,6 @@ def load_missing_entries(bot):
     """
     loaded_users = bot._user_list._user_dict
     for chat_id, user_data in bot.memory["user_data"].items():
-        if any((len(chat_id) != 21,
-                not chat_id.isdigit(),
-                not isinstance(user_data, dict),
-                '_hangups' not in user_data)):
-            continue
         user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
         if user_id in loaded_users:
             continue
@@ -108,8 +103,6 @@ class ConversationMemory(BotMixin):
         count_user = 0
         count_user_definitive = 0
         for user in self.bot.memory["user_data"].values():
-            if "_hangups" not in user:
-                continue
             count_user += 1
             if user["_hangups"]["is_definitive"]:
                 count_user_definitive += 1
@@ -122,6 +115,43 @@ class ConversationMemory(BotMixin):
 
         migrate new keys, also add to attribute change checks in .update()
         """
+        self.bot.memory.ensure_path(['user_data'])
+        invalid = []
+        for chat_id, user_data in self.bot.memory['user_data'].items():
+            if (len(chat_id) != 21
+                    or not chat_id.isdigit()
+                    or not isinstance(user_data, dict)
+                    or '_hangups' not in user_data
+                    or not isinstance(user_data['_hangups'], dict)):
+                # invalid user
+                invalid.append(chat_id)
+                continue
+
+            cached = user_data['_hangups']
+            try:
+                cached_is_default = (
+                    cached['full_name'].lower()
+                    == cached['first_name'].lower()
+                    == hangups.user.DEFAULT_NAME.lower()
+                )
+            except (KeyError, AttributeError):
+                cached_is_default = True
+
+            cached['is_definitive'] = not cached_is_default
+
+        for key in invalid:
+            old_path = ['user_data', key]
+            new_path = ['_invalid_user_data', key]
+            self.bot.memory.set_by_path(
+                new_path,
+                self.bot.memory.pop_by_path(old_path)
+            )
+            logger.warning(
+                'Invalid user data found and moved: %r -> %r',
+                old_path,
+                new_path,
+            )
+
         if not self.bot.memory.exists(['convmem']):
             self.bot.memory.set_by_path(['convmem'], {})
             return
@@ -254,11 +284,9 @@ class ConversationMemory(BotMixin):
         Returns:
             bool: True if the permamem entry for the user changed
         """
-        is_definitive = user.name_type == hangups.user.NameType.DEFAULT
-
         # reject an update if a valid user would be overwritten by a default one
         cached = self.bot.user_memory_get(user.id_.chat_id, "_hangups") or {}
-        if cached and cached.get("is_definitive", 0) > is_definitive:
+        if user.is_default and cached and cached["is_definitive"]:
             return False
 
         user_dict = {
@@ -268,7 +296,7 @@ class ConversationMemory(BotMixin):
             "photo_url": user.photo_url,
             "emails": list(user.emails),
             "is_self": user.is_self,
-            "is_definitive": is_definitive,
+            "is_definitive": not user.is_default,
         }
 
         key = None
