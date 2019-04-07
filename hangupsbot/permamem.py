@@ -49,12 +49,15 @@ def load_missing_entries(bot):
                 '_hangups' not in user_data)):
             continue
         user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
-        if user_id in loaded_users:
-            continue
-        user = hangups.user.User(user_id, user_data["_hangups"]["full_name"],
-                                 user_data["_hangups"]["first_name"],
-                                 user_data["_hangups"]["photo_url"],
-                                 user_data["_hangups"]["emails"], False)
+        cache = user_data["_hangups"]
+        user = hangups.user.User(
+            user_id,
+            cache["full_name"],
+            cache["first_name"],
+            cache["photo_url"],
+            cache["emails"],
+            cache["is_self"],
+        )
         loaded_users[user_id] = user
 
     for conv_id in bot.conversations:
@@ -315,6 +318,14 @@ class ConversationMemory(BotMixin):
 
         cached = (self.bot.memory.get_by_path(["convmem", conv.id_])
                   if self.bot.memory.exists(["convmem", conv.id_]) else {})
+
+        if conv_title.lower() == "unknown" and "title" in cached:
+            conv_title = cached['title']
+            logger.info(
+                "conv title recovered for %s (%s)",
+                conv.id_,
+                conv_title,
+            )
 
         memory = {
             "title": conv_title,
