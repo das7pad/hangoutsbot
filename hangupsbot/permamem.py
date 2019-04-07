@@ -49,8 +49,6 @@ def load_missing_entries(bot):
                 '_hangups' not in user_data)):
             continue
         user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
-        if user_id in loaded_users:
-            continue
         user = hangups.user.User(user_id, user_data["_hangups"]["full_name"],
                                  user_data["_hangups"]["first_name"],
                                  user_data["_hangups"]["photo_url"],
