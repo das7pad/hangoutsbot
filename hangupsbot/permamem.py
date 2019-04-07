@@ -49,10 +49,15 @@ def load_missing_entries(bot):
                 '_hangups' not in user_data)):
             continue
         user_id = hangups.user.UserID(chat_id=chat_id, gaia_id=chat_id)
-        user = hangups.user.User(user_id, user_data["_hangups"]["full_name"],
-                                 user_data["_hangups"]["first_name"],
-                                 user_data["_hangups"]["photo_url"],
-                                 user_data["_hangups"]["emails"], False)
+        cache = user_data["_hangups"]
+        user = hangups.user.User(
+            user_id,
+            cache["full_name"],
+            cache["first_name"],
+            cache["photo_url"],
+            cache["emails"],
+            cache["is_self"],
+        )
         loaded_users[user_id] = user
 
     for conv_id in bot.conversations:
