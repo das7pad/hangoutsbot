@@ -319,7 +319,10 @@ class ConversationMemory(BotMixin):
         if changed:
             logger.info(message, key, user.full_name, user.id_.chat_id)
             user_dict["updated"] = datetime.now().strftime("%Y%m%d%H%M%S")
-            self.bot.user_memory_set(user.id_.chat_id, "_hangups", user_dict)
+            self.bot.memory.set_by_path(
+                ['user_data', user.id_.chat_id, "_hangups"],
+                user_dict
+            )
         return changed
 
     async def update(self, conv, source="unknown", automatic_save=True):
