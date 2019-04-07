@@ -363,6 +363,10 @@ class ConversationMemory(BotMixin):
             if not user.is_self:
                 memory["participants"].append(user.id_.chat_id)
 
+            if source == "init":
+                # hot path: skip the redundant user data diff calc during init
+                continue
+
             if user.name_type == hangups.user.NameType.DEFAULT:
                 _users_to_fetch.append(user.id_.chat_id)
 
