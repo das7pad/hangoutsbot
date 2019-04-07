@@ -159,7 +159,6 @@ class ConversationMemory(BotMixin):
         convs = self.bot.memory.get_by_path(['convmem'])
         logger.debug("loading %s conversations from memory", len(convs))
 
-        _users_added = {}
         _users_incomplete = {}
         _users_unknown = []
 
@@ -174,7 +173,7 @@ class ConversationMemory(BotMixin):
             userid = hangups.user.UserID(chat_id=chat_id,
                                          gaia_id=chat_id)
             try:
-                user = self.bot._user_list._user_dict[userid]
+                self.bot._user_list._user_dict[userid]
             except KeyError:
                 cached = self.bot.user_memory_get(chat_id, "_hangups")
                 if cached is not None:
@@ -185,13 +184,6 @@ class ConversationMemory(BotMixin):
                     _users_unknown.append(chat_id)
 
                 _users_to_fetch.append(chat_id)
-            else:
-                results = self.store_user_memory(user)
-                if results:
-                    _users_added[chat_id] = user.full_name
-
-        if _users_added:
-            logger.info("added users: %s", _users_added)
 
         if _users_incomplete:
             logger.info("incomplete users: %s", _users_incomplete)
