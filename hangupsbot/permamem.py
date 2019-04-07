@@ -368,7 +368,7 @@ class ConversationMemory(BotMixin):
 
             users_changed = self.store_user_memory(user) or users_changed
 
-        if _users_to_fetch:
+        if _users_to_fetch and source != "init":
             logger.info("unknown users returned from %s (%s): %s",
                         conv_title, conv.id_, _users_to_fetch)
             await self.get_users_from_query(_users_to_fetch)
