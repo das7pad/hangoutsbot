@@ -26,7 +26,7 @@ google-auth==1.6.3
 httplib2==0.12.1
 idna-ssl==1.1.0
 idna==2.8
-imageio-ffmpeg==0.2.0
+imageio-ffmpeg==0.3.0
 imageio==2.5.0
 inflect==2.1.0
 jaraco.itertools==4.4.1
