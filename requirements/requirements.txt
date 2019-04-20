@@ -61,7 +61,7 @@ tqdm==4.31.1
 twitterapi==2.5.9
 typing-extensions==3.7.2
 uritemplate==3.0.0
-urllib3==1.24.1
+urllib3==1.24.2
 websocket-client==0.56.0
 wikipedia==1.4.0
 wolframalpha==3.0.1
