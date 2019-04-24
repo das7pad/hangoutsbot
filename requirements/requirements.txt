@@ -41,7 +41,7 @@ proglog==0.1.9
 protobuf==3.7.1
 psutil==5.6.1
 pushbullet.py==0.11.0
-pyasn1-modules==0.2.4
+pyasn1-modules==0.2.5
 pyasn1==0.4.5
 pyslack==0.4.0
 python-dateutil==2.8.0
