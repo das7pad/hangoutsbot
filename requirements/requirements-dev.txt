@@ -34,7 +34,7 @@ imageio==2.5.0
 inflect==2.1.0
 isort==4.3.17
 jaraco.itertools==4.4.1
-lazy-object-proxy==1.3.1
+lazy-object-proxy==1.4.1
 lxml==4.3.3
 mccabe==0.6.1
 more-itertools==7.0.0
