@@ -521,6 +521,28 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
                 status = await self._send_html(tg_chat_id,
                                                get_formatted(text, 'text'),
                                                as_html=False, silent=silent)
+            elif 'upgraded to a supergroup chat' in err.description:
+                logger.warning(
+                    'sending html %s: upgrading group to supergroup',
+                    id(text)
+                )
+                key = 'migrate_to_chat_id'
+                new_chat_id = err.json['parameters'][key]
+                migration = {
+                    'chat': {
+                        'id': tg_chat_id,
+                    },
+                    key: new_chat_id,
+                }
+                # resend with the new ID, applies to next_part as well
+                tg_chat_id = new_chat_id
+                self._on_supergroup_upgrade(migration)
+                status = await self._send_html(
+                    tg_chat_id,
+                    text,
+                    as_html=as_html,
+                    silent=silent,
+                )
             else:
                 logger.error(
                     'sending html %s: failed with %r',
