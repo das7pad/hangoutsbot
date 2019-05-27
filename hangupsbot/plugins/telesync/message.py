@@ -268,6 +268,24 @@ class Message(dict, BotMixin):
         elif self.content_type == 'location':
             self.text = _create_google_maps_url()
 
-        elif self.content_type not in ('new_chat_member', 'new_chat_members',
-                                       'left_chat_member'):
+        elif self.content_type in ('new_chat_member', 'new_chat_members',
+                                   'left_chat_member'):
+            raw_user = (
+                self['new_chat_members'] if 'new_chat_members' in self
+                else [self['new_chat_member']] if 'new_chat_member' in self
+                else [self['left_chat_member']]
+            )
+            changed_user = ', '.join(
+                User(self.tg_bot, {'chat': self['chat'], 'from': user}).full_name
+                for user in raw_user
+            )
+            self.text = '%s %s %s' % (
+                self.user.full_name,
+                (
+                    'has removed' if self.content_type == 'left_chat_member'
+                    else 'has added'
+                ),
+                changed_user
+            )
+        else:
             raise IgnoreMessage()
