@@ -31,6 +31,7 @@ idna-ssl==1.1.0
 idna==2.8
 imageio-ffmpeg==0.3.0
 imageio==2.5.0
+importlib-metadata==0.17
 inflect==2.1.0
 isort==4.3.20
 jaraco.itertools==4.4.1
@@ -42,8 +43,9 @@ moviepy==1.0.0
 multidict==4.5.2
 numpy==1.16.3
 oauthlib==3.0.1
+packaging==19.0
 pillow==6.0.0
-pluggy==0.11.0
+pluggy==0.12.0
 proglog==0.1.9
 protobuf==3.7.1
 psutil==5.6.2
@@ -52,9 +54,10 @@ py==1.8.0
 pyasn1-modules==0.2.5
 pyasn1==0.4.5
 pylint==2.3.1
+pyparsing==2.4.0
 pyslack==0.4.0
 pytest-asyncio==0.10.0
-pytest==4.5.0
+pytest==4.6.0
 python-dateutil==2.8.0
 python-magic==0.4.15
 raven-aiohttp==0.7.0
@@ -81,3 +84,4 @@ wolframalpha==3.0.1
 wrapt==1.11.1
 xmltodict==0.12.0
 yarl==1.3.0
+zipp==0.5.1
