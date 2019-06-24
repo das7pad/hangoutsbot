@@ -72,7 +72,7 @@ spotipy==2.4.4
 tqdm==4.32.2
 twitterapi==2.5.9
 typed-ast==1.4.0
-typing-extensions==3.7.2
+typing-extensions==3.7.4
 uritemplate==3.0.0
 urllib3==1.25.3
 wcwidth==0.1.7
