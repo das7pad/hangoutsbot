@@ -36,7 +36,7 @@ inflect==2.1.0
 isort==4.3.20
 jaraco.itertools==4.4.1
 lazy-object-proxy==1.4.1
-lxml==4.3.4
+lxml==4.3.5
 mccabe==0.6.1
 more-itertools==7.0.0
 moviepy==1.0.0
