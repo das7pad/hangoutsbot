@@ -15,9 +15,6 @@ matrix:
     sudo: true
 # workaround py3.7 end
 
-before_install:
-    - $VIRTUAL_ENV/bin/pip install --upgrade pip
-
 install:
     - make venv-dev venv=$VIRTUAL_ENV
 
