@@ -42,7 +42,7 @@ protobuf==3.7.1
 psutil==5.6.3
 pushbullet.py==0.11.0
 pyasn1-modules==0.2.5
-pyasn1==0.4.5
+pyasn1==0.4.6
 pyslack==0.4.0
 python-dateutil==2.8.0
 python-magic==0.4.15
