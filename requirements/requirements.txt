@@ -35,7 +35,7 @@ more-itertools==7.2.0
 moviepy==1.0.0
 multidict==4.5.2
 numpy==1.17.0
-oauthlib==3.0.1
+oauthlib==3.1.0
 pillow==6.1.0
 proglog==0.1.9
 protobuf==3.7.1
