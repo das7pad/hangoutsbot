@@ -21,9 +21,7 @@ before_install:
 install:
     - make venv-dev venv=$VIRTUAL_ENV
 
-before_script:
+script:
     - make lint venv=$VIRTUAL_ENV
     - make test-only venv=$VIRTUAL_ENV
-
-script:
     - make install venv=$VIRTUAL_ENV
