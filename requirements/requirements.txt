@@ -30,7 +30,7 @@ imageio-ffmpeg==0.3.0
 imageio==2.5.0
 inflect==2.1.0
 jaraco.itertools==4.4.1
-lxml==4.3.4
+lxml==4.4.1
 more-itertools==7.2.0
 moviepy==1.0.0
 multidict==4.5.2
