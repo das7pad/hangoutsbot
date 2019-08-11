@@ -41,7 +41,7 @@ mccabe==0.6.1
 more-itertools==7.2.0
 moviepy==1.0.0
 multidict==4.5.2
-numpy==1.16.4
+numpy==1.17.0
 oauthlib==3.0.1
 packaging==19.0
 pillow==6.1.0
