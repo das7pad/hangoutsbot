@@ -52,7 +52,7 @@ psutil==5.6.3
 pushbullet.py==0.11.0
 py==1.8.0
 pyasn1-modules==0.2.6
-pyasn1==0.4.6
+pyasn1==0.4.7
 pylint==2.3.1
 pyparsing==2.4.2
 pyslack==0.4.0
