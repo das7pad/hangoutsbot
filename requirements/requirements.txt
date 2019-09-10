@@ -16,7 +16,7 @@ bs4==0.0.1
 cachetools==3.1.1
 certifi==2019.6.16
 chardet==3.0.4
-cleverwrap==0.2.3.6
+cleverwrap==0.3.0.2
 decorator==4.4.0
 emoji==0.5.3
 fudge==1.1.1
