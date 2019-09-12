@@ -21,7 +21,7 @@ certifi==2019.6.16
 chardet==3.0.4
 cleverwrap==0.3.0.2
 decorator==4.4.0
-emoji==0.5.3
+emoji==0.5.4
 fudge==1.1.1
 google-api-python-client==1.7.11
 google-auth-httplib2==0.0.3
