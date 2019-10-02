@@ -36,7 +36,7 @@ moviepy==1.0.0
 multidict==4.5.2
 numpy==1.17.2
 oauthlib==3.1.0
-pillow==6.1.0
+pillow==6.2.0
 proglog==0.1.9
 protobuf==3.7.1
 psutil==5.6.3
