@@ -32,7 +32,7 @@ inflect==2.1.0
 jaraco.itertools==4.4.1
 lxml==4.4.1
 more-itertools==7.2.0
-moviepy==1.0.0
+moviepy==1.0.1
 multidict==4.5.2
 numpy==1.17.2
 oauthlib==3.1.0
