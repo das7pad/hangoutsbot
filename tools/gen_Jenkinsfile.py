@@ -7,7 +7,7 @@ import pathlib
 
 VERSIONS = [
     '3.5.3',    # debian stretch    EOL: 2022-06
-    '3.5.7',    # latest python3.5
+    '3.5.9',    # latest python3.5
 
     '3.6.5',    # ubuntu 18.04 LTS  EOL: 2028-04
     '3.6.6',    # ubuntu 18.10      EOL: 2019-07
@@ -18,7 +18,7 @@ VERSIONS = [
     '3.7.0',    # ubuntu 18.04 LTS  EOL: 2028-04
     '3.7.1',    # ubuntu 19.04      EOL: 2020-01
     '3.7.3',    # debian buster     EOL: 2022
-    '3.7.4',    # latest python3.7
+    '3.7.5',    # latest python3.7
 ]
 
 PIPELINE = """
