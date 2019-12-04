@@ -65,46 +65,46 @@ pipeline {
                         }
                     }
                 }
-                stage('Python:3.5.7') {
+                stage('Python:3.5.9') {
                     agent {
                         docker {
-                            image 'python:3.5.7'
+                            image 'python:3.5.9'
                         }
                     }
                     stages {
-                        stage('Python:3.5.7 Info') {
+                        stage('Python:3.5.9 Info') {
                             steps {
                                 sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
-                        stage('Python:3.5.7 Checkout') {
+                        stage('Python:3.5.9 Checkout') {
                             steps {
                                 checkout scm
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.5.7 Test-Env') {
+                        stage('Python:3.5.9 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
                             }
                         }
-                        stage('Python:3.5.7 Lint') {
+                        stage('Python:3.5.9 Lint') {
                             steps {
                                 sh 'make lint'
                             }
                         }
-                        stage('Python:3.5.7 Tests') {
+                        stage('Python:3.5.9 Tests') {
                             steps {
                                 sh 'make test-only'
                             }
                         }
-                        stage('Python:3.5.7 Install') {
+                        stage('Python:3.5.9 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.5.7 Cleanup') {
+                        stage('Python:3.5.9 Cleanup') {
                             steps {
                                 sh 'make clean'
                             }
@@ -479,46 +479,46 @@ pipeline {
                         }
                     }
                 }
-                stage('Python:3.7.4') {
+                stage('Python:3.7.5') {
                     agent {
                         docker {
-                            image 'python:3.7.4'
+                            image 'python:3.7.5'
                         }
                     }
                     stages {
-                        stage('Python:3.7.4 Info') {
+                        stage('Python:3.7.5 Info') {
                             steps {
                                 sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
-                        stage('Python:3.7.4 Checkout') {
+                        stage('Python:3.7.5 Checkout') {
                             steps {
                                 checkout scm
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.7.4 Test-Env') {
+                        stage('Python:3.7.5 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
                             }
                         }
-                        stage('Python:3.7.4 Lint') {
+                        stage('Python:3.7.5 Lint') {
                             steps {
                                 sh 'make lint'
                             }
                         }
-                        stage('Python:3.7.4 Tests') {
+                        stage('Python:3.7.5 Tests') {
                             steps {
                                 sh 'make test-only'
                             }
                         }
-                        stage('Python:3.7.4 Install') {
+                        stage('Python:3.7.5 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.7.4 Cleanup') {
+                        stage('Python:3.7.5 Cleanup') {
                             steps {
                                 sh 'make clean'
                             }
