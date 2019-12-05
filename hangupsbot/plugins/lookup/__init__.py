@@ -22,6 +22,7 @@ def _initialise():
 
 async def lookup(bot, event, *args):
     """find keywords in a specified spreadsheet"""
+    # pylint: disable=import-outside-toplevel, no-else-break
 
     if not bot.get_config_suboption(event.conv_id, 'spreadsheet_enabled'):
         return _("Spreadsheet function disabled")
