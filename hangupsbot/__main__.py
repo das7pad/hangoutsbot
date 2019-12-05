@@ -179,6 +179,9 @@ def main():
 
     configure_logging(args)
 
+    # performance optimization: do not import the core until command arguments
+    #  are fully parsed and sub commands like --help and --version are processed
+    # pylint: disable=import-outside-toplevel
     from hangupsbot.core import HangupsBot
 
     # initialise the bot

@@ -76,8 +76,8 @@ class ArgumentsParser(BotMixin, TrackingMixin):
                     matched_users[chat_id] = chat_id
                     break
 
-                elif (text in fullname_lower or
-                      text in fullname_lower.replace(" ", "")):
+                if (text in fullname_lower or
+                        text in fullname_lower.replace(" ", "")):
                     matched_users[chat_id] = chat_id
 
             if len(matched_users) == 1:
