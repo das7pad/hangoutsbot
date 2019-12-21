@@ -29,7 +29,7 @@ idna==2.8
 imageio-ffmpeg==0.3.0
 imageio==2.6.1
 importlib-metadata==1.2.0
-inflect==3.0.2
+inflect==4.0.0
 jaraco.itertools==4.4.1
 lxml==4.4.2
 more-itertools==8.0.0
