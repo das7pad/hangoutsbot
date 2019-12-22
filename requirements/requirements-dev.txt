@@ -40,7 +40,7 @@ mccabe==0.6.1
 more-itertools==8.0.0
 moviepy==1.0.1
 multidict==4.6.1
-numpy==1.17.4
+numpy==1.18.0
 oauthlib==3.1.0
 packaging==19.2
 pillow==6.2.1
