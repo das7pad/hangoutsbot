@@ -37,6 +37,7 @@ jaraco.itertools==4.4.1
 lazy-object-proxy==1.4.3
 lxml==4.4.2
 mccabe==0.6.1
+mock==3.0.5
 more-itertools==8.0.0
 moviepy==1.0.1
 multidict==4.6.1
@@ -69,7 +70,7 @@ simplejson==3.17.0
 six==1.13.0
 soundcloud==0.5.0
 soupsieve==1.9.5
-spotipy==2.4.4
+spotipy==2.6.0
 tqdm==4.40.0
 twitterapi==2.5.10
 typed-ast==1.4.0
