@@ -72,7 +72,7 @@ soupsieve==1.9.5
 spotipy==2.4.4
 tqdm==4.40.0
 twitterapi==2.5.10
-typed-ast==1.4.0
+typed-ast==1.4.1
 typing-extensions==3.7.4.1
 uritemplate==3.0.0
 urllib3==1.25.7
