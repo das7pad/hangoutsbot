@@ -69,7 +69,7 @@ simplejson==3.17.0
 six==1.13.0
 soundcloud==0.5.0
 soupsieve==1.9.5
-spotipy==2.4.4
+spotipy==2.6.1
 tqdm==4.40.0
 twitterapi==2.5.10
 typed-ast==1.4.0
