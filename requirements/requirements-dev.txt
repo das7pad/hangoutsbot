@@ -74,7 +74,7 @@ tqdm==4.40.0
 twitterapi==2.5.10
 typed-ast==1.4.0
 typing-extensions==3.7.4.1
-uritemplate==3.0.0
+uritemplate==3.0.1
 urllib3==1.25.7
 wcwidth==0.1.7
 websocket-client==0.56.0
