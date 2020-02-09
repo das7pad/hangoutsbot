@@ -77,7 +77,7 @@ typing-extensions==3.7.4.1
 uritemplate==3.0.1
 urllib3==1.25.7
 wcwidth==0.1.7
-websocket-client==0.56.0
+websocket-client==0.57.0
 wikipedia==1.4.0
 wolframalpha==3.0.1
 wrapt==1.11.2
