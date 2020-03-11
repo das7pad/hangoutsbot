@@ -22,7 +22,7 @@ cleverwrap==0.3.0.2
 decorator==4.4.1
 emoji==0.5.4
 fudge==1.1.1
-google-api-python-client==1.7.11
+google-api-python-client==1.7.12
 google-auth-httplib2==0.0.3
 google-auth==1.11.0
 httplib2==0.17.0
