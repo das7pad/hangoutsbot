@@ -28,7 +28,7 @@ idna-ssl==1.1.0
 idna==2.8
 imageio-ffmpeg==0.3.0
 imageio==2.6.1
-importlib-metadata==1.5.0
+importlib-metadata==1.5.2
 inflect==3.0.2
 jaraco.itertools==4.4.1
 lxml==4.5.0
