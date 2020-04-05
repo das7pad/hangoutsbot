@@ -16,7 +16,7 @@ attrs==19.3.0
 beautifulsoup4==4.8.2
 bs4==0.0.1
 cachetools==3.1.1
-certifi==2019.11.28
+certifi==2020.4.5.1
 chardet==3.0.4
 cleverwrap==0.3.0.2
 decorator==4.4.1
