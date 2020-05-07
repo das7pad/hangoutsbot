@@ -38,7 +38,7 @@ lazy-object-proxy==1.4.3
 lxml==4.5.0
 mccabe==0.6.1
 more-itertools==8.2.0
-moviepy==1.0.1
+moviepy==1.0.3
 multidict==4.7.4
 numpy==1.18.1
 oauthlib==3.1.0
