@@ -114,8 +114,7 @@ class HubotBridge(BotMixin):
 
 
 class IncomingMessages(IncomingRequestHandler):
-    @asyncio.coroutine
-    def process_request(self, path, query_string, content):
+    async def process_request(self, path, query_string, content):
         # pylint:disable=unused-argument
         path = path.split("/")
         conversation_id = path[1]
@@ -125,7 +124,7 @@ class IncomingMessages(IncomingRequestHandler):
 
         payload = json.loads(content)
 
-        yield from self.send_data(conversation_id, payload["message"])
+        await self.send_data(conversation_id, payload["message"])
 
 
 def _initialise():
