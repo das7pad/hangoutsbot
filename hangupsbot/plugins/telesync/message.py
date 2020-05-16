@@ -2,6 +2,7 @@
 __author__ = 'das7pad@outlook.com'
 
 import logging
+from typing import TYPE_CHECKING
 
 import telepot
 
@@ -14,7 +15,8 @@ from .exceptions import (
     NotSupportedMessageType,
 )
 from .user import User
-
+if TYPE_CHECKING:
+    from .core import TelegramBot  # pylint: disable=cyclic-import
 
 logger = logging.getLogger(__name__)
 
@@ -48,17 +50,18 @@ class Message(dict, BotMixin):
     keep value accessing via dict
 
     Args:
+        tg_bot (TelegramBot): current bot instance
         msg (dict): Message object from Telegram
 
     Raises:
         IgnoreMessage: the message should not be synced
         NotSupportedMessageType: the message type is not supported
     """
-    tg_bot = None
     _last_messages = {}
 
-    def __init__(self, msg):
+    def __init__(self, tg_bot: 'TelegramBot', msg):
         super().__init__(msg)
+        self.tg_bot = tg_bot
 
         try:
             # glance has two signatures -- it can return 3 or 5 items
@@ -73,7 +76,7 @@ class Message(dict, BotMixin):
         reply = None
         if 'reply_to_message' in msg:
             try:
-                reply = Message(msg['reply_to_message'])
+                reply = Message(self.tg_bot, msg['reply_to_message'])
             except NotSupportedMessageType:
                 logger.debug(
                     'message %s: reply message type is not supported',
