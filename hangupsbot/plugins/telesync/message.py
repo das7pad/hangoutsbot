@@ -61,6 +61,9 @@ class Message(dict, BotMixin):
         super().__init__(msg)
 
         try:
+            # glance has two signatures -- it can return 3 or 5 items
+            # default is 3 and using long=true one can opt-in to 5.
+            # pylint: disable=unbalanced-tuple-unpacking
             self.content_type, self.chat_type, chat_id = telepot.glance(msg)
         except KeyError:
             raise NotSupportedMessageType
