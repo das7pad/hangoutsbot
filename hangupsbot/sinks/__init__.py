@@ -15,8 +15,20 @@ from .base_bot_request_handler import AsyncRequestHandler
 logger = logging.getLogger(__name__)
 
 
-class ServerStorage(list, TrackingMixin):
+class ServerStorage(TrackingMixin):
     """storage for running aiohttp servers"""
+
+    def __init__(self):
+        self.items = []
+
+    def __iter__(self):
+        return iter(self.items)
+
+    def append(self, item):
+        return self.items.append(item)
+
+    def remove(self, item):
+        return self.items.remove(item)
 
     async def clear(self):
         """remove all servers"""
