@@ -75,7 +75,7 @@ twitterapi==2.5.10
 typed-ast==1.4.1
 typing-extensions==3.7.4.1
 uritemplate==3.0.1
-urllib3==1.25.8
+urllib3==1.25.10
 wcwidth==0.1.7
 websocket-client==0.57.0
 wikipedia==1.4.0
