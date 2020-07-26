@@ -67,5 +67,5 @@ websocket-client==0.57.0
 wikipedia==1.4.0
 wolframalpha==3.0.1
 xmltodict==0.12.0
-yarl==1.4.2
+yarl==1.5.0
 zipp==0.6.0
