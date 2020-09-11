@@ -19,98 +19,6 @@ pipeline {
     stages {
         stage('Parallel Stage') {
             parallel {
-                stage('Python:3.6.5') {
-                    agent {
-                        docker {
-                            image 'python:3.6.5'
-                        }
-                    }
-                    stages {
-                        stage('Python:3.6.5 Info') {
-                            steps {
-                                sh 'curl -sS httpbin.org/ip'
-                                sh 'pwd'
-                            }
-                        }
-                        stage('Python:3.6.5 Checkout') {
-                            steps {
-                                checkout scm
-                                sh 'make clean'
-                            }
-                        }
-                        stage('Python:3.6.5 Test-Env') {
-                            steps {
-                                sh 'make venv-dev'
-                            }
-                        }
-                        stage('Python:3.6.5 Lint') {
-                            steps {
-                                sh 'make lint'
-                            }
-                        }
-                        stage('Python:3.6.5 Tests') {
-                            steps {
-                                sh 'make test-only'
-                            }
-                        }
-                        stage('Python:3.6.5 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
-                        stage('Python:3.6.5 Cleanup') {
-                            steps {
-                                sh 'make clean'
-                            }
-                        }
-                    }
-                }
-                stage('Python:3.6.8') {
-                    agent {
-                        docker {
-                            image 'python:3.6.8'
-                        }
-                    }
-                    stages {
-                        stage('Python:3.6.8 Info') {
-                            steps {
-                                sh 'curl -sS httpbin.org/ip'
-                                sh 'pwd'
-                            }
-                        }
-                        stage('Python:3.6.8 Checkout') {
-                            steps {
-                                checkout scm
-                                sh 'make clean'
-                            }
-                        }
-                        stage('Python:3.6.8 Test-Env') {
-                            steps {
-                                sh 'make venv-dev'
-                            }
-                        }
-                        stage('Python:3.6.8 Lint') {
-                            steps {
-                                sh 'make lint'
-                            }
-                        }
-                        stage('Python:3.6.8 Tests') {
-                            steps {
-                                sh 'make test-only'
-                            }
-                        }
-                        stage('Python:3.6.8 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
-                        stage('Python:3.6.8 Cleanup') {
-                            steps {
-                                sh 'make clean'
-                            }
-                        }
-                    }
-                }
                 stage('Python:3.6.9') {
                     agent {
                         docker {
@@ -157,138 +65,46 @@ pipeline {
                         }
                     }
                 }
-                stage('Python:3.6.10') {
+                stage('Python:3.6.12') {
                     agent {
                         docker {
-                            image 'python:3.6.10'
+                            image 'python:3.6.12'
                         }
                     }
                     stages {
-                        stage('Python:3.6.10 Info') {
+                        stage('Python:3.6.12 Info') {
                             steps {
                                 sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
-                        stage('Python:3.6.10 Checkout') {
+                        stage('Python:3.6.12 Checkout') {
                             steps {
                                 checkout scm
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.6.10 Test-Env') {
+                        stage('Python:3.6.12 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
                             }
                         }
-                        stage('Python:3.6.10 Lint') {
+                        stage('Python:3.6.12 Lint') {
                             steps {
                                 sh 'make lint'
                             }
                         }
-                        stage('Python:3.6.10 Tests') {
+                        stage('Python:3.6.12 Tests') {
                             steps {
                                 sh 'make test-only'
                             }
                         }
-                        stage('Python:3.6.10 Install') {
+                        stage('Python:3.6.12 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.6.10 Cleanup') {
-                            steps {
-                                sh 'make clean'
-                            }
-                        }
-                    }
-                }
-                stage('Python:3.7.0') {
-                    agent {
-                        docker {
-                            image 'python:3.7.0'
-                        }
-                    }
-                    stages {
-                        stage('Python:3.7.0 Info') {
-                            steps {
-                                sh 'curl -sS httpbin.org/ip'
-                                sh 'pwd'
-                            }
-                        }
-                        stage('Python:3.7.0 Checkout') {
-                            steps {
-                                checkout scm
-                                sh 'make clean'
-                            }
-                        }
-                        stage('Python:3.7.0 Test-Env') {
-                            steps {
-                                sh 'make venv-dev'
-                            }
-                        }
-                        stage('Python:3.7.0 Lint') {
-                            steps {
-                                sh 'make lint'
-                            }
-                        }
-                        stage('Python:3.7.0 Tests') {
-                            steps {
-                                sh 'make test-only'
-                            }
-                        }
-                        stage('Python:3.7.0 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
-                        stage('Python:3.7.0 Cleanup') {
-                            steps {
-                                sh 'make clean'
-                            }
-                        }
-                    }
-                }
-                stage('Python:3.7.3') {
-                    agent {
-                        docker {
-                            image 'python:3.7.3'
-                        }
-                    }
-                    stages {
-                        stage('Python:3.7.3 Info') {
-                            steps {
-                                sh 'curl -sS httpbin.org/ip'
-                                sh 'pwd'
-                            }
-                        }
-                        stage('Python:3.7.3 Checkout') {
-                            steps {
-                                checkout scm
-                                sh 'make clean'
-                            }
-                        }
-                        stage('Python:3.7.3 Test-Env') {
-                            steps {
-                                sh 'make venv-dev'
-                            }
-                        }
-                        stage('Python:3.7.3 Lint') {
-                            steps {
-                                sh 'make lint'
-                            }
-                        }
-                        stage('Python:3.7.3 Tests') {
-                            steps {
-                                sh 'make test-only'
-                            }
-                        }
-                        stage('Python:3.7.3 Install') {
-                            steps {
-                                sh 'make install'
-                            }
-                        }
-                        stage('Python:3.7.3 Cleanup') {
+                        stage('Python:3.6.12 Cleanup') {
                             steps {
                                 sh 'make clean'
                             }
@@ -341,46 +157,138 @@ pipeline {
                         }
                     }
                 }
-                stage('Python:3.7.7') {
+                stage('Python:3.7.8') {
                     agent {
                         docker {
-                            image 'python:3.7.7'
+                            image 'python:3.7.8'
                         }
                     }
                     stages {
-                        stage('Python:3.7.7 Info') {
+                        stage('Python:3.7.8 Info') {
                             steps {
                                 sh 'curl -sS httpbin.org/ip'
                                 sh 'pwd'
                             }
                         }
-                        stage('Python:3.7.7 Checkout') {
+                        stage('Python:3.7.8 Checkout') {
                             steps {
                                 checkout scm
                                 sh 'make clean'
                             }
                         }
-                        stage('Python:3.7.7 Test-Env') {
+                        stage('Python:3.7.8 Test-Env') {
                             steps {
                                 sh 'make venv-dev'
                             }
                         }
-                        stage('Python:3.7.7 Lint') {
+                        stage('Python:3.7.8 Lint') {
                             steps {
                                 sh 'make lint'
                             }
                         }
-                        stage('Python:3.7.7 Tests') {
+                        stage('Python:3.7.8 Tests') {
                             steps {
                                 sh 'make test-only'
                             }
                         }
-                        stage('Python:3.7.7 Install') {
+                        stage('Python:3.7.8 Install') {
                             steps {
                                 sh 'make install'
                             }
                         }
-                        stage('Python:3.7.7 Cleanup') {
+                        stage('Python:3.7.8 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
+                    }
+                }
+                stage('Python:3.8.2') {
+                    agent {
+                        docker {
+                            image 'python:3.8.2'
+                        }
+                    }
+                    stages {
+                        stage('Python:3.8.2 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
+                        stage('Python:3.8.2 Checkout') {
+                            steps {
+                                checkout scm
+                                sh 'make clean'
+                            }
+                        }
+                        stage('Python:3.8.2 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
+                        stage('Python:3.8.2 Lint') {
+                            steps {
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.8.2 Tests') {
+                            steps {
+                                sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.8.2 Install') {
+                            steps {
+                                sh 'make install'
+                            }
+                        }
+                        stage('Python:3.8.2 Cleanup') {
+                            steps {
+                                sh 'make clean'
+                            }
+                        }
+                    }
+                }
+                stage('Python:3.8.5') {
+                    agent {
+                        docker {
+                            image 'python:3.8.5'
+                        }
+                    }
+                    stages {
+                        stage('Python:3.8.5 Info') {
+                            steps {
+                                sh 'curl -sS httpbin.org/ip'
+                                sh 'pwd'
+                            }
+                        }
+                        stage('Python:3.8.5 Checkout') {
+                            steps {
+                                checkout scm
+                                sh 'make clean'
+                            }
+                        }
+                        stage('Python:3.8.5 Test-Env') {
+                            steps {
+                                sh 'make venv-dev'
+                            }
+                        }
+                        stage('Python:3.8.5 Lint') {
+                            steps {
+                                sh 'make lint'
+                            }
+                        }
+                        stage('Python:3.8.5 Tests') {
+                            steps {
+                                sh 'make test-only'
+                            }
+                        }
+                        stage('Python:3.8.5 Install') {
+                            steps {
+                                sh 'make install'
+                            }
+                        }
+                        stage('Python:3.8.5 Cleanup') {
                             steps {
                                 sh 'make clean'
                             }
