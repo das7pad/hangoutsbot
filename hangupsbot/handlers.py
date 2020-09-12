@@ -518,10 +518,13 @@ class EventHandler(BotMixin):
 
         conv_list = self.bot._conv_list  # pylint:disable=protected-access
         if conv_list is not None:
-            conv_list.on_event.remove_observer(self._handle_event)
-            conv_list.on_typing.remove_observer(self._handle_status_change)
-            conv_list.on_watermark_notification.remove_observer(
-                self._handle_status_change)
+            try:
+                conv_list.on_event.remove_observer(self._handle_event)
+                conv_list.on_typing.remove_observer(self._handle_status_change)
+                conv_list.on_watermark_notification.remove_observer(
+                    self._handle_status_change)
+            except ValueError:
+                pass
 
 
 class HandlerBridge(BotMixin):
