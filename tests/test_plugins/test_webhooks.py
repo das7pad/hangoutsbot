@@ -184,10 +184,11 @@ async def test_event_serialize(bot):
         image=image,
     )
 
-    with mock.patch('hangupsbot.sync.event.SyncEvent.get_image_url') as patched:
-        patched.return_value = asyncio.Future()
-        patched.return_value.set_result(image_url)
+    async def fake_get_image_url(_):
+        await asyncio.sleep(0)
+        return image_url
 
+    with mock.patch('hangupsbot.sync.event.SyncEvent.get_image_url', new=fake_get_image_url):
         actual = await webhook.Handler.serialize_event(event)
 
     expected = {
@@ -245,10 +246,11 @@ async def test_event_serialize_no_reply(bot):
         image=image,
     )
 
-    with mock.patch('hangupsbot.sync.event.SyncEvent.get_image_url') as patched:
-        patched.return_value = asyncio.Future()
-        patched.return_value.set_result(image_url)
+    async def fake_get_image_url(_):
+        await asyncio.sleep(0)
+        return image_url
 
+    with mock.patch('hangupsbot.sync.event.SyncEvent.get_image_url', new=fake_get_image_url):
         actual = await webhook.Handler.serialize_event(event)
 
     expected = {

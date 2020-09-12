@@ -6,15 +6,14 @@ import pathlib
 
 
 VERSIONS = [
-    '3.6.5',    # ubuntu 18.04 LTS  EOL: 2028-04
-    '3.6.8',    # ubuntu 18.04 LTS  EOL: 2028-04
     '3.6.9',    # ubuntu 18.04 LTS  EOL: 2028-04
-    '3.6.10',   # latest
+    '3.6.12',   # latest
 
-    '3.7.0',    # ubuntu 18.04 LTS  EOL: 2028-04
-    '3.7.3',    # debian buster     EOL: 2022
     '3.7.5',    # ubuntu 18.04 LTS  EOL: 2028-04
-    '3.7.7',    # latest
+    '3.7.8',    # latest
+
+    '3.8.2',    # ubuntu 20.04 LTS  EOL: 2030-04
+    '3.8.5',    # latest
 ]
 PIPELINE = """
 //
