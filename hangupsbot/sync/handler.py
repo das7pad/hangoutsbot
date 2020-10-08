@@ -55,6 +55,14 @@ DEFAULT_MEMORY = {
     },
 }
 
+# pylint: disable=no-member
+MEDIA_TYPES = {
+    hangouts_pb2.PlusPhoto.MEDIA_TYPE_PHOTO: 'photo',
+    hangouts_pb2.PlusPhoto.MEDIA_TYPE_VIDEO: 'video',
+    hangouts_pb2.PlusPhoto.MEDIA_TYPE_ANIMATED_PHOTO: 'sticker'
+}
+# pylint: enable=no-member
+
 
 class SyncHandler(handlers.EventHandler):
     """router for messages and platform user request
@@ -796,11 +804,11 @@ class SyncHandler(handlers.EventHandler):
         if event.conv_event.attachments:
             # pylint: disable=protected-access
             raw = event.conv_event._event.chat_message.message_content
-            image_raw = raw.attachment[0].embed_item.plus_photo.thumbnail
+            plus_photo = raw.attachment[0].embed_item.plus_photo
+            image_raw = plus_photo.thumbnail
 
-            # stickers have no private url
-            image_type = 'sticker' if not image_raw.url else None
-            url = image_raw.url or image_raw.image_url
+            image_type = MEDIA_TYPES.get(plus_photo.media_type)
+            url = plus_photo.video_url or plus_photo.url or image_raw.image_url
 
             size = (image_raw.width_px, image_raw.height_px)
             await asyncio.sleep((size[0] * size[1]) / 10 ** 7)
