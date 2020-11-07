@@ -4,7 +4,6 @@ import asyncio
 import inspect
 import logging
 import shlex
-import time
 import uuid
 
 import hangups
@@ -52,12 +51,6 @@ class EventHandler(BotMixin):
         self._contexts = Cache(receive_timeout,
                                increase_on_access=False)
 
-        self._image_ids = Cache(receive_timeout,
-                                increase_on_access=False)
-
-        self._executables = Cache(receive_timeout,
-                                  increase_on_access=False)
-
     async def setup(self, _conv_list):
         """async init part of the handler
 
@@ -76,8 +69,6 @@ class EventHandler(BotMixin):
 
         self._reprocessors.start()
         self._contexts.start()
-        self._image_ids.start()
-        self._executables.start()
 
         plugins.tracking.end()
 
@@ -176,34 +167,6 @@ class EventHandler(BotMixin):
 
     # handler core
 
-    async def image_uri_from(self, image_id, callback, *args, **kwargs):
-        """retrieve a public url for an image upload
-
-        Args:
-            image_id (int): upload id of a previous upload
-            callback (coroutine): to be invoked with the image url
-            args (tuple): positional arguments for the callback
-            kwargs (dict): keyword arguments for the callback
-
-        Returns:
-            bool: False if no url was awaitable after 60sec, otherwise True
-        """
-        # TODO(das7pad) refactor plugins to use bot._client.image_upload_raw
-
-        # there was no direct way to resolve an image_id to the public url
-        # without posting it first via the api.
-        # plugins and functions can establish a short-lived task to wait for the
-        # image id to be posted and retrieve the url in an asynchronous way
-
-        ticks = 0
-        while ticks < 60:
-            if image_id in self._image_ids:
-                await callback(self._image_ids[image_id], *args, **kwargs)
-                return True
-            await asyncio.sleep(1)
-            ticks += 1
-        return False
-
     async def run_reprocessor(self, reprocessor_id, event, *args, **kwargs):
         """reprocess the event with the callable that was attached on sending
 
@@ -247,7 +210,6 @@ class EventHandler(BotMixin):
             return
 
         event.syncroom_no_repeat = False
-        event.passthru = {}
         event.context = {}
 
         # EventAnnotation - allows metadata to survive a trip to Google
@@ -258,35 +220,6 @@ class EventHandler(BotMixin):
                 await self.run_reprocessor(annotation.value, event)
             elif annotation.type == 1027 and annotation.value in self._contexts:
                 event.context = self._contexts[annotation.value]
-                if "passthru" in event.context:
-                    event.passthru = event.context["passthru"]
-
-        # map image ids to their public uris in absence of any fixed server api
-        if (event.passthru
-                and "original_request" in event.passthru
-                and "image_id" in event.passthru["original_request"]
-                and event.passthru["original_request"]["image_id"]
-                and len(event.conv_event.attachments) == 1):
-
-            _image_id = event.passthru["original_request"]["image_id"]
-            _image_uri = event.conv_event.attachments[0]
-
-            if _image_id not in self._image_ids:
-                self._image_ids[_image_id] = _image_uri
-                logger.info("associating image_id=%s with %s",
-                            _image_id, _image_uri)
-
-        # first occurrence of an executable id needs to be handled as an event
-        if (event.passthru and event.passthru.get("executable") and
-                event.passthru["executable"] not in self._executables):
-            original_message = event.passthru["original_request"]["message"]
-            linked_hangups_user = event.passthru["original_request"]["user"]
-            logger.info("current event is executable: %s", original_message)
-            self._executables[event.passthru["executable"]] = time.time()
-            event.from_bot = False
-            event.text = original_message
-            event.user = linked_hangups_user
-            event.user_id = linked_hangups_user.id_
 
         await self.run_pluggable_omnibus("allmessages", self.bot, event,
                                          command)
@@ -511,8 +444,6 @@ class EventHandler(BotMixin):
         """explicit cleanup"""
         self._reprocessors.clear()
         self._contexts.clear()
-        self._image_ids.clear()
-        self._executables.clear()
 
         self.pluggables.clear()
 

@@ -650,7 +650,6 @@ class HangupsBot:
         # update the context
         if not context:
             context = {
-                "passthru": {},
                 "__ignore__": True,
             }
 
