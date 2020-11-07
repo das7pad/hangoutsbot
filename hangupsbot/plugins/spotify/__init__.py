@@ -13,8 +13,6 @@ from collections import namedtuple
 
 import appdirs
 import soundcloud
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError as YouTubeHTTPError
 from requests.exceptions import HTTPError as SoundcloudHTTPError
 from spotipy.client import (
     Spotify,
@@ -26,6 +24,7 @@ from hangupsbot import (
     commands,
     plugins,
 )
+from .youtube import get_title_from_youtube
 
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,6 @@ _DETECT_LINKS = re.compile(
     (r"(https?://)?([a-z0-9.]*?\.)?"
      "(youtube.com/|youtu.be/|soundcloud.com/|spotify.com/track/)"
      r"([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])"))
-_YOUTUBE_ID = re.compile(
-    r"^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*")
 _HAS_PROTOCOL = re.compile("https?://")
 
 _CLEANUP_CHAR = re.compile(
@@ -93,11 +90,6 @@ def _initialise(bot):
     Args:
         bot (hangupsbot.core.HangupsBot): the running instance
     """
-    # suppress a noisy stacktrace and disable logging of every request which
-    # also exposes the api-token to the log.
-    logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
-    logging.getLogger("googleapiclient.discovery").setLevel(logging.WARNING)
-
     # the spotify module stores user data in random locations, set a static one
     config_path = ["spotify", "spotify", "storage"]
     if not bot.config.exists(config_path):
@@ -149,7 +141,7 @@ async def _watch_for_music_link(bot, event):
             success = add_to_playlist(bot, event, track)
         else:
             if "youtube" in link or "youtu.be" in link:
-                query = get_title_from_youtube(bot, link)
+                query = get_title_from_youtube(link)
             elif "soundcloud" in link:
                 query = get_title_from_soundcloud(bot, link)
             else:
@@ -514,64 +506,6 @@ def get_chat_playlist(bot, event):
             event.conv_id, "spotify_playlist_url", playlist_url)
 
     return SpotifyPlaylist(spotify_user, playlist_id, playlist_url)
-
-
-def get_title_from_youtube(bot, url):
-    """get the title of a youtube video
-
-    Args:
-        bot (hangupsbot.core.HangupsBot): the running instance
-        url (str): the video URI
-
-    Returns:
-        str: the videos title
-    """
-    try:
-        youtube_api_key = bot.config.get_by_path(["spotify", "youtube"])
-        youtube_client = build("youtube", "v3", developerKey=youtube_api_key)
-    except (KeyError, TypeError) as err:
-        logger.warning("YouTube API key isn't configured: %s", err)
-        return None
-
-    logger.debug('YouTube %s: %s', id(url), url)
-
-    # Regex by mantish from http://stackoverflow.com/a/9102270 to get the
-    # video id from a YouTube URL.
-    match = _YOUTUBE_ID.match(url)
-    if match and len(match.group(2)) == 11:
-        video_id = match.group(2)
-    else:
-        if not logger.isEnabledFor(logging.DEBUG):
-            logger.info('YouTube %s: %s', id(url), url)
-        logger.error(
-            "YouTube %s: Unable to extract video id",
-            id(url)
-        )
-        return None
-
-    # YouTube response is JSON.
-    try:
-        response = youtube_client.videos().list(  # pylint:disable=no-member
-            part="snippet", id=video_id).execute()
-        items = response.get("items", [])
-        if items:
-            return items[0]["snippet"]["title"]
-    except (YouTubeHTTPError, KeyError) as err:
-        if not logger.isEnabledFor(logging.DEBUG):
-            logger.info('YouTube %s: %s', id(url), url)
-        logger.error(
-            "YouTube %s: Unable to get video entry: %r",
-            id(url), err,
-        )
-        return None
-    else:
-        if not logger.isEnabledFor(logging.DEBUG):
-            logger.info('YouTube %s: %s', id(url), url)
-        logger.error(
-            "YouTube %s: response was empty: %s",
-            id(url), response
-        )
-        return None
 
 
 def get_title_from_soundcloud(bot, url):

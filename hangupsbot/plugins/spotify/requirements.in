@@ -1,5 +1,5 @@
 appdirs
-google-api-python-client
+aiohttp>2,<4
 spotipy
 soundcloud
 requests
