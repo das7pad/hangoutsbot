@@ -91,7 +91,6 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
     """
 
     def __init__(self, ho_bot):
-        Message.tg_bot = self
         self.user = None
 
         api_key = self.config('api_key', False)
@@ -599,7 +598,7 @@ class TelegramBot(telepot.aio.Bot, BotMixin):
             return
 
         try:
-            msg = Message(response)
+            msg = Message(self, response)
         except IgnoreMessage:
             logger.debug('message %s: ignore message', id(response))
             return

@@ -147,8 +147,8 @@ class SlackRTM(BotMixin):
             """
             try:
                 login_data = await self.api_call('rtm.connect')
-            except SlackAPIError:
-                raise IncompleteLoginError()
+            except SlackAPIError as err_context:
+                raise IncompleteLoginError() from err_context
 
             if any(key not in login_data for key in ('self', 'team', 'url')):
                 raise IncompleteLoginError(login_data.keys())
@@ -509,7 +509,7 @@ class SlackRTM(BotMixin):
                 'failed to get 1on1: %r',
                 err
             )
-            raise SlackAPIError
+            raise SlackAPIError() from err
 
         self.users[userid]['1on1'] = id_
         return id_

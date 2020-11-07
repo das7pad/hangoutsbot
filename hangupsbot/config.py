@@ -278,9 +278,9 @@ class Config(collections.MutableMapping):
                 raise
         try:
             return self._get_by_path(self.defaults, keys_list)
-        except (KeyError, ValueError):
+        except (KeyError, ValueError) as err:
             raise KeyError('%s has no path %s and there is no default set' %
-                           (self.logger.name, keys_list))
+                           (self.logger.name, keys_list)) from err
 
     def set_by_path(self, keys_list, value, create_path=True):
         """set an item in .config by path

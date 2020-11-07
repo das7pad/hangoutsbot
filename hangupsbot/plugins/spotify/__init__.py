@@ -485,7 +485,7 @@ def get_chat_playlist(bot, event):
                 "user_playlist_create: API Change likely: %r",
                 err
             )
-            raise _PlaylistCreationFailed()
+            raise _PlaylistCreationFailed() from err
 
         try:
             playlist_id = playlist["id"]
@@ -495,7 +495,7 @@ def get_chat_playlist(bot, event):
                 "Spotify API-Change in user_playlist_create result: %r",
                 err
             )
-            raise _PlaylistCreationFailed()
+            raise _PlaylistCreationFailed() from err
 
         logger.info("New Spotify playlist created: (%s, %s)",
                     playlist_id, playlist_url)
@@ -574,7 +574,7 @@ def get_spotify_client(bot):
         storage_path = bot.config.get_by_path(["spotify", "spotify", "storage"])
     except (KeyError, TypeError) as err:
         logger.warning("Spotify authorization isn't configured: %r", err)
-        raise _MissingAuth()
+        raise _MissingAuth() from err
 
     if bot.memory.exists(["spotify", "token"]):
         old_spotify_token = bot.memory.get_by_path(["spotify", "token"])

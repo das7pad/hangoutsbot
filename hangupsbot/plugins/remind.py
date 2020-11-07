@@ -42,9 +42,10 @@ def _get_delay(args):
 
     try:
         return float(args[0]) * 60.0
-    except ValueError:
-        raise Help(_('invalid delay "%s" given, integer or float required')
-                   % args[0])
+    except ValueError as err:
+        raise Help(
+            _('invalid delay "%s" given, integer or float required') % args[0]
+        ) from err
 
 
 async def remindme(bot, event, *args):

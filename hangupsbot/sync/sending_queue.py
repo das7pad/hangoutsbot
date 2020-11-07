@@ -14,24 +14,23 @@ logger = logging.getLogger(__name__)
 SENDING_BLOCK_RETRY_DELAY = 5  # seconds
 
 
-class Status(asyncio.Event):
+class Status:
     """Blocker for scheduled tasks"""
-    __slots__ = ('_status',)
+    __slots__ = ('_event', '_status')
 
     FAILED = False
     SUCCESS = True
 
     def __init__(self):
-        super().__init__()
+        self._event = asyncio.Event()
         self._status = None
 
     def set(self, status):
-        # pylint:disable=arguments-differ
         self._status = status
-        super().set()
+        self._event.set()
 
     async def wait(self):
-        await super().wait()
+        await self._event.wait()
         return self._status
 
     def __await__(self):
