@@ -10,7 +10,7 @@
 aiohttp==3.6.2
 aioresponses==0.6.2
 appdirs==1.4.3
-astroid==2.3.3
+astroid==2.4.2
 async-timeout==3.0.1
 attrs==19.3.0
 beautifulsoup4==4.8.2
@@ -45,7 +45,7 @@ protobuf==3.7.1
 psutil==5.6.7
 pushbullet.py==0.11.0
 py==1.8.1
-pylint==2.4.4
+pylint==2.6.0
 pyparsing==2.4.6
 pytest-asyncio==0.10.0
 pytest==5.3.5
@@ -61,6 +61,7 @@ six==1.14.0
 soundcloud==0.5.0
 soupsieve==1.9.5
 spotipy==2.4.4
+toml==0.10.2
 tqdm==4.42.1
 twitterapi==2.5.10
 typed-ast==1.4.1
