@@ -68,8 +68,8 @@ class Message(dict, BotMixin):
             # default is 3 and using long=true one can opt-in to 5.
             # pylint: disable=unbalanced-tuple-unpacking
             self.content_type, self.chat_type, chat_id = telepot.glance(msg)
-        except KeyError:
-            raise NotSupportedMessageType
+        except KeyError as err:
+            raise NotSupportedMessageType() from err
 
         self.chat_id = str(chat_id)
 

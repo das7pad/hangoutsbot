@@ -624,12 +624,14 @@ class ConversationMemory(BotMixin):
 
         try:
             return self.catalog[convid]["title"]
-        except KeyError:
+        except KeyError as err:
             if not isinstance(conv, str):
                 return name_from_hangups_conversation(conv)
 
             if fallback is SENTINEL:
-                raise ValueError("could not determine conversation name")
+                raise ValueError(
+                    "could not determine conversation name"
+                ) from err
 
             return fallback
 

@@ -1011,14 +1011,14 @@ class SyncHandler(handlers.EventHandler):
                 if asyncio.iscoroutinefunction(handler):
                     return await result
                 return result
-            except Exception:  # pylint: disable=broad-except
+            except Exception as err:  # pylint: disable=broad-except
                 tracker = object()
                 logger.info('run handler %s: args=%r', id(tracker), args)
                 logger.exception(
                     'run handler %s: category=%r handler=%r',
                     id(tracker), pluggable, handler
                 )
-                raise HandlerFailed()
+                raise HandlerFailed() from err
 
         handlers_ = self.pluggables[pluggable].copy()
         results_unmapped = await asyncio.gather(*[_run(handler[0])
@@ -1065,14 +1065,14 @@ class SyncHandler(handlers.EventHandler):
             """
             try:
                 return handler(self.bot, *args)
-            except Exception:  # pylint: disable=broad-except
+            except Exception as err:  # pylint: disable=broad-except
                 tracker = object()
                 logger.info('run handler %s: args=%r', id(tracker), args)
                 logger.exception(
                     'run handler %s: category=%r handler=%r',
                     id(tracker), pluggable, handler
                 )
-                raise HandlerFailed()
+                raise HandlerFailed() from err
 
         results = {}
         for handler in self.pluggables[pluggable].copy():
