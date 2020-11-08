@@ -8,7 +8,7 @@
 -e git+https://github.com/das7pad/raven-python.git@v6.10.2#egg=raven
 -e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
 aiohttp==3.7.2
-appdirs==1.4.3
+appdirs==1.4.4
 async-timeout==3.0.1
 attrs==19.3.0
 beautifulsoup4==4.8.2
