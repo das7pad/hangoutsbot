@@ -18,7 +18,7 @@ bs4==0.0.1
 certifi==2019.11.28
 chardet==3.0.4
 cleverwrap==0.3.0.2
-decorator==4.4.1
+decorator==4.4.2
 emoji==0.5.4
 fudge==1.1.1
 idna-ssl==1.1.0
