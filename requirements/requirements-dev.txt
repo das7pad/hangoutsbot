@@ -35,7 +35,7 @@ lxml==4.6.1
 mccabe==0.6.1
 more-itertools==8.6.0
 moviepy==1.0.3
-multidict==5.0.0
+multidict==5.0.2
 numpy==1.19.4
 oauthlib==3.1.0
 packaging==20.4
