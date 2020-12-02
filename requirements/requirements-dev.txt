@@ -26,10 +26,8 @@ idna==2.8
 imageio-ffmpeg==0.4.2
 imageio==2.9.0
 importlib-metadata==2.0.0
-inflect==4.1.0
 iniconfig==1.1.1
 isort==4.3.21
-jaraco.itertools==4.4.1
 lazy-object-proxy==1.4.3
 lxml==4.6.1
 mccabe==0.6.1
@@ -70,7 +68,7 @@ typing-extensions==3.7.4.3
 urllib3==1.25.11
 websocket-client==0.57.0
 wikipedia==1.4.0
-wolframalpha==4.0.0
+wolframalpha==4.1.1
 wrapt==1.11.2
 xmltodict==0.12.0
 yarl==1.6.2
