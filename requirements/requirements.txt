@@ -30,7 +30,7 @@ lxml==4.6.1
 more-itertools==8.6.0
 moviepy==1.0.3
 multidict==5.0.0
-numpy==1.19.4
+numpy==1.19.5
 oauthlib==3.1.0
 pillow==8.0.1
 proglog==0.1.9
