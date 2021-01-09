@@ -49,7 +49,7 @@ six==1.15.0
 soundcloud==0.5.0
 soupsieve==2.0.1
 spotipy==2.16.1
-tqdm==4.51.0
+tqdm==4.55.2
 twitterapi==2.6.2.1
 typing-extensions==3.7.4.3
 urllib3==1.25.11
