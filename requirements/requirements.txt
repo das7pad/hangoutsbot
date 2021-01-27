@@ -50,7 +50,7 @@ soundcloud==0.5.0
 soupsieve==2.0.1
 spotipy==2.16.1
 tqdm==4.51.0
-twitterapi==2.6.2.1
+twitterapi==2.6.4.1
 typing-extensions==3.7.4.3
 urllib3==1.25.11
 websocket-client==0.57.0
