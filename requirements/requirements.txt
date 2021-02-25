@@ -7,7 +7,7 @@
 -e git+https://github.com/das7pad/hangups@v0.4.12.2#egg=hangups
 -e git+https://github.com/das7pad/raven-python.git@v6.10.2#egg=raven
 -e git+https://github.com/das7pad/telepot.git@v12.6.1#egg=telepot
-aiohttp==3.7.2
+aiohttp==3.7.4
 appdirs==1.4.4
 async-timeout==3.0.1
 attrs==20.3.0
