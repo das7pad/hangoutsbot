@@ -33,7 +33,7 @@ jaraco.itertools==4.4.1
 lazy-object-proxy==1.4.3
 lxml==4.6.1
 mccabe==0.6.1
-more-itertools==8.6.0
+more-itertools==8.8.0
 moviepy==1.0.3
 multidict==5.0.0
 numpy==1.19.4
